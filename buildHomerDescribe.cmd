@@ -244,6 +244,7 @@ if defined twohtm echo Regenerating the .htm documentation with %twohtm%>> "%log
 if defined twohtm "%twohtm%" -f ReadMe.md >> "%log%" 2>&1
 if defined twohtm "%twohtm%" -f History.md >> "%log%" 2>&1
 if defined twohtm "%twohtm%" -f License.md >> "%log%" 2>&1
+if defined twohtm "%twohtm%" -f Developer.md >> "%log%" 2>&1
 
 rem ---- optional icon ------------------------------------------------
 set "icon="
