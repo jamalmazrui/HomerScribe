@@ -1,5 +1,59 @@
 ﻿# HomerDescribe History
 
+## 1.0.33, 4 August 2026
+
+- Fixed a build failure: rebuilding the lost work added a second copy of
+  defaultVideoFolder and initialBrowseFolder, which the recovered source already
+  had. The duplicates are gone, and every rebuilt helper is now checked to be
+  defined exactly once.
+
+## 1.0.32, 4 August 2026
+
+- The console window is hidden when HomerDescribe is started from a shortcut or
+  the Start menu, following urlFido, extCheck and 2htm: if exactly one process is
+  attached to the console, Windows made it for HomerDescribe alone. A tester
+  Alt-Tabbed onto that window instead of the dialog, and closing it with
+  Control C killed the run.
+- Resuming no longer reads the whole sound track again. The moment list and the
+  settings that produced it are kept in the record, and reused when the settings
+  are unchanged. A resumed run now starts describing at once.
+- A long wait no longer looks like a stopped program: while the model is
+  thinking, HomerDescribe says every twenty five seconds that it is still working
+  and for how long. On a machine without a graphics card a single description
+  takes two or three minutes.
+- "Nearly there" removed from the scan progress; the percentage says it.
+
+## 1.0.22 to 1.0.31, 4 August 2026
+
+Recorded together, because the individual entries were lost when the working
+copy was rolled back and the code was rebuilt from the running program.
+
+- The film is written once at the end rather than every half hour, and
+  --rebuild builds it from descriptions already made without asking the model
+  anything.
+- Descriptions are made in two passes, after AutoAD-Zero: the vision model looks
+  thoroughly, then the same model turns what it saw into one spoken description.
+  Measured over a film, this cut interpretive language from 44 percent of
+  descriptions to 12 and shortened them by 30 percent.
+- A description is never cut in a way that stops it being a sentence. Whole
+  sentences go first, then trailing comma clauses, then the model is asked to
+  say it again in fewer words.
+- Audio only writes a single mp3 of the film's audio with the descriptions mixed
+  in, a quarter the size of the film. View output opens the results when a run
+  finishes. Every checkbox in the dialog starts unticked.
+- Source paths accept wildcard patterns as well as files and web addresses.
+- The settings, the working files and usually the log moved to
+  %LOCALAPPDATA%\HomerDescribe, because an installed program cannot write beside
+  its own executable. Each video's folder holds only the described film and the
+  script to read.
+- A run where every video had already been described says so and offers the
+  earlier results, rather than ending in silence.
+- Progress is reported from the second description onward, and a run heading past
+  half a minute a description says so, says why, and says what to do.
+- The installer clears its settings on uninstall, ships developer notes, and its
+  Ollama box installs the model too. Both install scripts find Ollama where it is
+  put rather than asking the PATH.
+
 ## 1.0.21, 4 August 2026
 
 - Fixed a fault that would have made resuming impossible: a video was skipped if

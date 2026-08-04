@@ -177,47 +177,114 @@
 <li><a href="#homerdescribe-history"
 id="toc-homerdescribe-history">HomerDescribe History</a>
 <ul>
-<li><a href="#august-2026" id="toc-august-2026">1.0.21, 4 August
+<li><a href="#august-2026" id="toc-august-2026">1.0.33, 4 August
 2026</a></li>
-<li><a href="#august-2026-1" id="toc-august-2026-1">1.0.20, 4 August
+<li><a href="#august-2026-1" id="toc-august-2026-1">1.0.32, 4 August
 2026</a></li>
-<li><a href="#august-2026-2" id="toc-august-2026-2">1.0.19, 4 August
+<li><a href="#to-1.0.31-4-august-2026"
+id="toc-to-1.0.31-4-august-2026">1.0.22 to 1.0.31, 4 August
 2026</a></li>
-<li><a href="#august-2026-3" id="toc-august-2026-3">1.0.18, 4 August
+<li><a href="#august-2026-2" id="toc-august-2026-2">1.0.21, 4 August
 2026</a></li>
-<li><a href="#august-2026-4" id="toc-august-2026-4">1.0.17, 4 August
+<li><a href="#august-2026-3" id="toc-august-2026-3">1.0.20, 4 August
 2026</a></li>
-<li><a href="#august-2026-5" id="toc-august-2026-5">1.0.16, 4 August
+<li><a href="#august-2026-4" id="toc-august-2026-4">1.0.19, 4 August
 2026</a></li>
-<li><a href="#august-2026-6" id="toc-august-2026-6">1.0.15, 4 August
+<li><a href="#august-2026-5" id="toc-august-2026-5">1.0.18, 4 August
 2026</a></li>
-<li><a href="#august-2026-7" id="toc-august-2026-7">1.0.14, 4 August
+<li><a href="#august-2026-6" id="toc-august-2026-6">1.0.17, 4 August
 2026</a></li>
-<li><a href="#august-2026-8" id="toc-august-2026-8">1.0.13, 4 August
+<li><a href="#august-2026-7" id="toc-august-2026-7">1.0.16, 4 August
 2026</a></li>
-<li><a href="#august-2026-9" id="toc-august-2026-9">1.0.12, 4 August
+<li><a href="#august-2026-8" id="toc-august-2026-8">1.0.15, 4 August
 2026</a></li>
-<li><a href="#august-2026-10" id="toc-august-2026-10">1.0.11, 4 August
+<li><a href="#august-2026-9" id="toc-august-2026-9">1.0.14, 4 August
 2026</a></li>
-<li><a href="#august-2026-11" id="toc-august-2026-11">1.0.10, 4 August
+<li><a href="#august-2026-10" id="toc-august-2026-10">1.0.13, 4 August
 2026</a></li>
-<li><a href="#august-2026-12" id="toc-august-2026-12">1.0.9, 4 August
+<li><a href="#august-2026-11" id="toc-august-2026-11">1.0.12, 4 August
 2026</a></li>
-<li><a href="#august-2026-13" id="toc-august-2026-13">1.0.8, 4 August
+<li><a href="#august-2026-12" id="toc-august-2026-12">1.0.11, 4 August
 2026</a></li>
-<li><a href="#august-2026-14" id="toc-august-2026-14">1.0.7, 4 August
+<li><a href="#august-2026-13" id="toc-august-2026-13">1.0.10, 4 August
 2026</a></li>
-<li><a href="#august-2026-15" id="toc-august-2026-15">1.0.6, 4 August
+<li><a href="#august-2026-14" id="toc-august-2026-14">1.0.9, 4 August
 2026</a></li>
-<li><a href="#august-2026-16" id="toc-august-2026-16">1.0.5, 4 August
+<li><a href="#august-2026-15" id="toc-august-2026-15">1.0.8, 4 August
 2026</a></li>
-<li><a href="#august-2026-17" id="toc-august-2026-17">1.0.0, 4 August
+<li><a href="#august-2026-16" id="toc-august-2026-16">1.0.7, 4 August
+2026</a></li>
+<li><a href="#august-2026-17" id="toc-august-2026-17">1.0.6, 4 August
+2026</a></li>
+<li><a href="#august-2026-18" id="toc-august-2026-18">1.0.5, 4 August
+2026</a></li>
+<li><a href="#august-2026-19" id="toc-august-2026-19">1.0.0, 4 August
 2026</a></li>
 </ul></li>
 </ul>
 </nav>
 <h1 id="homerdescribe-history">HomerDescribe History</h1>
-<h2 id="august-2026">1.0.21, 4 August 2026</h2>
+<h2 id="august-2026">1.0.33, 4 August 2026</h2>
+<ul>
+<li>Fixed a build failure: rebuilding the lost work added a second copy
+of defaultVideoFolder and initialBrowseFolder, which the recovered
+source already had. The duplicates are gone, and every rebuilt helper is
+now checked to be defined exactly once.</li>
+</ul>
+<h2 id="august-2026-1">1.0.32, 4 August 2026</h2>
+<ul>
+<li>The console window is hidden when HomerDescribe is started from a
+shortcut or the Start menu, following urlFido, extCheck and 2htm: if
+exactly one process is attached to the console, Windows made it for
+HomerDescribe alone. A tester Alt-Tabbed onto that window instead of the
+dialog, and closing it with Control C killed the run.</li>
+<li>Resuming no longer reads the whole sound track again. The moment
+list and the settings that produced it are kept in the record, and
+reused when the settings are unchanged. A resumed run now starts
+describing at once.</li>
+<li>A long wait no longer looks like a stopped program: while the model
+is thinking, HomerDescribe says every twenty five seconds that it is
+still working and for how long. On a machine without a graphics card a
+single description takes two or three minutes.</li>
+<li>“Nearly there” removed from the scan progress; the percentage says
+it.</li>
+</ul>
+<h2 id="to-1.0.31-4-august-2026">1.0.22 to 1.0.31, 4 August 2026</h2>
+<p>Recorded together, because the individual entries were lost when the
+working copy was rolled back and the code was rebuilt from the running
+program.</p>
+<ul>
+<li>The film is written once at the end rather than every half hour, and
+–rebuild builds it from descriptions already made without asking the
+model anything.</li>
+<li>Descriptions are made in two passes, after AutoAD-Zero: the vision
+model looks thoroughly, then the same model turns what it saw into one
+spoken description. Measured over a film, this cut interpretive language
+from 44 percent of descriptions to 12 and shortened them by 30
+percent.</li>
+<li>A description is never cut in a way that stops it being a sentence.
+Whole sentences go first, then trailing comma clauses, then the model is
+asked to say it again in fewer words.</li>
+<li>Audio only writes a single mp3 of the film’s audio with the
+descriptions mixed in, a quarter the size of the film. View output opens
+the results when a run finishes. Every checkbox in the dialog starts
+unticked.</li>
+<li>Source paths accept wildcard patterns as well as files and web
+addresses.</li>
+<li>The settings, the working files and usually the log moved to
+%LOCALAPPDATA%, because an installed program cannot write beside its own
+executable. Each video’s folder holds only the described film and the
+script to read.</li>
+<li>A run where every video had already been described says so and
+offers the earlier results, rather than ending in silence.</li>
+<li>Progress is reported from the second description onward, and a run
+heading past half a minute a description says so, says why, and says
+what to do.</li>
+<li>The installer clears its settings on uninstall, ships developer
+notes, and its Ollama box installs the model too. Both install scripts
+find Ollama where it is put rather than asking the PATH.</li>
+</ul>
+<h2 id="august-2026-2">1.0.21, 4 August 2026</h2>
 <ul>
 <li>Fixed a fault that would have made resuming impossible: a video was
 skipped if its output FOLDER existed, and the folder exists from the
@@ -233,7 +300,7 @@ minutes.</li>
 <li>The log is now written under a lock, since two threads may report at
 once.</li>
 </ul>
-<h2 id="august-2026-1">1.0.20, 4 August 2026</h2>
+<h2 id="august-2026-3">1.0.20, 4 August 2026</h2>
 <ul>
 <li>Writing the described film no longer looks like a hang. It reports
 progress as it goes, says at the start roughly how long it will take,
@@ -249,7 +316,7 @@ a time the old cadence was spending a quarter of the run on it.</li>
 was answering with a description and the escape word together, and 21 of
 126 descriptions in one run ended “… as they move quickly. Skip.”</li>
 </ul>
-<h2 id="august-2026-2">1.0.19, 4 August 2026</h2>
+<h2 id="august-2026-4">1.0.19, 4 August 2026</h2>
 <ul>
 <li>The opening phase now explains itself on screen. It says that the
 whole film is being read once to find the pauses, that nothing is
@@ -260,7 +327,7 @@ is a tuning detail.</li>
 <li>When the scan finishes it says how many moments were found and that
 descriptions follow one at a time.</li>
 </ul>
-<h2 id="august-2026-3">1.0.18, 4 August 2026</h2>
+<h2 id="august-2026-5">1.0.18, 4 August 2026</h2>
 <ul>
 <li>Fixed a build failure: an empty context folder aborted the
 installer, because a wildcard matching nothing is a fatal error in Inno
@@ -269,7 +336,7 @@ program itself is now optional – only HomerDescribe.exe is genuinely
 required. Since 1.0.15 the context that matters is video.md beside the
 video, so the shipped example is exactly that, an example.</li>
 </ul>
-<h2 id="august-2026-4">1.0.17, 4 August 2026</h2>
+<h2 id="august-2026-6">1.0.17, 4 August 2026</h2>
 <ul>
 <li>The dialog now uses the folders Windows nominates, following
 urlFido. Browse source and Choose output open in your Videos folder, or
@@ -280,7 +347,7 @@ are the fallbacks.</li>
 instead of empty. Clearing it still means each video’s results go beside
 the video.</li>
 </ul>
-<h2 id="august-2026-5">1.0.16, 4 August 2026</h2>
+<h2 id="august-2026-7">1.0.16, 4 August 2026</h2>
 <p>The prompt reworked as prompt engineering rather than as a list of
 rules.</p>
 <ul>
@@ -301,7 +368,7 @@ long run cannot lose it to an idle timeout and reload it from disk.</li>
 <li>Temperature raised from 0.2 to 0.35: at the lower setting the model
 reached for the same sentence shapes repeatedly.</li>
 </ul>
-<h2 id="august-2026-6">1.0.15, 4 August 2026</h2>
+<h2 id="august-2026-8">1.0.15, 4 August 2026</h2>
 <ul>
 <li>Context is now found by convention: a file named after the video and
 sitting beside it – video.md for video.mkv – is read without being asked
@@ -319,7 +386,7 @@ them again.</li>
 <li>The new-scene instruction no longer invites a guess at the location.
 It had produced “In the palace hall” over a studio logo.</li>
 </ul>
-<h2 id="august-2026-7">1.0.14, 4 August 2026</h2>
+<h2 id="august-2026-9">1.0.14, 4 August 2026</h2>
 <p>Measured against a completed 2 hour 45 minute film, 701 moments, and
 corrected where the numbers showed a fault.</p>
 <ul>
@@ -345,7 +412,7 @@ asked again. Naming the wrong character is worse than naming none.</li>
 actually produced: intently, serious, stern, relaxed, suggests, and the
 rest. 132 of 251 descriptions had contained at least one.</li>
 </ul>
-<h2 id="august-2026-8">1.0.13, 4 August 2026</h2>
+<h2 id="august-2026-10">1.0.13, 4 August 2026</h2>
 <p>A second reading of the audio description standards, for what the
 first pass missed.</p>
 <ul>
@@ -362,7 +429,7 @@ matters. The standards ask that a score not be talked over lightly.</li>
 <li>The default word budget moves to 2.67 words a second, the 160 words
 a minute the standards call a comfortable pace.</li>
 </ul>
-<h2 id="august-2026-9">1.0.12, 4 August 2026</h2>
+<h2 id="august-2026-11">1.0.12, 4 August 2026</h2>
 <ul>
 <li>The Ollama and vision model checkboxes appear on the final page
 every time, in that order, before the launch and documentation items.
@@ -374,7 +441,7 @@ ollama in that answer.</li>
 <li>Those options are now worded like the other Homer Tools
 installers.</li>
 </ul>
-<h2 id="august-2026-10">1.0.11, 4 August 2026</h2>
+<h2 id="august-2026-12">1.0.11, 4 August 2026</h2>
 <ul>
 <li>The documentation now travels in both forms: Markdown to read in an
 editor or on a braille display, and HTML for a browser. The shortcuts
@@ -383,7 +450,7 @@ open the HTML.</li>
 is available, and packages whatever is already there when it is
 not.</li>
 </ul>
-<h2 id="august-2026-11">1.0.10, 4 August 2026</h2>
+<h2 id="august-2026-13">1.0.10, 4 August 2026</h2>
 <ul>
 <li>No license page. The license travels with the program and sits on
 the Start menu, but it is not a gate on the way in.</li>
@@ -403,7 +470,7 @@ already installed.</li>
 <li>Fixed the ffmpeg download: an escaped pipe reached PowerShell as a
 literal caret, so the archive was fetched and then not unpacked.</li>
 </ul>
-<h2 id="august-2026-12">1.0.9, 4 August 2026</h2>
+<h2 id="august-2026-14">1.0.9, 4 August 2026</h2>
 <ul>
 <li>The prompt now follows the published audio description standards
 rather than improvised rules: report what is visible and never what it
@@ -423,7 +490,7 @@ revealed.</li>
 “Words appear:”, while translation subtitles are still ignored. A logo
 is named once.</li>
 </ul>
-<h2 id="august-2026-13">1.0.8, 4 August 2026</h2>
+<h2 id="august-2026-15">1.0.8, 4 August 2026</h2>
 <ul>
 <li>The build script now downloads ffmpeg, ffprobe and yt-dlp when they
 are not already in the folder, so a fresh clone builds a complete
@@ -435,7 +502,7 @@ for me or for everyone” question, the destination page always shown,
 modern wizard, desktop shortcut with a hotkey, and a launch checkbox at
 the end.</li>
 </ul>
-<h2 id="august-2026-14">1.0.7, 4 August 2026</h2>
+<h2 id="august-2026-16">1.0.7, 4 August 2026</h2>
 <ul>
 <li>The installer now packages ffmpeg.exe, ffprobe.exe and yt-dlp.exe
 when they are present at build time, so an installed HomerDescribe works
@@ -444,7 +511,7 @@ with nothing else set up. A build without them still succeeds.</li>
 folder.</li>
 <li>License notes added for the packaged programs.</li>
 </ul>
-<h2 id="august-2026-15">1.0.6, 4 August 2026</h2>
+<h2 id="august-2026-17">1.0.6, 4 August 2026</h2>
 <ul>
 <li>Downloading from a web address now actually downloads.
 <code>--print</code> implies <code>--simulate</code> in yt-dlp unless
@@ -458,7 +525,7 @@ title cannot trip the steps that follow.</li>
 <li>Download progress is reported as it happens instead of the screen
 going silent.</li>
 </ul>
-<h2 id="august-2026-16">1.0.5, 4 August 2026</h2>
+<h2 id="august-2026-18">1.0.5, 4 August 2026</h2>
 <ul>
 <li>Starting the program with nothing on the command line now opens the
 dialog, as a Windows program should. <code>--gui</code> still forces
@@ -470,7 +537,7 @@ the output folder when the run finishes.</li>
 <li>A run started from the dialog reports its result in a message box,
 since there may be no console to print to.</li>
 </ul>
-<h2 id="august-2026-17">1.0.0, 4 August 2026</h2>
+<h2 id="august-2026-19">1.0.0, 4 August 2026</h2>
 <p>First release.</p>
 <ul>
 <li>Finds where a description can be spoken, from silences in the sound

@@ -115,9 +115,11 @@ Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Developer.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Developer.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
 ; buildHomerDescribe.cmd downloads them when they are missing, so normally they
@@ -184,4 +186,9 @@ FileName: "{app}\ReadMe.htm"; \
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\context"
+
+; The settings, the resume records and the working files, so nothing of
+; HomerDescribe is left behind. Described films and scripts are never touched:
+; they live wherever the user chose to put them.
+Type: filesandordirs; Name: "{localappdata}\HomerDescribe"
 
