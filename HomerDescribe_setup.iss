@@ -104,12 +104,17 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+; Every line below the program itself carries skipifsourcedoesntexist. Only
+; HomerDescribe.exe is genuinely required; a missing document or an empty
+; context folder must not abort a build, and a wildcard matching nothing is a
+; fatal error in Inno unless the line says otherwise.
+;
 ; Both forms of the documentation travel: Markdown for reading in an editor or
 ; on a braille display, and HTML for opening in a browser, which is what the
 ; shortcuts point at.
-Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
@@ -126,7 +131,7 @@ Source: "yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesnte
 
 Source: "installOllama.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installModels.cmd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "context\*.md"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "context\*.md"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 Source: "context\*.htm"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
 [Icons]
@@ -140,13 +145,16 @@ Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{userdocs}"; HotKey: "{#HotKey}"
 
 [Run]
-; The final page. What HomerDescribe needs comes first, then what to do next.
+; Post-install checkboxes shown on the final wizard page. What HomerDescribe
+; needs comes first, then what to do next. All four default to checked; any can
+; be unchecked to skip.
 ;
 ; helpFido leaves its Ollama box unchecked because helpFido works without it.
 ; HomerDescribe does not: with no local model there is nothing to write the
-; descriptions, so these are checked by default -- and each is shown only when
-; it is actually missing, so a machine that already has them is not offered work
-; it does not need.
+; descriptions. Both are shown every time rather than being hidden when already
+; present -- the scripts themselves notice what is installed and say so in a
+; second, and a checkbox that sometimes vanishes is worse than one that
+; occasionally has nothing to do.
 ;
 ; The installs happen here rather than by sending the user to a download page:
 ; winget ships with Windows 10 and 11 and can fetch Ollama unattended.
@@ -156,67 +164,24 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installOllama.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install Ollama, the local AI service HomerDescribe describes with (about 1 GB)"; \
-  Flags: postinstall skipifsilent runascurrentuser; \
-  Check: not ollamaPresent
+  Description: "Install Ollama for local AI (about 1 GB; the service {#AppName} runs its vision model in)"; \
+  Flags: postinstall skipifsilent runascurrentuser
 
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installModels.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install the vision model qwen2.5vl, about 5.5 GB (needs Ollama first)"; \
-  Flags: postinstall skipifsilent runascurrentuser; \
-  Check: not modelPresent
+  Description: "Install the qwen2.5vl vision model (about 5.5 GB; what {#AppName} describes with, needs Ollama)"; \
+  Flags: postinstall skipifsilent runascurrentuser
 
 FileName: "{app}\{#AppExeName}"; \
   WorkingDir: "{userdocs}"; \
-  Description: "Launch {#AppName} now. A desktop shortcut has been created, with the hotkey {#HotKeyDisplay}"; \
+  Description: "Launch {#AppName} now (desktop hotkey: {#HotKeyDisplay})"; \
   Flags: nowait postinstall skipifsilent
 
 FileName: "{app}\ReadMe.htm"; \
-  Description: "Read the documentation for {#AppName}"; \
+  Description: "Read documentation for {#AppName}"; \
   Flags: postinstall shellexec skipifsilent skipifdoesntexist
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\context"
 
-[Code]
-// Whether Ollama and the vision model are already here. Both are worked out
-// once, as the wizard opens, so the final page offers only what is missing.
-// Asking ollama itself is the only reliable way to know about the model, and it
-// costs a fraction of a second with no window shown.
-
-var
-  bOllamaFound: Boolean;
-  bModelFound: Boolean;
-
-procedure InitializeWizard();
-var
-  iResult: Integer;
-  sListPath: String;
-  sList: AnsiString;
-begin
-  bOllamaFound := FileExists(ExpandConstant('{localappdata}\Programs\Ollama\ollama.exe'))
-               or FileExists(ExpandConstant('{autopf}\Ollama\ollama.exe'))
-               or FileExists(ExpandConstant('{userpf}\Ollama\ollama.exe'));
-  bModelFound := False;
-  sListPath := ExpandConstant('{tmp}\ollamaModels.txt');
-  if Exec(ExpandConstant('{cmd}'), '/c ollama list > "' + sListPath + '" 2>&1', '', SW_HIDE, ewWaitUntilTerminated, iResult) then
-  begin
-    if LoadStringFromFile(sListPath, sList) then
-    begin
-      if Pos('qwen2.5vl', Lowercase(String(sList))) > 0 then bModelFound := True;
-      if Pos('ollama', Lowercase(String(sList))) > 0 then bOllamaFound := True;
-      if bModelFound then bOllamaFound := True;
-    end;
-  end;
-end;
-
-function ollamaPresent(): Boolean;
-begin
-  Result := bOllamaFound;
-end;
-
-function modelPresent(): Boolean;
-begin
-  Result := bModelFound;
-end;

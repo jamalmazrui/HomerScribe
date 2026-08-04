@@ -149,6 +149,7 @@ echo UI Automation: !uiaProv!>> "%log%"
 rem ---- the installer's helper scripts --------------------------------
 if not exist "installOllama.cmd" echo WARN: installOllama.cmd is missing; the installer's Ollama checkbox will not work.>> "%log%"
 if not exist "installModels.cmd" echo WARN: installModels.cmd is missing; the installer's model checkbox will not work.>> "%log%"
+if not exist "context\*.md" echo NOTE: the context folder holds no .md example. The installer skips it.>> "%log%"
 
 rem ---- the companion programs the installer packages -------------------
 rem ffmpeg does the video and audio work; yt-dlp fetches video from a web
@@ -192,7 +193,17 @@ if errorlevel 1 (
 if exist "ffmpeg.exe" echo ffmpeg.exe is present>> "%log%"
 if not exist "ffmpeg.exe" echo WARN: ffmpeg.exe is absent; the installer will not package it.>> "%log%"
 
-if exist "yt-dlp.exe" goto :haveYtDlp
+rem yt-dlp goes stale quickly: YouTube changes how it serves video every few
+rem weeks and an older copy simply stops working. A copy more than thirty days
+rem old is replaced rather than packaged.
+if not exist "yt-dlp.exe" goto :fetchYtDlp
+forfiles /p . /m yt-dlp.exe /d -30 >nul 2>&1
+if errorlevel 1 goto :haveYtDlp
+echo yt-dlp.exe is over thirty days old; fetching a current one.
+echo yt-dlp.exe is over thirty days old; replacing it>> "%log%"
+del /q "yt-dlp.exe"
+
+:fetchYtDlp
 echo Fetching yt-dlp.
 echo Fetching yt-dlp>> "%log%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -209,6 +220,7 @@ if errorlevel 1 (
 )
 :haveYtDlp
 if exist "yt-dlp.exe" echo yt-dlp.exe is present>> "%log%"
+if exist "yt-dlp.exe" yt-dlp.exe --version >> "%log%" 2>&1
 
 rem ---- JSON -----------------------------------------------------------
 rem No JSON package is fetched, because none is needed. HomerDescribe reads and
