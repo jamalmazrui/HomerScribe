@@ -73,6 +73,7 @@ namespace Homer
     public class HomerDescribe
     {
         const int iNothingToDo = 2;
+        const int iAlreadyDone = 3;
         const int iDefaultCompare = 10;
         const int iDefaultNames = 12;
         const int iDefaultRecent = 2;
@@ -576,6 +577,7 @@ namespace Homer
 
         static void logEnvironment()
         {
+            logMessage("HomerDescribe " + version() + " starting", "INFO", "HomerDescribe " + version());
             logMessage("Program: " + System.Reflection.Assembly.GetExecutingAssembly().Location, "INFO", "");
             logMessage("Framework: " + Environment.Version.ToString(), "INFO", "");
             logMessage("Platform: " + Environment.OSVersion.ToString() + ", 64 bit process: " + Environment.Is64BitProcess.ToString(), "INFO", "");
@@ -649,6 +651,7 @@ namespace Homer
 
         static bool bBoxes = false;
         static bool bGuiMode = false;
+        static string sLastSkippedFolder = "";
 
         static void showTimedBox(string sCaption, string sBody)
         {
@@ -1215,8 +1218,10 @@ namespace Homer
                 oPrompt.Append("\n\n");
             }
             oPrompt.Append("The observer's notes:\n" + sSeen + "\n\n");
-            oPrompt.Append("Write that as audio description, in no more than " + iMaxWords.ToString() + " words. ");
-            oPrompt.Append("Keep who is there, what they do, and where. Drop everything else before going over the limit. ");
+            oPrompt.Append("Write that as audio description. HARD LIMIT: " + iMaxWords.ToString() + " words. ");
+            oPrompt.Append("Count them. A longer answer is worse than a shorter one, because it will be spoken over the dialogue. ");
+            oPrompt.Append("Keep who is there, what they do, and where they are. Drop scenery, clothing, light and weather before going over the limit. ");
+            oPrompt.Append("One sentence is usually enough; two at most. ");
             oPrompt.Append("If the notes hold nothing a blind viewer would need, answer SKIP.");
             Dictionary<string, object> dOptions = new Dictionary<string, object>();
             dOptions["temperature"] = 0.2;
@@ -1452,6 +1457,27 @@ namespace Homer
                 iCount = iCount + iWords;
             }
             return string.Join(" ", lKept.ToArray());
+        }
+
+        // Remove the last comma or semicolon clause, leaving what is still a
+        // sentence. Refuses when the result would be too short to say anything,
+        // or would end on a word that needs something after it.
+        static string dropLastClause(string sText)
+        {
+            string sBody = sText.TrimEnd('.', '!', '?', ' ');
+            int iComma = sBody.LastIndexOf(", ");
+            int iSemi = sBody.LastIndexOf("; ");
+            int iCut = Math.Max(iComma, iSemi);
+            if (iCut < 0) return sText;
+            string sShort = sBody.Substring(0, iCut).TrimEnd(',', ';', ' ');
+            sShort = Regex.Replace(sShort, @"\s+\b(and|but|or|nor|yet|so|with|without|from|to|into|onto|as|while|when|where|which|who|whom|that|before|after|under|over|beside|behind|beneath|toward|towards|through|across|against|between|among|near|amid|amidst)\s*$", "", RegexOptions.IgnoreCase);
+            if (sShort.Split(' ').Length < 4) return sText;
+            // A sentence that opens with a place or a time -- "At an ancient
+            // site near water, shadows stretch across the stones" -- must not be
+            // cut back to that opening, which leaves a phrase and no sentence.
+            // If nothing but the opening phrase would remain, leave it alone.
+            if (sShort.IndexOf(',') < 0 && Regex.IsMatch(sShort, @"^(at|in|on|under|over|near|beside|behind|above|below|along|across|through|beyond|within|outside|inside|amid|amidst|among|between|during|after|before|by|with|from|against|toward|towards|beneath)\b", RegexOptions.IgnoreCase)) return sText;
+            return sShort + ".";
         }
 
         static string dropLastSentence(string sText)
@@ -2419,6 +2445,9 @@ namespace Homer
             }
             int iWorst = 0;
             int iAt = 0;
+            int iSkippedWhole = 0;
+            int iDescribedWhole = 0;
+            sLastSkippedFolder = "";
             foreach (string sSource in lSources)
             {
                 iAt = iAt + 1;
@@ -2459,8 +2488,31 @@ namespace Homer
                     string sBase = text("output-dir");
                     if (sBase == "") sBase = Path.GetDirectoryName(sFull);
                 }
-                if (iOne != 0) iWorst = iOne;
+                if (iOne == iAlreadyDone) iSkippedWhole = iSkippedWhole + 1;
+                if (iOne == 0) iDescribedWhole = iDescribedWhole + 1;
+                if (iOne != 0 && iOne != iAlreadyDone) iWorst = iOne;
             }
+            // Every one of them was already done. That is not a failure, but it
+            // is not a result either, and a run that ends without a word looks
+            // like a program that did not start.
+            if (iDescribedWhole == 0 && iSkippedWhole > 0)
+            {
+                string sSaid = iSkippedWhole == 1
+                    ? "That video has already been described, so there was nothing to do."
+                    : "All " + iSkippedWhole.ToString() + " of those videos have already been described, so there was nothing to do.";
+                sSaid = sSaid + Environment.NewLine + Environment.NewLine
+                      + (bGuiMode ? "Tick Force overwrite to describe them again." : "Pass --force to describe them again.");
+                logMessage(sSaid.Replace(Environment.NewLine, " "), "INFO", bGuiMode ? "" : sSaid);
+                if (bGuiMode && MessageBox.Show(sSaid + Environment.NewLine + Environment.NewLine
+                        + "Open the folder holding what was described before?",
+                        "HomerDescribe", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                {
+                    showFolder(sLastSkippedFolder);
+                }
+                return iNothingToDo;
+            }
+            if (iSkippedWhole > 0) logMessage(iSkippedWhole.ToString() + " already described and skipped; " + iDescribedWhole.ToString() + " described.",
+                                              "INFO", iSkippedWhole.ToString() + " already described and skipped.");
             return iWorst;
         }
 
@@ -2520,9 +2572,11 @@ namespace Homer
             if (File.Exists(Path.Combine(workFolderFor(sInput), sDefaultJsonName))) readCache(Path.Combine(workFolderFor(sInput), sDefaultJsonName));
             if (File.Exists(sFilmPath) && bLastCacheFinished && !flag("force"))
             {
-                logMessage("Skipping " + sRoot + ": " + sFilmPath + " already exists. Tick Force overwrite to describe it again.",
+                sLastSkippedFolder = sOutputDir;
+                logMessage("Skipping " + sRoot + ": " + sFilmPath + " already exists. "
+                           + (bGuiMode ? "Tick Force overwrite to describe it again." : "Pass --force to describe it again."),
                            "INFO", "Skipping " + sRoot + ", already described.");
-                return 0;
+                return iAlreadyDone;
             }
             if (Directory.Exists(sOutputDir) && !flag("force"))
             {
@@ -2734,6 +2788,35 @@ namespace Homer
                     sText = dropLastSentence(sText);
                     binAudio = speakToPcm(sText, iRate);
                 }
+                // Still too long, and it is one sentence, so dropping sentences
+                // cannot help. Shorten it at clause boundaries instead: a
+                // description of this kind opens with a main clause and hangs
+                // detail off it in commas, so cutting the last comma clause
+                // leaves a sentence rather than a fragment. Words are never cut
+                // off the end -- "A man stands on a hilltop under bright" is
+                // worse than a description that runs a second long.
+                while (pcmSeconds(binAudio) > nAllowed)
+                {
+                    string sShorter = dropLastClause(sText);
+                    if (sShorter == sText) break;
+                    sText = sShorter;
+                    binAudio = speakToPcm(sText, iRate);
+                }
+                // No clauses left to drop. Ask the model to say it again in
+                // fewer words, which is the only way left to shorten it and
+                // still have it read as English.
+                if (pcmSeconds(binAudio) > nAllowed && flag("summarise"))
+                {
+                    int iRoom = Math.Max(6, (int)(nAllowed * number("words-per-second") * 0.8));
+                    string sTighter = summarise(sText, iRoom, new List<string>());
+                    if (sTighter != "" && sTighter.Split(' ').Length < sText.Split(' ').Length)
+                    {
+                        logMessage("Asked again in " + iRoom.ToString() + " words or fewer, to fit the gap.", "INFO", "");
+                        sText = sTighter;
+                        binAudio = speakToPcm(sText, iRate);
+                    }
+                }
+                if (pcmSeconds(binAudio) > nAllowed) logMessage("This description still runs " + num(pcmSeconds(binAudio) - nAllowed) + "s past what the gap allows: " + sText, "INFO", "");
                 oGap.sText = sText;
                 oGap.binAudio = binAudio;
                 oGap.nSpoken = pcmSeconds(binAudio);
