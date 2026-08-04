@@ -1,0 +1,28 @@
+# Build products that are not committed
+Version.cs
+*.log
+*.obj
+*.pdb
+
+# Maintainer scripts, not part of the distribution
+tagRelease.*
+createHomerDescribeRepo.cmd
+createHomerDescribeRepo.ps1
+createHomerDescribeRepo.log
+
+# Results of describing a film
+*_described/
+*_sample/
+work/
+
+# Companion programs. The installer packages them from this folder when they
+# are here, but they are far too large to belong in the repository.
+ffmpeg.exe
+ffprobe.exe
+ffplay.exe
+yt-dlp.exe
+youtube-dl.exe
+
+# Editor and system clutter
+Thumbs.db
+desktop.ini

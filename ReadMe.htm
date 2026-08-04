@@ -1,0 +1,553 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>HomerDescribe — Read Me</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
+  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  code, pre { font-family: Consolas, monospace; }
+  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">HomerDescribe — Read Me</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#homerdescribe" id="toc-homerdescribe">HomerDescribe</a>
+<ul>
+<li><a href="#what-you-need" id="toc-what-you-need">What you
+need</a></li>
+<li><a href="#getting-started" id="toc-getting-started">Getting
+started</a></li>
+<li><a href="#what-it-writes" id="toc-what-it-writes">What it
+writes</a></li>
+<li><a href="#telling-it-about-the-film"
+id="toc-telling-it-about-the-film">Telling it about the film</a></li>
+<li><a href="#settings" id="toc-settings">Settings</a></li>
+<li><a href="#building" id="toc-building">Building</a></li>
+<li><a href="#documentation-in-two-forms"
+id="toc-documentation-in-two-forms">Documentation in two forms</a></li>
+<li><a href="#versions-and-releases"
+id="toc-versions-and-releases">Versions and releases</a></li>
+<li><a href="#the-dialog" id="toc-the-dialog">The dialog</a></li>
+<li><a href="#spoken-status-while-it-runs"
+id="toc-spoken-status-while-it-runs">Spoken status while it
+runs</a></li>
+<li><a href="#configuration"
+id="toc-configuration">Configuration</a></li>
+<li><a href="#the-prototype" id="toc-the-prototype">The
+prototype</a></li>
+<li><a href="#where-the-rules-come-from"
+id="toc-where-the-rules-come-from">Where the rules come from</a></li>
+<li><a href="#honest-limits" id="toc-honest-limits">Honest
+limits</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="homerdescribe">HomerDescribe</h1>
+<p>Audio description for local video files, generated on your own
+machine.</p>
+<p>HomerDescribe reads a video file, finds the moments where a
+description can be spoken without covering the dialogue, asks a vision
+model what is on screen, speaks the answer in a built-in Windows voice,
+and writes a described copy of the film with the description as the
+first and default audio track. It also writes the whole description
+script as a Markdown document, which can be read on a braille display by
+someone for whom the spoken track is no use.</p>
+<p>Nothing is uploaded. The model runs locally through Ollama, the
+speech comes from Windows, and the only other program involved is
+ffmpeg.</p>
+<p>HomerDescribe is the latest of the Homer Tools, alongside 2htm,
+extCheck, urlCheck, urlFido, bookFido, HomerView, EdSharp, FileDir and
+DbDo.</p>
+<h2 id="what-you-need">What you need</h2>
+<ul>
+<li><p>Windows 10 or 11, 64 bit. Nothing to install for HomerDescribe
+itself; it is a single executable built against the .NET Framework 4.8
+that ships with Windows.</p></li>
+<li><p>ffmpeg, found beside HomerDescribe.exe, in a folder given with
+<code>--ffmpeg-dir</code>, or on the PATH. Install with
+<code>winget install Gyan.FFmpeg</code>, then open a new console so the
+changed PATH is picked up.</p></li>
+<li><p>Ollama, running, with a vision model installed:</p>
+<pre><code>ollama pull qwen2.5vl:7b</code></pre></li>
+</ul>
+<p><code>buildHomerDescribe.cmd</code> downloads
+<code>ffmpeg.exe</code>, <code>ffprobe.exe</code>, and
+<code>yt-dlp.exe</code> when they are not already in the folder, so a
+fresh clone builds a complete installer without anything being fetched
+by hand. Files already present are left alone, so the download happens
+once.</p>
+<p>The installer then packages them into the program folder, which is
+the first place HomerDescribe looks. Installed that way, nothing else
+has to be set up and nothing has to be on the PATH. If a download fails,
+the build still succeeds and says what to do by hand; HomerDescribe
+falls back to the PATH at run time.</p>
+<p>None of them are committed to the repository —
+<code>ffmpeg.exe</code> alone is far past what a repository should
+carry.</p>
+<p>ffmpeg is taken from BtbN’s LGPL build rather than a GPL one. Both
+work identically here, and the LGPL build carries lighter obligations
+when the installer is redistributed. See <code>License.md</code>.</p>
+<p>On the two downloaders: use <strong>yt-dlp</strong>, and delete
+<code>youtube-dl.exe</code>. youtube-dl is the original and is now
+barely maintained, with many broken extractors; Debian replaced it with
+an empty package that simply depends on yt-dlp. yt-dlp is the actively
+developed fork, releasing most weeks. HomerDescribe looks only for
+yt-dlp.</p>
+<h2 id="getting-started">Getting started</h2>
+<p>The installer offers to do both of those on its final page, and
+offers each only when it is actually missing: as the wizard opens it
+asks ollama what it holds, so a machine that already has the model is
+not offered the download again. Both boxes are checked when they do
+appear, because without them there is nothing to write the descriptions.
+<code>installOllama.cmd</code> and <code>installModels.cmd</code> stay
+in the program folder, so either can be run again later.</p>
+<p>Only one model is needed, and it must be a <strong>vision</strong>
+model — one that can be shown a picture. <code>qwen2.5vl:7b</code> is
+the default. A text-only model such as <code>llama3.2</code> cannot see
+the frame at all, so having one installed does not help.
+<code>installModels.cmd</code> accepts other names if you want to
+compare: <code>installModels.cmd qwen2.5vl:3b gemma3:4b</code>.</p>
+<p>Check that everything is in place:</p>
+<pre><code>HomerDescribe &quot;video.mkv&quot; --check</code></pre>
+<p>Hear which voices are available, then choose one:</p>
+<pre><code>HomerDescribe --list-voices
+HomerDescribe &quot;video.mkv&quot; --voice &quot;Microsoft Zira Desktop&quot;</code></pre>
+<p>Describe five minutes from a stretch well into the film, which tests
+the result better than opening credits:</p>
+<pre><code>HomerDescribe &quot;video.mkv&quot; --begin 00:22:30 --minutes 5</code></pre>
+<p>Describe the whole film:</p>
+<pre><code>HomerDescribe &quot;video.mkv&quot;</code></pre>
+<p>Describe several things at once, mixing files and web addresses:</p>
+<pre><code>HomerDescribe &quot;first.mkv&quot; &quot;second film.mp4&quot; https://www.youtube.com/watch?v=...</code></pre>
+<p>Each source is handled in turn. A web address is downloaded first,
+into the output directory, or into a <code>downloads</code> folder
+beside the program when no output directory is given, and then described
+like any other file.</p>
+<p>The download is done by yt-dlp rather than by HomerDescribe itself,
+and that is a deliberate choice rather than a shortcut. Getting a video
+out of YouTube is not a matter of reading a page: the addresses are
+signed by obfuscated JavaScript that has to be executed, the signing
+changes without notice, and formats are negotiated per video. yt-dlp
+tracks all of that and is updated most weeks. Code inside HomerDescribe
+doing the same job would be a maintenance burden with nothing to do with
+audio description, and it would fail silently one Tuesday when YouTube
+changed something. Calling the program that already solves the problem
+is the smaller dependency.</p>
+<p>HomerDescribe finds yt-dlp beside itself or on the PATH, tells it
+where ffmpeg is so the separate video and audio streams merge, asks for
+plain ASCII filenames so later steps are not tripped by punctuation in a
+title, and reports download progress as it goes.</p>
+<p>Or open the dialog, which is what happens when the program is started
+with nothing on the command line at all – from the Start menu, a desktop
+shortcut, or just its name:</p>
+<pre><code>HomerDescribe</code></pre>
+<p><code>--gui</code> forces the dialog even when arguments were given.
+Any argument without <code>--gui</code> means a command line run.</p>
+<p>Stop it at any time. Run the same command again and it carries on
+from where it left off, reusing both the descriptions and the speech
+already made.</p>
+<h2 id="what-it-writes">What it writes</h2>
+<p>Results go to a folder named after the video with
+<code>_described</code> appended:</p>
+<ul>
+<li><code>described.mkv</code> — the film with the description as the
+first, default audio track and the original audio as the second. Any
+player selects the described track without you doing anything.</li>
+<li><code>description.md</code> — the whole script as a readable
+document, grouped into ten-minute sections with each entry timed from
+the start of the film.</li>
+<li><code>description.vtt</code> — the same text as timed captions.</li>
+<li><code>description.wav</code> — the description track on its own, to
+play alongside the original in a player such as mpv.</li>
+<li><code>description.json</code> — the machine-readable record used to
+resume a run.</li>
+</ul>
+<p><code>HomerDescribe.log</code> is written beside the program, not
+beside the video. It holds the full detail: environment, every effective
+setting, every command with its exit code, and any error. The console
+shows only what was actually put into the film, each description
+prefixed by its position, as <code>2:14</code> or
+<code>1:37:52</code>.</p>
+<h2 id="telling-it-about-the-film">Telling it about the film</h2>
+<p>A description is far better when the model knows what it is watching.
+Put the film’s characters, setting and story in a text file and point at
+it:</p>
+<pre><code>HomerDescribe &quot;video.mkv&quot; --context-file context\The_Odyssey.md</code></pre>
+<p><code>context\The_Odyssey.md</code> is supplied as a worked example.
+Without it the model writes “a man in a boat”; with it, “Odysseus”. Keep
+such a file to a few hundred words, because it is sent with every single
+request.</p>
+<h2 id="settings">Settings</h2>
+<p>Every setting has a long form and a short form. The long form is the
+command line parameter and, in the dialog, the label. The short form is
+the command line letter and, in the dialog, the trigger letter. Run
+<code>HomerDescribe --help</code> for the full list with current
+values.</p>
+<p>The ones that matter most:</p>
+<ul>
+<li><code>--detail brief|normal|rich</code> — how much is said at each
+moment.</li>
+<li><code>--every</code> — guarantees a description at least this often,
+in seconds, even over music. A scored film has almost no true silence,
+so this does most of the work.</li>
+<li><code>--noise-floor</code> — the level below which sound counts as a
+gap. Raise it toward -16 if too few natural gaps are found, lower it
+toward -40 if descriptions land on quiet dialogue.</li>
+<li><code>--crop-bottom</code> — percentage cut off the bottom of each
+frame before the model sees it, which is how burnt-in subtitles are kept
+out of the description.</li>
+<li><code>--ad-volume</code> — loudness of the description against the
+film. Below 1 sits it just under normal dialogue level, with the film
+ducking beneath it.</li>
+<li><code>--similarity</code> and <code>--same-shot</code> — how hard it
+works to avoid saying the same thing twice. A vision model asked about a
+static shot will repeat itself endlessly if left alone.</li>
+</ul>
+<p>Four short forms are exceptions to the rule that the letter is the
+first character of a word, because the natural letters were already
+taken: <code>--every</code> is <code>-y</code>,
+<code>--forced-length</code> is <code>-z</code>,
+<code>--dialogue-channel</code> is <code>-D</code>, and
+<code>--same-shot</code> is <code>-h</code>.</p>
+<h2 id="building">Building</h2>
+<p>Everything is in one folder. <code>buildHomerDescribe.cmd</code>
+compiles every <code>.cs</code> file present into a single 64-bit
+executable, then builds the installer if Inno Setup is found:</p>
+<pre><code>buildHomerDescribe.cmd</code></pre>
+<p>It writes <code>buildHomerDescribe.log</code> beside itself,
+recording the version, the compiler used, and the full compiler
+output.</p>
+<p>The shared Homer modules — <code>Lbc.cs</code>, <code>Say.cs</code>,
+<code>Inix.cs</code>, <code>Util.cs</code>, <code>Web.cs</code> — are
+already here, copied unmodified from urlFido so that improvements to
+them keep porting between tools. They compile into the same assembly, so
+the result is still a single self-contained executable.</p>
+<p>No JSON package is downloaded, because none is needed: HomerDescribe
+reads and writes JSON with <code>JavaScriptSerializer</code> from
+<code>System.Web.Extensions</code>, part of the .NET Framework itself.
+DbDo fetches Newtonsoft.Json because it needs what Newtonsoft does that
+the built-in serializer cannot; nothing here does. Staying with the
+built-in one is also what keeps <code>HomerDescribe.exe</code> a single
+file with no DLL beside it.</p>
+<p>Three assemblies are not on the compiler’s default reference path and
+are found by full path: <code>System.Speech.dll</code> for the voices,
+and <code>UIAutomationProvider.dll</code> and
+<code>UIAutomationTypes.dll</code> for the Narrator notification events
+raised by <code>Say.cs</code>. If any is missing, install the .NET
+Framework 4.8 Developer Pack.</p>
+<h2 id="documentation-in-two-forms">Documentation in two forms</h2>
+<p>Every document ships as both <code>.md</code> and <code>.htm</code>.
+The Markdown is the source, and is the better form for reading in an
+editor or on a braille display; the HTML is what the Start menu shortcut
+and the installer’s last checkbox open.
+<code>buildHomerDescribe.cmd</code> regenerates the <code>.htm</code>
+files with 2htm when it can find it, and otherwise leaves the ones
+already present alone.</p>
+<h2 id="versions-and-releases">Versions and releases</h2>
+<p>The version lives in exactly one place: <code>version.txt</code>, one
+line and nothing else. This is the pattern DbDo and bookFido use, and it
+is the best of the four approaches across the Homer Tools, because no
+version literal appears in any other file and so a stale copy of a file
+cannot rewind the number.</p>
+<p>From there it flows outward:</p>
+<ol type="1">
+<li><code>buildHomerDescribe.cmd</code> increments it, then generates
+<code>Version.cs</code> holding <code>BuildVersion.Version</code>, so
+the program reports it through <code>--help</code>.</li>
+<li><code>HomerDescribe_setup.iss</code> reads <code>version.txt</code>
+at compile time through <code>FileOpen</code> and <code>FileRead</code>,
+and writes it into the version resource of
+<code>HomerDescribe_setup.exe</code> through
+<code>VersionInfoVersion</code> and <code>VersionInfoTextVersion</code>.
+The text form is set explicitly because tagRelease reads the FileVersion
+<em>string</em>, and a tag of <code>v1.0.0</code> is wanted rather than
+<code>v1.0.0.0</code>.</li>
+<li><code>tagRelease</code> reads that FileVersion, forms the tag, and
+posts <code>HomerDescribe_setup.exe</code>, whose name it takes from
+<code>OutputBaseFilename</code>.</li>
+</ol>
+<p>So a release is: run <code>buildHomerDescribe.cmd</code>, commit, run
+<code>tagRelease</code>. The program, the installer, and the tag can
+never disagree.</p>
+<p><code>Version.cs</code> is generated output. It is in
+<code>.gitignore</code> and should not be edited or committed.</p>
+<p>The first build increments 1.0.0 to 1.0.1. To release 1.0.0 itself,
+build once with <code>buildHomerDescribe.cmd nobump</code>.</p>
+<h2 id="the-dialog">The dialog</h2>
+<p><code>--gui</code> opens a dialog built with <code>Lbc.cs</code>, the
+shared layout-by-code module used by DbDo, EdSharp, FileDir and urlFido.
+It carries the standard controls:</p>
+<ul>
+<li><strong>&amp;Source paths</strong> with <strong>&amp;Browse
+source…</strong></li>
+<li><strong>&amp;Output directory</strong> with <strong>&amp;Choose
+output…</strong></li>
+<li><strong>&amp;Force overwrite</strong>, <strong>&amp;Log
+session</strong>, <strong>&amp;Use configuration</strong></li>
+<li>OK and Cancel, with Help supplied by LbcDialog itself</li>
+</ul>
+<p>OK and Cancel carry no mnemonic, as Windows convention requires:
+Escape cancels, Enter accepts, and Control plus Enter accepts from any
+control.</p>
+<p>The remaining settings stay on the command line for now. Say which of
+them you want as controls and where, and they go in.</p>
+<h2 id="spoken-status-while-it-runs">Spoken status while it runs</h2>
+<p>When the dialog was used, each description is also shown in a timed
+message box, the technique bookFido uses: a screen reader speaks a
+window that is genuinely activated, without being asked, and the box
+closes itself so nothing has to be dismissed. The caption carries the
+position in the film, and the body carries the description that was just
+embedded. Each time the whole percentage through the film changes, the
+caption says so too.</p>
+<p><code>--boxes</code> and <code>--boxes=no</code> force this on or off
+regardless of how the program was started. From the command line it is
+off by default, since every description is already printed there.</p>
+<h2 id="configuration">Configuration</h2>
+<p><code>--use-configuration</code> loads settings from
+<code>HomerDescribe.ini</code> beside the program at startup, and saves
+them when the dialog is accepted. In dialog mode the file is loaded
+automatically when it exists, so the dialog opens showing last time’s
+answers. Anything given on the command line wins over the file. The file
+is written by <code>Inix.cs</code>, the shared Homer ini codec, so hand
+edits and comments survive a round trip.</p>
+<h2 id="the-prototype">The prototype</h2>
+<p><code>prototype\describeMovie.py</code> is the Python program this
+was grown from, and it still works. It is the reference implementation:
+quicker to change when trying a new prompt, and useful for checking that
+a change in behaviour is deliberate. It is not needed to run
+HomerDescribe.</p>
+<h2 id="where-the-rules-come-from">Where the rules come from</h2>
+<p>The prompt is not a set of preferences I invented. It follows the
+published guidance for audio description: the American Council of the
+Blind’s Audio Description Project guidelines and standards, and the
+Audio Description Coalition’s standards for describers. The rules that a
+machine describer can actually be held to are these.</p>
+<ul>
+<li><strong>Report, do not interpret.</strong> A describer says what is
+visible and lets the listener draw the conclusion. Not “he is furious”
+but “he clenches his fist”; not “the atmosphere is tense” but whatever
+on screen made you think so. This is the rule earlier versions broke
+most often, and HomerDescribe now checks its own output for judging
+words and asks again when it finds one. <code>--objective no</code>
+turns the check off.</li>
+<li><strong>Establish the place first when the scene changes.</strong>
+General to specific: “In the palace hall, Penelope sits at her loom.”
+HomerDescribe already compares each moment’s picture with the last one;
+when the picture has changed enough to be a new scene, the model is told
+so and asked to begin with where we are.</li>
+<li><strong>Present tense, active voice, third person</strong>, and the
+exact verb rather than a vague one with an adverb bolted on.</li>
+<li><strong>No filmmaking vocabulary.</strong> No camera, no shots, no
+cuts. The whale lunges forward; it does not swim toward the camera.</li>
+<li><strong>Do not run ahead of the film.</strong> Relationships,
+disguises and outcomes belong to the filmmaker to reveal. This one
+matters here more than it would for a human describer, because the
+context file hands the model the whole plot: without the rule it could
+name a character the film has not identified yet, or give away an
+ending. The prompt now says plainly that the background is for names and
+vocabulary, not for anticipating the story.</li>
+<li><strong>Read words that carry meaning</strong> – signs, letters,
+titles – introduced as “Words appear:”, while ignoring translation
+subtitles.</li>
+<li><strong>Name a logo once</strong>, plainly, and never again.</li>
+</ul>
+<p>Two points from the standards are deliberately left to you rather
+than built in.</p>
+<p>The standards say a describer must not censor: nudity, violence and
+sexual content are described as objectively as anything else, because
+the listener has the same right to that information as a sighted viewer.
+A local model may refuse or soften such material of its own accord.
+HomerDescribe does not fight it, and you should know that is a gap
+rather than a policy.</p>
+<p>The standards also say that when race, ethnicity or nationality is
+something a sighted viewer would perceive, the listener should be given
+it too, since withholding it leaves them with less than everyone else in
+the room. Whether and how to ask a model for that is a judgement for the
+publisher, so it is not in the prompt. If you want it, the natural place
+is the context file, which is read verbatim and sits in front of every
+request.</p>
+<h2 id="honest-limits">Honest limits</h2>
+<ul>
+<li>The model sees still frames, not motion. Four frames tiled in time
+order give it some sense of change, but fast action is missed.</li>
+<li>Memory across moments is short, so recurring characters are
+described afresh unless the context file names them.</li>
+<li>Descriptions are written without knowing what was just said, so they
+sometimes restate the dialogue. A transcript pass would fix this and is
+not built yet.</li>
+<li>The standards ask for consistent vocabulary across a whole
+production. Each moment is written knowing only the last two
+descriptions and the context file, so consistency rests on the context
+file naming things once and clearly.</li>
+<li>A seven-billion-parameter local model gives useful orientation
+rather than literary description. It is a real improvement over nothing,
+and a real step below professional description.</li>
+</ul>
+</body>
+</html>
