@@ -1,7 +1,5 @@
-# Generated at build time; never edited, never committed.
+# Build products that are not committed
 Version.cs
-
-# Logs, from the build, from runs, and from the repository script.
 *.log
 *.obj
 *.pdb
@@ -12,13 +10,10 @@ createHomerDescribeRepo.cmd
 createHomerDescribeRepo.ps1
 createHomerDescribeRepo.log
 
-# Results of describing a film. Each video gets a folder of its own named after
-# it, so nothing here can be matched by a pattern; keep results out of the
-# repository by describing into a folder outside it.
+# Results of describing a film
+*_described/
+*_sample/
 work/
-
-# The settings file and the working files live under %LOCALAPPDATA%\HomerDescribe
-# and never appear here.
 
 # Companion programs. The installer packages them from this folder when they
 # are here, but they are far too large to belong in the repository.
