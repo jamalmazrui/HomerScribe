@@ -2,18 +2,43 @@
 
 Audio description for local video files, generated on your own machine.
 
-HomerDescribe reads a video file, finds the moments where a description can be
-spoken without covering the dialogue, asks a vision model what is on screen,
-speaks the answer in a built-in Windows voice, and writes a described copy of the
-film with the description as the first and default audio track. It also writes
-the whole description script as a Markdown document, which can be read on a
-braille display by someone for whom the spoken track is no use.
+Blind and low vision viewers miss what happens on screen when a film has no
+audio description, and most films have none. HomerDescribe makes one. It finds
+the pauses where a description can be spoken, asks a vision model what is
+happening, speaks it in a Windows voice, and writes a copy of the film with the
+description as its first audio track. It also writes the whole script as a
+document, which can be read on a braille display by someone for whom the spoken
+track is no use at all.
 
 Nothing is uploaded. The model runs locally through Ollama, the speech comes from
-Windows, and the only other program involved is ffmpeg.
+Windows, and the only other programs involved are ffmpeg and, for web addresses,
+yt-dlp.
 
-HomerDescribe is the latest of the Homer Tools, alongside 2htm, extCheck,
-urlCheck, urlFido, bookFido, HomerView, EdSharp, FileDir and DbDo.
+HomerDescribe is one of the Homer Tools, alongside 2htm, extCheck, urlCheck,
+urlFido, bookFido, HomerView, EdSharp, FileDir and DbDo.
+
+`Developer.md` describes what the program is built from, how the parts interact,
+and how to rebuild it.
+
+## Quick start
+
+1. Install HomerDescribe. On the last page of the installer, leave the Ollama and
+   vision model boxes ticked; together they are about six and a half gigabytes and
+   take a while.
+2. Run HomerDescribe with nothing on the command line. The dialog opens.
+3. Choose a video with **Browse source**.
+4. Press OK.
+
+You will hear each description as it is made. When it finishes you have a folder
+holding `described.mkv` and `described.md`.
+
+Before committing to a feature film, describe five minutes of it:
+
+    HomerDescribe "film.mkv" --begin 00:22:30 --minutes 5
+
+Pick a stretch well into the film rather than the opening credits, and listen to
+whether the voice is bearable over five minutes. If it tires you there, it will
+be unbearable over two hours.
 
 ## What you need
 
@@ -51,8 +76,10 @@ yt-dlp.
 
 ## Getting started
 
-The installer offers to do both of those on its final page, checked by default,
-because without them there is nothing to write the descriptions. Each script
+The installer offers to do both of those on its final page, ticked, because
+without them there is nothing to write the descriptions. (Those are the
+installer's own boxes; the checkboxes in HomerDescribe's dialog all start
+unticked.) Each script
 notices in a second when its work is already done and says so, so ticking them on
 a machine that is already set up costs nothing. `installOllama.cmd` and
 `installModels.cmd` stay in the program folder, so either can be run again later.
@@ -133,24 +160,6 @@ just its name:
 Stop it at any time. Run the same command again and it carries on from where it
 left off, reusing both the descriptions and the speech already made.
 
-## Where it looks and where it writes
-
-HomerDescribe uses the folders Windows nominates rather than whatever directory
-it happened to be started from. Starting in the program's own folder is how a
-tool ends up dropping results among its own source files.
-
-- **Browse source** opens in your **Videos** folder, unless the Source paths box
-  already holds a path, in which case it opens there.
-- **Choose output** does the same, and the Output directory box opens already
-  filled with your Videos folder rather than empty.
-- If Videos cannot be found, Documents is used, and only then the current
-  directory.
-
-On the command line the rule is different and deliberate: leaving `--output-dir`
-unset puts each video's folder of results **beside the video itself**, which is
-almost always what is wanted when a path was typed out in full. Clearing the
-Output directory box in the dialog does the same thing.
-
 ## What it writes
 
 Every video gets a folder of its own, named after the video. `video.mkv` gives a
@@ -179,6 +188,9 @@ a measured sample, and far quicker to make, since nothing has to be copied. When
 the picture is of no use to the listener, this is the sensible output — and it
 plays on anything, including a phone or a DAISY player. `--audio-only` on the
 command line.
+
+If nothing matches what was typed in **Source paths**, the dialog comes back with
+the text still in it, so a mistyped path can be corrected rather than retyped.
 
 **View output** opens the results folder when a run finishes, with the described
 film selected, so it does not have to be hunted for. `--view-output no` turns it
@@ -213,6 +225,24 @@ the full detail: environment, every effective setting, every command with its
 exit code, and any error. The console shows only what was actually put into the
 film, each description prefixed by its position, as `2:14` or `1:37:52`.
 
+## Where it looks and where it writes
+
+HomerDescribe uses the folders Windows nominates rather than whatever directory
+it happened to be started from. Starting in the program's own folder is how a
+tool ends up dropping results among its own source files.
+
+- **Browse source** opens in your **Videos** folder, unless the Source paths box
+  already holds a path, in which case it opens there.
+- **Choose output** does the same, and the Output directory box opens already
+  filled with your Videos folder rather than empty.
+- If Videos cannot be found, Documents is used, and only then the current
+  directory.
+
+On the command line the rule is different and deliberate: leaving `--output-dir`
+unset puts each video's folder of results **beside the video itself**, which is
+almost always what is wanted when a path was typed out in full. Clearing the
+Output directory box in the dialog does the same thing.
+
 ## Telling it about the film
 
 A description is far better when the model knows what it is watching. Without
@@ -233,6 +263,24 @@ length costs time on every description.
 
 If no context file is found, HomerDescribe says so plainly at the start of the
 run rather than quietly producing nameless descriptions.
+
+## The dialog
+
+`--gui` opens a dialog built with `Lbc.cs`, the shared layout-by-code module used
+by DbDo, EdSharp, FileDir and urlFido. It carries the standard controls:
+
+- **&Source paths** with **&Browse source...**
+- **&Output directory** with **&Choose output...**
+- **&Force overwrite**, **&Log session**, **&Use configuration**, **&Audio only**,
+  **&View output** — all unticked when the dialog opens, as in the other Homer
+  Tools
+- OK and Cancel, with Help supplied by LbcDialog itself
+
+OK and Cancel carry no mnemonic, as Windows convention requires: Escape cancels,
+Enter accepts, and Control plus Enter accepts from any control.
+
+The remaining settings stay on the command line for now. Say which of them you
+want as controls and where, and they go in.
 
 ## Settings
 
@@ -262,96 +310,6 @@ character of a word, because the natural letters were already taken:
 `--every` is `-y`, `--forced-length` is `-z`, `--dialogue-channel` is `-D`, and
 `--same-shot` is `-h`.
 
-## Building
-
-Everything is in one folder. `buildHomerDescribe.cmd` compiles every `.cs` file
-present into a single 64-bit executable, then builds the installer if Inno Setup
-is found:
-
-    buildHomerDescribe.cmd
-
-It writes `buildHomerDescribe.log` beside itself, recording the version, the
-compiler used, and the full compiler output.
-
-The shared Homer modules — `Lbc.cs`, `Say.cs`, `Inix.cs`, `Util.cs`, `Web.cs` —
-are already here, copied unmodified from urlFido so that improvements to them
-keep porting between tools. They compile into the same assembly, so the result is
-still a single self-contained executable.
-
-No JSON package is downloaded, because none is needed: HomerDescribe reads and
-writes JSON with `JavaScriptSerializer` from `System.Web.Extensions`, part of the
-.NET Framework itself. DbDo fetches Newtonsoft.Json because it needs what
-Newtonsoft does that the built-in serializer cannot; nothing here does. Staying
-with the built-in one is also what keeps `HomerDescribe.exe` a single file with
-no DLL beside it.
-
-Three assemblies are not on the compiler's default reference path and are found
-by full path: `System.Speech.dll` for the voices, and `UIAutomationProvider.dll`
-and `UIAutomationTypes.dll` for the Narrator notification events raised by
-`Say.cs`. If any is missing, install the .NET Framework 4.8 Developer Pack.
-
-## Documentation in two forms
-
-Every document ships as both `.md` and `.htm`. The Markdown is the source, and
-is the better form for reading in an editor or on a braille display; the HTML is
-what the Start menu shortcut and the installer's last checkbox open.
-
-The `.htm` files in this folder are ready to use as they are. Each carries
-exactly one level-one heading, a table of contents where the document is long
-enough to want one, and `lang="en"`, so the outline is navigable by heading or by
-link. Nothing needs to be run to produce them.
-
-`buildHomerDescribe.cmd` will regenerate them with 2htm if it finds it, which
-keeps them current when the Markdown changes. When 2htm is absent the build
-leaves the existing files alone, so the documentation cannot fail a build.
-
-## Versions and releases
-
-The version lives in exactly one place: `version.txt`, one line and nothing
-else. This is the pattern DbDo and bookFido use, and it is the best of the four
-approaches across the Homer Tools, because no version literal appears in any
-other file and so a stale copy of a file cannot rewind the number.
-
-From there it flows outward:
-
-1. `buildHomerDescribe.cmd` increments it, then generates `Version.cs` holding
-   `BuildVersion.Version`, so the program reports it through `--help`.
-2. `HomerDescribe_setup.iss` reads `version.txt` at compile time through
-   `FileOpen` and `FileRead`, and writes it into the version resource of
-   `HomerDescribe_setup.exe` through `VersionInfoVersion` and
-   `VersionInfoTextVersion`. The text form is set explicitly because tagRelease
-   reads the FileVersion *string*, and a tag of `v1.0.0` is wanted rather than
-   `v1.0.0.0`.
-3. `tagRelease` reads that FileVersion, forms the tag, and posts
-   `HomerDescribe_setup.exe`, whose name it takes from `OutputBaseFilename`.
-
-So a release is: run `buildHomerDescribe.cmd`, commit, run `tagRelease`. The
-program, the installer, and the tag can never disagree.
-
-`Version.cs` is generated output. It is in `.gitignore` and should not be edited
-or committed.
-
-The first build increments 1.0.0 to 1.0.1. To release 1.0.0 itself, build once
-with `buildHomerDescribe.cmd nobump`.
-
-## The dialog
-
-`--gui` opens a dialog built with `Lbc.cs`, the shared layout-by-code module used
-by DbDo, EdSharp, FileDir and urlFido. It carries the standard controls:
-
-- **&Source paths** with **&Browse source...**
-- **&Output directory** with **&Choose output...**
-- **&Force overwrite**, **&Log session**, **&Use configuration**, **&Audio only**,
-  **&View output** — all unticked when the dialog opens, as in the other Homer
-  Tools
-- OK and Cancel, with Help supplied by LbcDialog itself
-
-OK and Cancel carry no mnemonic, as Windows convention requires: Escape cancels,
-Enter accepts, and Control plus Enter accepts from any control.
-
-The remaining settings stay on the command line for now. Say which of them you
-want as controls and where, and they go in.
-
 ## Spoken status while it runs
 
 When the dialog was used, each description is also shown in a timed message box,
@@ -367,19 +325,37 @@ already printed there.
 
 ## Configuration
 
-`--use-configuration` loads settings from `HomerDescribe.ini` beside the program
-at startup, and saves them when the dialog is accepted. In dialog mode the file
+Uninstalling removes the settings, the resume records and the working files
+along with the program. Described films and scripts are never touched: they live
+wherever you chose to put them.
+
+`--use-configuration` loads settings from `HomerDescribe.ini` at startup and
+saves them when the dialog is accepted. The file lives in
+`%LOCALAPPDATA%\HomerDescribe`, not beside the program: installed, the program
+sits in `C:\Program Files\HomerDescribe`, where an ordinary user cannot write,
+and every save failed there. A file left beside the program by an earlier build
+is still read, but never written. In dialog mode the file
 is loaded automatically when it exists, so the dialog opens showing last time's
 answers. Anything given on the
 command line wins over the file. The file is written by `Inix.cs`, the shared
 Homer ini codec, so hand edits and comments survive a round trip.
 
-## The prototype
+## On subtitles
 
-`prototype\describeMovie.py` is the Python program this was grown from, and it
-still works. It is the reference implementation: quicker to change when trying a
-new prompt, and useful for checking that a change in behaviour is deliberate. It
-is not needed to run HomerDescribe.
+Yes, and by two routes, because one is not enough.
+
+The prompt tells the model that subtitles belong to people who cannot hear, that
+the words in them are already spoken aloud in the film, and that it should
+neither read them nor mention their presence. It distinguishes them from words
+that do carry meaning -- a sign, a letter, a name on a door -- which are worth
+reading and are introduced as "Words appear:".
+
+But a model told to ignore text on screen will often read it anyway, because the
+text is right there in the picture. So `--crop-bottom` removes the lower part of
+every frame before the model ever sees it, twelve percent by default, which is
+where burnt-in subtitles almost always sit. Instruction handles the ones that
+appear elsewhere; cropping handles the ordinary case, and it cannot be talked
+out of.
 
 ## Two stages, not one
 
@@ -437,23 +413,6 @@ repetition penalty, so the model is less inclined to reach for the phrasing it
 used a moment ago. Rejecting a repeat afterwards costs a second call and can
 leave silence; not producing one costs nothing. The model is also held in memory
 between moments, which saves reloading several gigabytes from disk mid-run.
-
-## On subtitles
-
-Yes, and by two routes, because one is not enough.
-
-The prompt tells the model that subtitles belong to people who cannot hear, that
-the words in them are already spoken aloud in the film, and that it should
-neither read them nor mention their presence. It distinguishes them from words
-that do carry meaning -- a sign, a letter, a name on a door -- which are worth
-reading and are introduced as "Words appear:".
-
-But a model told to ignore text on screen will often read it anyway, because the
-text is right there in the picture. So `--crop-bottom` removes the lower part of
-every frame before the model ever sees it, twelve percent by default, which is
-where burnt-in subtitles almost always sit. Instruction handles the ones that
-appear elsewhere; cropping handles the ordinary case, and it cannot be talked
-out of.
 
 ## Where the rules come from
 
@@ -537,3 +496,82 @@ verbatim and sits in front of every request.
 - A seven-billion-parameter local model gives useful orientation rather than
   literary description. It is a real improvement over nothing, and a real step
   below professional description.
+
+## Documentation in two forms
+
+Every document ships as both `.md` and `.htm`. The Markdown is the source, and
+is the better form for reading in an editor or on a braille display; the HTML is
+what the Start menu shortcut and the installer's last checkbox open.
+
+The `.htm` files in this folder are ready to use as they are. Each carries
+exactly one level-one heading, a table of contents where the document is long
+enough to want one, and `lang="en"`, so the outline is navigable by heading or by
+link. Nothing needs to be run to produce them.
+
+`buildHomerDescribe.cmd` will regenerate them with 2htm if it finds it, which
+keeps them current when the Markdown changes. When 2htm is absent the build
+leaves the existing files alone, so the documentation cannot fail a build.
+
+## Building
+
+Everything is in one folder. `buildHomerDescribe.cmd` compiles every `.cs` file
+present into a single 64-bit executable, then builds the installer if Inno Setup
+is found:
+
+    buildHomerDescribe.cmd
+
+It writes `buildHomerDescribe.log` beside itself, recording the version, the
+compiler used, and the full compiler output.
+
+The shared Homer modules — `Lbc.cs`, `Say.cs`, `Inix.cs`, `Util.cs`, `Web.cs` —
+are already here, copied unmodified from urlFido so that improvements to them
+keep porting between tools. They compile into the same assembly, so the result is
+still a single self-contained executable.
+
+No JSON package is downloaded, because none is needed: HomerDescribe reads and
+writes JSON with `JavaScriptSerializer` from `System.Web.Extensions`, part of the
+.NET Framework itself. DbDo fetches Newtonsoft.Json because it needs what
+Newtonsoft does that the built-in serializer cannot; nothing here does. Staying
+with the built-in one is also what keeps `HomerDescribe.exe` a single file with
+no DLL beside it.
+
+Three assemblies are not on the compiler's default reference path and are found
+by full path: `System.Speech.dll` for the voices, and `UIAutomationProvider.dll`
+and `UIAutomationTypes.dll` for the Narrator notification events raised by
+`Say.cs`. If any is missing, install the .NET Framework 4.8 Developer Pack.
+
+## Versions and releases
+
+The version lives in exactly one place: `version.txt`, one line and nothing
+else. This is the pattern DbDo and bookFido use, and it is the best of the four
+approaches across the Homer Tools, because no version literal appears in any
+other file and so a stale copy of a file cannot rewind the number.
+
+From there it flows outward:
+
+1. `buildHomerDescribe.cmd` increments it, then generates `Version.cs` holding
+   `BuildVersion.Version`, so the program reports it through `--help`.
+2. `HomerDescribe_setup.iss` reads `version.txt` at compile time through
+   `FileOpen` and `FileRead`, and writes it into the version resource of
+   `HomerDescribe_setup.exe` through `VersionInfoVersion` and
+   `VersionInfoTextVersion`. The text form is set explicitly because tagRelease
+   reads the FileVersion *string*, and a tag of `v1.0.0` is wanted rather than
+   `v1.0.0.0`.
+3. `tagRelease` reads that FileVersion, forms the tag, and posts
+   `HomerDescribe_setup.exe`, whose name it takes from `OutputBaseFilename`.
+
+So a release is: run `buildHomerDescribe.cmd`, commit, run `tagRelease`. The
+program, the installer, and the tag can never disagree.
+
+`Version.cs` is generated output. It is in `.gitignore` and should not be edited
+or committed.
+
+The first build increments 1.0.0 to 1.0.1. To release 1.0.0 itself, build once
+with `buildHomerDescribe.cmd nobump`.
+
+## The prototype
+
+`prototype\describeMovie.py` is the Python program this was grown from, and it
+still works. It is the reference implementation: quicker to change when trying a
+new prompt, and useful for checking that a change in behaviour is deliberate. It
+is not needed to run HomerDescribe.

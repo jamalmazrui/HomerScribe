@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>HomerDescribe — For Developers</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
+  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  code, pre { font-family: Consolas, monospace; }
+  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
+  </style>
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#homerdescribe-for-developers"
+id="toc-homerdescribe-for-developers">HomerDescribe for Developers</a>
+<ul>
+<li><a href="#what-it-is" id="toc-what-it-is">What it is</a></li>
+<li><a href="#the-parts" id="toc-the-parts">The parts</a></li>
+<li><a href="#how-a-description-is-made"
+id="toc-how-a-description-is-made">How a description is made</a></li>
+<li><a href="#where-things-live" id="toc-where-things-live">Where things
+live</a></li>
+<li><a href="#building" id="toc-building">Building</a></li>
+<li><a href="#changing-the-descriptions"
+id="toc-changing-the-descriptions">Changing the descriptions</a></li>
+<li><a href="#the-prototype" id="toc-the-prototype">The
+prototype</a></li>
+<li><a href="#what-is-not-done" id="toc-what-is-not-done">What is not
+done</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="homerdescribe-for-developers">HomerDescribe for Developers</h1>
+<p>What the program is made of, how the pieces fit together, and how to
+build it.</p>
+<p>This is the companion to <code>ReadMe.md</code>, which is written for
+someone using HomerDescribe. Nothing here is needed in order to run
+it.</p>
+<h2 id="what-it-is">What it is</h2>
+<p>One 64-bit Windows executable, written in C# against the .NET
+Framework 4.8, with no DLL beside it and nothing to install for the
+program itself. 4.8 ships with Windows 10 and 11, so the binary runs
+anywhere those do.</p>
+<p>Roughly 2,900 lines in a single source file,
+<code>HomerDescribe.cs</code>, in <code>namespace Homer</code>. Style is
+Camel Type: Hungarian prefixes on typed identifiers, lower camel case
+for methods and variables, double quotes, one-line simple conditionals.
+<code>Camel_Type_C#.md</code> in this folder is the reference.</p>
+<h2 id="the-parts">The parts</h2>
+<h3 id="written-here">Written here</h3>
+<ul>
+<li><strong>HomerDescribe.cs</strong> — everything: settings, the
+dialog, the pipeline, the prompts, the file handling.</li>
+<li><strong>Version.cs</strong> — three lines holding
+<code>BuildVersion.Version</code>, generated by the build from
+<code>version.txt</code>. Never edited, never committed.</li>
+</ul>
+<h3 id="shared-with-the-other-homer-tools">Shared with the other Homer
+Tools</h3>
+<p>Copied unmodified from urlFido so that improvements to them keep
+porting between tools. They compile into the same assembly, which is
+what keeps the result a single file.</p>
+<ul>
+<li><strong>Lbc.cs</strong> — layout-by-code dialogs. Builds the
+settings dialog without a designer, and supplies the Help button, the
+Escape and Enter behaviour, and the accessible names that a screen
+reader reads.</li>
+<li><strong>Say.cs</strong> — screen-reader announcements through UI
+Automation.</li>
+<li><strong>Inix.cs</strong> — the ini codec, used for
+<code>HomerDescribe.ini</code>.</li>
+<li><strong>Util.cs</strong>, <strong>Web.cs</strong> — general
+helpers.</li>
+</ul>
+<h3 id="other-programs-called-not-linked">Other programs, called not
+linked</h3>
+<p>None of these is linked into the executable. Each is a separate
+process, found at run time beside the program, in
+<code>--ffmpeg-dir</code>, or on the PATH.</p>
+<ul>
+<li><strong>ffmpeg</strong> does all the video and audio work: reading
+durations, finding silence, cutting frames, tiling montages, mixing and
+muxing, encoding mp3.</li>
+<li><strong>Ollama</strong> serves the vision model over HTTP on
+<code>localhost:11434</code>. The program speaks to
+<code>/api/generate</code> and <code>/api/tags</code> and nothing
+else.</li>
+<li><strong>yt-dlp</strong> fetches video from web addresses, and only
+then.</li>
+<li><strong>System.Speech</strong>, part of the framework rather than a
+separate program, does the speaking. In process, straight to a memory
+stream at 48 kHz mono, so no temporary wave files are made and no
+process is spawned per description.</li>
+</ul>
+<h3 id="framework-pieces-worth-knowing">Framework pieces worth
+knowing</h3>
+<ul>
+<li><code>JavaScriptSerializer</code> from
+<code>System.Web.Extensions</code> does the JSON. Not Newtonsoft: adding
+it would mean a DLL beside the executable, and nothing here needs what
+it does that the built-in one cannot. Its one trap is that a JSON array
+comes back as <code>ArrayList</code>, not <code>object[]</code>;
+everything goes through <code>toList</code> for that reason.</li>
+<li><code>System.Speech</code> and the two UI Automation assemblies are
+<strong>not</strong> on the compiler’s default reference path and must
+be given by full path, or the build fails with CS0006.</li>
+</ul>
+<h2 id="how-a-description-is-made">How a description is made</h2>
+<p>For each moment, in order:</p>
+<ol type="1">
+<li><strong>Find the moments.</strong> ffmpeg’s
+<code>silencedetect</code> reads the whole sound track once. Silences
+long enough and far enough apart become natural gaps. Because a scored
+film has almost none, <code>--every</code> places further moments at a
+fixed interval; those are marked, and the model is told that its words
+will fall across the music and to say nothing unless the moment
+matters.</li>
+<li><strong>Build a montage.</strong> One ffmpeg call seeks to the
+moment, samples four frames across it, crops the bottom to hide burnt-in
+subtitles, scales, and tiles them two by two. A still-image model then
+sees time passing.</li>
+<li><strong>Compare with the last one.</strong> The montage is reduced
+to a 16 by 16 grey thumbprint. Barely changed means the moment is passed
+over in silence; changed a great deal means a new scene, and the model
+is asked to establish the place.</li>
+<li><strong>Ask the model to look.</strong> A POST to
+<code>/api/generate</code> with the montage as base64, the craft rules
+as the system message, and the per-moment material as the prompt: the
+context file, the last two descriptions, the names already used, the
+word budget.</li>
+<li><strong>Ask the model to write.</strong> A second call, same model,
+no image, turning what it saw into one spoken description. Following
+AutoAD-Zero: perceiving and being concise are different jobs.</li>
+<li><strong>Check it.</strong> Rejected and asked again if it repeats a
+recent description, if it judges rather than observes, or if it guesses
+at who someone is.</li>
+<li><strong>Speak it.</strong> <code>System.Speech</code> to a memory
+stream. If it overruns its slot the rate rises, and failing that the
+last sentence is dropped.</li>
+<li><strong>Save.</strong> The record is written after every single
+moment, so an interrupted run loses at most one.</li>
+</ol>
+<p>At the end the spoken clips are laid onto a silent track at their
+exact sample offsets, and ffmpeg mixes that with the film’s own audio,
+ducking the film underneath each description, and writes the result.</p>
+<h2 id="where-things-live">Where things live</h2>
+<ul>
+<li>The video’s own folder: <code>described.mkv</code> (or
+<code>.mp3</code>) and <code>described.md</code>. Only what a person
+would open.</li>
+<li><code>%LOCALAPPDATA%\HomerDescribe\HomerDescribe.ini</code> — the
+settings.</li>
+<li><code>%LOCALAPPDATA%\HomerDescribe\work\&lt;video&gt;-&lt;tag&gt;\</code>
+— the resume record, the caption file, the description track, the
+montages. The tag is a hash of the full input path, so two videos of the
+same name do not collide. On a finished run everything but the record is
+deleted.</li>
+<li>The run log goes with the results, or under application data when
+Log session is unticked.</li>
+</ul>
+<p>Nothing is written beside the executable. Installed, that is
+<code>C:\Program Files\HomerDescribe</code>, which an ordinary user
+cannot write to — a lesson learnt three times during development, once
+each for the log, the settings and the working files.</p>
+<h2 id="building">Building</h2>
+<h3 id="what-you-need">What you need</h3>
+<ul>
+<li><strong>Roslyn</strong>, from Visual Studio 2022 or the free Build
+Tools. The pre-Roslyn compiler under
+<code>Microsoft.NET\Framework64</code> is accepted as a fallback and
+will compile <code>HomerDescribe.cs</code>, but the shared Homer modules
+use later language features.</li>
+<li><strong>The .NET Framework 4.8 Developer Pack</strong>, for the
+reference assemblies. Without it <code>System.Speech.dll</code> and the
+UI Automation assemblies are not found.</li>
+<li><strong>Inno Setup 6</strong>, to build the installer. Optional:
+without it the executable still builds.</li>
+</ul>
+<h3 id="building-1">Building</h3>
+<pre><code>buildHomerDescribe.cmd
+
+buildHomerDescribe.cmd nobump</code></pre>
+<p>It writes <code>buildHomerDescribe.log</code> beside itself and
+prints it at the end. What it does, in order: increments
+<code>version.txt</code> unless told not to, generates
+<code>Version.cs</code>, finds a compiler, finds the three full-path
+reference assemblies, downloads ffmpeg and yt-dlp if they are missing or
+stale, regenerates the <code>.htm</code> documentation with 2htm if it
+is present, compiles seven sources into one assembly, and runs Inno
+Setup.</p>
+<h3 id="versioning">Versioning</h3>
+<p><code>version.txt</code> holds the version and nothing else. It is
+the single source: the build reads it into <code>Version.cs</code>, and
+<code>HomerDescribe_setup.iss</code> reads the same file through
+<code>FileOpen</code> and <code>FileRead</code> and writes it into the
+version resource of the setup. <code>tagRelease</code> then reads the
+FileVersion string back out of the built setup and forms the tag.</p>
+<p>No version literal appears in any other file, which is the point: a
+stale copy of a file cannot rewind the number.</p>
+<h3 id="releasing">Releasing</h3>
+<pre><code>buildHomerDescribe.cmd
+git add -A &amp;&amp; git commit -m &quot;...&quot;
+tagRelease</code></pre>
+<p><code>createHomerDescribeRepo.cmd</code> is the one-time bootstrap
+that creates the repository. It, <code>tagRelease</code>, and their logs
+are in <code>.gitignore</code>; they are maintainer tools and not part
+of the distribution.</p>
+<h3 id="traps">Traps</h3>
+<ul>
+<li>The variable name <code>ProgramFiles(x86)</code> contains
+parentheses, and cmd scans a parenthesised block for its closing paren
+before expanding variables. The build copies it into a paren-free name
+before any block, and every search is a single-line
+<code>if not defined X if exist ... set</code> chain.</li>
+<li>A wildcard in the installer that matches nothing is a fatal error
+unless the line carries <code>skipifsourcedoesntexist</code>. Every
+source line except the executable has it.</li>
+<li><code>ffmpeg.exe</code> and <code>yt-dlp.exe</code> are downloaded
+at build time and are in <code>.gitignore</code>. They are far too large
+for a repository.</li>
+</ul>
+<h2 id="changing-the-descriptions">Changing the descriptions</h2>
+<p>Most of the quality lives in three places in
+<code>HomerDescribe.cs</code>:</p>
+<ul>
+<li><code>systemRules()</code> — the craft rules and the worked
+examples, sent as the system message. The examples do more work than the
+rules; a rule that is shown holds where one that is only stated does
+not.</li>
+<li><code>promptFor()</code> — the per-moment material.</li>
+<li><code>summarise()</code> — the second pass.</li>
+</ul>
+<p><code>asJudgmentWords</code> and <code>asHedgeWords</code> are the
+lists that trigger a retry, and <code>asStripOpeners</code>,
+<code>asClauseTrims</code> and <code>asFilmTalk</code> clean the output
+afterwards. All were grown from measuring real output rather than from
+imagination.</p>
+<h2 id="the-prototype">The prototype</h2>
+<p><code>prototype\describeMovie.py</code> is the Python program this
+grew from, and it still runs. It is the reference implementation,
+quicker to change when trying a new prompt, and useful for checking
+whether a change in behaviour was deliberate. It is behind the C# in
+several respects and is not needed to build or run HomerDescribe.</p>
+<h2 id="what-is-not-done">What is not done</h2>
+<p>Ranked by what would improve descriptions most.</p>
+<ol type="1">
+<li><strong>Voice activity detection.</strong> The program cannot tell a
+scored passage from a spoken one, so <code>--every</code> guesses where
+descriptions go. Detecting speech rather than sound would replace the
+guess. <code>whisper.cpp</code> is the candidate: one executable,
+fetched like ffmpeg, and it yields a transcript at the same time.</li>
+<li><strong>The dialogue as context.</strong> Descriptions are written
+without knowing what was just said, so they sometimes restate it. The
+transcript from the step above would fix this.</li>
+<li><strong>A character bank.</strong> The context file is a text-only
+version of AutoAD II’s idea; the paper’s version attaches face
+exemplars, which names characters far more reliably.</li>
+<li><strong>A dialog that carries every setting.</strong> It carries the
+ones named for it; the rest are command line only.</li>
+</ol>
+</body>
+</html>

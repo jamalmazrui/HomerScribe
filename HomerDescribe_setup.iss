@@ -115,9 +115,11 @@ Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Developer.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Developer.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
 ; buildHomerDescribe.cmd downloads them when they are missing, so normally they
@@ -184,4 +186,14 @@ FileName: "{app}\ReadMe.htm"; \
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\context"
+
+; The settings, the resume records and the working files. Removing them leaves
+; nothing of HomerDescribe behind, which is what was asked for.
+;
+; One caveat worth knowing: the installer runs elevated, so {localappdata}
+; resolves to the profile of whoever ran the uninstaller. If HomerDescribe was
+; used by one account and uninstalled by another, that other account's folder is
+; the one removed. Described films and scripts are never touched -- they live
+; wherever the user chose to put them.
+Type: filesandordirs; Name: "{localappdata}\HomerDescribe"
 
