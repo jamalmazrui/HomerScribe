@@ -51,12 +51,11 @@ yt-dlp.
 
 ## Getting started
 
-The installer offers to do both of those on its final page, and offers each only
-when it is actually missing: as the wizard opens it asks ollama what it holds, so
-a machine that already has the model is not offered the download again. Both
-boxes are checked when they do appear, because without them there is nothing to
-write the descriptions. `installOllama.cmd` and `installModels.cmd` stay in the
-program folder, so either can be run again later.
+The installer offers to do both of those on its final page, checked by default,
+because without them there is nothing to write the descriptions. Each script
+notices in a second when its work is already done and says so, so ticking them on
+a machine that is already set up costs nothing. `installOllama.cmd` and
+`installModels.cmd` stay in the program folder, so either can be run again later.
 
 Only one model is needed, and it must be a **vision** model — one that can be
 shown a picture. `qwen2.5vl:7b` is the default. A text-only model such as
@@ -82,7 +81,11 @@ Describe the whole film:
 
     HomerDescribe "video.mkv"
 
-Describe several things at once, mixing files and web addresses:
+Describe everything matching a pattern:
+
+    HomerDescribe "C:\video\*Africans*.mp4"
+
+Describe several things at once, mixing files, patterns and web addresses:
 
     HomerDescribe "first.mkv" "second film.mp4" https://www.youtube.com/watch?v=...
 
@@ -103,7 +106,20 @@ the smaller dependency.
 HomerDescribe finds yt-dlp beside itself or on the PATH, tells it where ffmpeg
 is so the separate video and audio streams merge, asks for plain ASCII filenames
 so later steps are not tripped by punctuation in a title, and reports download
-progress as it goes.
+progress as it goes. The version in use is written to the log at the start of
+every run.
+
+**When a download fails, yt-dlp being out of date is nearly always the reason.**
+YouTube changes how it serves video every few weeks, and an older yt-dlp stops
+working — the symptoms are "Precondition check failed", an HTTP 400, and then
+"Requested format is not available" because no video format was found at all.
+HomerDescribe now runs `yt-dlp -U` and tries once more before giving up, and the
+build script replaces any copy more than thirty days old rather than packaging
+it.
+
+Some videos cannot be downloaded at all — private, age restricted, or members
+only. If the address plays only when you are signed in, HomerDescribe cannot
+reach it either.
 
 Or open the dialog, which is what happens when the program is started with
 nothing on the command line at all -- from the Start menu, a desktop shortcut, or
@@ -117,19 +133,80 @@ just its name:
 Stop it at any time. Run the same command again and it carries on from where it
 left off, reusing both the descriptions and the speech already made.
 
+## Where it looks and where it writes
+
+HomerDescribe uses the folders Windows nominates rather than whatever directory
+it happened to be started from. Starting in the program's own folder is how a
+tool ends up dropping results among its own source files.
+
+- **Browse source** opens in your **Videos** folder, unless the Source paths box
+  already holds a path, in which case it opens there.
+- **Choose output** does the same, and the Output directory box opens already
+  filled with your Videos folder rather than empty.
+- If Videos cannot be found, Documents is used, and only then the current
+  directory.
+
+On the command line the rule is different and deliberate: leaving `--output-dir`
+unset puts each video's folder of results **beside the video itself**, which is
+almost always what is wanted when a path was typed out in full. Clearing the
+Output directory box in the dialog does the same thing.
+
 ## What it writes
 
-Results go to a folder named after the video with `_described` appended:
+Every video gets a folder of its own, named after the video. `video.mkv` gives a
+folder called `video`, beside the video itself, or inside the output directory
+when one was given. That folder holds **two files, and only two**:
 
 - `described.mkv` — the film with the description as the first, default audio
-  track and the original audio as the second. Any player selects the described
-  track without you doing anything.
-- `description.md` — the whole script as a readable document, grouped into
-  ten-minute sections with each entry timed from the start of the film.
-- `description.vtt` — the same text as timed captions.
-- `description.wav` — the description track on its own, to play alongside the
-  original in a player such as mpv.
-- `description.json` — the machine-readable record used to resume a run.
+  track and the original audio as the second. With **Audio only** ticked this is
+  `described.mp3` instead: the mixed sound alone, no video. Any player selects the described
+  track without you doing anything. The extension follows the source, so an mp4
+  gives `described.mp4`.
+- `described.md` — the whole script as a readable document, grouped into
+  ten-minute sections with each entry timed from the start of the film. This is
+  the one to open on a braille display.
+
+Everything else is working material and lives out of the way, under
+`%LOCALAPPDATA%\HomerDescribe\work`, in a folder named after the video: the
+record used to resume a run, the caption file, the description track, and the
+montages sent to the model. When a run finishes, the bulky ones are deleted and
+only the record is kept, because `--rebuild` works from it and it costs a few
+kilobytes.
+
+**Audio only** produces one mp3 instead of a film: the original audio with the
+descriptions mixed into it, and no video at all. It is a quarter of the size on
+a measured sample, and far quicker to make, since nothing has to be copied. When
+the picture is of no use to the listener, this is the sensible output — and it
+plays on anything, including a phone or a DAISY player. `--audio-only` on the
+command line.
+
+**View output** opens the results folder when a run finishes, with the described
+film selected, so it does not have to be hunted for. `--view-output no` turns it
+off for an unattended run.
+
+`HomerDescribe.log` covers the **whole run**, across every video, and is written
+to the output directory — or beside the first video when no output directory was
+given. It is deliberately not written beside the program: installed, that is
+`C:\Program Files\HomerDescribe`, which an ordinary user cannot write to.
+Unticking **Log session** keeps it under your application data instead, so a run
+that goes wrong still leaves a record without cluttering your results.
+
+**A video whose described film already exists is left alone.** Point
+HomerDescribe at a dozen videos, stop it halfway, and run it again: the ones that
+finished are skipped, and one that was interrupted **carries on where it
+stopped** rather than starting over. Tick **Force overwrite**, or pass `--force`,
+to describe everything again from the beginning.
+
+Resuming costs very little. Every description is written to `described.json` as
+it is made, so nothing has to be asked of the model twice; only the speech is
+made again, and that is a fraction of a second each. A run stopped two hours in
+picks up in about a minute.
+
+If you only want the film built from descriptions already made — after a run that
+was interrupted after most of the work, say — `--rebuild` speaks and assembles
+what is in `described.json` and asks the model nothing at all. On a three hour
+film that is about a minute of speech and five minutes of writing, against the
+two and a half hours the descriptions took.
 
 `HomerDescribe.log` is written beside the program, not beside the video. It holds
 the full detail: environment, every effective setting, every command with its
@@ -138,14 +215,24 @@ film, each description prefixed by its position, as `2:14` or `1:37:52`.
 
 ## Telling it about the film
 
-A description is far better when the model knows what it is watching. Put the
-film's characters, setting and story in a text file and point at it:
+A description is far better when the model knows what it is watching. Without
+context it writes "a man in a boat"; with it, "Odysseus".
 
-    HomerDescribe "video.mkv" --context-file context\The_Odyssey.md
+**Name the file after the video and put it beside it.** For `video.mkv`, write
+`video.md` in the same folder. HomerDescribe finds it without being told, which
+is what lets one general purpose program describe any film properly. Nothing has
+to be passed on the command line and nothing has to be set in the dialog.
 
-`context\The_Odyssey.md` is supplied as a worked example. Without it the model
-writes "a man in a boat"; with it, "Odysseus". Keep such a file to a few hundred
-words, because it is sent with every single request.
+`--context-file` overrides that when you want one file used for several videos.
+`context\The_Odyssey.md` is supplied as a worked example of what to write: who
+the characters are, what they look like, where the story is set, and an
+instruction to describe by appearance rather than guess at a name.
+
+Keep such a file to a few hundred words. It is sent with every single request, so
+length costs time on every description.
+
+If no context file is found, HomerDescribe says so plainly at the start of the
+run rather than quietly producing nameless descriptions.
 
 ## Settings
 
@@ -208,8 +295,15 @@ and `UIAutomationTypes.dll` for the Narrator notification events raised by
 Every document ships as both `.md` and `.htm`. The Markdown is the source, and
 is the better form for reading in an editor or on a braille display; the HTML is
 what the Start menu shortcut and the installer's last checkbox open.
-`buildHomerDescribe.cmd` regenerates the `.htm` files with 2htm when it can find
-it, and otherwise leaves the ones already present alone.
+
+The `.htm` files in this folder are ready to use as they are. Each carries
+exactly one level-one heading, a table of contents where the document is long
+enough to want one, and `lang="en"`, so the outline is navigable by heading or by
+link. Nothing needs to be run to produce them.
+
+`buildHomerDescribe.cmd` will regenerate them with 2htm if it finds it, which
+keeps them current when the Markdown changes. When 2htm is absent the build
+leaves the existing files alone, so the documentation cannot fail a build.
 
 ## Versions and releases
 
@@ -247,7 +341,9 @@ by DbDo, EdSharp, FileDir and urlFido. It carries the standard controls:
 
 - **&Source paths** with **&Browse source...**
 - **&Output directory** with **&Choose output...**
-- **&Force overwrite**, **&Log session**, **&Use configuration**
+- **&Force overwrite**, **&Log session**, **&Use configuration**, **&Audio only**,
+  **&View output** — all unticked when the dialog opens, as in the other Homer
+  Tools
 - OK and Cancel, with Help supplied by LbcDialog itself
 
 OK and Cancel carry no mnemonic, as Windows convention requires: Escape cancels,
@@ -285,6 +381,80 @@ still works. It is the reference implementation: quicker to change when trying a
 new prompt, and useful for checking that a change in behaviour is deliberate. It
 is not needed to run HomerDescribe.
 
+## Two stages, not one
+
+A description is made in two passes, following AutoAD-Zero from Oxford's Visual
+Geometry Group. The vision model is first asked to look thoroughly and say
+everything it sees, with three times the word budget. The same model is then
+asked again, with no picture attached, to turn those notes into one spoken
+description within the real budget.
+
+The reason it helps is that perceiving and being concise are different jobs.
+Asked to do both at once, a vision model spends its attention on the picture and
+its words on whatever comes first, which is how descriptions ended up verbose and
+full of judgements. Separating the two lets the first pass look hard and the
+second pass write well. The published result is that this training-free approach
+is competitive with models fine-tuned on real audio description.
+
+No second model is installed. It is the same model with no image attached, so
+nothing is loaded or unloaded between the calls — which matters, because swapping
+between two models on every moment would cost more than everything else put
+together.
+
+It costs roughly 20% more time per moment. Some of that should come back: a
+measured run spent 38 full vision calls retrying descriptions that judged or
+guessed, and those are exactly what a separate writing pass should prevent.
+`--summarise no` turns it off, so the same film can be run both ways and compared.
+
+Both passes are recorded in the log, as `Saw:` and `Said:`, so the difference
+between what the model noticed and what it chose to say is visible.
+
+## How the model is asked
+
+The prompt is engineered, not improvised, and it is where most of the remaining
+quality lives. Four things about its shape are deliberate.
+
+**The rules travel separately from the material.** Everything a describer must
+know goes in the request's system message; only what changes moment to moment --
+the context file, the last two descriptions, the names already used, the word
+budget -- goes in the prompt. The model sees instruction and material as
+different kinds of thing, and the rules do not have to be reprocessed as part of
+the picture every time.
+
+**Rules are shown, not only stated.** The system message carries six rewritten
+examples, each wrong then right: "He looks furious" becomes "He clenches his
+fist"; "The camera pans across the shore" becomes "The shore stretches away,
+empty to the headland". This matters more than any amount of prose. Measured over
+a whole film, 132 of 251 descriptions carried an interpretive word while the rule
+against them was stated plainly and no example was given.
+
+**Negatives are few and concrete.** Telling a model never to write "the frames
+show" puts that phrase in front of it, and it duly appeared in the output. Where
+a positive form exists, it is used instead.
+
+**Repetition is prevented rather than detected.** The request now carries a
+repetition penalty, so the model is less inclined to reach for the phrasing it
+used a moment ago. Rejecting a repeat afterwards costs a second call and can
+leave silence; not producing one costs nothing. The model is also held in memory
+between moments, which saves reloading several gigabytes from disk mid-run.
+
+## On subtitles
+
+Yes, and by two routes, because one is not enough.
+
+The prompt tells the model that subtitles belong to people who cannot hear, that
+the words in them are already spoken aloud in the film, and that it should
+neither read them nor mention their presence. It distinguishes them from words
+that do carry meaning -- a sign, a letter, a name on a door -- which are worth
+reading and are introduced as "Words appear:".
+
+But a model told to ignore text on screen will often read it anyway, because the
+text is right there in the picture. So `--crop-bottom` removes the lower part of
+every frame before the model ever sees it, twelve percent by default, which is
+where burnt-in subtitles almost always sit. Instruction handles the ones that
+appear elsewhere; cropping handles the ordinary case, and it cannot be talked
+out of.
+
 ## Where the rules come from
 
 The prompt is not a set of preferences I invented. It follows the published
@@ -316,6 +486,22 @@ actually be held to are these.
 - **Read words that carry meaning** -- signs, letters, titles -- introduced as
   "Words appear:", while ignoring translation subtitles.
 - **Name a logo once**, plainly, and never again.
+- **Do not narrate what can be heard.** The listener hears the dialogue, the
+  music and every sound effect. A door slamming or a horse galloping does not need
+  describing; the standards are firm that description exists to supply what sound
+  cannot.
+- **Who and what before where, and detail last**, when the pause is short.
+- **Keep the same names and words throughout.** HomerDescribe now carries the
+  names it has already used forward into later prompts, so a character does not
+  become "a man in a grey cloak" three minutes after being called Odysseus.
+- **Let the music play.** The standards ask that a score not be talked over
+  except for something that genuinely matters. HomerDescribe's guaranteed interval
+  works against that by design, since a continuously scored film would otherwise
+  get almost nothing. The compromise: a description placed where no pause existed
+  is told that it will fall across the sound, and to answer SKIP unless the moment
+  holds something a blind viewer would truly miss.
+- **160 words a minute** is the pace the standards call comfortable, which is
+  where the default word budget now sits, at 2.67 words a second.
 
 Two points from the standards are deliberately left to you rather than built in.
 
@@ -340,9 +526,14 @@ verbatim and sits in front of every request.
   unless the context file names them.
 - Descriptions are written without knowing what was just said, so they sometimes
   restate the dialogue. A transcript pass would fix this and is not built yet.
-- The standards ask for consistent vocabulary across a whole production. Each
-  moment is written knowing only the last two descriptions and the context file,
-  so consistency rests on the context file naming things once and clearly.
+- Consistency across a whole production is only partly solved. The names already
+  used are carried forward, but the vocabulary and register are not, so the
+  context file naming things once and clearly still does most of the work.
+- The voice matters more than it looks. The standards ask that the describer's
+  voice be clearly distinguishable from the voices in the production without being
+  distracting in itself. `--list-voices` shows what is installed; pick one that
+  will not be mistaken for a character, and listen to a five minute sample before
+  committing to a feature.
 - A seven-billion-parameter local model gives useful orientation rather than
   literary description. It is a real improvement over nothing, and a real step
   below professional description.
