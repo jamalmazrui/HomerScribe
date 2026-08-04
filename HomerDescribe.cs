@@ -72,8 +72,6 @@ namespace Homer
 
     public class HomerDescribe
     {
-        const int iNothingToDo = 2;
-        const int iAlreadyDone = 3;
         const int iDefaultCompare = 10;
         const int iDefaultNames = 12;
         const int iDefaultRecent = 2;
@@ -82,6 +80,7 @@ namespace Homer
         const int iDefaultTimeout = 300000;
         const double nDefaultChapter = 600.0;
         const double nDefaultNewScene = 25.0;
+        const double nDefaultSlowSeconds = 30.0;
         const double nDefaultLead = 0.20;
         const string sDefaultDescribedStem = "described";
         const string sDefaultJsonName = "described.json";
@@ -92,6 +91,7 @@ namespace Homer
         const string sDefaultWaveName = "described.wav";
 
         static StreamWriter fLog = null;
+        static StringBuilder oVideoLog = null;
         static readonly object oLogLock = new object();
         static bool bVerbose = false;
         static Dictionary<string, Param> dParams = new Dictionary<string, Param>();
@@ -107,24 +107,20 @@ namespace Homer
             addParam("source-paths", "s", "string", "", "Video files or YouTube page addresses, separated by spaces; quote any containing a space. The dialog starts browsing in your Videos folder");
             addParam("output-dir", "o", "string", "", "Folder to create each video's results folder in. Empty on the command line means beside the video; the dialog offers your Videos folder");
             addParam("force", "f", "flag", "no", "Describe everything again, ignoring an earlier run");
-            addParam("rebuild", "", "flag", "no", "Build the film from descriptions already made, asking the model nothing");
-            addParam("log-file", "", "string", "", "Path of the run log; by default it goes with the results");
-            addParam("log-session", "l", "flag", "no", "Keep the run log with the results; unticked, it is kept out of the way under your application data");
+            addParam("log-session", "l", "flag", "yes", "Keep a copy of the log in each video's own folder");
             addParam("use-configuration", "u", "flag", "no", "Load settings at startup and save them on OK");
             addParam("begin", "b", "string", "0", "Where to start, in seconds or hh:mm:ss");
             addParam("minutes", "e", "number", "0", "How many minutes to describe; 0 means the whole film");
             addParam("model", "m", "string", "qwen2.5vl:7b", "Name of the Ollama vision model");
             addParam("context-file", "c", "string", "", "Text file describing the film, sent with every request");
             addParam("detail", "t", "string", "rich", "How much to say: brief, normal or rich");
-            addParam("view-output", "v", "flag", "no", "Open the results folder when the run finishes");
-            addParam("audio-only", "a", "flag", "no", "Produce sound only: one mp3 of the film's audio with the descriptions mixed in, and no video");
-            addParam("voice", "", "string", "", "Name of the Windows speech voice");
+            addParam("voice", "v", "string", "", "Name of the Windows speech voice");
             addParam("rate", "r", "integer", "1", "Speech rate, from minus ten to ten");
             addParam("width", "w", "integer", "512", "Width in pixels of each frame before tiling");
             addParam("crop-bottom", "p", "number", "12", "Percentage cut off the bottom of each frame, to hide burnt-in subtitles");
             addParam("noise-floor", "n", "number", "-24", "Level in dB below which sound counts as a gap");
             addParam("min-gap", "g", "number", "2.0", "Shortest gap worth describing");
-            addParam("spacing", "", "number", "10.0", "Least seconds between descriptions");
+            addParam("spacing", "a", "number", "10.0", "Least seconds between descriptions");
             addParam("every", "y", "number", "14.0", "Guarantee a description at least this often; 0 turns it off");
             addParam("words-per-second", "d", "number", "2.67", "Speaking rate used to budget words; 2.67 is the 160 words a minute the standards call comfortable");
             addParam("url", "", "string", "http://localhost:11434", "Address of the Ollama service");
@@ -137,9 +133,8 @@ namespace Homer
             addParam("same-shot", "", "number", "4.0", "How little the picture may change before a moment is passed over; 0 turns the check off");
             addParam("ad-volume", "", "number", "0.9", "Loudness of the description against the film");
             addParam("checkpoint", "", "integer", "15", "Rebuild the description track every this many moments");
-            addParam("mux-minutes", "", "number", "0", "Minutes between background writes of the film so far; 0, the default, writes it only at the end");
+            addParam("mux-minutes", "", "number", "30.0", "Least minutes between background writes of the film so far; 0 writes it only at the end");
             addParam("ffmpeg-dir", "", "string", "", "Folder holding ffmpeg.exe, searched in addition to the PATH");
-            addParam("summarise", "", "flag", "yes", "Look thoroughly with the vision model, then have the same model compress what it saw into one spoken description");
             addParam("objective", "", "flag", "yes", "Ask again when a description states a mood or a judgement instead of what is visible");
             addParam("announce", "", "flag", "yes", "Speak an opening line confirming description is running");
             addParam("boxes", "", "flag", "", "Show each description in a timed message box a screen reader will read");
@@ -225,12 +220,6 @@ namespace Homer
                         bHasValue = true;
                     }
                 }
-                else if (sArg == "/?" || sArg == "/help")
-                {
-                    dParams["help"].sValue = "yes";
-                    iAt = iAt + 1;
-                    continue;
-                }
                 else if (sArg.StartsWith("-") && sArg.Length > 1)
                 {
                     string sLetter = sArg.Substring(1);
@@ -286,102 +275,27 @@ namespace Homer
             return true;
         }
 
-        // Forty-four settings in one flat list is not a help screen, it is an
-        // inventory. They are grouped as a person would ask about them, wrapped
-        // to a readable width, and followed by examples, because most people
-        // read the examples and nothing else.
-        static readonly string[,] asHelpGroups = new string[,] {
-            { "What to describe", "source-paths begin minutes" },
-            { "Where things go", "output-dir audio-only view-output force rebuild" },
-            { "What it says", "context-file detail words-per-second summarise objective" },
-            { "The voice", "voice rate ad-volume announce" },
-            { "Where descriptions go", "every spacing min-gap forced-length noise-floor silence-length dialogue-channel max-silence" },
-            { "Not saying the same thing twice", "similarity same-shot" },
-            { "The model and the picture", "model url frames width crop-bottom" },
-            { "Settings, logs and diagnostics", "use-configuration log-session log-file checkpoint mux-minutes ffmpeg-dir boxes gui check list-voices verbose help" },
-        };
-
-        static void writeWrapped(string sIndent, string sText, int iWidth)
-        {
-            string sLine = sIndent;
-            foreach (string sWord in sText.Split(' '))
-            {
-                if (sWord == "") continue;
-                if (sLine.Trim() != "" && sLine.Length + 1 + sWord.Length > iWidth)
-                {
-                    Console.WriteLine(sLine);
-                    sLine = new string(' ', sIndent.Length);
-                }
-                if (sLine.Trim() == "") sLine = sLine + sWord;
-                else sLine = sLine + " " + sWord;
-            }
-            if (sLine.Trim() != "") Console.WriteLine(sLine);
-        }
-
-        static void writeOption(string sName)
-        {
-            if (!dParams.ContainsKey(sName)) return;
-            Param oParam = dParams[sName];
-            string sHead = "  --" + oParam.sLong;
-            if (oParam.sShort != "") sHead = "  -" + oParam.sShort + ", --" + oParam.sLong;
-            if (oParam.sKind != "flag") sHead = sHead + " <" + oParam.sKind + ">";
-            string sTail = oParam.sHelp;
-            if (oParam.sKind == "flag" && oParam.sValue == "yes") sTail = sTail + ". Already on; turn it off with --" + oParam.sLong + " no";
-            if (oParam.sKind != "flag" && oParam.sValue != "") sTail = sTail + ". Now: " + oParam.sValue;
-            Console.WriteLine(sHead);
-            writeWrapped("      ", sTail, 78);
-        }
-
         static void showHelp()
         {
-            Console.WriteLine("HomerDescribe " + version() + ", audio description for local video files.");
+            Console.WriteLine("HomerDescribe " + version() + " -- audio description for local video files.");
             Console.WriteLine("");
-            writeWrapped("", "Describes what happens on screen, speaks it in a Windows voice, and writes "
-                + "a copy of the film with the description as its first audio track. Everything "
-                + "runs on this machine.", 78);
+            Console.WriteLine("Usage: HomerDescribe [video file] [options]");
             Console.WriteLine("");
-            Console.WriteLine("Usage: HomerDescribe [videos, patterns or web addresses] [options]");
-            Console.WriteLine("");
-            writeWrapped("", "Run it with nothing at all to open the dialog. Name a file called after "
-                + "the video and beside it, video.md for video.mkv, and its characters and setting "
-                + "are used without being asked for.", 78);
-            List<string> lShown = new List<string>();
-            for (int iGroup = 0; iGroup < asHelpGroups.GetLength(0); iGroup++)
-            {
-                Console.WriteLine("");
-                Console.WriteLine(asHelpGroups[iGroup, 0]);
-                foreach (string sName in asHelpGroups[iGroup, 1].Split(' '))
-                {
-                    writeOption(sName);
-                    lShown.Add(sName);
-                }
-            }
-            bool bAnyLeft = false;
             foreach (KeyValuePair<string, Param> oPair in dParams)
             {
-                if (lShown.Contains(oPair.Key)) continue;
-                if (!bAnyLeft) Console.WriteLine("");
-                if (!bAnyLeft) Console.WriteLine("Other");
-                bAnyLeft = true;
-                writeOption(oPair.Key);
+                Param oParam = oPair.Value;
+                string sLine = "      --" + oParam.sLong;
+                if (oParam.sShort != "") sLine = "  -" + oParam.sShort + ", --" + oParam.sLong;
+                if (oParam.sKind != "flag") sLine = sLine + " <" + oParam.sKind + ">";
+                while (sLine.Length < 34) sLine = sLine + " ";
+                sLine = sLine + oParam.sHelp;
+                if (oParam.sKind != "flag" && oParam.sValue != "") sLine = sLine + " (" + oParam.sValue + ")";
+                Console.WriteLine(sLine);
             }
-            Console.WriteLine("");
-            Console.WriteLine("Examples");
-            Console.WriteLine("");
-            Console.WriteLine("  HomerDescribe");
-            writeWrapped("      ", "Open the dialog.", 78);
-            Console.WriteLine("  HomerDescribe \"film.mkv\"");
-            writeWrapped("      ", "Describe one film, writing the results into a folder called film beside it.", 78);
-            Console.WriteLine("  HomerDescribe \"C:\\video\\*.mp4\" --audio-only");
-            writeWrapped("      ", "Describe every mp4 in that folder, producing an mp3 of each rather than a film.", 78);
-            Console.WriteLine("  HomerDescribe \"film.mkv\" --begin 00:22:30 --minutes 5");
-            writeWrapped("      ", "Describe five minutes from twenty two and a half minutes in, to hear what it sounds like before committing to the whole film.", 78);
-            Console.WriteLine("  HomerDescribe \"film.mkv\" --check");
-            writeWrapped("      ", "Say whether ffmpeg, the voices and the model are all in place, and stop.", 78);
-            Console.WriteLine("");
-            writeWrapped("", "Full documentation is in ReadMe.htm beside the program.", 78);
         }
 
+        // BuildVersion lives in Version.cs, generated by buildHomerDescribe.cmd
+        // from version.txt, which is the single source of the version number.
         static string version()
         {
             return BuildVersion.Version;
@@ -394,134 +308,20 @@ namespace Homer
             return Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
         }
 
-        // Where the log lives cannot be settled until the settings are known,
-        // and in dialog mode that is after the dialog has been answered. So
-        // early lines are held in memory and written out once the file opens.
-        //
-        // It must not simply sit beside the program: installed, that is
-        // C:\Program Files\HomerDescribe, which an ordinary user cannot write
-        // to. It goes with the results instead.
-        static StringBuilder oEarlyLog = new StringBuilder();
-
-        static string chooseLogFolder()
-        {
-            if (text("log-file") != "")
-            {
-                try
-                {
-                    string sGiven = Path.GetDirectoryName(Path.GetFullPath(text("log-file")));
-                    if (sGiven != "") return sGiven;
-                }
-                catch (Exception)
-                {
-                }
-            }
-            // Unticked, the log is still written -- a run that goes wrong must
-            // leave a record -- but it is kept out of the way rather than sitting
-            // among the results.
-            if (!flag("log-session")) return appDataFolder();
-            if (text("output-dir") != "") return text("output-dir");
-            // No output folder given, so results go beside each video. The run
-            // log goes beside the first of them.
-            foreach (string sSource in splitPaths(text("source-paths")))
-            {
-                if (sSource.StartsWith("http")) continue;
-                try
-                {
-                    string sFolder = Path.GetDirectoryName(Path.GetFullPath(sSource));
-                    if (sFolder != "" && Directory.Exists(sFolder)) return sFolder;
-                }
-                catch (Exception)
-                {
-                }
-            }
-            return appDataFolder();
-        }
-
-        // A stable, private folder for one video's working files. The name of
-        // the video alone would collide across folders, so the full path is
-        // folded into a short tag.
-        static string workFolderFor(string sInput)
-        {
-            uint iHash = 2166136261;
-            foreach (char cOne in sInput.ToLower())
-            {
-                iHash = (iHash ^ (uint)cOne) * 16777619;
-            }
-            string sName = Path.GetFileNameWithoutExtension(sInput);
-            if (sName.Length > 40) sName = sName.Substring(0, 40);
-            foreach (char cBad in Path.GetInvalidFileNameChars())
-            {
-                sName = sName.Replace(cBad, '_');
-            }
-            return Path.Combine(appDataFolder(), "work", sName + "-" + iHash.ToString("x8"));
-        }
-
-        // Open the results in Explorer, with the described film selected, so
-        // the thing just made is what the cursor lands on.
-        static void showFolder(string sFolder)
-        {
-            try
-            {
-                string sSelect = "";
-                foreach (string sFile in Directory.GetFiles(sFolder, sDefaultDescribedStem + ".*"))
-                {
-                    if (!sFile.EndsWith(".md")) sSelect = sFile;
-                }
-                if (sSelect != "") Process.Start("explorer.exe", "/select,\"" + sSelect + "\"");
-                else Process.Start("explorer.exe", "\"" + sFolder + "\"");
-                logMessage("Opened " + sFolder, "INFO", "");
-            }
-            catch (Exception oError)
-            {
-                logMessage("The results folder could not be opened: " + oError.Message, "ERROR");
-            }
-        }
-
-        static string appDataFolder()
-        {
-            string sFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HomerDescribe");
-            try
-            {
-                Directory.CreateDirectory(sFolder);
-            }
-            catch (Exception)
-            {
-            }
-            return sFolder;
-        }
-
         static void openLog()
         {
-            if (fLog != null) return;
-            string sPath = text("log-file");
-            if (sPath == "") sPath = Path.Combine(chooseLogFolder(), sDefaultLogName);
+            string sPath = Path.Combine(exeFolder(), sDefaultLogName);
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(sPath)));
                 fLog = new StreamWriter(sPath, false, new UTF8Encoding(true));
             }
             catch (Exception oError)
             {
-                Console.WriteLine("The log could not be opened at " + sPath + ": " + oError.Message);
-                sPath = Path.Combine(appDataFolder(), sDefaultLogName);
-                try
-                {
-                    fLog = new StreamWriter(sPath, false, new UTF8Encoding(true));
-                }
-                catch (Exception oSecond)
-                {
-                    Console.WriteLine("Nor at " + sPath + ": " + oSecond.Message);
-                    return;
-                }
+                Console.WriteLine("The log file could not be opened: " + oError.Message);
+                return;
             }
-            lock (oLogLock)
-            {
-                if (oEarlyLog != null) fLog.Write(oEarlyLog.ToString());
-                oEarlyLog = null;
-                fLog.Flush();
-            }
-            logMessage("Log file: " + sPath, "INFO", "Log: " + sPath);
+            logMessage("HomerDescribe " + version() + " starting", "INFO", "HomerDescribe " + version());
+            logMessage("Log file: " + sPath);
         }
 
         static void closeLog()
@@ -558,7 +358,7 @@ namespace Homer
                     fLog.WriteLine(sLine);
                     fLog.Flush();
                 }
-                else if (oEarlyLog != null) oEarlyLog.AppendLine(sLine);
+                if (oVideoLog != null) oVideoLog.AppendLine(sLine);
             }
             if (sLevel == "CMD" && !bVerbose) return;
             string sShow = sText;
@@ -575,9 +375,31 @@ namespace Homer
             }
         }
 
+        // Everything said while one video is being described, kept so a copy can
+        // be left in that video's own folder. The running log beside the program
+        // still holds the whole session.
+        static void startVideoLog()
+        {
+            oVideoLog = new StringBuilder();
+        }
+
+        static void finishVideoLog(string sFolder)
+        {
+            if (oVideoLog == null) return;
+            try
+            {
+                Directory.CreateDirectory(sFolder);
+                File.WriteAllText(Path.Combine(sFolder, sDefaultLogName), oVideoLog.ToString(), new UTF8Encoding(true));
+            }
+            catch (Exception oError)
+            {
+                logMessage("The log for this video could not be written to " + sFolder + ": " + oError.Message, "ERROR");
+            }
+            oVideoLog = null;
+        }
+
         static void logEnvironment()
         {
-            logMessage("HomerDescribe " + version() + " starting", "INFO", "HomerDescribe " + version());
             logMessage("Program: " + System.Reflection.Assembly.GetExecutingAssembly().Location, "INFO", "");
             logMessage("Framework: " + Environment.Version.ToString(), "INFO", "");
             logMessage("Platform: " + Environment.OSVersion.ToString() + ", 64 bit process: " + Environment.Is64BitProcess.ToString(), "INFO", "");
@@ -651,7 +473,6 @@ namespace Homer
 
         static bool bBoxes = false;
         static bool bGuiMode = false;
-        static string sLastSkippedFolder = "";
 
         static void showTimedBox(string sCaption, string sBody)
         {
@@ -1189,74 +1010,6 @@ namespace Homer
             return 1.5;
         }
 
-        // The second stage, after AutoAD-Zero (Xie et al., Oxford VGG): a vision
-        // model is asked to look thoroughly, and a language model then compresses
-        // what it saw into one spoken description. Training-free, and competitive
-        // with models fine-tuned on real audio description.
-        //
-        // The reason it works is that perceiving and being concise are different
-        // jobs. Asked to do both at once, a vision model spends its attention on
-        // the picture and its words on whatever comes first. Separating them lets
-        // the first stage look hard and the second stage write well.
-        //
-        // No second model is installed: this is the same model with no image
-        // attached, so nothing is loaded or unloaded between the two calls.
-        static string summarise(string sSeen, int iMaxWords, List<string> lRecent)
-        {
-            if (sSeen.Trim() == "") return "";
-            StringBuilder oRules = new StringBuilder();
-            oRules.Append("You turn an observer's notes about one moment of a film into audio description for a blind viewer. ");
-            oRules.Append("Report what was seen; never say what it means. Not \"he looks furious\" but \"he clenches his fist\". ");
-            oRules.Append("Present tense, active voice, third person, concrete nouns, the exact verb. ");
-            oRules.Append("Nothing about frames, shots, scenes, the camera or the film. Nothing that can be heard anyway. ");
-            oRules.Append("Answer with the description alone: no preamble, no explanation, no quotation marks.");
-            StringBuilder oPrompt = new StringBuilder();
-            if (lRecent.Count > 0)
-            {
-                oPrompt.Append("Already said about the moments just before: ");
-                foreach (string sOld in lRecent) oPrompt.Append("\"" + sOld + "\" ");
-                oPrompt.Append("\n\n");
-            }
-            oPrompt.Append("The observer's notes:\n" + sSeen + "\n\n");
-            oPrompt.Append("Write that as audio description. HARD LIMIT: " + iMaxWords.ToString() + " words. ");
-            oPrompt.Append("Count them. A longer answer is worse than a shorter one, because it will be spoken over the dialogue. ");
-            oPrompt.Append("Keep who is there, what they do, and where they are. Drop scenery, clothing, light and weather before going over the limit. ");
-            oPrompt.Append("One sentence is usually enough; two at most. ");
-            oPrompt.Append("If the notes hold nothing a blind viewer would need, answer SKIP.");
-            Dictionary<string, object> dOptions = new Dictionary<string, object>();
-            dOptions["temperature"] = 0.2;
-            dOptions["num_predict"] = 200;
-            dOptions["repeat_penalty"] = 1.15;
-            Dictionary<string, object> dPayload = new Dictionary<string, object>();
-            dPayload["model"] = text("model");
-            dPayload["system"] = oRules.ToString();
-            dPayload["prompt"] = oPrompt.ToString();
-            dPayload["stream"] = false;
-            dPayload["keep_alive"] = "30m";
-            dPayload["options"] = dOptions;
-            JavaScriptSerializer oSerializer = new JavaScriptSerializer();
-            oSerializer.MaxJsonLength = int.MaxValue;
-            string sAnswer = postJson(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
-            if (sAnswer == "") return sSeen;
-            Dictionary<string, object> dReply = null;
-            try
-            {
-                dReply = oSerializer.Deserialize<Dictionary<string, object>>(sAnswer);
-            }
-            catch (Exception oError)
-            {
-                logMessage("The summary could not be read: " + oError.Message, "ERROR");
-                return sSeen;
-            }
-            if (!dReply.ContainsKey("response")) return sSeen;
-            string sShort = Convert.ToString(dReply["response"]).Trim();
-            sShort = Regex.Replace(sShort, @"^\s*skip\b[\s.:,-]*", "", RegexOptions.IgnoreCase);
-            sShort = Regex.Replace(sShort, @"[\s.]*\bskip\s*[.!]?\s*$", "", RegexOptions.IgnoreCase);
-            sShort = sShort.Trim().Trim('"');
-            if (sShort == "") return "";
-            return tidyText(sShort);
-        }
-
         static string describeImage(string sImagePath, int iMaxWords, List<string> lRecent, string sContext, bool bAgain, bool bNewScene, string sJudgment, bool bOverSound, List<string> lNames)
         {
             string sPrompt = promptFor(iMaxWords, lRecent, sContext, bNewScene, bOverSound, lNames);
@@ -1457,27 +1210,6 @@ namespace Homer
                 iCount = iCount + iWords;
             }
             return string.Join(" ", lKept.ToArray());
-        }
-
-        // Remove the last comma or semicolon clause, leaving what is still a
-        // sentence. Refuses when the result would be too short to say anything,
-        // or would end on a word that needs something after it.
-        static string dropLastClause(string sText)
-        {
-            string sBody = sText.TrimEnd('.', '!', '?', ' ');
-            int iComma = sBody.LastIndexOf(", ");
-            int iSemi = sBody.LastIndexOf("; ");
-            int iCut = Math.Max(iComma, iSemi);
-            if (iCut < 0) return sText;
-            string sShort = sBody.Substring(0, iCut).TrimEnd(',', ';', ' ');
-            sShort = Regex.Replace(sShort, @"\s+\b(and|but|or|nor|yet|so|with|without|from|to|into|onto|as|while|when|where|which|who|whom|that|before|after|under|over|beside|behind|beneath|toward|towards|through|across|against|between|among|near|amid|amidst)\s*$", "", RegexOptions.IgnoreCase);
-            if (sShort.Split(' ').Length < 4) return sText;
-            // A sentence that opens with a place or a time -- "At an ancient
-            // site near water, shadows stretch across the stones" -- must not be
-            // cut back to that opening, which leaves a phrase and no sentence.
-            // If nothing but the opening phrase would remain, leave it alone.
-            if (sShort.IndexOf(',') < 0 && Regex.IsMatch(sShort, @"^(at|in|on|under|over|near|beside|behind|above|below|along|across|through|beyond|within|outside|inside|amid|amidst|among|between|during|after|before|by|with|from|against|toward|towards|beneath)\b", RegexOptions.IgnoreCase)) return sText;
-            return sShort + ".";
         }
 
         static string dropLastSentence(string sText)
@@ -1727,58 +1459,12 @@ namespace Homer
             threadMux = null;
         }
 
-        // The name of the finished thing: the film in its own container, or a
-        // single mp3 when only the sound is wanted.
-        static string outputName(string sInput)
-        {
-            if (flag("audio-only")) return sDefaultDescribedStem + ".mp3";
-            return sDefaultDescribedStem + Path.GetExtension(sInput);
-        }
-
         static bool muxOutput(string sFfmpeg, string sVideo, string sAdWave, string sOutPath, double nDuration, bool bBackground)
         {
             string sFilter = "[1:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo,volume=" + num(number("ad-volume")) + ",asplit=2[adDuck][adMix];"
                            + "[0:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[main];"
                            + "[main][adDuck]sidechaincompress=threshold=0.01:ratio=20:attack=5:release=300[duck];"
                            + "[duck][adMix]amix=inputs=2:duration=first:normalize=0[mix]";
-            if (flag("audio-only"))
-            {
-                // Sound only. No video is copied, so this is minutes of work
-                // rather than the whole film rewritten, and the result is a
-                // fraction of the size.
-                string sAudioArgs = "-hide_banner -y -i " + quoted(sVideo) + " -i " + quoted(sAdWave)
-                                  + " -filter_complex " + quoted(sFilter)
-                                  + " -map " + quoted("[mix]") + " -vn -c:a libmp3lame -q:a 4"
-                                  + " -metadata " + quoted("title=" + Path.GetFileNameWithoutExtension(sVideo) + ", with audio description")
-                                  + " " + quoted(sOutPath + ".part");
-                logMessage("Writing the described audio to " + sOutPath,
-                           "INFO", bBackground ? "" : "Writing the described audio. No video is copied, so this is quick.");
-                runScan(sFfmpeg, sAudioArgs, nDuration, bBackground ? "" : "Writing the audio");
-                if (iLastScanExit != 0)
-                {
-                    logMessage("The described audio could not be written. If ffmpeg has no mp3 encoder, install a build that has libmp3lame.", "ERROR");
-                    try
-                    {
-                        if (File.Exists(sOutPath + ".part")) File.Delete(sOutPath + ".part");
-                    }
-                    catch (Exception)
-                    {
-                    }
-                    return false;
-                }
-                try
-                {
-                    if (File.Exists(sOutPath)) File.Delete(sOutPath);
-                    File.Move(sOutPath + ".part", sOutPath);
-                }
-                catch (Exception oError)
-                {
-                    logMessage("The described audio could not be moved into place: " + oError.Message, "ERROR");
-                    return false;
-                }
-                logMessage("The described audio is ready at " + sOutPath, "INFO", "  (described audio written)");
-                return true;
-            }
             string sArguments = "-hide_banner -y -i " + quoted(sVideo) + " -i " + quoted(sAdWave)
                               + " -filter_complex " + quoted(sFilter)
                               + " -map 0:v:0 -c:v copy"
@@ -1879,7 +1565,7 @@ namespace Homer
             fDoc.Close();
         }
 
-        static void writeCache(List<Moment> lMoments, string sPath, bool bFinished)
+        static void writeCache(List<Moment> lMoments, string sPath)
         {
             List<object> lItems = new List<object>();
             foreach (Moment oMoment in lMoments)
@@ -1893,15 +1579,12 @@ namespace Homer
             }
             Dictionary<string, object> dData = new Dictionary<string, object>();
             dData["items"] = lItems;
-            dData["finished"] = bFinished;
             JavaScriptSerializer oSerializer = new JavaScriptSerializer();
             oSerializer.MaxJsonLength = int.MaxValue;
             StreamWriter fJson = new StreamWriter(sPath, false, new UTF8Encoding(true));
             fJson.Write(oSerializer.Serialize(dData));
             fJson.Close();
         }
-
-        static bool bLastCacheFinished = false;
 
         static Dictionary<string, string> readCache(string sPath)
         {
@@ -1912,7 +1595,6 @@ namespace Homer
                 JavaScriptSerializer oSerializer = new JavaScriptSerializer();
                 oSerializer.MaxJsonLength = int.MaxValue;
                 Dictionary<string, object> dData = oSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(sPath));
-                bLastCacheFinished = dData.ContainsKey("finished") && Convert.ToBoolean(dData["finished"]);
                 if (!dData.ContainsKey("items")) return dCache;
                 foreach (object oItem in toList(dData["items"]))
                 {
@@ -1929,11 +1611,11 @@ namespace Homer
             return dCache;
         }
 
-        static void saveReadable(List<Moment> lMoments, string sOutputDir, string sWorkDir, string sSourceName, double nDuration)
+        static void saveReadable(List<Moment> lMoments, string sOutputDir, string sSourceName, double nDuration)
         {
             if (lMoments.Count == 0) return;
-            writeCache(lMoments, Path.Combine(sWorkDir, sDefaultJsonName), false);
-            writeVtt(lMoments, Path.Combine(sWorkDir, sDefaultVttName));
+            writeCache(lMoments, Path.Combine(sOutputDir, sDefaultJsonName));
+            writeVtt(lMoments, Path.Combine(sOutputDir, sDefaultVttName));
             writeMarkdown(lMoments, Path.Combine(sOutputDir, sDefaultMarkdownName), sSourceName, nDuration);
         }
 
@@ -1998,16 +1680,12 @@ namespace Homer
             while (true)
             {
                 string sButton = "";
-                // The boxes open holding whatever was last entered, so a
-                // mistyped path can be corrected rather than typed again.
                 string sSources = text("source-paths");
                 string sOutput = text("output-dir");
                 if (sOutput == "") sOutput = defaultVideoFolder();
                 bool bForce = flag("force");
                 bool bLogSession = flag("log-session");
                 bool bUseConfig = flag("use-configuration");
-                bool bViewOutput = flag("view-output");
-                bool bAudioOnly = flag("audio-only");
                 using (LbcDialog oDialog = new LbcDialog("HomerDescribe", null))
                 {
                     oDialog.addBand();
@@ -2071,11 +1749,6 @@ namespace Homer
                         "Write a copy of HomerDescribe.log into the output directory as well as beside the program.");
                     CheckBox oConfigBox = oDialog.addCheckBox("&Use configuration", bUseConfig,
                         "Load these settings at startup and save them on OK, in " + configPath() + ".");
-                    CheckBox oAudioBox = oDialog.addCheckBox("&Audio only", bAudioOnly,
-                        "Produce sound only: one mp3 holding the film's own audio with the descriptions mixed into it, and no video. " +
-                        "Far smaller than the film, quicker to make, and enough when the picture is of no use to the listener.");
-                    CheckBox oViewBox = oDialog.addCheckBox("&View output", bViewOutput,
-                        "Open the folder holding the described film and its script when the run finishes, so it does not have to be hunted for.");
 
                     sButton = oDialog.runWithButtons(new string[] { "OK", "Cancel" });
 
@@ -2084,8 +1757,6 @@ namespace Homer
                     bForce = oForceBox.Checked;
                     bLogSession = oLogBox.Checked;
                     bUseConfig = oConfigBox.Checked;
-                    bViewOutput = oViewBox.Checked;
-                    bAudioOnly = oAudioBox.Checked;
                 }
 
                 if (sButton == null || sButton == "" || sButton == "Cancel") return false;
@@ -2095,8 +1766,6 @@ namespace Homer
                 dParams["force"].sValue = bForce ? "yes" : "no";
                 dParams["log-session"].sValue = bLogSession ? "yes" : "no";
                 dParams["use-configuration"].sValue = bUseConfig ? "yes" : "no";
-                dParams["view-output"].sValue = bViewOutput ? "yes" : "no";
-                dParams["audio-only"].sValue = bAudioOnly ? "yes" : "no";
 
                 if (sSources == "")
                 {
@@ -2113,42 +1782,12 @@ namespace Homer
 
         static string configPath()
         {
-            return Path.Combine(appDataFolder(), "HomerDescribe.ini");
-        }
-
-        // A settings file left beside the program by an earlier build, or put
-        // there deliberately in a development folder, is still read. It is never
-        // written there.
-        static string configPathToRead()
-        {
-            if (File.Exists(configPath())) return configPath();
-            string sBeside = Path.Combine(exeFolder(), "HomerDescribe.ini");
-            if (File.Exists(sBeside)) return sBeside;
-            return configPath();
-        }
-
-        static bool savedSaysUseConfiguration()
-        {
-            if (!File.Exists(configPathToRead())) return false;
-            try
-            {
-                foreach (InixCodec.Section oSection in InixCodec.read(configPathToRead()))
-                {
-                    foreach (InixCodec.Pair oPair in oSection.Pairs)
-                    {
-                        if (oPair.Key == "use-configuration") return oPair.Value == "yes";
-                    }
-                }
-            }
-            catch (Exception)
-            {
-            }
-            return false;
+            return Path.Combine(exeFolder(), "HomerDescribe.ini");
         }
 
         static void loadConfig()
         {
-            string sPath = configPathToRead();
+            string sPath = configPath();
             if (!File.Exists(sPath)) return;
             try
             {
@@ -2157,9 +1796,6 @@ namespace Homer
                     foreach (InixCodec.Pair oPair in oSection.Pairs)
                     {
                         if (!dParams.ContainsKey(oPair.Key)) continue;
-                        // A key the dialog no longer offers is left behind rather
-                        // than applied, so an old file cannot pin a stale default.
-                        if (!isRemembered(oPair.Key)) continue;
                         // The command line wins over the file.
                         if (dParams[oPair.Key].bGiven) continue;
                         dParams[oPair.Key].sValue = oPair.Value;
@@ -2173,42 +1809,21 @@ namespace Homer
             }
         }
 
-        // Only what the dialog actually offers is remembered. Saving every
-        // setting freezes the built-in defaults forever: a settings file written
-        // by an older build kept handing back its idea of mux-minutes long after
-        // the default had changed, and nothing on screen said so.
-        static readonly string[] asRemembered = new string[] {
-            "source-paths", "output-dir", "force", "log-session", "use-configuration", "view-output", "audio-only"
-        };
-
-        static bool isRemembered(string sName)
-        {
-            foreach (string sOne in asRemembered)
-            {
-                if (sOne == sName) return true;
-            }
-            return false;
-        }
-
         static void saveConfig()
         {
             string sPath = configPath();
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(sPath));
                 foreach (KeyValuePair<string, Param> oPair in dParams)
                 {
-                    if (!isRemembered(oPair.Key)) continue;
+                    if (oPair.Key == "help" || oPair.Key == "gui" || oPair.Key == "check" || oPair.Key == "list-voices") continue;
                     InixCodec.writeValue(sPath, "Settings", oPair.Key, oPair.Value.sValue);
                 }
                 logMessage("Settings saved to " + sPath, "INFO", "Settings saved.");
             }
             catch (Exception oError)
             {
-                logMessage("The settings could not be saved to " + sPath + ": " + oError.Message, "ERROR");
-                if (bGuiMode) MessageBox.Show("The settings could not be saved:" + Environment.NewLine + Environment.NewLine
-                    + sPath + Environment.NewLine + Environment.NewLine + oError.Message,
-                    "HomerDescribe", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                logMessage("The configuration could not be written: " + oError.Message, "ERROR");
             }
         }
 
@@ -2264,52 +1879,6 @@ namespace Homer
             return oProcess.ExitCode;
         }
 
-        // Expand a source that names several files at once. A star or a question
-        // mark is a pattern, not a path, and Path.GetFullPath throws on one.
-        static List<string> expandPattern(string sSource)
-        {
-            List<string> lFound = new List<string>();
-            if (sSource.IndexOf('*') < 0 && sSource.IndexOf('?') < 0)
-            {
-                lFound.Add(sSource);
-                return lFound;
-            }
-            string sFolder = "";
-            string sPattern = sSource;
-            try
-            {
-                sFolder = Path.GetDirectoryName(sSource);
-                sPattern = Path.GetFileName(sSource);
-            }
-            catch (Exception oError)
-            {
-                logMessage("That does not look like a path: " + sSource + " (" + oError.Message + ")", "ERROR");
-                return lFound;
-            }
-            if (sFolder == "") sFolder = Directory.GetCurrentDirectory();
-            if (!Directory.Exists(sFolder))
-            {
-                logMessage("No such folder: " + sFolder, "ERROR");
-                return lFound;
-            }
-            string[] asFiles = new string[0];
-            try
-            {
-                asFiles = Directory.GetFiles(sFolder, sPattern);
-            }
-            catch (Exception oError)
-            {
-                logMessage("The pattern " + sSource + " could not be read: " + oError.Message, "ERROR");
-                return lFound;
-            }
-            Array.Sort(asFiles);
-            foreach (string sFile in asFiles) lFound.Add(sFile);
-            logMessage(sSource + " matches " + lFound.Count.ToString() + " files",
-                       "INFO", sSource + " matches " + lFound.Count.ToString() + " files.");
-            if (lFound.Count == 0) logMessage("Nothing matched " + sSource, "ERROR");
-            return lFound;
-        }
-
         // Fetch a video from a web page.
         //
         // This is handed to yt-dlp rather than done in C#. Extracting a video
@@ -2357,36 +1926,7 @@ namespace Homer
                               + " -o " + quoted(Path.Combine(sFolder, "%(title)s.%(ext)s"))
                               + " " + quoted(sAddress);
             int iCode = runStreamed(sYtDlp, sArguments, "Downloading");
-            if (iCode != 0)
-            {
-                // YouTube changes how it serves video every few weeks, and an
-                // older yt-dlp stops working: "Precondition check failed",
-                // HTTP 400 on the player API, and then "Requested format is not
-                // available" because no video format was found at all. The cure
-                // is almost always a newer yt-dlp.
-                logMessage("The download failed. An out of date yt-dlp is the usual cause.", "ERROR");
-                logMessage("Updating yt-dlp and trying once more.", "INFO", "The download failed. Updating yt-dlp and trying once more.");
-                string sUpOut = "";
-                string sUpErr = "";
-                runCommand(sYtDlp, "-U", out sUpOut, out sUpErr);
-                foreach (string sLine in (sUpOut + sUpErr).Split('\n'))
-                {
-                    if (sLine.Trim() != "") logMessage("  " + sLine.Trim(), "INFO", "");
-                }
-                iCode = runStreamed(sYtDlp, sArguments, "Downloading");
-            }
-            if (iCode != 0)
-            {
-                string sAdvice = "The download failed again, even after updating yt-dlp.\r\n\r\n"
-                               + "Try by hand, to see what it says:\r\n"
-                               + "  yt-dlp -U\r\n"
-                               + "  yt-dlp \"" + sAddress + "\"\r\n\r\n"
-                               + "Some videos cannot be downloaded at all: private, age restricted, or members only. "
-                               + "If the address plays only when signed in, HomerDescribe cannot reach it either.";
-                logMessage(sAdvice.Replace("\r\n", " "), "HINT");
-                if (bGuiMode) MessageBox.Show(sAdvice, "HomerDescribe", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return "";
-            }
+            if (iCode != 0) return "";
             string sPath = "";
             try
             {
@@ -2412,8 +1952,6 @@ namespace Homer
 
         static int run()
         {
-            // Checked on every attempt, because a person may have started
-            // Ollama between one try and the next.
             bool bReady = checkEnvironment();
             if (flag("check"))
             {
@@ -2422,32 +1960,16 @@ namespace Homer
                 return bReady ? 0 : 1;
             }
             if (!bReady) return 1;
-            List<string> lGiven = splitPaths(text("source-paths"));
-            List<string> lSources = new List<string>();
-            foreach (string sGiven in lGiven)
-            {
-                if (sGiven.StartsWith("http://") || sGiven.StartsWith("https://")) lSources.Add(sGiven);
-                else foreach (string sOne in expandPattern(sGiven)) lSources.Add(sOne);
-            }
+            List<string> lSources = splitPaths(text("source-paths"));
             if (lSources.Count == 0)
             {
-                string sTried = text("source-paths").Trim();
-                string sSaid = sTried == ""
-                    ? "No source was given, so there is nothing to describe."
-                    : "Nothing was found matching:" + Environment.NewLine + Environment.NewLine + sTried;
-                logMessage(sSaid.Replace(Environment.NewLine, " "), "ERROR");
+                logMessage("No source was given.", "ERROR");
                 if (!bGuiMode) logMessage("Name a video file or a YouTube address, or run HomerDescribe with no arguments for the dialog.", "HINT");
-                if (bGuiMode) MessageBox.Show(sSaid, "HomerDescribe", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                // Nothing to do is not a failure to report and exit on: from the
-                // dialog it means the person mistyped a path, and what they want
-                // next is the dialog back with their text still in it.
-                return iNothingToDo;
+                if (bGuiMode) MessageBox.Show("No source was given, so there is nothing to describe.", "HomerDescribe", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return 1;
             }
             int iWorst = 0;
             int iAt = 0;
-            int iSkippedWhole = 0;
-            int iDescribedWhole = 0;
-            sLastSkippedFolder = "";
             foreach (string sSource in lSources)
             {
                 iAt = iAt + 1;
@@ -2465,18 +1987,9 @@ namespace Homer
                         continue;
                     }
                 }
+                startVideoLog();
                 int iOne = 1;
-                string sFull = sPath;
-                try
-                {
-                    sFull = Path.GetFullPath(sPath);
-                }
-                catch (Exception oError)
-                {
-                    logMessage("That path cannot be used: " + sPath + " (" + oError.Message + ")", "ERROR");
-                    iWorst = 1;
-                    continue;
-                }
+                string sFull = Path.GetFullPath(sPath);
                 try
                 {
                     iOne = runOne(sFull);
@@ -2487,32 +2000,11 @@ namespace Homer
                     // own copy of everything that was said about it.
                     string sBase = text("output-dir");
                     if (sBase == "") sBase = Path.GetDirectoryName(sFull);
+                            if (flag("log-session")) finishVideoLog(Path.Combine(sBase, Path.GetFileNameWithoutExtension(sFull)));
+                    oVideoLog = null;
                 }
-                if (iOne == iAlreadyDone) iSkippedWhole = iSkippedWhole + 1;
-                if (iOne == 0) iDescribedWhole = iDescribedWhole + 1;
-                if (iOne != 0 && iOne != iAlreadyDone) iWorst = iOne;
+                if (iOne != 0) iWorst = iOne;
             }
-            // Every one of them was already done. That is not a failure, but it
-            // is not a result either, and a run that ends without a word looks
-            // like a program that did not start.
-            if (iDescribedWhole == 0 && iSkippedWhole > 0)
-            {
-                string sSaid = iSkippedWhole == 1
-                    ? "That video has already been described, so there was nothing to do."
-                    : "All " + iSkippedWhole.ToString() + " of those videos have already been described, so there was nothing to do.";
-                sSaid = sSaid + Environment.NewLine + Environment.NewLine
-                      + (bGuiMode ? "Tick Force overwrite to describe them again." : "Pass --force to describe them again.");
-                logMessage(sSaid.Replace(Environment.NewLine, " "), "INFO", bGuiMode ? "" : sSaid);
-                if (bGuiMode && MessageBox.Show(sSaid + Environment.NewLine + Environment.NewLine
-                        + "Open the folder holding what was described before?",
-                        "HomerDescribe", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
-                {
-                    showFolder(sLastSkippedFolder);
-                }
-                return iNothingToDo;
-            }
-            if (iSkippedWhole > 0) logMessage(iSkippedWhole.ToString() + " already described and skipped; " + iDescribedWhole.ToString() + " described.",
-                                              "INFO", iSkippedWhole.ToString() + " already described and skipped.");
             return iWorst;
         }
 
@@ -2533,14 +2025,7 @@ namespace Homer
             runCommand(sFfmpeg, "-version", out sOut, out sErr);
             string sYtDlp = findTool("yt-dlp");
             if (sYtDlp == "") logMessage("yt-dlp was not found. Video files still work; web addresses do not.", "INFO", "");
-            if (sYtDlp != "")
-            {
-                logMessage("Found yt-dlp at " + sYtDlp, "INFO", "");
-                string sVerOut = "";
-                string sVerErr = "";
-                runCommand(sYtDlp, "--version", out sVerOut, out sVerErr);
-                logMessage("  yt-dlp version " + (sVerOut + sVerErr).Trim(), "INFO", "");
-            }
+            if (sYtDlp != "") logMessage("Found yt-dlp at " + sYtDlp, "INFO", "");
             return checkOllama();
         }
 
@@ -2564,19 +2049,12 @@ namespace Homer
             // folder is. The folder appears the moment work begins, so testing
             // for the folder would have skipped every interrupted run instead of
             // resuming it, which is the opposite of what is wanted.
-            string sFilmPath = Path.Combine(sOutputDir, outputName(sInput));
-            // Finished means BOTH the film is there AND the record says the run
-            // reached the end. A film left half written by an interrupted run
-            // exists on disk and must not be mistaken for a finished one.
-            bLastCacheFinished = false;
-            if (File.Exists(Path.Combine(workFolderFor(sInput), sDefaultJsonName))) readCache(Path.Combine(workFolderFor(sInput), sDefaultJsonName));
-            if (File.Exists(sFilmPath) && bLastCacheFinished && !flag("force"))
+            string sFilmPath = Path.Combine(sOutputDir, sDefaultDescribedStem + Path.GetExtension(sInput));
+            if (File.Exists(sFilmPath) && !flag("force"))
             {
-                sLastSkippedFolder = sOutputDir;
-                logMessage("Skipping " + sRoot + ": " + sFilmPath + " already exists. "
-                           + (bGuiMode ? "Tick Force overwrite to describe it again." : "Pass --force to describe it again."),
+                logMessage("Skipping " + sRoot + ": " + sFilmPath + " already exists. Tick Force overwrite to describe it again.",
                            "INFO", "Skipping " + sRoot + ", already described.");
-                return iAlreadyDone;
+                return 0;
             }
             if (Directory.Exists(sOutputDir) && !flag("force"))
             {
@@ -2584,15 +2062,8 @@ namespace Homer
                            "INFO", "An unfinished run is here. Carrying on from where it stopped.");
             }
 
-            // The video's folder holds only what a person would open: the
-            // described film and the script to read. The working files -- the
-            // record used to resume, the caption file, the description track,
-            // the montages -- go under the user's application data, where they
-            // are out of the way but still findable.
-            string sWorkDir = workFolderFor(sInput);
-            Directory.CreateDirectory(sOutputDir);
+            string sWorkDir = Path.Combine(sOutputDir, "work");
             Directory.CreateDirectory(sWorkDir);
-            logMessage("Working files are under " + sWorkDir, "INFO", "");
             logMessage("Input: " + sInput, "INFO", "");
             logMessage("Results go to: " + sOutputDir, "INFO", "Results go to " + sOutputDir);
 
@@ -2650,17 +2121,10 @@ namespace Homer
             if (!openVoice()) return 1;
 
             Dictionary<string, string> dCache = new Dictionary<string, string>();
-            string sJsonPath = Path.Combine(sWorkDir, sDefaultJsonName);
+            string sJsonPath = Path.Combine(sOutputDir, sDefaultJsonName);
             if (!flag("force")) dCache = readCache(sJsonPath);
             if (dCache.Count > 0) logMessage("Picking up where the last run stopped: " + dCache.Count.ToString() + " descriptions already written",
                                              "INFO", "Carrying on from " + dCache.Count.ToString() + " descriptions already written.");
-            if (flag("rebuild") && dCache.Count == 0)
-            {
-                logMessage("Rebuild was asked for, but there are no descriptions here to rebuild from.", "ERROR");
-                return 1;
-            }
-            if (flag("rebuild")) logMessage("Rebuilding the film from " + dCache.Count.ToString() + " descriptions already made. The model is not consulted.",
-                                            "INFO", "Rebuilding the film from " + dCache.Count.ToString() + " descriptions already made. Nothing is described again.");
 
             List<Moment> lGaps = findGaps(sFfmpeg, sInput, nDuration);
             List<Moment> lDone = new List<Moment>();
@@ -2670,6 +2134,7 @@ namespace Homer
             int iIndex = 0;
             int iSkipped = 0;
             int iLastPercent = -1;
+            bool bWarnedSlow = false;
             double nLastSpoken = -1.0;
             DateTime dtBegan = DateTime.Now;
             DateTime dtLastMux = DateTime.Now;
@@ -2695,10 +2160,6 @@ namespace Homer
                 if (bFromCache) sText = dCache[num(oGap.nStart)];
                 if (!bFromCache)
                 {
-                    // Rebuilding: speak and assemble what is already written,
-                    // and ask the model nothing. A moment never described stays
-                    // undescribed.
-                    if (flag("rebuild")) continue;
                     if (!buildMontage(sFfmpeg, sInput, oGap.nStart + oGap.nLength / 2.0, oGap.nLength + 2.0, sImagePath)) continue;
                     bool bNewScene = false;
                     if (number("same-shot") > 0.0)
@@ -2719,15 +2180,7 @@ namespace Homer
                         binLast = binNow;
                     }
                     List<string> lShown = lRecent.GetRange(Math.Max(0, lRecent.Count - iDefaultRecent), Math.Min(iDefaultRecent, lRecent.Count));
-                    int iLookWords = flag("summarise") ? iMaxWords * 3 : iMaxWords;
-                    sText = describeImage(sImagePath, iLookWords, lShown, sContext, false, bNewScene, "", oGap.bForced, lNames);
-                    if (flag("summarise") && sText != "")
-                    {
-                        string sSeen = sText;
-                        sText = summarise(sSeen, iMaxWords, lShown);
-                        logMessage("Saw: " + sSeen, "INFO", "");
-                        logMessage("Said: " + sText, "INFO", "");
-                    }
+                    sText = describeImage(sImagePath, iMaxWords, lShown, sContext, false, bNewScene, "", oGap.bForced, lNames);
                     List<string> lAgainst = lRecent.GetRange(Math.Max(0, lRecent.Count - iDefaultCompare), Math.Min(iDefaultCompare, lRecent.Count));
                     double nLike = worstLikeness(sText, lAgainst);
                     if (sText != "" && nLike >= number("similarity"))
@@ -2788,35 +2241,6 @@ namespace Homer
                     sText = dropLastSentence(sText);
                     binAudio = speakToPcm(sText, iRate);
                 }
-                // Still too long, and it is one sentence, so dropping sentences
-                // cannot help. Shorten it at clause boundaries instead: a
-                // description of this kind opens with a main clause and hangs
-                // detail off it in commas, so cutting the last comma clause
-                // leaves a sentence rather than a fragment. Words are never cut
-                // off the end -- "A man stands on a hilltop under bright" is
-                // worse than a description that runs a second long.
-                while (pcmSeconds(binAudio) > nAllowed)
-                {
-                    string sShorter = dropLastClause(sText);
-                    if (sShorter == sText) break;
-                    sText = sShorter;
-                    binAudio = speakToPcm(sText, iRate);
-                }
-                // No clauses left to drop. Ask the model to say it again in
-                // fewer words, which is the only way left to shorten it and
-                // still have it read as English.
-                if (pcmSeconds(binAudio) > nAllowed && flag("summarise"))
-                {
-                    int iRoom = Math.Max(6, (int)(nAllowed * number("words-per-second") * 0.8));
-                    string sTighter = summarise(sText, iRoom, new List<string>());
-                    if (sTighter != "" && sTighter.Split(' ').Length < sText.Split(' ').Length)
-                    {
-                        logMessage("Asked again in " + iRoom.ToString() + " words or fewer, to fit the gap.", "INFO", "");
-                        sText = sTighter;
-                        binAudio = speakToPcm(sText, iRate);
-                    }
-                }
-                if (pcmSeconds(binAudio) > nAllowed) logMessage("This description still runs " + num(pcmSeconds(binAudio) - nAllowed) + "s past what the gap allows: " + sText, "INFO", "");
                 oGap.sText = sText;
                 oGap.binAudio = binAudio;
                 oGap.nSpoken = pcmSeconds(binAudio);
@@ -2835,20 +2259,44 @@ namespace Homer
                 if (iPercent != iLastPercent) logMessage("Reached " + iPercent.ToString() + " percent of " + Path.GetFileName(sInput), "INFO", "");
                 iLastPercent = iPercent;
                 showTimedBox(sCaption, sText);
-                saveReadable(lDone, sOutputDir, sWorkDir, Path.GetFileName(sInput), nDuration);
-                if (iIndex % 10 == 0)
+                saveReadable(lDone, sOutputDir, Path.GetFileName(sInput), nDuration);
+                bool bSayNow = iIndex <= 3 || iIndex == 5 || iIndex % 10 == 0;
+                if (bSayNow)
                 {
                     double nEach = DateTime.Now.Subtract(dtBegan).TotalSeconds / (double)iIndex;
+                    double nLeftMinutes = nEach * (lGaps.Count - iIndex) / 60.0;
+                    string sLeft = "about " + ((int)Math.Round(nLeftMinutes)).ToString() + " minutes left";
+                    if (nLeftMinutes >= 90.0) sLeft = "about " + num(Math.Round(nLeftMinutes / 60.0, 1)) + " hours left";
                     logMessage("Progress: " + iIndex.ToString() + " of " + lGaps.Count.ToString() + ", " + num(nEach) + " seconds each",
-                               "INFO", "-- " + iIndex.ToString() + " of " + lGaps.Count.ToString() + " done, about " + ((int)Math.Round(nEach * (lGaps.Count - iIndex) / 60.0)).ToString() + " minutes left --");
+                               "INFO", "-- " + iIndex.ToString() + " of " + lGaps.Count.ToString() + " done, " + num(nEach) + " seconds each, " + sLeft + " --");
+                    if (!bWarnedSlow && iIndex >= 2 && nEach >= nDefaultSlowSeconds)
+                    {
+                        bWarnedSlow = true;
+                        string sSlow = "Each description is taking about " + ((int)nEach).ToString() + " seconds, so this film will take "
+                                     + (nLeftMinutes >= 90.0 ? num(Math.Round(nLeftMinutes / 60.0, 1)) + " hours" : ((int)Math.Round(nLeftMinutes)).ToString() + " minutes") + "."
+                                     + Environment.NewLine + Environment.NewLine
+                                     + "That usually means the model is running on the processor rather than a graphics card. "
+                                     + "It is working, not stuck, and it will finish."
+                                     + Environment.NewLine + Environment.NewLine
+                                     + "To make it quicker: install a smaller model with"
+                                     + Environment.NewLine + "    ollama pull qwen2.5vl:3b"
+                                     + Environment.NewLine + "and run again with --model qwen2.5vl:3b."
+                                     + Environment.NewLine + Environment.NewLine
+                                     + "Or send the model less to look at: --frames 1 --width 384.";
+                        logMessage(sSlow.Replace(Environment.NewLine, " "), "HINT");
+                        Console.WriteLine("");
+                        Console.WriteLine(sSlow);
+                        Console.WriteLine("");
+                        showTimedBox("This will take a while", sSlow);
+                    }
                 }
                 if (iIndex % integer("checkpoint") == 0)
                 {
-                    buildTrack(lDone, nDuration, Path.Combine(sWorkDir, sDefaultWaveName));
+                    buildTrack(lDone, nDuration, Path.Combine(sOutputDir, sDefaultWaveName));
                     logMessage("Saved " + lDone.Count.ToString() + " descriptions", "INFO", "  (progress saved)");
                     if (number("mux-minutes") > 0.0 && DateTime.Now.Subtract(dtLastMux).TotalMinutes >= number("mux-minutes"))
                     {
-                        startBackgroundMux(sFfmpeg, sInput, Path.Combine(sWorkDir, sDefaultWaveName), Path.Combine(sOutputDir, outputName(sInput)), nDuration);
+                        startBackgroundMux(sFfmpeg, sInput, Path.Combine(sOutputDir, sDefaultWaveName), Path.Combine(sOutputDir, sDefaultDescribedStem + Path.GetExtension(sInput)), nDuration);
                         dtLastMux = DateTime.Now;
                     }
                 }
@@ -2860,30 +2308,15 @@ namespace Homer
                 logMessage("No descriptions were produced.", "ERROR");
                 return 1;
             }
-            saveReadable(lDone, sOutputDir, sWorkDir, Path.GetFileName(sInput), nDuration);
-            buildTrack(lDone, nDuration, Path.Combine(sWorkDir, sDefaultWaveName));
+            saveReadable(lDone, sOutputDir, Path.GetFileName(sInput), nDuration);
+            buildTrack(lDone, nDuration, Path.Combine(sOutputDir, sDefaultWaveName));
             // Any background copy is finished with before the real one is written,
             // so two ffmpeg processes never write the same file.
             waitForMux();
-            muxOutput(sFfmpeg, sInput, Path.Combine(sWorkDir, sDefaultWaveName), Path.Combine(sOutputDir, outputName(sInput)), nDuration, false);
-            writeCache(lDone, Path.Combine(sWorkDir, sDefaultJsonName), true);
-            // The run is over, so the bulky intermediates go. The record stays,
-            // because --rebuild works from it and it costs a few kilobytes.
-            foreach (string sSpare in new string[] { sDefaultWaveName, "montage.jpg", "signature.raw" })
-            {
-                try
-                {
-                    string sSparePath = Path.Combine(sWorkDir, sSpare);
-                    if (File.Exists(sSparePath)) File.Delete(sSparePath);
-                }
-                catch (Exception)
-                {
-                }
-            }
-            string sFinished = "Finished with " + lDone.Count.ToString() + " descriptions. The described film is " + Path.Combine(sOutputDir, outputName(sInput));
+            muxOutput(sFfmpeg, sInput, Path.Combine(sOutputDir, sDefaultWaveName), Path.Combine(sOutputDir, sDefaultDescribedStem + Path.GetExtension(sInput)), nDuration, false);
+            string sFinished = "Finished with " + lDone.Count.ToString() + " descriptions. The described film is " + Path.Combine(sOutputDir, sDefaultDescribedStem + Path.GetExtension(sInput));
             logMessage("Finished with " + lDone.Count.ToString() + " descriptions", "INFO", sFinished);
             if (bGuiMode) MessageBox.Show(sFinished, "HomerDescribe finished", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            if (flag("view-output")) showFolder(sOutputDir);
             return 0;
         }
 
@@ -2902,6 +2335,7 @@ namespace Homer
                 showHelp();
                 return 0;
             }
+            openLog();
             logEnvironment();
 
             // Started with nothing on the command line -- from the Start menu,
@@ -2911,11 +2345,9 @@ namespace Homer
             bGuiMode = flag("gui") || asArgs.Length == 0;
             logMessage("Mode: " + (bGuiMode ? "dialog" : "command line"), "INFO", "");
 
-            // Checkboxes start unticked. A settings file is read only when it
-            // records that Use configuration was ticked last time -- otherwise
-            // the checkbox could never be turned on, since turning it on is what
-            // writes the file.
-            if (bGuiMode && !dParams["use-configuration"].bGiven && savedSaysUseConfiguration()) dParams["use-configuration"].sValue = "yes";
+            // In dialog mode an existing configuration is loaded whether or not
+            // it was asked for, so the dialog opens showing last time's answers.
+            if (bGuiMode && !dParams["use-configuration"].bGiven && File.Exists(configPath())) dParams["use-configuration"].sValue = "yes";
             if (flag("use-configuration")) loadConfig();
 
             // Boxes are on by default in dialog mode, off on the command line,
@@ -2932,24 +2364,14 @@ namespace Homer
                     closeLog();
                     return 0;
                 }
-                while (true)
+                if (bGuiMode && !showDialog())
                 {
-                    if (bGuiMode && !showDialog())
-                    {
-                        logMessage("Cancelled at the dialog.", "INFO", "");
-                        closeLog();
-                        return 0;
-                    }
-                    // The log's home depends on the settings, and in dialog mode
-                    // those are not settled until the dialog is answered.
-                    openLog();
-                    logSettings();
-                    iResult = run();
-                    if (!bGuiMode) break;
-                    if (iResult != iNothingToDo) break;
-                    logMessage("Nothing to describe, so the dialog is shown again.", "INFO", "");
+                    logMessage("Cancelled at the dialog.", "INFO", "");
+                    closeLog();
+                    return 0;
                 }
-                if (iResult == iNothingToDo) iResult = 1;
+                logSettings();
+                iResult = run();
             }
             catch (Exception oError)
             {

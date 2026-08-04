@@ -193,17 +193,7 @@ if errorlevel 1 (
 if exist "ffmpeg.exe" echo ffmpeg.exe is present>> "%log%"
 if not exist "ffmpeg.exe" echo WARN: ffmpeg.exe is absent; the installer will not package it.>> "%log%"
 
-rem yt-dlp goes stale quickly: YouTube changes how it serves video every few
-rem weeks and an older copy simply stops working. A copy more than thirty days
-rem old is replaced rather than packaged.
-if not exist "yt-dlp.exe" goto :fetchYtDlp
-forfiles /p . /m yt-dlp.exe /d -30 >nul 2>&1
-if errorlevel 1 goto :haveYtDlp
-echo yt-dlp.exe is over thirty days old; fetching a current one.
-echo yt-dlp.exe is over thirty days old; replacing it>> "%log%"
-del /q "yt-dlp.exe"
-
-:fetchYtDlp
+if exist "yt-dlp.exe" goto :haveYtDlp
 echo Fetching yt-dlp.
 echo Fetching yt-dlp>> "%log%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -220,7 +210,6 @@ if errorlevel 1 (
 )
 :haveYtDlp
 if exist "yt-dlp.exe" echo yt-dlp.exe is present>> "%log%"
-if exist "yt-dlp.exe" yt-dlp.exe --version >> "%log%" 2>&1
 
 rem ---- JSON -----------------------------------------------------------
 rem No JSON package is fetched, because none is needed. HomerDescribe reads and
@@ -244,7 +233,6 @@ if defined twohtm echo Regenerating the .htm documentation with %twohtm%>> "%log
 if defined twohtm "%twohtm%" -f ReadMe.md >> "%log%" 2>&1
 if defined twohtm "%twohtm%" -f History.md >> "%log%" 2>&1
 if defined twohtm "%twohtm%" -f License.md >> "%log%" 2>&1
-if defined twohtm "%twohtm%" -f Developer.md >> "%log%" 2>&1
 
 rem ---- optional icon ------------------------------------------------
 set "icon="

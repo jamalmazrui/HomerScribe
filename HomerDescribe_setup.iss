@@ -115,11 +115,9 @@ Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Developer.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Developer.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
 ; buildHomerDescribe.cmd downloads them when they are missing, so normally they
@@ -166,13 +164,13 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installOllama.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install Ollama for local AI (about 1 GB; the service {#AppName} runs its vision model in)"; \
+  Description: "Install Ollama and the vision model (about 6.5 GB in all; this is what {#AppName} describes with)"; \
   Flags: postinstall skipifsilent runascurrentuser
 
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installModels.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install the qwen2.5vl vision model (about 5.5 GB; what {#AppName} describes with, needs Ollama)"; \
+  Description: "Install the vision model only (about 5.5 GB; tick this if Ollama is already installed)"; \
   Flags: postinstall skipifsilent runascurrentuser
 
 FileName: "{app}\{#AppExeName}"; \
@@ -186,14 +184,4 @@ FileName: "{app}\ReadMe.htm"; \
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\context"
-
-; The settings, the resume records and the working files. Removing them leaves
-; nothing of HomerDescribe behind, which is what was asked for.
-;
-; One caveat worth knowing: the installer runs elevated, so {localappdata}
-; resolves to the profile of whoever ran the uninstaller. If HomerDescribe was
-; used by one account and uninstalled by another, that other account's folder is
-; the one removed. Described films and scripts are never touched -- they live
-; wherever the user chose to put them.
-Type: filesandordirs; Name: "{localappdata}\HomerDescribe"
 

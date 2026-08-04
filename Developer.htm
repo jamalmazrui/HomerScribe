@@ -186,6 +186,7 @@ live</a></li>
 <li><a href="#building" id="toc-building">Building</a></li>
 <li><a href="#changing-the-descriptions"
 id="toc-changing-the-descriptions">Changing the descriptions</a></li>
+<li><a href="#speed" id="toc-speed">Speed</a></li>
 <li><a href="#the-prototype" id="toc-the-prototype">The
 prototype</a></li>
 <li><a href="#what-is-not-done" id="toc-what-is-not-done">What is not
@@ -204,7 +205,7 @@ it.</p>
 Framework 4.8, with no DLL beside it and nothing to install for the
 program itself. 4.8 ships with Windows 10 and 11, so the binary runs
 anywhere those do.</p>
-<p>Roughly 2,900 lines in a single source file,
+<p>Roughly 3,000 lines in a single source file,
 <code>HomerDescribe.cs</code>, in <code>namespace Homer</code>. Style is
 Camel Type: Hungarian prefixes on typed identifiers, lower camel case
 for methods and variables, double quotes, one-line simple conditionals.
@@ -226,8 +227,8 @@ what keeps the result a single file.</p>
 <ul>
 <li><strong>Lbc.cs</strong> — layout-by-code dialogs. Builds the
 settings dialog without a designer, and supplies the Help button, the
-Escape and Enter behaviour, and the accessible names that a screen
-reader reads.</li>
+Escape and Enter behaviour, and the accessible names a screen reader
+reads.</li>
 <li><strong>Say.cs</strong> — screen-reader announcements through UI
 Automation.</li>
 <li><strong>Inix.cs</strong> — the ini codec, used for
@@ -275,9 +276,8 @@ be given by full path, or the build fails with CS0006.</li>
 <code>silencedetect</code> reads the whole sound track once. Silences
 long enough and far enough apart become natural gaps. Because a scored
 film has almost none, <code>--every</code> places further moments at a
-fixed interval; those are marked, and the model is told that its words
-will fall across the music and to say nothing unless the moment
-matters.</li>
+fixed interval; those are marked, and the model is told its words will
+fall across the music and to say nothing unless the moment matters.</li>
 <li><strong>Build a montage.</strong> One ffmpeg call seeks to the
 moment, samples four frames across it, crops the bottom to hide burnt-in
 subtitles, scales, and tiles them two by two. A still-image model then
@@ -302,7 +302,7 @@ stream. If it overruns its slot the rate rises; then whole sentences are
 dropped; then trailing comma clauses, which leaves a sentence rather
 than a fragment; then the model is asked to say it again in fewer words.
 Words are never cut off the end. A description that runs a second long
-is better than one that stops mid-phrase, and one that opens with a
+is better than one that stops mid-phrase, and a sentence opening with a
 place or a time is never cut back to that opening.</li>
 <li><strong>Save.</strong> The record is written after every single
 moment, so an interrupted run loses at most one.</li>
@@ -378,10 +378,15 @@ of the distribution.</p>
 parentheses, and cmd scans a parenthesised block for its closing paren
 before expanding variables. The build copies it into a paren-free name
 before any block, and every search is a single-line
-<code>if not defined X if exist ... set</code> chain.</li>
+<code>if not defined X if exist ... set</code> chain. The two install
+scripts do the same.</li>
 <li>A wildcard in the installer that matches nothing is a fatal error
 unless the line carries <code>skipifsourcedoesntexist</code>. Every
 source line except the executable has it.</li>
+<li>After Ollama is installed, it is not on the PATH of any console
+already open. <code>installModels.cmd</code> therefore looks for
+<code>ollama.exe</code> where it is put rather than asking
+<code>where</code>.</li>
 <li><code>ffmpeg.exe</code> and <code>yt-dlp.exe</code> are downloaded
 at build time and are in <code>.gitignore</code>. They are far too large
 for a repository.</li>
@@ -402,6 +407,15 @@ lists that trigger a retry, and <code>asStripOpeners</code>,
 <code>asClauseTrims</code> and <code>asFilmTalk</code> clean the output
 afterwards. All were grown from measuring real output rather than from
 imagination.</p>
+<h2 id="speed">Speed</h2>
+<p>On a machine with a capable graphics card a description takes about
+five seconds: roughly half a second of ffmpeg, three or four seconds in
+the model across its two passes, and a fifth of a second of speech.</p>
+<p>Without one, the model runs on the processor and the same call takes
+two to three minutes — forty times slower. A twenty minute video then
+takes hours. The program reports its pace from the second description
+onward and says so when a run is going to take hours, because otherwise
+it is indistinguishable from a hang.</p>
 <h2 id="the-prototype">The prototype</h2>
 <p><code>prototype\describeMovie.py</code> is the Python program this
 grew from, and it still runs. It is the reference implementation,

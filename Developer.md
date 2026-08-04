@@ -11,7 +11,7 @@ One 64-bit Windows executable, written in C# against the .NET Framework 4.8, wit
 no DLL beside it and nothing to install for the program itself. 4.8 ships with
 Windows 10 and 11, so the binary runs anywhere those do.
 
-Roughly 2,900 lines in a single source file, `HomerDescribe.cs`, in
+Roughly 3,000 lines in a single source file, `HomerDescribe.cs`, in
 `namespace Homer`. Style is Camel Type: Hungarian prefixes on typed identifiers,
 lower camel case for methods and variables, double quotes, one-line simple
 conditionals. `Camel_Type_C#.md` in this folder is the reference.
@@ -33,7 +33,7 @@ single file.
 
 - **Lbc.cs** — layout-by-code dialogs. Builds the settings dialog without a
   designer, and supplies the Help button, the Escape and Enter behaviour, and the
-  accessible names that a screen reader reads.
+  accessible names a screen reader reads.
 - **Say.cs** — screen-reader announcements through UI Automation.
 - **Inix.cs** — the ini codec, used for `HomerDescribe.ini`.
 - **Util.cs**, **Web.cs** — general helpers.
@@ -70,8 +70,8 @@ For each moment, in order:
 1. **Find the moments.** ffmpeg's `silencedetect` reads the whole sound track
    once. Silences long enough and far enough apart become natural gaps. Because a
    scored film has almost none, `--every` places further moments at a fixed
-   interval; those are marked, and the model is told that its words will fall
-   across the music and to say nothing unless the moment matters.
+   interval; those are marked, and the model is told its words will fall across
+   the music and to say nothing unless the moment matters.
 2. **Build a montage.** One ffmpeg call seeks to the moment, samples four frames
    across it, crops the bottom to hide burnt-in subtitles, scales, and tiles them
    two by two. A still-image model then sees time passing.
@@ -83,16 +83,16 @@ For each moment, in order:
    the prompt: the context file, the last two descriptions, the names already
    used, the word budget.
 5. **Ask the model to write.** A second call, same model, no image, turning what
-   it saw into one spoken description. Following AutoAD-Zero: perceiving and being
-   concise are different jobs.
+   it saw into one spoken description. Following AutoAD-Zero: perceiving and
+   being concise are different jobs.
 6. **Check it.** Rejected and asked again if it repeats a recent description, if
    it judges rather than observes, or if it guesses at who someone is.
 7. **Speak it.** `System.Speech` to a memory stream. If it overruns its slot the
    rate rises; then whole sentences are dropped; then trailing comma clauses,
    which leaves a sentence rather than a fragment; then the model is asked to say
    it again in fewer words. Words are never cut off the end. A description that
-   runs a second long is better than one that stops mid-phrase, and one that
-   opens with a place or a time is never cut back to that opening.
+   runs a second long is better than one that stops mid-phrase, and a sentence
+   opening with a place or a time is never cut back to that opening.
 8. **Save.** The record is written after every single moment, so an interrupted
    run loses at most one.
 
@@ -125,8 +125,8 @@ and the working files.
   compiler under `Microsoft.NET\Framework64` is accepted as a fallback and will
   compile `HomerDescribe.cs`, but the shared Homer modules use later language
   features.
-- **The .NET Framework 4.8 Developer Pack**, for the reference assemblies. Without
-  it `System.Speech.dll` and the UI Automation assemblies are not found.
+- **The .NET Framework 4.8 Developer Pack**, for the reference assemblies.
+  Without it `System.Speech.dll` and the UI Automation assemblies are not found.
 - **Inno Setup 6**, to build the installer. Optional: without it the executable
   still builds.
 
@@ -136,8 +136,8 @@ and the working files.
 
     buildHomerDescribe.cmd nobump
 
-It writes `buildHomerDescribe.log` beside itself and prints it at the end. What it
-does, in order: increments `version.txt` unless told not to, generates
+It writes `buildHomerDescribe.log` beside itself and prints it at the end. What
+it does, in order: increments `version.txt` unless told not to, generates
 `Version.cs`, finds a compiler, finds the three full-path reference assemblies,
 downloads ffmpeg and yt-dlp if they are missing or stale, regenerates the `.htm`
 documentation with 2htm if it is present, compiles seven sources into one
@@ -169,10 +169,14 @@ maintainer tools and not part of the distribution.
 - The variable name `ProgramFiles(x86)` contains parentheses, and cmd scans a
   parenthesised block for its closing paren before expanding variables. The build
   copies it into a paren-free name before any block, and every search is a
-  single-line `if not defined X if exist ... set` chain.
+  single-line `if not defined X if exist ... set` chain. The two install scripts
+  do the same.
 - A wildcard in the installer that matches nothing is a fatal error unless the
   line carries `skipifsourcedoesntexist`. Every source line except the executable
   has it.
+- After Ollama is installed, it is not on the PATH of any console already open.
+  `installModels.cmd` therefore looks for `ollama.exe` where it is put rather
+  than asking `where`.
 - `ffmpeg.exe` and `yt-dlp.exe` are downloaded at build time and are in
   `.gitignore`. They are far too large for a repository.
 
@@ -190,6 +194,17 @@ Most of the quality lives in three places in `HomerDescribe.cs`:
 `asStripOpeners`, `asClauseTrims` and `asFilmTalk` clean the output afterwards.
 All were grown from measuring real output rather than from imagination.
 
+## Speed
+
+On a machine with a capable graphics card a description takes about five seconds:
+roughly half a second of ffmpeg, three or four seconds in the model across its
+two passes, and a fifth of a second of speech.
+
+Without one, the model runs on the processor and the same call takes two to three
+minutes — forty times slower. A twenty minute video then takes hours. The program
+reports its pace from the second description onward and says so when a run is
+going to take hours, because otherwise it is indistinguishable from a hang.
+
 ## The prototype
 
 `prototype\describeMovie.py` is the Python program this grew from, and it still
@@ -203,8 +218,8 @@ HomerDescribe.
 Ranked by what would improve descriptions most.
 
 1. **Voice activity detection.** The program cannot tell a scored passage from a
-   spoken one, so `--every` guesses where descriptions go. Detecting speech rather
-   than sound would replace the guess. `whisper.cpp` is the candidate: one
+   spoken one, so `--every` guesses where descriptions go. Detecting speech
+   rather than sound would replace the guess. `whisper.cpp` is the candidate: one
    executable, fetched like ffmpeg, and it yields a transcript at the same time.
 2. **The dialogue as context.** Descriptions are written without knowing what was
    just said, so they sometimes restate it. The transcript from the step above
