@@ -177,7 +177,11 @@
 <li><a href="#homerdescribe-history"
 id="toc-homerdescribe-history">HomerDescribe History</a>
 <ul>
-<li><a href="#august-2026" id="toc-august-2026">1.0.28, 4 August
+<li><a href="#august-2026" id="toc-august-2026">1.0.30, 4 August
+2026</a></li>
+<li><a href="#august-2026-1" id="toc-august-2026-1">1.0.29, 4 August
+2026</a></li>
+<li><a href="#august-2026-2" id="toc-august-2026-2">1.0.28, 4 August
 2026</a></li>
 <li><a href="#to-1.0.27-3-and-4-august-2026"
 id="toc-to-1.0.27-3-and-4-august-2026">1.0.1 to 1.0.27, 3 and 4 August
@@ -186,7 +190,35 @@ id="toc-to-1.0.27-3-and-4-august-2026">1.0.1 to 1.0.27, 3 and 4 August
 </ul>
 </nav>
 <h1 id="homerdescribe-history">HomerDescribe History</h1>
-<h2 id="august-2026">1.0.28, 4 August 2026</h2>
+<h2 id="august-2026">1.0.30, 4 August 2026</h2>
+<ul>
+<li>The log records the version again. Deferring when the log opens had
+dropped the line naming the build, and a support log that does not say
+which build produced it is nearly useless.</li>
+<li>A description can no longer run past what its gap allows, and is
+never cut in a way that stops it being a sentence. Whole sentences are
+dropped first; then trailing comma clauses, which leaves a sentence
+rather than a fragment; then, if it is still too long, the model is
+asked to say it again in fewer words. A sentence opening with a place or
+a time is never cut back to that opening, since a phrase is not a
+sentence. If nothing can be done grammatically, the description runs a
+second long and the log says so.</li>
+<li>The second pass is told its word limit more plainly, and what to
+drop first. It had been answering with 65 words against a budget of
+30.</li>
+</ul>
+<h2 id="august-2026-1">1.0.29, 4 August 2026</h2>
+<ul>
+<li>A run where every video had already been described used to end in
+silence, having done nothing and said nothing, which is
+indistinguishable from a program that failed to start. It now says how
+many were skipped, says how to describe them again, offers to open the
+earlier results, and returns to the dialog.</li>
+<li>The advice given when a video is skipped names the right thing for
+how the program was started: the checkbox from the dialog, –force from
+the command line.</li>
+</ul>
+<h2 id="august-2026-2">1.0.28, 4 August 2026</h2>
 <p>First public release.</p>
 <p><strong>What it does.</strong> Reads a video file, finds the moments
 where a description can be spoken without covering the dialogue, asks a

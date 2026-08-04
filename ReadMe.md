@@ -203,6 +203,10 @@ given. It is deliberately not written beside the program: installed, that is
 Unticking **Log session** keeps it under your application data instead, so a run
 that goes wrong still leaves a record without cluttering your results.
 
+When every video named has already been described, the run says so and offers to
+open the folder holding the earlier results, rather than finishing silently
+having done nothing.
+
 **A video whose described film already exists is left alone.** Point
 HomerDescribe at a dozen videos, stop it halfway, and run it again: the ones that
 finished are skipped, and one that was interrupted **carries on where it

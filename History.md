@@ -1,5 +1,30 @@
 ﻿# HomerDescribe History
 
+## 1.0.30, 4 August 2026
+
+- The log records the version again. Deferring when the log opens had dropped
+  the line naming the build, and a support log that does not say which build
+  produced it is nearly useless.
+- A description can no longer run past what its gap allows, and is never cut in
+  a way that stops it being a sentence. Whole sentences are dropped first; then
+  trailing comma clauses, which leaves a sentence rather than a fragment; then,
+  if it is still too long, the model is asked to say it again in fewer words. A
+  sentence opening with a place or a time is never cut back to that opening,
+  since a phrase is not a sentence. If nothing can be done grammatically, the
+  description runs a second long and the log says so.
+- The second pass is told its word limit more plainly, and what to drop first.
+  It had been answering with 65 words against a budget of 30.
+
+## 1.0.29, 4 August 2026
+
+- A run where every video had already been described used to end in silence,
+  having done nothing and said nothing, which is indistinguishable from a program
+  that failed to start. It now says how many were skipped, says how to describe
+  them again, offers to open the earlier results, and returns to the dialog.
+- The advice given when a video is skipped names the right thing for how the
+  program was started: the checkbox from the dialog, --force from the command
+  line.
+
 ## 1.0.28, 4 August 2026
 
 First public release.

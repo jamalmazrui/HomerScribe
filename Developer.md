@@ -88,7 +88,11 @@ For each moment, in order:
 6. **Check it.** Rejected and asked again if it repeats a recent description, if
    it judges rather than observes, or if it guesses at who someone is.
 7. **Speak it.** `System.Speech` to a memory stream. If it overruns its slot the
-   rate rises, and failing that the last sentence is dropped.
+   rate rises; then whole sentences are dropped; then trailing comma clauses,
+   which leaves a sentence rather than a fragment; then the model is asked to say
+   it again in fewer words. Words are never cut off the end. A description that
+   runs a second long is better than one that stops mid-phrase, and one that
+   opens with a place or a time is never cut back to that opening.
 8. **Save.** The record is written after every single moment, so an interrupted
    run loses at most one.
 
