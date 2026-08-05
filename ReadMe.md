@@ -169,6 +169,62 @@ just its name:
 Stop it at any time. Run the same command again and it carries on from where it
 left off, reusing both the descriptions and the speech already made.
 
+## Naming what to work on
+
+**Quotes are not required.** A path with spaces, typed or pasted whole, is
+recognised as one thing: the file system is asked rather than guessed at. Quoting
+still works, and several items on one line still work, but nobody should have to
+quote a filename they picked out of a folder.
+
+The Source paths box, and the command line, accept:
+
+- one path, with or without spaces, quoted or not
+- several, separated by spaces, or one to a line
+- wildcard patterns such as `C:\video\*.mp4`
+- web addresses
+- **a text file listing one source per line**, mixing files and addresses freely.
+  Lines beginning with `#` or `;` are ignored, so a list can carry notes.
+
+A `.txt` file is always taken as a list, never as something to describe.
+
+## What it writes
+
+Every video gets a folder of its own, named after the video. `video.mkv` gives a
+folder called `video`, beside the video itself, or inside the output directory
+when one was given. A run over several videos keeps their results apart without
+any further arrangement.
+
+In that folder:
+
+- `described.mkv` — the film with the description as the first, default audio
+  track and the original audio as the second. Any player selects the described
+  track without you doing anything. The extension follows the source, so an mp4
+  gives `described.mp4`.
+- `described.md` — the whole script as a readable document, grouped into
+  ten-minute sections with each entry timed from the start of the film.
+- `described.vtt` — the same text as timed captions.
+- `described.wav` — the description track on its own, to play alongside the
+  original in a player such as mpv.
+- `described.json` — the machine-readable record used to resume a run.
+- `HomerScribe.log` — everything said while describing this video. The running
+  log beside the program still holds the whole session, across every video.
+
+**A video whose described film already exists is left alone.** Point
+HomerScribe at a dozen videos, stop it halfway, and run it again: the ones that
+finished are skipped, and one that was interrupted **carries on where it
+stopped** rather than starting over. Tick **Force overwrite**, or pass `--force`,
+to describe everything again from the beginning.
+
+Resuming costs very little. Every description is written to `described.json` as
+it is made, so nothing has to be asked of the model twice; only the speech is
+made again, and that is a fraction of a second each. A run stopped two hours in
+picks up in about a minute.
+
+`HomerScribe.log` is written beside the program, not beside the video. It holds
+the full detail: environment, every effective setting, every command with its
+exit code, and any error. The console shows only what was actually put into the
+film, each description prefixed by its position, as `2:14` or `1:37:52`.
+
 ## Where it looks and where it writes
 
 HomerScribe uses the folders Windows nominates rather than whatever directory
@@ -186,6 +242,165 @@ On the command line the rule is different and deliberate: leaving `--output-dir`
 unset puts each video's folder of results **beside the video itself**, which is
 almost always what is wanted when a path was typed out in full. Clearing the
 Output directory box in the dialog does the same thing.
+
+## Telling it about the film
+
+A description is far better when the model knows what it is watching. Without
+context it writes "a man in a boat"; with it, "Odysseus".
+
+**Name the file after the video and put it beside it.** For `video.mkv`, write
+`video.md` in the same folder. HomerScribe finds it without being told, which
+is what lets one general purpose program describe any film properly. Nothing has
+to be passed on the command line and nothing has to be set in the dialog.
+
+`--context-file` overrides that when you want one file used for several videos.
+`context\The_Odyssey.md` is supplied as a worked example of what to write: who
+the characters are, what they look like, where the story is set, and an
+instruction to describe by appearance rather than guess at a name.
+
+Keep such a file to a few hundred words. It is sent with every single request, so
+length costs time on every description.
+
+If no context file is found, HomerScribe says so plainly at the start of the
+run rather than quietly producing nameless descriptions.
+
+## Telling it about the film automatically
+
+**Web context** finds out what it is watching, so descriptions can use real names
+without you writing anything.
+
+For a web address, it uses the page's own account of itself: the title, who
+published it, and the description. yt-dlp already has all of that, so no search
+is involved and nothing is guessed.
+
+For a file, it reads the title from the container -- not the file name, the title
+the file carries inside it -- and asks Wikipedia. The answer is used **only** when
+the title clearly agrees and the article clearly describes a film or programme.
+Both tests must pass, because a confident wrong article is worse than none: it
+would have the model naming actors who are not in the film. Every candidate and
+its score goes in the log, so you can see what was considered and why it was
+taken or refused.
+
+Whatever is gathered is added to the context file if you have one, not instead
+of it.
+
+**And it identifies the presenter.** A vision model cannot recognise a face, so
+knowing that a film was "written and narrated by Ali Mazrui" is not enough on its
+own — it will still write "a man". What connects the name to the person is the
+one inference a documentary makes safe: whoever addresses the viewer is the
+presenter. When the background names one, HomerScribe says so explicitly, and the
+name is carried forward from the first description so it stays consistent.
+
+The same applies to a context file you write yourself. A line like "Presented by
+Ali Mazrui" or "Narrated by Carl Sagan" is picked up and used the same way.
+
+## The dialog
+
+`--gui` opens a dialog built with `Lbc.cs`, the shared layout-by-code module used
+by DbDo, EdSharp, FileDir and urlFido. It carries the standard controls:
+
+- **&Source paths** with **&Browse source...**
+- **&Output directory** with **&Choose output...**
+- **&Force overwrite**, **&Log session**, **&Use configuration**
+- OK and Cancel, with Help supplied by LbcDialog itself
+
+OK and Cancel carry no mnemonic, as Windows convention requires: Escape cancels,
+Enter accepts, and Control plus Enter accepts from any control.
+
+The remaining settings stay on the command line for now. Say which of them you
+want as controls and where, and they go in.
+
+## The window stays
+
+The dialog does not disappear when you press OK. It stays on screen for the
+whole run with its controls disabled — the answers are given — and its title
+says what is happening: "HomerScribe, describing 42 of 247". Alt+Tab always finds
+it, and a screen reader reads the progress from the title.
+
+Every message HomerScribe shows belongs to that window, so nothing can open
+behind something else, and the timed announcements are its children too.
+
+One honest caveat: the work runs on the same thread as the window, so during a
+single long model call — two or three minutes on a machine without a graphics
+card — Windows may mark the window as not responding. It is still there, still
+named, still in Alt+Tab, and it recovers at the next description.
+
+## What you hear while it runs
+
+Messages of one kind are collected and shown **together**, in a single box. The
+title names the kind and where the film had reached when the group started; the
+messages follow in the body, separated by blank lines:
+
+    Title:  Transcribing
+    Text:   1 hour 3 min, 51%
+
+            Global Africa is the theme of this final programme.
+
+            Africa's peoples have travelled far beyond the continent.
+
+    Title:  Describing
+    Text:   1 hour 4 min, 51%
+
+            A train crosses a bridge above a dry riverbed.
+
+            Ali Mazrui walks along a harbour wall, speaking to the viewer.
+
+            Cranes stand against a pale sky.
+
+A screen reader therefore reads a title that says what this is and how far in it
+is, then the whole group, instead of interrupting once per sentence. A group ends
+when the kind changes, when it has been open for twenty seconds, or when it has
+grown long enough to be worth hearing, and each box stays up long enough for its
+own length to be read.
+
+There are four kinds — **Initializing**, **Transcribing**, **Describing**,
+**Finalizing**. The position is a time and a percentage: minutes below the hour,
+hours and minutes above it, and nothing at all rather than a zero. No counts
+against a total, no clock readings, and never the internal name of a pass.
+
+The account is chronological. The words of the film and the descriptions come in
+the order they happen. Whisper reads the whole film before a single description
+is made, so the words cannot be spoken as they are heard; they are held and
+played out in step with the descriptions during the pass that follows.
+
+`--boxes no` turns the announcements off entirely.
+
+## Configuration
+
+`--use-configuration` loads settings from `HomerScribe.ini` beside the program
+at startup, and saves them when the dialog is accepted. In dialog mode the file
+is loaded automatically when it exists, so the dialog opens showing last time's
+answers. Anything given on the
+command line wins over the file. The file is written by `Inix.cs`, the shared
+Homer ini codec, so hand edits and comments survive a round trip.
+
+## Settings
+
+Every setting has a long form and a short form. The long form is the command line
+parameter and, in the dialog, the label. The short form is the command line
+letter and, in the dialog, the trigger letter. Run `HomerScribe --help` for the
+full list with current values.
+
+The ones that matter most:
+
+- `--detail brief|normal|rich` — how much is said at each moment.
+- `--every` — guarantees a description at least this often, in seconds, even over
+  music. A scored film has almost no true silence, so this does most of the work.
+- `--noise-floor` — the level below which sound counts as a gap. Raise it toward
+  -16 if too few natural gaps are found, lower it toward -40 if descriptions land
+  on quiet dialogue.
+- `--crop-bottom` — percentage cut off the bottom of each frame before the model
+  sees it, which is how burnt-in subtitles are kept out of the description.
+- `--ad-volume` — loudness of the description against the film. Below 1 sits it
+  just under normal dialogue level, with the film ducking beneath it.
+- `--similarity` and `--same-shot` — how hard it works to avoid saying the same
+  thing twice. A vision model asked about a static shot will repeat itself
+  endlessly if left alone.
+
+Four short forms are exceptions to the rule that the letter is the first
+character of a word, because the natural letters were already taken:
+`--every` is `-y`, `--forced-length` is `-z`, `--dialogue-channel` is `-D`, and
+`--same-shot` is `-h`.
 
 ## Hearing the film
 
@@ -237,6 +452,18 @@ documentary:
 For a heavily narrated documentary, `--every 45 --detail brief` is a far better
 starting point than the defaults, which are tuned for drama.
 
+### When the model keeps declining
+
+On a film that is nearly all narration, a description placed where there is no
+pause is told it may answer SKIP unless the moment genuinely matters — and it
+often does. One 57 minute programme produced **fifteen** descriptions, with one
+stretch of nearly ten minutes in silence.
+
+`--max-silence`, 45 seconds by default, now governs every way a moment can be
+passed over, not just a description too like a recent one. When nothing has been
+said for that long, the moment is asked again with no leave to skip: say
+something, however ordinary. A film should never go minutes without a word.
+
 ### Judging whether it helped
 
 The log carries two lines written for exactly this. After the moments are chosen:
@@ -256,229 +483,22 @@ proportion of real gaps against timer-placed ones is the other: it was 16 percen
 before, and should now be most of them. Run the same film with `--speech no` to
 see the difference on your own material.
 
-## What it writes
+## On subtitles
 
-Every video gets a folder of its own, named after the video. `video.mkv` gives a
-folder called `video`, beside the video itself, or inside the output directory
-when one was given. A run over several videos keeps their results apart without
-any further arrangement.
+Yes, and by two routes, because one is not enough.
 
-In that folder:
+The prompt tells the model that subtitles belong to people who cannot hear, that
+the words in them are already spoken aloud in the film, and that it should
+neither read them nor mention their presence. It distinguishes them from words
+that do carry meaning -- a sign, a letter, a name on a door -- which are worth
+reading and are introduced as "Words appear:".
 
-- `described.mkv` — the film with the description as the first, default audio
-  track and the original audio as the second. Any player selects the described
-  track without you doing anything. The extension follows the source, so an mp4
-  gives `described.mp4`.
-- `described.md` — the whole script as a readable document, grouped into
-  ten-minute sections with each entry timed from the start of the film.
-- `described.vtt` — the same text as timed captions.
-- `described.wav` — the description track on its own, to play alongside the
-  original in a player such as mpv.
-- `described.json` — the machine-readable record used to resume a run.
-- `HomerScribe.log` — everything said while describing this video. The running
-  log beside the program still holds the whole session, across every video.
-
-**A video whose described film already exists is left alone.** Point
-HomerScribe at a dozen videos, stop it halfway, and run it again: the ones that
-finished are skipped, and one that was interrupted **carries on where it
-stopped** rather than starting over. Tick **Force overwrite**, or pass `--force`,
-to describe everything again from the beginning.
-
-Resuming costs very little. Every description is written to `described.json` as
-it is made, so nothing has to be asked of the model twice; only the speech is
-made again, and that is a fraction of a second each. A run stopped two hours in
-picks up in about a minute.
-
-`HomerScribe.log` is written beside the program, not beside the video. It holds
-the full detail: environment, every effective setting, every command with its
-exit code, and any error. The console shows only what was actually put into the
-film, each description prefixed by its position, as `2:14` or `1:37:52`.
-
-## Telling it about the film automatically
-
-**Web context** finds out what it is watching, so descriptions can use real names
-without you writing anything.
-
-For a web address, it uses the page's own account of itself: the title, who
-published it, and the description. yt-dlp already has all of that, so no search
-is involved and nothing is guessed.
-
-For a file, it reads the title from the container -- not the file name, the title
-the file carries inside it -- and asks Wikipedia. The answer is used **only** when
-the title clearly agrees and the article clearly describes a film or programme.
-Both tests must pass, because a confident wrong article is worse than none: it
-would have the model naming actors who are not in the film. Every candidate and
-its score goes in the log, so you can see what was considered and why it was
-taken or refused.
-
-Whatever is gathered is added to the context file if you have one, not instead
-of it.
-
-## Telling it about the film
-
-A description is far better when the model knows what it is watching. Without
-context it writes "a man in a boat"; with it, "Odysseus".
-
-**Name the file after the video and put it beside it.** For `video.mkv`, write
-`video.md` in the same folder. HomerScribe finds it without being told, which
-is what lets one general purpose program describe any film properly. Nothing has
-to be passed on the command line and nothing has to be set in the dialog.
-
-`--context-file` overrides that when you want one file used for several videos.
-`context\The_Odyssey.md` is supplied as a worked example of what to write: who
-the characters are, what they look like, where the story is set, and an
-instruction to describe by appearance rather than guess at a name.
-
-Keep such a file to a few hundred words. It is sent with every single request, so
-length costs time on every description.
-
-If no context file is found, HomerScribe says so plainly at the start of the
-run rather than quietly producing nameless descriptions.
-
-## Settings
-
-Every setting has a long form and a short form. The long form is the command line
-parameter and, in the dialog, the label. The short form is the command line
-letter and, in the dialog, the trigger letter. Run `HomerScribe --help` for the
-full list with current values.
-
-The ones that matter most:
-
-- `--detail brief|normal|rich` — how much is said at each moment.
-- `--every` — guarantees a description at least this often, in seconds, even over
-  music. A scored film has almost no true silence, so this does most of the work.
-- `--noise-floor` — the level below which sound counts as a gap. Raise it toward
-  -16 if too few natural gaps are found, lower it toward -40 if descriptions land
-  on quiet dialogue.
-- `--crop-bottom` — percentage cut off the bottom of each frame before the model
-  sees it, which is how burnt-in subtitles are kept out of the description.
-- `--ad-volume` — loudness of the description against the film. Below 1 sits it
-  just under normal dialogue level, with the film ducking beneath it.
-- `--similarity` and `--same-shot` — how hard it works to avoid saying the same
-  thing twice. A vision model asked about a static shot will repeat itself
-  endlessly if left alone.
-
-Four short forms are exceptions to the rule that the letter is the first
-character of a word, because the natural letters were already taken:
-`--every` is `-y`, `--forced-length` is `-z`, `--dialogue-channel` is `-D`, and
-`--same-shot` is `-h`.
-
-## Building
-
-Everything is in one folder. `buildHomerScribe.cmd` compiles every `.cs` file
-present into a single 64-bit executable, then builds the installer if Inno Setup
-is found:
-
-    buildHomerScribe.cmd
-
-It writes `buildHomerScribe.log` beside itself, recording the version, the
-compiler used, and the full compiler output.
-
-The shared Homer modules — `Lbc.cs`, `Say.cs`, `Inix.cs`, `Util.cs`, `Web.cs` —
-are already here, copied unmodified from urlFido so that improvements to them
-keep porting between tools. They compile into the same assembly, so the result is
-still a single self-contained executable.
-
-No JSON package is downloaded, because none is needed: HomerScribe reads and
-writes JSON with `JavaScriptSerializer` from `System.Web.Extensions`, part of the
-.NET Framework itself. DbDo fetches Newtonsoft.Json because it needs what
-Newtonsoft does that the built-in serializer cannot; nothing here does. Staying
-with the built-in one is also what keeps `HomerScribe.exe` a single file with
-no DLL beside it.
-
-Three assemblies are not on the compiler's default reference path and are found
-by full path: `System.Speech.dll` for the voices, and `UIAutomationProvider.dll`
-and `UIAutomationTypes.dll` for the Narrator notification events raised by
-`Say.cs`. If any is missing, install the .NET Framework 4.8 Developer Pack.
-
-## Documentation in two forms
-
-Every document ships as both `.md` and `.htm`. The Markdown is the source, and
-is the better form for reading in an editor or on a braille display; the HTML is
-what the Start menu shortcut and the installer's last checkbox open.
-
-The `.htm` files in this folder are ready to use as they are. Each carries
-exactly one level-one heading, a table of contents where the document is long
-enough to want one, and `lang="en"`, so the outline is navigable by heading or by
-link. Nothing needs to be run to produce them.
-
-`buildHomerScribe.cmd` will regenerate them with 2htm if it finds it, which
-keeps them current when the Markdown changes. When 2htm is absent the build
-leaves the existing files alone, so the documentation cannot fail a build.
-
-## Versions and releases
-
-The version lives in exactly one place: `version.txt`, one line and nothing
-else. This is the pattern DbDo and bookFido use, and it is the best of the four
-approaches across the Homer Tools, because no version literal appears in any
-other file and so a stale copy of a file cannot rewind the number.
-
-From there it flows outward:
-
-1. `buildHomerScribe.cmd` increments it, then generates `Version.cs` holding
-   `BuildVersion.Version`, so the program reports it through `--help`.
-2. `HomerScribe_setup.iss` reads `version.txt` at compile time through
-   `FileOpen` and `FileRead`, and writes it into the version resource of
-   `HomerScribe_setup.exe` through `VersionInfoVersion` and
-   `VersionInfoTextVersion`. The text form is set explicitly because tagRelease
-   reads the FileVersion *string*, and a tag of `v1.0.0` is wanted rather than
-   `v1.0.0.0`.
-3. `tagRelease` reads that FileVersion, forms the tag, and posts
-   `HomerScribe_setup.exe`, whose name it takes from `OutputBaseFilename`.
-
-So a release is: run `buildHomerScribe.cmd`, commit, run `tagRelease`. The
-program, the installer, and the tag can never disagree.
-
-`Version.cs` is generated output. It is in `.gitignore` and should not be edited
-or committed.
-
-The first build increments 1.0.0 to 1.0.1. To release 1.0.0 itself, build once
-with `buildHomerScribe.cmd nobump`.
-
-## The dialog
-
-`--gui` opens a dialog built with `Lbc.cs`, the shared layout-by-code module used
-by DbDo, EdSharp, FileDir and urlFido. It carries the standard controls:
-
-- **&Source paths** with **&Browse source...**
-- **&Output directory** with **&Choose output...**
-- **&Force overwrite**, **&Log session**, **&Use configuration**
-- OK and Cancel, with Help supplied by LbcDialog itself
-
-OK and Cancel carry no mnemonic, as Windows convention requires: Escape cancels,
-Enter accepts, and Control plus Enter accepts from any control.
-
-The remaining settings stay on the command line for now. Say which of them you
-want as controls and where, and they go in.
-
-## Spoken status while it runs
-
-When the dialog was used, each description is also shown in a timed message box,
-the technique bookFido uses: a screen reader speaks a window that is genuinely
-activated, without being asked, and the box closes itself so nothing has to be
-dismissed. The caption carries the position in the film, and the body carries the
-description that was just embedded. Each time the whole percentage through the
-film changes, the caption says so too.
-
-`--boxes` and `--boxes=no` force this on or off regardless of how the program was
-started. From the command line it is off by default, since every description is
-already printed there.
-
-## Configuration
-
-`--use-configuration` loads settings from `HomerScribe.ini` beside the program
-at startup, and saves them when the dialog is accepted. In dialog mode the file
-is loaded automatically when it exists, so the dialog opens showing last time's
-answers. Anything given on the
-command line wins over the file. The file is written by `Inix.cs`, the shared
-Homer ini codec, so hand edits and comments survive a round trip.
-
-## The prototype
-
-`prototype\describeMovie.py` is the Python program this was grown from, and it
-still works. It is the reference implementation: quicker to change when trying a
-new prompt, and useful for checking that a change in behaviour is deliberate. It
-is not needed to run HomerScribe.
+But a model told to ignore text on screen will often read it anyway, because the
+text is right there in the picture. So `--crop-bottom` removes the lower part of
+every frame before the model ever sees it, twelve percent by default, which is
+where burnt-in subtitles almost always sit. Instruction handles the ones that
+appear elsewhere; cropping handles the ordinary case, and it cannot be talked
+out of.
 
 ## How the model is asked
 
@@ -508,23 +528,6 @@ repetition penalty, so the model is less inclined to reach for the phrasing it
 used a moment ago. Rejecting a repeat afterwards costs a second call and can
 leave silence; not producing one costs nothing. The model is also held in memory
 between moments, which saves reloading several gigabytes from disk mid-run.
-
-## On subtitles
-
-Yes, and by two routes, because one is not enough.
-
-The prompt tells the model that subtitles belong to people who cannot hear, that
-the words in them are already spoken aloud in the film, and that it should
-neither read them nor mention their presence. It distinguishes them from words
-that do carry meaning -- a sign, a letter, a name on a door -- which are worth
-reading and are introduced as "Words appear:".
-
-But a model told to ignore text on screen will often read it anyway, because the
-text is right there in the picture. So `--crop-bottom` removes the lower part of
-every frame before the model ever sees it, twelve percent by default, which is
-where burnt-in subtitles almost always sit. Instruction handles the ones that
-appear elsewhere; cropping handles the ordinary case, and it cannot be talked
-out of.
 
 ## Where the rules come from
 
@@ -633,3 +636,81 @@ anything.
 - A seven-billion-parameter local model gives useful orientation rather than
   literary description. It is a real improvement over nothing, and a real step
   below professional description.
+
+## Documentation in two forms
+
+Every document ships as both `.md` and `.htm`. The Markdown is the source, and
+is the better form for reading in an editor or on a braille display; the HTML is
+what the Start menu shortcut and the installer's last checkbox open.
+
+The `.htm` files in this folder are ready to use as they are. Each carries
+exactly one level-one heading, a table of contents where the document is long
+enough to want one, and `lang="en"`, so the outline is navigable by heading or by
+link. Nothing needs to be run to produce them.
+
+The build does not regenerate them: they are written with the Markdown and ship
+beside it, so there is nothing to install and nothing that can fail.
+
+## Building
+
+Everything is in one folder. `buildHomerScribe.cmd` compiles every `.cs` file
+present into a single 64-bit executable, then builds the installer if Inno Setup
+is found:
+
+    buildHomerScribe.cmd
+
+It writes `buildHomerScribe.log` beside itself, recording the version, the
+compiler used, and the full compiler output.
+
+The shared Homer modules — `Lbc.cs`, `Say.cs`, `Inix.cs`, `Util.cs`, `Web.cs` —
+are already here, copied unmodified from urlFido so that improvements to them
+keep porting between tools. They compile into the same assembly, so the result is
+still a single self-contained executable.
+
+No JSON package is downloaded, because none is needed: HomerScribe reads and
+writes JSON with `JavaScriptSerializer` from `System.Web.Extensions`, part of the
+.NET Framework itself. DbDo fetches Newtonsoft.Json because it needs what
+Newtonsoft does that the built-in serializer cannot; nothing here does. Staying
+with the built-in one is also what keeps `HomerScribe.exe` a single file with
+no DLL beside it.
+
+Three assemblies are not on the compiler's default reference path and are found
+by full path: `System.Speech.dll` for the voices, and `UIAutomationProvider.dll`
+and `UIAutomationTypes.dll` for the Narrator notification events raised by
+`Say.cs`. If any is missing, install the .NET Framework 4.8 Developer Pack.
+
+## Versions and releases
+
+The version lives in exactly one place: `version.txt`, one line and nothing
+else. This is the pattern DbDo and bookFido use, and it is the best of the four
+approaches across the Homer Tools, because no version literal appears in any
+other file and so a stale copy of a file cannot rewind the number.
+
+From there it flows outward:
+
+1. `buildHomerScribe.cmd` increments it, then generates `Version.cs` holding
+   `BuildVersion.Version`, so the program reports it through `--help`.
+2. `HomerScribe_setup.iss` reads `version.txt` at compile time through
+   `FileOpen` and `FileRead`, and writes it into the version resource of
+   `HomerScribe_setup.exe` through `VersionInfoVersion` and
+   `VersionInfoTextVersion`. The text form is set explicitly because tagRelease
+   reads the FileVersion *string*, and a tag of `v1.0.0` is wanted rather than
+   `v1.0.0.0`.
+3. `tagRelease` reads that FileVersion, forms the tag, and posts
+   `HomerScribe_setup.exe`, whose name it takes from `OutputBaseFilename`.
+
+So a release is: run `buildHomerScribe.cmd`, commit, run `tagRelease`. The
+program, the installer, and the tag can never disagree.
+
+`Version.cs` is generated output. It is in `.gitignore` and should not be edited
+or committed.
+
+The first build increments 1.0.0 to 1.0.1. To release 1.0.0 itself, build once
+with `buildHomerScribe.cmd nobump`.
+
+## The prototype
+
+`prototype\describeMovie.py` is the Python program this was grown from, and it
+still works. It is the reference implementation: quicker to change when trying a
+new prompt, and useful for checking that a change in behaviour is deliberate. It
+is not needed to run HomerScribe.
