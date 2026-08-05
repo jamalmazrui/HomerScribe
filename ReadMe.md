@@ -327,43 +327,33 @@ named, still in Alt+Tab, and it recovers at the next description.
 
 ## What you hear while it runs
 
-Messages of one kind are collected and shown **together**, in a single box. The
-title names the kind and where the film had reached when the group started; the
-messages follow in the body, separated by blank lines:
+The dialog carries a **status line**, and that line is a UIA live region.
+Messages are written to it and spoken by whichever screen reader is running —
+JAWS, NVDA or Narrator — **without taking the keyboard focus**, so you can work
+in other windows while a film is being described.
 
-    Title:  Transcribing
-    Text:   1 hour 3 min, 51%
+Messages of one kind are collected and spoken together. The kind is said, then
+where the film had reached when the group started, then the messages:
 
-            Global Africa is the theme of this final programme.
-
-            Africa's peoples have travelled far beyond the continent.
-
-    Title:  Describing
-    Text:   1 hour 4 min, 51%
-
-            A train crosses a bridge above a dry riverbed.
-
-            Ali Mazrui walks along a harbour wall, speaking to the viewer.
-
-            Cranes stand against a pale sky.
-
-A screen reader therefore reads a title that says what this is and how far in it
-is, then the whole group, instead of interrupting once per sentence. A group ends
-when the kind changes, when it has been open for twenty seconds, or when it has
-grown long enough to be worth hearing, and each box stays up long enough for its
-own length to be read.
+    Describing. 1 hour 4 min, 51%. A train crosses a bridge above a dry
+    riverbed. Ali Mazrui walks along a harbour wall, speaking to the viewer.
+    Cranes stand against a pale sky.
 
 There are four kinds — **Initializing**, **Transcribing**, **Describing**,
 **Finalizing**. The position is a time and a percentage: minutes below the hour,
-hours and minutes above it, and nothing at all rather than a zero. No counts
-against a total, no clock readings, and never the internal name of a pass.
+hours and minutes above it, and nothing at all rather than a zero. A group ends
+when the kind changes, after twenty seconds, or once it is long enough to be
+worth hearing.
 
-The account is chronological. The words of the film and the descriptions come in
+`--boxes` returns to the old timed message boxes. They announce reliably in any
+reader, but they take the focus for as long as they are up, and a two hour film
+raises well over three hundred of them. `--announce-progress no` turns
+announcements off altogether.
+
+The account is chronological: the words of the film and the descriptions come in
 the order they happen. Whisper reads the whole film before a single description
-is made, so the words cannot be spoken as they are heard; they are held and
-played out in step with the descriptions during the pass that follows.
-
-`--boxes no` turns the announcements off entirely.
+is made, so the words are held and played out in step with the descriptions
+during the pass that follows.
 
 ## Configuration
 

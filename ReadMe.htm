@@ -536,42 +536,32 @@ without a graphics card — Windows may mark the window as not responding.
 It is still there, still named, still in Alt+Tab, and it recovers at the
 next description.</p>
 <h2 id="what-you-hear-while-it-runs">What you hear while it runs</h2>
-<p>Messages of one kind are collected and shown
-<strong>together</strong>, in a single box. The title names the kind and
-where the film had reached when the group started; the messages follow
-in the body, separated by blank lines:</p>
-<pre><code>Title:  Transcribing
-Text:   1 hour 3 min, 51%
-
-        Global Africa is the theme of this final programme.
-
-        Africa&#39;s peoples have travelled far beyond the continent.
-
-Title:  Describing
-Text:   1 hour 4 min, 51%
-
-        A train crosses a bridge above a dry riverbed.
-
-        Ali Mazrui walks along a harbour wall, speaking to the viewer.
-
-        Cranes stand against a pale sky.</code></pre>
-<p>A screen reader therefore reads a title that says what this is and
-how far in it is, then the whole group, instead of interrupting once per
-sentence. A group ends when the kind changes, when it has been open for
-twenty seconds, or when it has grown long enough to be worth hearing,
-and each box stays up long enough for its own length to be read.</p>
+<p>The dialog carries a <strong>status line</strong>, and that line is a
+UIA live region. Messages are written to it and spoken by whichever
+screen reader is running — JAWS, NVDA or Narrator — <strong>without
+taking the keyboard focus</strong>, so you can work in other windows
+while a film is being described.</p>
+<p>Messages of one kind are collected and spoken together. The kind is
+said, then where the film had reached when the group started, then the
+messages:</p>
+<pre><code>Describing. 1 hour 4 min, 51%. A train crosses a bridge above a dry
+riverbed. Ali Mazrui walks along a harbour wall, speaking to the viewer.
+Cranes stand against a pale sky.</code></pre>
 <p>There are four kinds — <strong>Initializing</strong>,
 <strong>Transcribing</strong>, <strong>Describing</strong>,
 <strong>Finalizing</strong>. The position is a time and a percentage:
 minutes below the hour, hours and minutes above it, and nothing at all
-rather than a zero. No counts against a total, no clock readings, and
-never the internal name of a pass.</p>
-<p>The account is chronological. The words of the film and the
+rather than a zero. A group ends when the kind changes, after twenty
+seconds, or once it is long enough to be worth hearing.</p>
+<p><code>--boxes</code> returns to the old timed message boxes. They
+announce reliably in any reader, but they take the focus for as long as
+they are up, and a two hour film raises well over three hundred of them.
+<code>--announce-progress no</code> turns announcements off
+altogether.</p>
+<p>The account is chronological: the words of the film and the
 descriptions come in the order they happen. Whisper reads the whole film
-before a single description is made, so the words cannot be spoken as
-they are heard; they are held and played out in step with the
-descriptions during the pass that follows.</p>
-<p><code>--boxes no</code> turns the announcements off entirely.</p>
+before a single description is made, so the words are held and played
+out in step with the descriptions during the pass that follows.</p>
 <h2 id="configuration">Configuration</h2>
 <p><code>--use-configuration</code> loads settings from
 <code>HomerScribe.ini</code> beside the program at startup, and saves
