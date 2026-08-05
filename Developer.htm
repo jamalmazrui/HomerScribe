@@ -181,6 +181,10 @@ id="toc-homerscribe-for-developers">HomerScribe for Developers</a>
 <li><a href="#the-parts" id="toc-the-parts">The parts</a></li>
 <li><a href="#how-a-description-is-made"
 id="toc-how-a-description-is-made">How a description is made</a></li>
+<li><a href="#speaking-to-the-user"
+id="toc-speaking-to-the-user">Speaking to the user</a></li>
+<li><a href="#naming-the-presenter" id="toc-naming-the-presenter">Naming
+the presenter</a></li>
 <li><a href="#where-things-live" id="toc-where-things-live">Where things
 live</a></li>
 <li><a href="#building" id="toc-building">Building</a></li>
@@ -316,6 +320,37 @@ moment, so an interrupted run loses at most one.</li>
 <p>At the end the spoken clips are laid onto a silent track at their
 exact sample offsets, and ffmpeg mixes that with the film’s own audio,
 ducking the film underneath each description, and writes the result.</p>
+<h2 id="speaking-to-the-user">Speaking to the user</h2>
+<p>Everything the user hears goes through <code>announce()</code>, and
+nothing else may raise a message. It collects consecutive messages of
+one kind, titles the group with that kind, and opens the text with where
+the film had reached when the group started. Four kinds only:
+Initializing, Transcribing, Describing, Finalizing.</p>
+<p>The message reaches the user through a <strong>status line</strong>
+on the dialog, which <code>Say.cs</code> registers as a UIA live region.
+JAWS, NVDA and Narrator all speak it and none of them takes the keyboard
+focus, so the machine stays usable while a film is described.
+<code>--boxes</code> falls back to timed message boxes, which announce
+in any reader but hold the focus.</p>
+<p>Speech is suppressed unless HomerScribe is the foreground window, so
+working in another program is not interrupted; the status line still
+carries the latest message, so switching back reads the current
+state.</p>
+<p>Two safeguards worth keeping. The pending list is emptied
+<strong>before</strong> anything can return from the flush — it once was
+not, and every announcement repeated all its predecessors until one
+reached 32,587 characters, which a screen reader spends minutes reading
+and which made a working program look stopped. And nothing spoken may
+exceed 1,500 characters, whatever else goes wrong.</p>
+<h2 id="naming-the-presenter">Naming the presenter</h2>
+<p>A vision model cannot recognise a face, so telling it that a film was
+“written and narrated by Ali Mazrui” leaves it writing “a man”.
+<code>presenterIn()</code> pulls the name out of the gathered background
+or the context file, and the prompt states the one inference a
+documentary makes safe: whoever addresses the viewer is the presenter.
+The name is seeded into the names carried between descriptions so it
+holds from the first. Measured effect: 53 of 94 descriptions named him,
+against none before.</p>
 <h2 id="where-things-live">Where things live</h2>
 <ul>
 <li>The video’s own folder: <code>described.mkv</code> (or

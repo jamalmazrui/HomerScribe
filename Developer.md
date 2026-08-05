@@ -105,6 +105,39 @@ At the end the spoken clips are laid onto a silent track at their exact sample
 offsets, and ffmpeg mixes that with the film's own audio, ducking the film
 underneath each description, and writes the result.
 
+## Speaking to the user
+
+Everything the user hears goes through `announce()`, and nothing else may raise a
+message. It collects consecutive messages of one kind, titles the group with that
+kind, and opens the text with where the film had reached when the group started.
+Four kinds only: Initializing, Transcribing, Describing, Finalizing.
+
+The message reaches the user through a **status line** on the dialog, which
+`Say.cs` registers as a UIA live region. JAWS, NVDA and Narrator all speak it and
+none of them takes the keyboard focus, so the machine stays usable while a film
+is described. `--boxes` falls back to timed message boxes, which announce in any
+reader but hold the focus.
+
+Speech is suppressed unless HomerScribe is the foreground window, so working in
+another program is not interrupted; the status line still carries the latest
+message, so switching back reads the current state.
+
+Two safeguards worth keeping. The pending list is emptied **before** anything can
+return from the flush — it once was not, and every announcement repeated all its
+predecessors until one reached 32,587 characters, which a screen reader spends
+minutes reading and which made a working program look stopped. And nothing spoken
+may exceed 1,500 characters, whatever else goes wrong.
+
+## Naming the presenter
+
+A vision model cannot recognise a face, so telling it that a film was "written
+and narrated by Ali Mazrui" leaves it writing "a man". `presenterIn()` pulls the
+name out of the gathered background or the context file, and the prompt states
+the one inference a documentary makes safe: whoever addresses the viewer is the
+presenter. The name is seeded into the names carried between descriptions so it
+holds from the first. Measured effect: 53 of 94 descriptions named him, against
+none before.
+
 ## Where things live
 
 - The video's own folder: `described.mkv` (or `.mp3`) and `described.md`. Only

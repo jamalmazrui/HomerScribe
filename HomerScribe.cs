@@ -169,6 +169,11 @@ namespace Homer
         const double nDefaultTalkative = 70.0;
         const double nDefaultTitleAgreement = 0.8;
         const double nDefaultLead = 0.20;
+        // Somewhere to start. The W3C Web Accessibility Initiative's ten
+        // Perspectives films, seven and a half minutes in one, freely licensed
+        // and published with professionally written descriptions of every shot
+        // -- so a first run can be compared against how it should have been done.
+        const string sDefaultSource = "https://www.youtube.com/watch?v=3f31oufqFSM";
         const string sDefaultDescribedStem = "described";
         const string sDefaultJsonName = "described.json";
         const string sDefaultLogName = "HomerScribe.log";
@@ -195,7 +200,7 @@ namespace Homer
             // The short form is the command line letter and the dialog trigger.
             // Settings with no dialog control of their own take no short form,
             // which keeps the natural letters free for the ones that do.
-            addParam("source-paths", "s", "string", "", "Video files or YouTube page addresses, separated by spaces; quote any containing a space. The dialog starts browsing in your Videos folder");
+            addParam("source-paths", "s", "string", sDefaultSource, "Video files or YouTube page addresses, separated by spaces; quote any containing a space. The dialog starts browsing in your Videos folder");
             addParam("output-dir", "o", "string", "", "Folder to create each video's results folder in. Empty on the command line means beside the video; the dialog offers your Videos folder");
             addParam("describe", "d", "flag", "no", "Describe what happens on screen and write a described copy of the film");
             addParam("transcribe", "t", "flag", "no", "Write down what is said, from the film's own sound");
@@ -770,6 +775,9 @@ namespace Homer
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
 
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern uint GetWindowThreadProcessId(IntPtr hWindow, out uint iProcessId);
+
         [DllImport("user32.dll")]
         static extern bool SetForegroundWindow(IntPtr hWindow);
 
@@ -867,6 +875,9 @@ namespace Homer
 
         // What the window says it is doing, which is what a screen reader reads
         // when the user finds it with Alt+Tab.
+        // The window title, for the times when there is no announcement to put
+        // there: the long passes between one description and the next. An
+        // announcement overwrites it with something fuller.
         static void dialogSays(string sWhat)
         {
             Form oForm = ownerForm();
@@ -874,6 +885,11 @@ namespace Homer
             try
             {
                 oForm.Text = "HomerScribe, " + sWhat;
+                if (oStatusLine != null && sLatestStatus == "")
+                {
+                    oStatusLine.Text = sWhat;
+                    oStatusLine.Refresh();
+                }
             }
             catch (Exception)
             {
@@ -1113,6 +1129,7 @@ namespace Homer
         // not be used for anything else while a film was being described -- and
         // a two hour film raised three hundred and forty of them.
         static Label oStatusLine = null;
+        static string sLatestStatus = "";
 
         static void attachStatusLine(Form oForm)
         {
@@ -1129,6 +1146,21 @@ namespace Homer
                 oStatusLine.AccessibleRole = AccessibleRole.StaticText;
                 oStatusLine.Text = "";
                 oForm.Controls.Add(oStatusLine);
+                // Coming back to HomerScribe should tell you where things stand,
+                // not leave you waiting for the next announcement.
+                oForm.Activated += delegate(object oSender, EventArgs oEvent)
+                {
+                    if (sLatestStatus == "") return;
+                    try
+                    {
+                        oStatusLine.Text = sLatestStatus;
+                        oStatusLine.Refresh();
+                        Say.say(sLatestStatus);
+                    }
+                    catch (Exception)
+                    {
+                    }
+                };
                 IntPtr hForce = oStatusLine.Handle;
                 Say.attach(oForm);
                 logMessage("The status line is attached and speaking through the live region.", "INFO", "");
@@ -1140,11 +1172,42 @@ namespace Homer
         }
 
         // Said aloud without taking the focus, and shown on the status line.
+        // Is HomerScribe the window the person is working in? A live region
+        // speaks whatever the focus is, which is helpful when you are watching
+        // the program and an intrusion when you are not.
+        static bool weAreInFront()
+        {
+            try
+            {
+                IntPtr hFront = GetForegroundWindow();
+                if (hFront == IntPtr.Zero) return false;
+                // Any window of ours counts, not only the dialog, and this holds
+                // even when the dialog's handle cannot be reached.
+                uint iOwner = 0;
+                GetWindowThreadProcessId(hFront, out iOwner);
+                if (iOwner != 0) return iOwner == (uint)Process.GetCurrentProcess().Id;
+                Form oForm = ownerForm();
+                if (oForm == null) return false;
+                return hFront == oForm.Handle;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         static void sayLive(string sTitle, string sBody)
         {
             string sWhole = sTitle;
             if (sBody.Trim() != "") sWhole = sTitle + ". " + sBody.Replace(Environment.NewLine + Environment.NewLine, ". ").Replace(Environment.NewLine, " ");
             sWhole = Regex.Replace(sWhole, @"\s+", " ").Trim();
+            // Held whether or not it is spoken, so the window can be looked at
+            // afterwards and the last message read from it.
+            sLatestStatus = sWhole;
+            // The window is kept up to date whether or not anyone is looking at
+            // it. Alt+Tab across to it at any moment and the title and the status
+            // line already say where things stand, to be read with a screen
+            // reader's own commands without waiting to be told.
             try
             {
                 if (oStatusLine != null)
@@ -1152,9 +1215,18 @@ namespace Homer
                     oStatusLine.Text = sWhole;
                     oStatusLine.Refresh();
                 }
+                Form oForm = ownerForm();
+                if (oForm != null) oForm.Text = "HomerScribe, " + sWhole;
             }
             catch (Exception)
             {
+            }
+            if (!weAreInFront())
+            {
+                // Written above but not spoken: working in another program should
+                // not be interrupted. Coming back reads it out at once.
+                logMessage("  (not spoken: HomerScribe is not the window in front)", "INFO", "");
+                return;
             }
             try
             {
@@ -1666,6 +1738,7 @@ namespace Homer
         static List<Speech> readTranscript(string sPath)
         {
             List<Speech> lSpeech = new List<Speech>();
+            int iLooped = 0;
             try
             {
                 JavaScriptSerializer oSerializer = new JavaScriptSerializer();
@@ -1684,13 +1757,24 @@ namespace Homer
                     // "[Music]", "(applause)" and the like are not speech. They
                     // mark exactly the stretches where a description belongs.
                     if (Regex.IsMatch(oSpeech.sText, @"^[\[\(][^\]\)]*[\]\)]$")) continue;
-                    if (oSpeech.nEnd > oSpeech.nStart) lSpeech.Add(oSpeech);
+                    if (oSpeech.nEnd <= oSpeech.nStart) continue;
+                    // The same sentence again immediately after itself is the
+                    // model stuck in a loop, not someone repeating themselves:
+                    // a person saying a line twice is one stretch, not two
+                    // identical ones back to back.
+                    if (lSpeech.Count > 0 && string.Compare(lSpeech[lSpeech.Count - 1].sText, oSpeech.sText, true) == 0)
+                    {
+                        iLooped = iLooped + 1;
+                        continue;
+                    }
+                    lSpeech.Add(oSpeech);
                 }
             }
             catch (Exception oError)
             {
                 logMessage("The transcript could not be read: " + oError.Message, "ERROR");
             }
+            if (iLooped > 0) logMessage("Dropped " + iLooped.ToString() + " stretches that merely repeated the one before, which is Whisper looping on music or silence rather than anyone speaking.", "INFO", "");
             return lSpeech;
         }
 
@@ -1907,6 +1991,13 @@ namespace Homer
             if (lCachedGaps != null && sameSignature(dLastSignature, dCachedSignature))
             {
                 lLastGaps = lCachedGaps;
+                int iReal = 0;
+                foreach (Moment oOne in lLastGaps)
+                {
+                    if (!oOne.bForced) iReal = iReal + 1;
+                }
+                logMessage("PLACEMENT: " + iReal.ToString() + " real gaps, " + (lLastGaps.Count - iReal).ToString()
+                           + " placed on the timer, " + num(iReal * 100.0 / Math.Max(lLastGaps.Count, 1)) + " percent real (reused).", "INFO", "");
                 logMessage("Reusing the " + lLastGaps.Count.ToString() + " moments worked out by the earlier run. The sound track is not read again.",
                            "INFO", "Reusing the " + lLastGaps.Count.ToString() + " moments from the earlier run, so there is no scan to wait for.");
                 return lLastGaps;
@@ -3258,7 +3349,9 @@ namespace Homer
                     CheckBox oViewBox = oDialog.addCheckBox("&View output", bViewOutput,
                         "Open the folder holding the results when the run finishes.");
 
-                    sButton = oDialog.runWithButtons(new string[] { "OK", "Cancel" });
+                    logMessage("Dialog buttons: Help, Default settings, OK, Cancel", "INFO", "");
+                    sButton = oDialog.runWithButtons(new string[] { "Help", "Default settings", "OK", "Cancel" }, false);
+                    logMessage("Dialog answered with: " + (sButton == null ? "(nothing)" : sButton), "INFO", "");
 
                     sSources = (oSourceBox.Text == null ? "" : oSourceBox.Text).Trim();
                     sOutput = (oOutputBox.Text == null ? "" : oOutputBox.Text).Trim();
@@ -3276,6 +3369,24 @@ namespace Homer
                 {
                     closeDialog();
                     return false;
+                }
+
+                // Put everything back as it was out of the box and show the
+                // dialog again. The fields are restored rather than emptied,
+                // because the seeding happens once before the dialog opens: a
+                // blanked field would simply stay blank.
+                if (string.Compare(sButton, "Default settings", true) == 0)
+                {
+                    dParams["source-paths"].sValue = sDefaultSource;
+                    dParams["output-dir"].sValue = "";
+                    foreach (string sName in asRemembered)
+                    {
+                        if (dParams[sName].sKind == "flag") dParams[sName].sValue = "no";
+                    }
+                    forgetConfig();
+                    logMessage("Default settings restored.", "INFO", "");
+                    Say.say("Default settings restored");
+                    continue;
                 }
 
                 dParams["source-paths"].sValue = sSources;
@@ -3389,6 +3500,21 @@ namespace Homer
             {
             }
             return false;
+        }
+
+        // Forget what was remembered, so "Default settings" really does return
+        // the program to how it arrives.
+        static void forgetConfig()
+        {
+            try
+            {
+                if (File.Exists(configPath())) File.Delete(configPath());
+                logMessage("The settings file was removed: " + configPath(), "INFO", "");
+            }
+            catch (Exception oError)
+            {
+                logMessage("The settings file could not be removed: " + oError.Message, "ERROR");
+            }
         }
 
         static void saveConfig()
@@ -3747,12 +3873,8 @@ namespace Homer
                 sSaid = sSaid + Environment.NewLine + Environment.NewLine
                       + (bGuiMode ? "Tick Force overwrite to describe them again." : "Pass --force to describe them again.");
                 logMessage(sSaid.Replace(Environment.NewLine, " "), "INFO", bGuiMode ? "" : sSaid);
-                if (bGuiMode && sLastSkippedFolder != "" && sayToUser(sSaid + Environment.NewLine + Environment.NewLine
-                        + "Open the folder holding what was described before?",
-                        "HomerScribe", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
-                {
-                    showFolder(sLastSkippedFolder);
-                }
+                if (flag("view-output") && sLastSkippedFolder != "") showFolder(sLastSkippedFolder);
+                if (bGuiMode) sayToUser(sSaid, "HomerScribe", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return iNothingToDo;
             }
             if (iSkippedWhole > 0) logMessage(iSkippedWhole.ToString() + " already described and skipped; " + iDescribedWhole.ToString() + " described.",
@@ -3896,16 +4018,10 @@ namespace Homer
             string sSaid = oSaid.ToString();
             logMessage("RESULTS: " + sSaid.Replace(Environment.NewLine, " | "), "INFO", sSaid);
             if (!bGuiMode) return;
-            if (lResults.Count == 0 || !flag("view-output"))
-            {
-                sayToUser(sSaid, "HomerScribe results", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            if (sayToUser(sSaid + Environment.NewLine + Environment.NewLine + "Open the results folder?",
-                    "HomerScribe results", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
-            {
-                showFolder(sLastOutputFolder);
-            }
+            // View output already says whether the folder should be opened, so
+            // it is opened before this is shown rather than asked about after.
+            if (flag("view-output") && sLastOutputFolder != "") showFolder(sLastOutputFolder);
+            sayToUser(sSaid, "HomerScribe results", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         // ---------- context from the web ----------
