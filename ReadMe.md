@@ -314,6 +314,22 @@ Enter accepts, and Control plus Enter accepts from any control.
 The remaining settings stay on the command line for now. Say which of them you
 want as controls and where, and they go in.
 
+## The console window
+
+HomerScribe is a console program that also has a dialog, which is how all the
+Homer Tools are built: everything available at the command line stays available.
+Started from a shortcut, it hides its console at the first instant — before the
+settings are even read — because that window is not the program and is only
+confusing.
+
+Hiding it does not take it out of the Alt+Tab list, which is a limitation of
+Windows rather than a choice. So while a run is going on you may find two
+HomerScribe entries there: the dialog, which is the one you want, and the hidden
+console. The dialog is the one whose title says what the program is doing.
+
+Started from a command prompt you already had open, the console is left alone,
+because it is yours and the output is wanted.
+
 ## The window stays
 
 The dialog does not disappear when you press OK. It stays on screen for the

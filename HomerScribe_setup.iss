@@ -115,10 +115,12 @@ Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntex
 Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Developer.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Announce.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Developer.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Announce.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
 ; buildHomerScribe.cmd downloads them when they are missing, so normally they

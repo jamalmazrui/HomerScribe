@@ -4805,6 +4805,15 @@ namespace Homer
         [STAThread]
         static int Main(string[] asArgs)
         {
+            // FIRST, before anything else. No arguments means the dialog is
+            // coming, which is known without parsing anything, so the console
+            // can go now rather than after the settings are worked out. It was
+            // on screen for a moment before, which was long enough to confuse
+            // people into thinking it was the program.
+            if (asArgs.Length == 0 && consoleWindow.launchedFromGui())
+            {
+                bConsoleHidden = consoleWindow.hide();
+            }
             buildParams();
             if (!parseArgs(asArgs))
             {
@@ -4844,7 +4853,7 @@ namespace Homer
             // Started from a shortcut, so the console belongs to HomerScribe
             // and nobody asked for it. Hiding it also stops Control C in that
             // window killing a run. The test follows urlFido, extCheck and 2htm.
-            if (bGuiMode)
+            if (bGuiMode && !bConsoleHidden)
             {
                 int iAttached = consoleWindow.attachedCount();
                 bool bOurs = iAttached == 1;
@@ -4861,6 +4870,10 @@ namespace Homer
                     // stays. Writing to it is then wanted, not a nuisance.
                     logMessage("The console belongs to whoever started this, so it is left visible.", "INFO", "");
                 }
+            }
+            if (bConsoleHidden)
+            {
+                logMessage("The console was hidden before anything else was done.", "INFO", "");
             }
             logMessage("Mode: " + (bGuiMode ? "dialog" : "command line"), "INFO", "");
 

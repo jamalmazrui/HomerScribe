@@ -1,0 +1,322 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Jamal Mazrui" />
+  <title>Announcing HomerScribe</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
+  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  code, pre { font-family: Consolas, monospace; }
+  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Announcing HomerScribe</h1>
+<p class="subtitle">Audio Description and Transcription on Your Own
+Computer</p>
+<p class="author">Jamal Mazrui</p>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#announcing-homerscribe"
+id="toc-announcing-homerscribe">Announcing HomerScribe</a>
+<ul>
+<li><a href="#the-two-things-it-does"
+id="toc-the-two-things-it-does">The two things it does</a></li>
+<li><a href="#it-runs-on-your-computer-and-only-on-your-computer"
+id="toc-it-runs-on-your-computer-and-only-on-your-computer">It runs on
+your computer, and only on your computer</a></li>
+<li><a href="#what-it-will-cost-you-in-disk-space"
+id="toc-what-it-will-cost-you-in-disk-space">What it will cost you in
+disk space</a></li>
+<li><a href="#being-honest-about-the-quality"
+id="toc-being-honest-about-the-quality">Being honest about the
+quality</a></li>
+<li><a href="#how-long-it-takes-and-what-makes-the-difference"
+id="toc-how-long-it-takes-and-what-makes-the-difference">How long it
+takes, and what makes the difference</a></li>
+<li><a href="#it-was-built-for-us" id="toc-it-was-built-for-us">It was
+built for us</a></li>
+<li><a href="#try-it" id="toc-try-it">Try it</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="announcing-homerscribe">Announcing HomerScribe</h1>
+<h3 id="audio-description-and-transcription-on-your-own-computer">Audio
+Description and Transcription on Your Own Computer</h3>
+<p><a
+href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Download
+the HomerScribe installer for Windows</a></p>
+<p>HomerScribe is free and open source. It costs nothing to try and
+nothing to keep, and there is no account to make, no subscription, and
+nothing to pay for later.</p>
+<h2 id="the-two-things-it-does">The two things it does</h2>
+<p>Point HomerScribe at a video or an audio recording, on your own disk
+or at a web address, and tick one box or both.</p>
+<p><strong>Describe video</strong> watches what happens on screen and
+says it aloud. It finds the moments where a description can be spoken
+without covering the dialogue, asks a vision model what is there, speaks
+the answer in a Windows voice, and writes you a new copy of the film
+with that description mixed into it. You get the described film, and you
+get the script of every description with the time it is spoken, in a
+plain text form that reads well on a braille display.</p>
+<p><strong>Transcribe audio</strong> writes down what is said. You get
+the whole transcript, with the time of each stretch of speech.</p>
+<p><strong>Tick both</strong> and you get a third thing, which is the
+one I did not expect to care about as much as I do: the words of the
+film and the descriptions interleaved, in the order they happen. For
+someone who can neither see nor hear a film, that single document is the
+whole of it.</p>
+<h2 id="it-runs-on-your-computer-and-only-on-your-computer">It runs on
+your computer, and only on your computer</h2>
+<p>This is the part worth being clear about.</p>
+<p>Once HomerScribe is installed, nothing leaves your machine. No part
+of your video is uploaded. No request goes to any company’s server.
+There is no account, no login, and no key to paste in.</p>
+<p>That also means there are no tokens. Describing a two hour film means
+asking an AI model several hundred questions and giving it several
+hundred pictures to look at. Done through a commercial subscription,
+that is a great deal of consumption. Done here, it is your own computer
+working for a while, and the count is zero.</p>
+<p>It also means you can describe material you would not want to send
+anywhere: a family recording, a confidential meeting, an unreleased
+film, a medical video.</p>
+<h2 id="what-it-will-cost-you-in-disk-space">What it will cost you in
+disk space</h2>
+<p>HomerScribe itself is small. The AI models it uses are not, and you
+only need the ones for the job you want to do.</p>
+<ul>
+<li><strong>Transcribing</strong> needs about <strong>half a
+gigabyte</strong>.</li>
+<li><strong>Describing</strong> needs about <strong>six and a half
+gigabytes</strong>, because it needs a model that can look at pictures
+as well as a service to run it in.</li>
+</ul>
+<p>Both together come to about <strong>seven gigabytes</strong>. The
+installer offers each separately, so if you only want transcripts you
+can skip the larger download entirely.</p>
+<p>They are downloaded once and kept. Nothing is downloaded again when
+you use the program.</p>
+<h2 id="being-honest-about-the-quality">Being honest about the
+quality</h2>
+<p>I would rather you hear this from me than discover it yourself.</p>
+<p>The AI that runs on your own computer is not as capable as the AI you
+reach through a commercial service. It cannot be. A model small enough
+to sit on an ordinary desktop is a fraction of the size of the ones
+running in a data centre, and that difference shows. HomerScribe uses
+the best model I have found that still fits, and it is genuinely good;
+it is not the equal of what a paid cloud service would give you.</p>
+<p>More important than that: <strong>audio description written and
+performed by professionals is better than this, and it is better by a
+wide margin.</strong> Audio description is a craft. A skilled describer
+knows what matters in a shot and what does not, when to stay silent, how
+to reveal something at the moment the film reveals it, and how to say a
+great deal in four seconds. HomerScribe is not that, and I do not want
+anyone installing it expecting that.</p>
+<p>What it is for is everything with no description at all, which is
+most things. A lecture recording. A family video. A documentary that was
+never described. A film in a language whose described version was never
+made. For those, the question is not whether this is as good as a
+professional describer. It is whether it is better than nothing, and it
+is very much better than nothing.</p>
+<p>Transcription is the stronger half. On clear speech it is close to
+what a person would write down.</p>
+<h2 id="how-long-it-takes-and-what-makes-the-difference">How long it
+takes, and what makes the difference</h2>
+<p>On a computer with a capable graphics card, a feature film takes
+somewhere over an hour. Transcribing alone is much quicker.</p>
+<p>Without a graphics card, describing is slow: a single description can
+take minutes rather than seconds, and a long film becomes an overnight
+job. HomerScribe tells you when it has noticed this, says how long the
+run is likely to take, and suggests what to change. Transcribing is
+perfectly comfortable without one.</p>
+<p>If you are choosing a computer with this kind of work in mind, the
+graphics card matters far more than the processor or the age of the
+machine.</p>
+<h2 id="it-was-built-for-us">It was built for us</h2>
+<p>HomerScribe is a Windows program with a dialog laid out for a screen
+reader, where every field has an access key and every control says what
+it is. It tells you what it is doing as it goes, without taking the
+keyboard away from you, so you can work in another window while a film
+is being described and hear the progress by switching back to it.</p>
+<p>It can be run entirely from the command line as well, so it can be
+scripted and given a whole folder of files to work through
+unattended.</p>
+<h2 id="try-it">Try it</h2>
+<p><a
+href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Download
+the HomerScribe installer for Windows</a></p>
+<p>Accept the defaults. On the last page of the installer, leave ticked
+whatever matches what you want to do, and let it fetch the models; that
+is the long part, and it happens once.</p>
+<p>Then run HomerScribe. There is already a short sample video in the
+box, so you can press OK and watch it work before you go looking for
+anything of your own.</p>
+<p>I would like to hear how it goes, particularly where it goes
+wrong.</p>
+<p>Jamal Mazrui</p>
+</body>
+</html>

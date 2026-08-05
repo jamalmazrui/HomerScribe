@@ -105,6 +105,25 @@ At the end the spoken clips are laid onto a silent track at their exact sample
 offsets, and ffmpeg mixes that with the film's own audio, ducking the film
 underneath each description, and writes the result.
 
+## The console
+
+Built as a console executable, deliberately: everything a console program can do
+stays possible, which is the Homer Tools pattern. In dialog mode the console
+window is hidden at the very top of `Main`, before `buildParams` — no arguments
+means the dialog is coming, and that is known without parsing anything.
+
+The test is `GetConsoleProcessList`: exactly one attached process means Windows
+made the console for HomerScribe alone. Two or more means it was run from an
+existing `cmd.exe`, and that console belongs to the user and is left visible.
+
+`ShowWindow` is tried first and the result checked with `IsWindowVisible`; if the
+window survives, `FreeConsole` releases it, which destroys it since this process
+is its only holder. Nothing is written to the console afterwards.
+
+Hiding does not remove the entry from Alt+Tab. That is Windows, not a bug, and
+the only cure would be building as a Windows subsystem executable and attaching a
+console when one is wanted — which trades away console behaviour we want to keep.
+
 ## Speaking to the user
 
 Everything the user hears goes through `announce()`, and nothing else may raise a
