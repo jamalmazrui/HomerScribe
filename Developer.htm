@@ -181,6 +181,7 @@ id="toc-homerscribe-for-developers">HomerScribe for Developers</a>
 <li><a href="#the-parts" id="toc-the-parts">The parts</a></li>
 <li><a href="#how-a-description-is-made"
 id="toc-how-a-description-is-made">How a description is made</a></li>
+<li><a href="#the-console" id="toc-the-console">The console</a></li>
 <li><a href="#speaking-to-the-user"
 id="toc-speaking-to-the-user">Speaking to the user</a></li>
 <li><a href="#naming-the-presenter" id="toc-naming-the-presenter">Naming
@@ -320,6 +321,25 @@ moment, so an interrupted run loses at most one.</li>
 <p>At the end the spoken clips are laid onto a silent track at their
 exact sample offsets, and ffmpeg mixes that with the film’s own audio,
 ducking the film underneath each description, and writes the result.</p>
+<h2 id="the-console">The console</h2>
+<p>Built as a console executable, deliberately: everything a console
+program can do stays possible, which is the Homer Tools pattern. In
+dialog mode the console window is hidden at the very top of
+<code>Main</code>, before <code>buildParams</code> — no arguments means
+the dialog is coming, and that is known without parsing anything.</p>
+<p>The test is <code>GetConsoleProcessList</code>: exactly one attached
+process means Windows made the console for HomerScribe alone. Two or
+more means it was run from an existing <code>cmd.exe</code>, and that
+console belongs to the user and is left visible.</p>
+<p><code>ShowWindow</code> is tried first and the result checked with
+<code>IsWindowVisible</code>; if the window survives,
+<code>FreeConsole</code> releases it, which destroys it since this
+process is its only holder. Nothing is written to the console
+afterwards.</p>
+<p>Hiding does not remove the entry from Alt+Tab. That is Windows, not a
+bug, and the only cure would be building as a Windows subsystem
+executable and attaching a console when one is wanted — which trades
+away console behaviour we want to keep.</p>
 <h2 id="speaking-to-the-user">Speaking to the user</h2>
 <p>Everything the user hears goes through <code>announce()</code>, and
 nothing else may raise a message. It collects consecutive messages of
