@@ -29,8 +29,25 @@ for %%A in (%*) do (
 
 set "whisperDir=%LOCALAPPDATA%\HomerScribe\whisper"
 if not exist "%whisperDir%" mkdir "%whisperDir%" >nul 2>&1
-echo Installing Whisper into %whisperDir%
+
+rem Say plainly what is already here before doing anything, as the Ollama and
+rem model scripts do. Nothing is downloaded twice.
+echo Whisper is installed in %whisperDir%
 echo(
+if exist "%whisperDir%\whisper-cli.exe" echo   whisper.cpp: already installed
+if not exist "%whisperDir%\whisper-cli.exe" echo   whisper.cpp: not yet installed
+if exist "%whisperDir%\ggml-%model%.bin" echo   %model% model: already installed
+if not exist "%whisperDir%\ggml-%model%.bin" echo   %model% model: not yet installed
+echo(
+if not exist "%whisperDir%\whisper-cli.exe" goto :fetchAll
+if not exist "%whisperDir%\ggml-%model%.bin" goto :fetchAll
+echo Nothing to do: Whisper is ready.
+echo(
+if not defined noPause pause
+endlocal
+exit /b 0
+
+:fetchAll
 
 rem ---- the program ---------------------------------------------------
 if exist "%whisperDir%\whisper-cli.exe" goto :haveProgram
@@ -78,9 +95,8 @@ if errorlevel 1 goto :modelFailed
 echo(
 if exist "%whisperDir%\ggml-%model%.bin" echo The %model% model is in place.
 echo(
-echo Whisper is ready. HomerScribe will use it for speech detection and
-echo transcripts in a later version; a future HomerTranscribe will use it to
-echo transcribe audio and video.
+echo Whisper is ready. HomerScribe uses it to transcribe speech, and to find
+echo where descriptions can be spoken without covering the dialogue.
 echo(
 if not defined noPause pause
 endlocal

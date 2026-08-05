@@ -219,25 +219,40 @@ rem needs what Newtonsoft does that the built-in serializer cannot; nothing here
 rem does. Keeping to the built-in one is also what keeps HomerScribe.exe a
 rem single self-contained file, with no DLL beside it.
 
-rem ---- documentation in both forms ------------------------------------
-rem The .md files are the source; the .htm files are what the shortcuts open.
-rem 2htm, another of the Homer Tools, does the conversion when it is on the
-rem PATH or beside this script. When it is not, whatever .htm files are already
-rem here are packaged unchanged, so the build never fails over documentation.
-set "twohtm="
-if exist "2htm.exe" set "twohtm=2htm.exe"
-if not defined twohtm where 2htm.exe >nul 2>&1
-if not defined twohtm if not errorlevel 1 set "twohtm=2htm.exe"
-if not defined twohtm echo NOTE: 2htm was not found, so the .htm documentation was not regenerated.>> "%log%"
-if defined twohtm echo Regenerating the .htm documentation with %twohtm%>> "%log%"
-if defined twohtm "%twohtm%" -f ReadMe.md >> "%log%" 2>&1
-if defined twohtm "%twohtm%" -f History.md >> "%log%" 2>&1
-if defined twohtm "%twohtm%" -f License.md >> "%log%" 2>&1
+rem ---- documentation ---------------------------------------------------
+rem The .htm files are built alongside the .md files and shipped with them, so
+rem there is nothing to generate here. no converter is consulted: the one that used to be
+rem reported its own absence on every build and did nothing when present.
 
 rem ---- optional icon ------------------------------------------------
 set "icon="
 if exist "%app%.ico" set "icon=/win32icon:%app%.ico"
 if defined icon echo Icon: %app%.ico>> "%log%"
+
+rem ---- is the program still running? ---------------------------------
+rem The compiler cannot replace an executable that is open, and its message
+rem for that -- CS2012, "used by another process" -- looks like a build fault
+rem when it is nothing of the kind. Renaming the file is the cheap test: it
+rem succeeds only if nothing holds it.
+
+if not exist "%app%.exe" goto :notRunning
+move /y "%app%.exe" "%app%.exe.lockcheck" >nul 2>&1
+if exist "%app%.exe" goto :stillRunning
+move /y "%app%.exe.lockcheck" "%app%.exe" >nul 2>&1
+goto :notRunning
+
+:stillRunning
+echo(
+echo ERROR: %app%.exe is in use, so the compiler cannot replace it.
+echo(
+echo Close %app% and run this again. If no window is open, a run may have been
+echo left behind: end it with
+echo     taskkill /im %app%.exe /f
+echo(
+echo ERROR: %app%.exe is locked by a running process.>> "%log%"
+goto :failed
+
+:notRunning
 
 rem ---- compile ------------------------------------------------------
 rem Seven sources compiled together into ONE assembly, so the result is

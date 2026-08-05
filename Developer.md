@@ -144,9 +144,9 @@ and the working files.
 It writes `buildHomerScribe.log` beside itself and prints it at the end. What
 it does, in order: increments `version.txt` unless told not to, generates
 `Version.cs`, finds a compiler, finds the three full-path reference assemblies,
-downloads ffmpeg and yt-dlp if they are missing or stale, regenerates the `.htm`
-documentation with 2htm if it is present, compiles seven sources into one
-assembly, and runs Inno Setup.
+downloads ffmpeg and yt-dlp if they are missing or stale, compiles seven sources
+into one assembly, and runs Inno Setup. The `.htm` documentation is built with
+the `.md` and ships beside it, so the build generates nothing.
 
 ### Versioning
 
@@ -184,6 +184,9 @@ maintainer tools and not part of the distribution.
   than asking `where`.
 - `ffmpeg.exe` and `yt-dlp.exe` are downloaded at build time and are in
   `.gitignore`. They are far too large for a repository.
+- A build cannot replace a running executable. The script renames it first as a
+  test and says so plainly, because the compiler's own message for this —
+  CS2012, "used by another process" — reads like a fault in the source.
 
 ## Changing the descriptions
 
