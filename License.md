@@ -23,8 +23,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## Programs packaged alongside
 
-HomerDescribe calls three other programs. The MIT license above covers
-HomerDescribe itself; each of the others carries its own terms, which apply to
+HomerScribe calls three other programs. The MIT license above covers
+HomerScribe itself; each of the others carries its own terms, which apply to
 that program and not to this one.
 
 - **ffmpeg** (https://ffmpeg.org) does all the video and audio work. The
@@ -33,7 +33,7 @@ that program and not to this one.
   GPL, so distributing one carries the GPL's obligations for that binary,
   including making its corresponding source available. An LGPL build, such as
   those from BtbN, carries lighter obligations and is worth preferring if
-  HomerDescribe is to be distributed widely. I am not a lawyer; this is a
+  HomerScribe is to be distributed widely. I am not a lawyer; this is a
   pointer, not advice.
 - **yt-dlp** (https://github.com/yt-dlp/yt-dlp) downloads video from web
   addresses. It is released into the public domain under the Unlicense, so

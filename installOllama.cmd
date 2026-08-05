@@ -1,5 +1,5 @@
 @echo off
-rem installOllama.cmd -- install Ollama, the local AI service HomerDescribe uses.
+rem installOllama.cmd -- install Ollama, the local AI service HomerScribe uses.
 rem
 rem Run from the installer's final page, or on its own at any time.
 rem
