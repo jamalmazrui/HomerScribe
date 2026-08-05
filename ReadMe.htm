@@ -514,7 +514,12 @@ source…</strong></li>
 output…</strong></li>
 <li><strong>&amp;Force overwrite</strong>, <strong>&amp;Log
 session</strong>, <strong>&amp;Use configuration</strong></li>
-<li>OK and Cancel, with Help supplied by LbcDialog itself</li>
+<li>Help, <strong>Default settings</strong>, OK and Cancel, in that
+order left to right, following Microsoft’s guidance for a secondary
+window and matching 2htm and extCheck. <strong>Enter</strong> is OK,
+<strong>Escape</strong> is Cancel and <strong>F1</strong> is Help, so
+those two buttons carry no access key and Alt+O and Alt+C stay with
+Output directory and Choose output.</li>
 </ul>
 <p>OK and Cancel carry no mnemonic, as Windows convention requires:
 Escape cancels, Enter accepts, and Control plus Enter accepts from any
@@ -536,11 +541,41 @@ without a graphics card — Windows may mark the window as not responding.
 It is still there, still named, still in Alt+Tab, and it recovers at the
 next description.</p>
 <h2 id="what-you-hear-while-it-runs">What you hear while it runs</h2>
+<p><strong>Audio only</strong> produces sound alone: a single
+<code>described.mp3</code> holding the film’s own audio with the
+descriptions mixed into it, and no video. It is a quarter the size of
+the film, much quicker to make since no video is copied, and enough when
+the picture is of no use to the listener. <strong>View output</strong>
+opens the results when the run finishes. <strong>Force
+overwrite</strong> does the work again, ignoring anything an earlier run
+wrote.</p>
+<p>Only one access key is shared: Alt+D belongs to both <strong>Describe
+video</strong> and <strong>Default settings</strong>. Windows cycles
+between them; press it twice to reach the second.</p>
+<p><strong>Default settings</strong> puts everything back as it arrives
+— the source returns to the sample video, the output directory is
+cleared, every checkbox is unticked, and any remembered settings are
+forgotten — then shows the dialog again so the result can be seen before
+anything runs.</p>
+<p>The <strong>Source paths</strong> box starts with a video already in
+it: the W3C Web Accessibility Initiative’s ten Perspectives films, seven
+and a half minutes in one. They are freely licensed and published with
+professionally written descriptions of every shot, so a first run can be
+compared against how it should have been done. Press OK and something
+happens.</p>
 <p>The dialog carries a <strong>status line</strong>, and that line is a
 UIA live region. Messages are written to it and spoken by whichever
 screen reader is running — JAWS, NVDA or Narrator — <strong>without
-taking the keyboard focus</strong>, so you can work in other windows
-while a film is being described.</p>
+taking the keyboard focus</strong>.</p>
+<p>They are spoken <strong>only while HomerScribe is the window in
+front</strong>. Work in another program and it falls silent.</p>
+<p>The window itself stays current regardless. Its
+<strong>title</strong> and its <strong>status line</strong> are updated
+as the work goes on whether or not anyone is looking, so you can Alt+Tab
+across at any moment and read either with your screen reader’s own
+commands — the title with JAWS Insert+T, the status line by reading the
+window — without waiting to be told anything. Coming back to the window
+also says where things stand at once, then carries on.</p>
 <p>Messages of one kind are collected and spoken together. The kind is
 said, then where the film had reached when the group started, then the
 messages:</p>

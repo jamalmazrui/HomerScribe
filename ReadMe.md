@@ -302,7 +302,11 @@ by DbDo, EdSharp, FileDir and urlFido. It carries the standard controls:
 - **&Source paths** with **&Browse source...**
 - **&Output directory** with **&Choose output...**
 - **&Force overwrite**, **&Log session**, **&Use configuration**
-- OK and Cancel, with Help supplied by LbcDialog itself
+- Help, **Default settings**, OK and Cancel, in that order left to right,
+  following Microsoft's guidance for a secondary window and matching 2htm and
+  extCheck. **Enter** is OK, **Escape** is Cancel and **F1** is Help, so those
+  two buttons carry no access key and Alt+O and Alt+C stay with Output directory
+  and Choose output.
 
 OK and Cancel carry no mnemonic, as Windows convention requires: Escape cancels,
 Enter accepts, and Control plus Enter accepts from any control.
@@ -327,10 +331,41 @@ named, still in Alt+Tab, and it recovers at the next description.
 
 ## What you hear while it runs
 
+**Audio only** produces sound alone: a single `described.mp3` holding the film's
+own audio with the descriptions mixed into it, and no video. It is a quarter the
+size of the film, much quicker to make since no video is copied, and enough when
+the picture is of no use to the listener. **View output** opens the results when
+the run finishes. **Force overwrite** does the work again, ignoring anything an
+earlier run wrote.
+
+Only one access key is shared: Alt+D belongs to both **Describe video** and
+**Default settings**. Windows cycles between them; press it twice to reach the
+second.
+
+**Default settings** puts everything back as it arrives — the source returns to
+the sample video, the output directory is cleared, every checkbox is unticked,
+and any remembered settings are forgotten — then shows the dialog again so the
+result can be seen before anything runs.
+
+The **Source paths** box starts with a video already in it: the W3C Web
+Accessibility Initiative's ten Perspectives films, seven and a half minutes in
+one. They are freely licensed and published with professionally written
+descriptions of every shot, so a first run can be compared against how it should
+have been done. Press OK and something happens.
+
 The dialog carries a **status line**, and that line is a UIA live region.
 Messages are written to it and spoken by whichever screen reader is running —
-JAWS, NVDA or Narrator — **without taking the keyboard focus**, so you can work
-in other windows while a film is being described.
+JAWS, NVDA or Narrator — **without taking the keyboard focus**.
+
+They are spoken **only while HomerScribe is the window in front**. Work in
+another program and it falls silent.
+
+The window itself stays current regardless. Its **title** and its **status line**
+are updated as the work goes on whether or not anyone is looking, so you can
+Alt+Tab across at any moment and read either with your screen reader's own
+commands — the title with JAWS Insert+T, the status line by reading the window —
+without waiting to be told anything. Coming back to the window also says where
+things stand at once, then carries on.
 
 Messages of one kind are collected and spoken together. The kind is said, then
 where the film had reached when the group started, then the messages:
