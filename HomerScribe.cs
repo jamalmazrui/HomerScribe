@@ -160,6 +160,7 @@ namespace Homer
         const int iDefaultScanReport = 10;
         const int iDefaultSpokenReport = 20;
         const int iDefaultGroupLength = 700;
+        const int iDefaultSpokenLimit = 1500;
         const int iDefaultTimeout = 300000;
         const int iDefaultHeartbeat = 25;
         const double nDefaultChapter = 600.0;
@@ -179,6 +180,9 @@ namespace Homer
         const string sDefaultWaveName = "described.wav";
 
         static StreamWriter fLog = null;
+        static FileStream fLogStream = null;
+        static DateTime dtLogFlushed = DateTime.MinValue;
+        static string sLogPath = "";
         static readonly object oLogLock = new object();
         static bool bVerbose = false;
         static Dictionary<string, Param> dParams = new Dictionary<string, Param>();
@@ -235,7 +239,8 @@ namespace Homer
             addParam("ffmpeg-dir", "", "string", "", "Folder holding ffmpeg.exe, searched in addition to the PATH");
             addParam("objective", "", "flag", "yes", "Ask again when a description states a mood or a judgement instead of what is visible");
             addParam("announce", "", "flag", "yes", "Speak an opening line confirming description is running");
-            addParam("boxes", "", "flag", "", "Show each description in a timed message box a screen reader will read");
+            addParam("announce-progress", "", "flag", "yes", "Speak progress and each description through the dialog's status line");
+            addParam("boxes", "", "flag", "no", "Use timed message boxes instead of the status line. They announce reliably but take the keyboard focus");
             addParam("check", "C", "flag", "no", "Check the environment, write the log, and stop");
             addParam("list-voices", "L", "flag", "no", "List the installed speech voices and stop");
             addParam("verbose", "V", "flag", "no", "Echo every command to the console as well as the log");
@@ -386,7 +391,7 @@ namespace Homer
             { "Hearing the film, and where descriptions go", "speech whisper-model dialogue-window every spacing min-gap forced-length noise-floor silence-length dialogue-channel max-silence" },
             { "Not saying the same thing twice", "similarity same-shot" },
             { "The model and the picture", "model url frames width crop-bottom" },
-            { "Settings, logs and diagnostics", "use-configuration log-session log-file checkpoint mux-minutes ffmpeg-dir boxes gui check list-voices verbose help" },
+            { "Settings, logs and diagnostics", "use-configuration log-session log-file checkpoint mux-minutes ffmpeg-dir announce-progress boxes gui check list-voices verbose help" },
         };
 
         static void writeWrapped(string sIndent, string sText, int iWidth)
@@ -564,15 +569,62 @@ namespace Homer
             return appDataFolder();
         }
 
+        // Open the log somewhere specific. Used first for a provisional log and
+        // then, once the settings are known, for the real one.
+        static void openLogAt(string sPath)
+        {
+            string sWanted = sPath;
+            if (fLog != null)
+            {
+                // Already logging somewhere. Move to the new place, carrying
+                // everything written so far, so nothing is lost and there is
+                // only ever one log for a run.
+                string sSoFar = "";
+                try
+                {
+                    fLog.Flush();
+                    if (fLogStream != null) fLogStream.Flush(true);
+                    string sOld = sLogPath;
+                    fLog.Close();
+                    fLog = null;
+                    fLogStream = null;
+                    if (sOld != "" && File.Exists(sOld)) sSoFar = File.ReadAllText(sOld);
+                    if (string.Compare(sOld, sWanted, true) == 0) sSoFar = "";
+                    if (sSoFar != "" && File.Exists(sOld) && string.Compare(sOld, sWanted, true) != 0) File.Delete(sOld);
+                }
+                catch (Exception)
+                {
+                }
+                openLogFile(sWanted);
+                if (sSoFar != "" && fLog != null)
+                {
+                    fLog.Write(sSoFar);
+                    fLog.Flush();
+                }
+                return;
+            }
+            openLogFile(sWanted);
+        }
+
         static void openLog()
         {
-            if (fLog != null) return;
             string sPath = text("log-file");
             if (sPath == "") sPath = Path.Combine(chooseLogFolder(), sDefaultLogName);
+            if (string.Compare(sLogPath, sPath, true) == 0) return;
+            openLogAt(sPath);
+            logMessage("Log file: " + sLogPath, "INFO", "Log: " + sLogPath);
+            return;
+        }
+
+        static void openLogFile(string sPath)
+        {
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(sPath)));
-                fLog = new StreamWriter(sPath, false, new UTF8Encoding(true));
+                fLogStream = new FileStream(sPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                fLog = new StreamWriter(fLogStream, new UTF8Encoding(true));
+                fLog.AutoFlush = true;
+                sLogPath = sPath;
             }
             catch (Exception oError)
             {
@@ -580,7 +632,10 @@ namespace Homer
                 sPath = Path.Combine(appDataFolder(), sDefaultLogName);
                 try
                 {
-                    fLog = new StreamWriter(sPath, false, new UTF8Encoding(true));
+                    fLogStream = new FileStream(sPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                    fLog = new StreamWriter(fLogStream, new UTF8Encoding(true));
+                    fLog.AutoFlush = true;
+                    sLogPath = sPath;
                 }
                 catch (Exception oSecond)
                 {
@@ -594,7 +649,6 @@ namespace Homer
                 oEarlyLog = null;
                 fLog.Flush();
             }
-            logMessage("Log file: " + sPath, "INFO", "Log: " + sPath);
         }
 
         static void closeLog()
@@ -602,8 +656,17 @@ namespace Homer
             if (fLog == null) return;
             logMessage("Log closed", "INFO", "");
             fLog.Flush();
+            try
+            {
+                if (fLogStream != null) fLogStream.Flush(true);
+            }
+            catch (Exception)
+            {
+            }
             fLog.Close();
             fLog = null;
+            fLogStream = null;
+            sLogPath = "";
         }
 
         static void logMessage(string sText)
@@ -630,6 +693,23 @@ namespace Homer
                 {
                     fLog.WriteLine(sLine);
                     fLog.Flush();
+                    // Flushing the WRITER hands the text to Windows; flushing
+                    // the FILE makes Windows write it out and update the size in
+                    // the directory. Without the second, someone watching the
+                    // log to see whether a run is still alive sees zero bytes
+                    // however much has been written. Done once a second, which
+                    // costs nothing and keeps the file honest.
+                    if (fLogStream != null && DateTime.Now.Subtract(dtLogFlushed).TotalSeconds >= 1.0)
+                    {
+                        dtLogFlushed = DateTime.Now;
+                        try
+                        {
+                            fLogStream.Flush(true);
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
                 }
                 else if (oEarlyLog != null) oEarlyLog.AppendLine(sLine);
             }
@@ -729,6 +809,7 @@ namespace Homer
         const int iDefaultBoxMaxMs = 15000;
 
         static bool bBoxes = false;
+        static bool bAnnouncing = false;
         static bool bGuiMode = false;
 
         // The dialog is kept, not thrown away, when OK is pressed. Lbc shows it
@@ -771,7 +852,10 @@ namespace Homer
             try
             {
                 disableDialog(oForm);
+                attachStatusLine(oForm);
                 oForm.Text = "HomerScribe, working";
+                bAnnouncing = flag("announce-progress");
+                announce("Initializing", -1.0, 1.0, "Starting.");
                 oForm.Show();
                 oForm.Refresh();
             }
@@ -889,6 +973,7 @@ namespace Homer
         static double nPendingAt = -1.0;
         static double nPendingTotal = 1.0;
         static DateTime dtPendingSince = DateTime.MinValue;
+        static DateTime dtLastSpoken = DateTime.MinValue;
 
         // "Listening" and "Scanning" are what the work is called in the log.
         // What the listener needs is which part of the job it belongs to.
@@ -946,29 +1031,63 @@ namespace Homer
             if (lPending.Count > 1 && lPending[0] == sWhere) lPending.RemoveAt(0);
             string sBody = string.Join(Environment.NewLine + Environment.NewLine, lPending.ToArray());
             if (sWhere != "" && sBody != sWhere) sBody = sWhere + Environment.NewLine + Environment.NewLine + sBody;
+            // A hard ceiling, whatever else goes wrong. One announcement reached
+            // thirty two thousand characters, which a screen reader will spend
+            // several minutes reading and which made a working program look
+            // stopped. Nothing said aloud can be longer than this, and the most
+            // recent part is what is kept.
+            if (sBody.Length > iDefaultSpokenLimit)
+            {
+                logMessage("That announcement was " + sBody.Length.ToString() + " characters and has been cut to " + iDefaultSpokenLimit.ToString() + ".", "INFO", "");
+                sBody = sBody.Substring(sBody.Length - iDefaultSpokenLimit);
+            }
             // Recorded so that a log shows exactly how many boxes were raised
             // and what was in each. A screen reader reads a box once; hearing
             // something twice means it was presented twice.
-            logMessage("BOX [" + sTitle + "] " + sBody.Replace(Environment.NewLine, " / "), "INFO", "");
+            logMessage("SAID [" + sTitle + "] " + sBody.Replace(Environment.NewLine, " / "), "INFO", "");
+            // EMPTIED FIRST, and always. The live-region path used to return
+            // before this, so the collected messages were never cleared: every
+            // announcement repeated all of its predecessors and grew as it went.
+            // Nothing below may return before the list is emptied.
             lPending.Clear();
             nPendingAt = -1.0;
             dtPendingSince = DateTime.Now;
+            dtLastSpoken = DateTime.Now;
+            if (!flag("boxes"))
+            {
+                sayLive(sTitle, sBody);
+                return;
+            }
             showTimedBox(sTitle, sBody);
         }
 
         static void announce(string sKind, double nAt, double nTotal, string sContent)
         {
-            if (!bBoxes) return;
+            if (!bAnnouncing) return;
             string sText = sContent.Trim();
             if (sText == "") sText = spokenPosition(nAt, nTotal);
-            if (sText == "") return;
             // A change of kind closes whatever was being collected, because the
-            // title names the kind.
-            if (sKind != sPendingKind)
+            // title names the kind, and is then spoken AT ONCE.
+            //
+            // Waiting would be wrong twice over. The first thing a person hears
+            // after pressing OK should not be half a minute away -- one run was
+            // stopped after sixty seconds having heard nothing at all, because
+            // the first group had not yet closed. And a change of kind is the
+            // most informative moment there is: it says the program has moved
+            // from one part of the job to the next.
+            bool bNewKind = sKind != sPendingKind;
+            if (bNewKind)
             {
                 flushAnnouncements();
                 sPendingKind = sKind;
+                nPendingAt = nAt;
+                nPendingTotal = nTotal;
+                dtPendingSince = DateTime.Now;
+                lPending.Add(sText == "" ? "starting" : sText);
+                flushAnnouncements();
+                return;
             }
+            if (sText == "") return;
             if (lPending.Count == 0)
             {
                 // The time in the title is where this group STARTS. Later
@@ -978,13 +1097,78 @@ namespace Homer
                 dtPendingSince = DateTime.Now;
             }
             lPending.Add(sText);
-            if (DateTime.Now.Subtract(dtPendingSince).TotalSeconds >= iDefaultSpokenReport) flushAnnouncements();
+            // Spoken at once when nothing has been said for a while, so a quiet
+            // stretch never leaves the listener wondering; collected into a
+            // group when messages are arriving faster than they can be heard.
+            if (DateTime.Now.Subtract(dtLastSpoken).TotalSeconds >= iDefaultSpokenReport) flushAnnouncements();
             else if (pendingLength() >= iDefaultGroupLength) flushAnnouncements();
+        }
+
+        // The status line in the dialog. Sighted users read it; screen readers
+        // are told about it through Say.cs, which raises a UIA notification
+        // against a live region, so JAWS, NVDA and Narrator all speak it.
+        //
+        // This replaces the timed message box. A box announced reliably but it
+        // took the keyboard focus for as long as it was up, so the machine could
+        // not be used for anything else while a film was being described -- and
+        // a two hour film raised three hundred and forty of them.
+        static Label oStatusLine = null;
+
+        static void attachStatusLine(Form oForm)
+        {
+            if (oForm == null) return;
+            if (oStatusLine != null) return;
+            try
+            {
+                oStatusLine = new Label();
+                oStatusLine.AutoSize = false;
+                oStatusLine.Dock = DockStyle.Bottom;
+                oStatusLine.Height = 44;
+                oStatusLine.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+                oStatusLine.AccessibleName = "Status";
+                oStatusLine.AccessibleRole = AccessibleRole.StaticText;
+                oStatusLine.Text = "";
+                oForm.Controls.Add(oStatusLine);
+                IntPtr hForce = oStatusLine.Handle;
+                Say.attach(oForm);
+                logMessage("The status line is attached and speaking through the live region.", "INFO", "");
+            }
+            catch (Exception oError)
+            {
+                logMessage("The status line could not be attached: " + oError.Message, "ERROR");
+            }
+        }
+
+        // Said aloud without taking the focus, and shown on the status line.
+        static void sayLive(string sTitle, string sBody)
+        {
+            string sWhole = sTitle;
+            if (sBody.Trim() != "") sWhole = sTitle + ". " + sBody.Replace(Environment.NewLine + Environment.NewLine, ". ").Replace(Environment.NewLine, " ");
+            sWhole = Regex.Replace(sWhole, @"\s+", " ").Trim();
+            try
+            {
+                if (oStatusLine != null)
+                {
+                    oStatusLine.Text = sWhole;
+                    oStatusLine.Refresh();
+                }
+            }
+            catch (Exception)
+            {
+            }
+            try
+            {
+                Say.say(sWhole);
+            }
+            catch (Exception oError)
+            {
+                logMessage("The live region could not speak: " + oError.Message, "ERROR");
+            }
         }
 
         static void showTimedBox(string sCaption, string sBody)
         {
-            if (!bBoxes) return;
+            if (!bAnnouncing) return;
             // Long enough for the words in it to be read out. A group of five
             // descriptions cannot be spoken in the two seconds one line needs.
             int iShowFor = iDefaultBoxMs + sBody.Length * 25;
@@ -4569,13 +4753,21 @@ namespace Homer
             // Checkboxes start unticked. A settings file is read only when it
             // records that Use configuration was ticked last time, since ticking
             // it is what writes the file.
+            // A provisional log, opened before anything can go wrong. It is under
+            // application data, which is always writable, and holds whatever
+            // happens before the settings say where the real log belongs. If a
+            // run dies at the dialog, this is the file that explains it.
+            if (fLog == null) openLogAt(Path.Combine(appDataFolder(), sDefaultLogName));
             if (bGuiMode && !dParams["use-configuration"].bGiven && savedSaysUseConfiguration()) dParams["use-configuration"].sValue = "yes";
             if (flag("use-configuration")) loadConfig();
 
             // Boxes are on by default in dialog mode, off on the command line,
             // where every description is already printed.
-            bBoxes = bGuiMode;
-            if (dParams["boxes"].bGiven) bBoxes = flag("boxes");
+            // Announcements are on whenever there is a dialog to speak from.
+            // --boxes asks for the old timed message boxes instead of the live
+            // region; --announce no turns announcements off altogether.
+            bAnnouncing = bGuiMode && flag("announce-progress");
+            bBoxes = flag("boxes");
 
             int iResult = 1;
             try

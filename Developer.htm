@@ -329,7 +329,11 @@ montages. The tag is a hash of the full input path, so two videos of the
 same name do not collide. On a finished run everything but the record is
 deleted.</li>
 <li>The run log goes with the results, or under application data when
-Log session is unticked.</li>
+Log session is unticked. A provisional log opens under application data
+at startup and is moved, with everything already written, once the
+destination is known. The file is flushed to disk once a second so its
+size grows visibly: flushing only the writer leaves the directory entry
+showing zero, which makes a live run look dead.</li>
 </ul>
 <p>Nothing is written beside the executable. Installed, that is
 <code>C:\Program Files\HomerScribe</code>, which an ordinary user cannot
