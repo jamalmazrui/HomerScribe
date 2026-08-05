@@ -6,9 +6,9 @@ Version.cs
 
 # Maintainer scripts, not part of the distribution
 tagRelease.*
-createHomerDescribeRepo.cmd
-createHomerDescribeRepo.ps1
-createHomerDescribeRepo.log
+createHomerScribeRepo.cmd
+createHomerScribeRepo.ps1
+createHomerScribeRepo.log
 
 # Results of describing a film
 *_described/

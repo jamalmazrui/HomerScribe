@@ -1,4 +1,81 @@
-﻿# HomerDescribe History
+﻿# HomerScribe History
+
+## 1.0.38, 4 August 2026
+
+- Fixed the failure to write the described film, which had never worked since
+  the temporary file was introduced. The name was "described.mp4.part", and
+  ffmpeg cannot tell what container to write from a ".part" extension: it failed
+  instantly with Invalid argument. The temporary name now keeps the real
+  extension last, "described.part.mp4".
+- A failed write now says what ffmpeg said. The reason had been captured and
+  thrown away, so the message was "could not be written" and nothing more.
+- Extra descriptions are now placed at the quietest instant the transcript can
+  find, rather than on a fixed clock. On a film that is mostly narration this
+  helps only somewhat -- there is no room to find -- so HomerScribe now says so
+  outright when someone is talking for more than 70 percent of the film, and
+  recommends interrupting less often, which helps far more.
+- The spoken progress during the long passes now reads like a description line:
+  "Listening  0:12:34". The sentences explaining what was about to happen are
+  gone.
+- The version is no longer announced on launch. It is on the help screen and in
+  the read-me, which is where it belongs.
+
+## 1.0.37, 4 August 2026
+
+From a tester's second run, on a machine without a graphics card: two hours,
+26 descriptions, and two progress lines in the whole log.
+
+- One results summary at the end of a run, and no message box between videos. A
+  box after each video stops a batch until somebody presses a key, which defeats
+  giving HomerScribe a folder full of them. The summary names each video, its
+  descriptions and where they went, with the totals and the time taken, and
+  offers to open the results.
+- The slow-machine warning now says how to make it quicker in the way that
+  actually matters on such a machine: --summarise no halves the work, since each
+  description takes two model calls and each rejected one takes another. It also
+  says that nothing is lost, and that --rebuild will make the film from the
+  descriptions already written.
+- The installer no longer asks for the destination when a previous installation
+  is found, as the other Homer Tools do.
+
+## 1.0.36, 4 August 2026
+
+Descriptions are now placed by listening for speech rather than for silence.
+
+- With Whisper installed, HomerScribe transcribes the film once and puts
+  descriptions in the quiet between the talking. Silence detection could not tell
+  music from speech, so on a scored film it found 113 usable gaps and had to
+  invent 588 on a timer. The transcript is kept, so a resumed run never pays for
+  it twice, and the program falls back to silence detection and says so when
+  Whisper is absent.
+- The dialogue spoken in the 25 seconds before each moment is shown to the model,
+  so a description does not repeat what the listener has just heard.
+  --dialogue-window changes that, or 0 turns it off.
+- Two lines of measurement so the contribution can be judged rather than assumed.
+  PLACEMENT reports how many gaps were real against how many were placed on the
+  timer. RESULT reports how many descriptions overlapped speech, which is the
+  fault this change exists to remove, along with how many were written knowing
+  the dialogue.
+- --speech no restores the old behaviour for a controlled comparison on the same
+  film.
+
+## 1.0.35, 4 August 2026
+
+- The installer offers Whisper, ticked, after the vision model: about 500 MB of
+  speech recognition, open source and entirely local, installed into
+  %LOCALAPPDATA%\HomerScribe\whisper. This version does not use it yet. It is
+  offered now so the next version, which will place descriptions by detecting
+  speech rather than silence, needs no second download, and so a future
+  HomerTranscribe has what it needs.
+- HomerScribe now looks for programs in that folder as well as beside itself
+  and on the PATH.
+
+## 1.0.34, 4 August 2026
+
+- Cleared the one compiler warning: the flag recording that the console had been
+  hidden was set but never read, because the line that used it was lost in the
+  rebuild. With the console hidden there is nobody to write to, so those writes
+  are now skipped.
 
 ## 1.0.33, 4 August 2026
 
@@ -9,16 +86,16 @@
 
 ## 1.0.32, 4 August 2026
 
-- The console window is hidden when HomerDescribe is started from a shortcut or
+- The console window is hidden when HomerScribe is started from a shortcut or
   the Start menu, following urlFido, extCheck and 2htm: if exactly one process is
-  attached to the console, Windows made it for HomerDescribe alone. A tester
+  attached to the console, Windows made it for HomerScribe alone. A tester
   Alt-Tabbed onto that window instead of the dialog, and closing it with
   Control C killed the run.
 - Resuming no longer reads the whole sound track again. The moment list and the
   settings that produced it are kept in the record, and reused when the settings
   are unchanged. A resumed run now starts describing at once.
 - A long wait no longer looks like a stopped program: while the model is
-  thinking, HomerDescribe says every twenty five seconds that it is still working
+  thinking, HomerScribe says every twenty five seconds that it is still working
   and for how long. On a machine without a graphics card a single description
   takes two or three minutes.
 - "Nearly there" removed from the scan progress; the percentage says it.
@@ -43,7 +120,7 @@ copy was rolled back and the code was rebuilt from the running program.
   finishes. Every checkbox in the dialog starts unticked.
 - Source paths accept wildcard patterns as well as files and web addresses.
 - The settings, the working files and usually the log moved to
-  %LOCALAPPDATA%\HomerDescribe, because an installed program cannot write beside
+  %LOCALAPPDATA%\HomerScribe, because an installed program cannot write beside
   its own executable. Each video's folder holds only the described film and the
   script to read.
 - A run where every video had already been described says so and offers the
@@ -96,7 +173,7 @@ copy was rolled back and the code was rebuilt from the running program.
 - Fixed a build failure: an empty context folder aborted the installer, because
   a wildcard matching nothing is a fatal error in Inno Setup unless the line is
   marked skippable. Every source below the program itself is now optional --
-  only HomerDescribe.exe is genuinely required. Since 1.0.15 the context that
+  only HomerScribe.exe is genuinely required. Since 1.0.15 the context that
   matters is video.md beside the video, so the shipped example is exactly that,
   an example.
 
@@ -136,7 +213,7 @@ The prompt reworked as prompt engineering rather than as a list of rules.
   rather than quietly producing nameless descriptions.
 - Every video gets a folder of its own, named after the video, holding
   described.mkv (or whatever the source extension was), described.md,
-  described.json, described.vtt, described.wav, and a HomerDescribe.log of that
+  described.json, described.vtt, described.wav, and a HomerScribe.log of that
   video alone. The running log beside the program still holds the whole session.
 - A folder that already exists means that video is skipped, so a run over many
   videos can be stopped and resumed. Force overwrite describes them again.
@@ -201,7 +278,7 @@ missed.
 
 - The documentation now travels in both forms: Markdown to read in an editor or
   on a braille display, and HTML for a browser. The shortcuts open the HTML.
-- buildHomerDescribe.cmd regenerates the .htm files with 2htm when it is
+- buildHomerScribe.cmd regenerates the .htm files with 2htm when it is
   available, and packages whatever is already there when it is not.
 
 ## 1.0.10, 4 August 2026
@@ -210,7 +287,7 @@ missed.
   menu, but it is not a gate on the way in.
 - The desktop shortcut is created without asking. Its hotkey is named on the
   launch checkbox at the end, which is where the user is looking when it matters.
-- The final page now offers what HomerDescribe needs first -- Ollama, then the
+- The final page now offers what HomerScribe needs first -- Ollama, then the
   vision model -- and only then offers to launch it or open the documentation.
 - Each of those two is shown only when it is actually missing. The wizard asks
   ollama what it holds as it opens, so a machine that already has the model is
@@ -248,7 +325,7 @@ missed.
 ## 1.0.7, 4 August 2026
 
 - The installer now packages ffmpeg.exe, ffprobe.exe and yt-dlp.exe when they
-  are present at build time, so an installed HomerDescribe works with nothing
+  are present at build time, so an installed HomerScribe works with nothing
   else set up. A build without them still succeeds.
 - The build script warns when a companion program is missing from the folder.
 - License notes added for the packaged programs.
@@ -259,7 +336,7 @@ missed.
   `--simulate` in yt-dlp unless `--no-simulate` is given, so the previous build
   would have reported a file name and fetched nothing.
 - yt-dlp is now told where ffmpeg is, so the separate best-video and best-audio
-  streams merge even when ffmpeg is only beside HomerDescribe and not on the PATH.
+  streams merge even when ffmpeg is only beside HomerScribe and not on the PATH.
 - Filenames are restricted to plain ASCII, so punctuation in a video title cannot
   trip the steps that follow.
 - Download progress is reported as it happens instead of the screen going silent.
@@ -268,7 +345,7 @@ missed.
 
 - Starting the program with nothing on the command line now opens the dialog,
   as a Windows program should. `--gui` still forces it.
-- In dialog mode an existing HomerDescribe.ini is loaded automatically, so the
+- In dialog mode an existing HomerScribe.ini is loaded automatically, so the
   dialog opens showing last time's answers.
 - "Log session" now does something: a copy of the log is written into the output
   folder when the run finishes.

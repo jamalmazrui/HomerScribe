@@ -1,7 +1,7 @@
 @echo off
-rem installModels.cmd -- install the vision model HomerDescribe describes with.
+rem installModels.cmd -- install the vision model HomerScribe describes with.
 rem
-rem HomerDescribe needs ONE model, and it must be a VISION model: one that can be
+rem HomerScribe needs ONE model, and it must be a VISION model: one that can be
 rem shown a picture. qwen2.5vl:7b is the default, about 5.5 GB. A text-only model
 rem such as llama3.2 cannot see the picture at all.
 rem
@@ -48,7 +48,7 @@ echo(
 "!ollamaExe!" list
 echo(
 if defined failed goto :someFailed
-echo HomerDescribe is ready.
+echo HomerScribe is ready.
 echo(
 if not defined noPause pause
 endlocal

@@ -1,40 +1,77 @@
-﻿# HomerDescribe
+﻿# HomerScribe
 
-Audio description for local video files, generated on your own machine.
+Describes video and transcribes speech, on your own machine.
 
-HomerDescribe reads a video file, finds the moments where a description can be
-spoken without covering the dialogue, asks a vision model what is on screen,
-speaks the answer in a built-in Windows voice, and writes a described copy of the
-film with the description as the first and default audio track. It also writes
-the whole description script as a Markdown document, which can be read on a
-braille display by someone for whom the spoken track is no use.
+Blind and low vision viewers miss what happens on screen when a film has no
+audio description, and most films have none. Deaf and hard of hearing viewers
+miss what is said when there are no captions. HomerScribe makes both, from a file
+on your disk or from a web address, and writes them as documents that can be read
+on a braille display.
 
-Nothing is uploaded. The model runs locally through Ollama, the speech comes from
-Windows, and the only other program involved is ffmpeg.
+Two checkboxes decide what it does:
 
-HomerDescribe is the latest of the Homer Tools, alongside 2htm, extCheck,
-urlCheck, urlFido, bookFido, HomerView, EdSharp, FileDir and DbDo.
+- **Describe video** watches the picture and says what happens, producing
+  `described.mkv` (or `described.mp3`) with the description as its first audio
+  track, and `described.md`, the script to read.
+- **Transcribe audio** writes down what is said, as `transcribed.md`.
+- **Both together** also write `scribed.md`: the words and the descriptions
+  interleaved in the order they happen. For someone who can neither see nor hear
+  the film, that one document is the whole of it.
+
+Nothing is uploaded and no account is needed. The vision model runs locally
+through Ollama, the speech recognition through Whisper, the voice comes from
+Windows, and the only other programs involved are ffmpeg and, for web addresses,
+yt-dlp. **Transcribing needs Whisper alone** — the 5.5 GB vision model is
+required only for describing.
+
+HomerScribe is one of the Homer Tools, alongside 2htm, extCheck, urlCheck,
+urlFido, bookFido, HomerView, EdSharp, FileDir and DbDo.
+
+`Developer.md` describes what the program is built from, how the parts interact,
+and how to rebuild it.
+
+## Quick start
+
+1. Install HomerScribe. On the last page of the installer, leave ticked whatever
+   matches what you want to do: Ollama and the vision model for describing,
+   Whisper for transcribing.
+2. Run HomerScribe with nothing on the command line. The dialog opens.
+3. Choose a file with **Browse source**.
+4. Tick **Describe video**, **Transcribe audio**, or both.
+5. Press OK.
+
+Before committing to a feature film, describe five minutes of it:
+
+    HomerScribe --describe "film.mkv" --begin 00:22:30 --minutes 5
+
+Pick a stretch well into the film rather than the opening credits, and listen to
+whether the voice is bearable over five minutes. If it tires you there, it will
+be unbearable over two hours.
+
+Transcribing is quicker and needs no such trial:
+
+    HomerScribe --transcribe "talk.mp3"
 
 ## What you need
 
-- Windows 10 or 11, 64 bit. Nothing to install for HomerDescribe itself; it is a
+- Windows 10 or 11, 64 bit. Nothing to install for HomerScribe itself; it is a
   single executable built against the .NET Framework 4.8 that ships with Windows.
-- ffmpeg, found beside HomerDescribe.exe, in a folder given with `--ffmpeg-dir`,
+- ffmpeg, found beside HomerScribe.exe, in a folder given with `--ffmpeg-dir`,
   or on the PATH. Install with `winget install Gyan.FFmpeg`, then open a new
   console so the changed PATH is picked up.
 - Ollama, running, with a vision model installed:
 
       ollama pull qwen2.5vl:7b
 
-`buildHomerDescribe.cmd` downloads `ffmpeg.exe`, `ffprobe.exe`, and `yt-dlp.exe`
+`buildHomerScribe.cmd` downloads `ffmpeg.exe`, `ffprobe.exe`, and `yt-dlp.exe`
 when they are not already in the folder, so a fresh clone builds a complete
 installer without anything being fetched by hand. Files already present are left
 alone, so the download happens once.
 
 The installer then packages them into the program folder, which is the first
-place HomerDescribe looks. Installed that way, nothing else has to be set up and
+place HomerScribe looks. Installed that way, nothing else has to be set up and
 nothing has to be on the PATH. If a download fails, the build still succeeds and
-says what to do by hand; HomerDescribe falls back to the PATH at run time.
+says what to do by hand; HomerScribe falls back to the PATH at run time.
 
 None of them are committed to the repository — `ffmpeg.exe` alone is far past
 what a repository should carry.
@@ -46,7 +83,7 @@ installer is redistributed. See `License.md`.
 On the two downloaders: use **yt-dlp**, and delete `youtube-dl.exe`. youtube-dl
 is the original and is now barely maintained, with many broken extractors;
 Debian replaced it with an empty package that simply depends on yt-dlp. yt-dlp is
-the actively developed fork, releasing most weeks. HomerDescribe looks only for
+the actively developed fork, releasing most weeks. HomerScribe looks only for
 yt-dlp.
 
 ## Getting started
@@ -65,7 +102,15 @@ Both scripts find Ollama by looking where it is installed rather than by asking
 the PATH, because a console opened before Ollama was installed keeps its old PATH
 and would report Ollama missing minutes after installing it.
 
-Only one model is needed, and it must be a **vision** model — one that can be
+A third box installs **Whisper**, about 500 MB, into
+`%LOCALAPPDATA%\HomerScribe\whisper`. Whisper is OpenAI's speech recognition
+model: open source, MIT licensed, entirely local, no account and no login.
+
+**HomerScribe now uses it, and it changes where every description goes.** See
+"Hearing the film" below. Without it the program still works, falling back on
+listening for silence, and says so at the start of the run.
+
+Only one vision model is needed, and it must be a **vision** model — one that can be
 shown a picture. `qwen2.5vl:7b` is the default. A text-only model such as
 `llama3.2` cannot see the frame at all, so having one installed does not help.
 `installModels.cmd` accepts other names if you want to compare:
@@ -73,41 +118,41 @@ shown a picture. `qwen2.5vl:7b` is the default. A text-only model such as
 
 Check that everything is in place:
 
-    HomerDescribe "video.mkv" --check
+    HomerScribe "video.mkv" --check
 
 Hear which voices are available, then choose one:
 
-    HomerDescribe --list-voices
-    HomerDescribe "video.mkv" --voice "Microsoft Zira Desktop"
+    HomerScribe --list-voices
+    HomerScribe "video.mkv" --voice "Microsoft Zira Desktop"
 
 Describe five minutes from a stretch well into the film, which tests the result
 better than opening credits:
 
-    HomerDescribe "video.mkv" --begin 00:22:30 --minutes 5
+    HomerScribe "video.mkv" --begin 00:22:30 --minutes 5
 
 Describe the whole film:
 
-    HomerDescribe "video.mkv"
+    HomerScribe "video.mkv"
 
 Describe several things at once, mixing files and web addresses:
 
-    HomerDescribe "first.mkv" "second film.mp4" https://www.youtube.com/watch?v=...
+    HomerScribe "first.mkv" "second film.mp4" https://www.youtube.com/watch?v=...
 
 Each source is handled in turn. A web address is downloaded first, into the
 output directory, or into a `downloads` folder beside the program when no output
 directory is given, and then described like any other file.
 
-The download is done by yt-dlp rather than by HomerDescribe itself, and that is a
+The download is done by yt-dlp rather than by HomerScribe itself, and that is a
 deliberate choice rather than a shortcut. Getting a video out of YouTube is not a
 matter of reading a page: the addresses are signed by obfuscated JavaScript that
 has to be executed, the signing changes without notice, and formats are
 negotiated per video. yt-dlp tracks all of that and is updated most weeks. Code
-inside HomerDescribe doing the same job would be a maintenance burden with
+inside HomerScribe doing the same job would be a maintenance burden with
 nothing to do with audio description, and it would fail silently one Tuesday when
 YouTube changed something. Calling the program that already solves the problem is
 the smaller dependency.
 
-HomerDescribe finds yt-dlp beside itself or on the PATH, tells it where ffmpeg
+HomerScribe finds yt-dlp beside itself or on the PATH, tells it where ffmpeg
 is so the separate video and audio streams merge, asks for plain ASCII filenames
 so later steps are not tripped by punctuation in a title, and reports download
 progress as it goes.
@@ -116,7 +161,7 @@ Or open the dialog, which is what happens when the program is started with
 nothing on the command line at all -- from the Start menu, a desktop shortcut, or
 just its name:
 
-    HomerDescribe
+    HomerScribe
 
 `--gui` forces the dialog even when arguments were given. Any argument without
 `--gui` means a command line run.
@@ -126,7 +171,7 @@ left off, reusing both the descriptions and the speech already made.
 
 ## Where it looks and where it writes
 
-HomerDescribe uses the folders Windows nominates rather than whatever directory
+HomerScribe uses the folders Windows nominates rather than whatever directory
 it happened to be started from. Starting in the program's own folder is how a
 tool ends up dropping results among its own source files.
 
@@ -141,6 +186,75 @@ On the command line the rule is different and deliberate: leaving `--output-dir`
 unset puts each video's folder of results **beside the video itself**, which is
 almost always what is wanted when a path was typed out in full. Clearing the
 Output directory box in the dialog does the same thing.
+
+## Hearing the film
+
+Silence detection asks whether there is sound. The question that decides where a
+description belongs is whether **anyone is talking** — and on a film with a
+score those are completely different questions. Music is not speech, but it is
+not silence either, so a scored film looks to a silence detector like one long
+uninterrupted sound.
+
+The cost of that was measurable. One run over a feature film found **113 usable
+gaps by silence and had to invent 588 more on a timer** — 84% of descriptions
+placed by guesswork, many of them landing on top of dialogue.
+
+With Whisper installed, HomerScribe now listens to the film once, learns where
+the speech is, and puts descriptions in the quiet between the talking. The
+transcript it produces is used twice more: the dialogue spoken in the 25 seconds
+before each moment is shown to the model, so a description does not repeat what
+the listener has just heard; and the model can tell who is present from what was
+said.
+
+Transcribing happens once and is kept, so a resumed run never pays for it twice.
+Reckon on roughly one minute per six minutes of film on a processor, much less
+with a graphics card.
+
+`--speech no` turns it off. `--whisper-model` chooses a different size —
+`small` is the default and is the right size for this: the question is only where
+speech is, not what every word was. `--dialogue-window` sets how much preceding
+dialogue the model sees, or `0` for none.
+
+### When a film is nearly all talking
+
+Hearing the film tells the truth, and sometimes the truth is that there is no
+room. One measured documentary was **85.8 percent speech**: only 41 real gaps
+existed in 57 minutes, so most descriptions had to interrupt somebody, and 60
+percent of them landed on the narration.
+
+HomerScribe now says so when speech takes more than 70 percent of a film, and
+places the unavoidable interruptions at the quietest instant the transcript can
+find rather than on a clock. That helps, but not enormously — on such a film,
+what helps far more is interrupting less often. Measured against a model of that
+documentary:
+
+- `--every 14` (the default): a description falls on speech about 90 percent of
+  the time
+- `--every 45`: about half as often
+- `--every 90`: less than a third as often
+- `--detail brief`, which shortens each description, helps again on top
+
+For a heavily narrated documentary, `--every 45 --detail brief` is a far better
+starting point than the defaults, which are tuned for drama.
+
+### Judging whether it helped
+
+The log carries two lines written for exactly this. After the moments are chosen:
+
+    PLACEMENT: 214 real gaps (found by listening for speech), 11 placed on the
+    timer, 95 percent real.
+
+And at the end of the film:
+
+    RESULT: 198 descriptions; 3 overlap speech (1.5 percent); 11 were placed on
+    the timer rather than in a real gap; 176 were written knowing what had just
+    been said; 42 moments left silent.
+
+The number to watch is **how many descriptions overlap speech**. That is the
+fault silence detection could not avoid, and it should now be close to zero. The
+proportion of real gaps against timer-placed ones is the other: it was 16 percent
+before, and should now be most of them. Run the same film with `--speech no` to
+see the difference on your own material.
 
 ## What it writes
 
@@ -161,11 +275,11 @@ In that folder:
 - `described.wav` — the description track on its own, to play alongside the
   original in a player such as mpv.
 - `described.json` — the machine-readable record used to resume a run.
-- `HomerDescribe.log` — everything said while describing this video. The running
+- `HomerScribe.log` — everything said while describing this video. The running
   log beside the program still holds the whole session, across every video.
 
 **A video whose described film already exists is left alone.** Point
-HomerDescribe at a dozen videos, stop it halfway, and run it again: the ones that
+HomerScribe at a dozen videos, stop it halfway, and run it again: the ones that
 finished are skipped, and one that was interrupted **carries on where it
 stopped** rather than starting over. Tick **Force overwrite**, or pass `--force`,
 to describe everything again from the beginning.
@@ -175,10 +289,30 @@ it is made, so nothing has to be asked of the model twice; only the speech is
 made again, and that is a fraction of a second each. A run stopped two hours in
 picks up in about a minute.
 
-`HomerDescribe.log` is written beside the program, not beside the video. It holds
+`HomerScribe.log` is written beside the program, not beside the video. It holds
 the full detail: environment, every effective setting, every command with its
 exit code, and any error. The console shows only what was actually put into the
 film, each description prefixed by its position, as `2:14` or `1:37:52`.
+
+## Telling it about the film automatically
+
+**Web context** finds out what it is watching, so descriptions can use real names
+without you writing anything.
+
+For a web address, it uses the page's own account of itself: the title, who
+published it, and the description. yt-dlp already has all of that, so no search
+is involved and nothing is guessed.
+
+For a file, it reads the title from the container -- not the file name, the title
+the file carries inside it -- and asks Wikipedia. The answer is used **only** when
+the title clearly agrees and the article clearly describes a film or programme.
+Both tests must pass, because a confident wrong article is worse than none: it
+would have the model naming actors who are not in the film. Every candidate and
+its score goes in the log, so you can see what was considered and why it was
+taken or refused.
+
+Whatever is gathered is added to the context file if you have one, not instead
+of it.
 
 ## Telling it about the film
 
@@ -186,7 +320,7 @@ A description is far better when the model knows what it is watching. Without
 context it writes "a man in a boat"; with it, "Odysseus".
 
 **Name the file after the video and put it beside it.** For `video.mkv`, write
-`video.md` in the same folder. HomerDescribe finds it without being told, which
+`video.md` in the same folder. HomerScribe finds it without being told, which
 is what lets one general purpose program describe any film properly. Nothing has
 to be passed on the command line and nothing has to be set in the dialog.
 
@@ -198,14 +332,14 @@ instruction to describe by appearance rather than guess at a name.
 Keep such a file to a few hundred words. It is sent with every single request, so
 length costs time on every description.
 
-If no context file is found, HomerDescribe says so plainly at the start of the
+If no context file is found, HomerScribe says so plainly at the start of the
 run rather than quietly producing nameless descriptions.
 
 ## Settings
 
 Every setting has a long form and a short form. The long form is the command line
 parameter and, in the dialog, the label. The short form is the command line
-letter and, in the dialog, the trigger letter. Run `HomerDescribe --help` for the
+letter and, in the dialog, the trigger letter. Run `HomerScribe --help` for the
 full list with current values.
 
 The ones that matter most:
@@ -231,13 +365,13 @@ character of a word, because the natural letters were already taken:
 
 ## Building
 
-Everything is in one folder. `buildHomerDescribe.cmd` compiles every `.cs` file
+Everything is in one folder. `buildHomerScribe.cmd` compiles every `.cs` file
 present into a single 64-bit executable, then builds the installer if Inno Setup
 is found:
 
-    buildHomerDescribe.cmd
+    buildHomerScribe.cmd
 
-It writes `buildHomerDescribe.log` beside itself, recording the version, the
+It writes `buildHomerScribe.log` beside itself, recording the version, the
 compiler used, and the full compiler output.
 
 The shared Homer modules — `Lbc.cs`, `Say.cs`, `Inix.cs`, `Util.cs`, `Web.cs` —
@@ -245,11 +379,11 @@ are already here, copied unmodified from urlFido so that improvements to them
 keep porting between tools. They compile into the same assembly, so the result is
 still a single self-contained executable.
 
-No JSON package is downloaded, because none is needed: HomerDescribe reads and
+No JSON package is downloaded, because none is needed: HomerScribe reads and
 writes JSON with `JavaScriptSerializer` from `System.Web.Extensions`, part of the
 .NET Framework itself. DbDo fetches Newtonsoft.Json because it needs what
 Newtonsoft does that the built-in serializer cannot; nothing here does. Staying
-with the built-in one is also what keeps `HomerDescribe.exe` a single file with
+with the built-in one is also what keeps `HomerScribe.exe` a single file with
 no DLL beside it.
 
 Three assemblies are not on the compiler's default reference path and are found
@@ -268,7 +402,7 @@ exactly one level-one heading, a table of contents where the document is long
 enough to want one, and `lang="en"`, so the outline is navigable by heading or by
 link. Nothing needs to be run to produce them.
 
-`buildHomerDescribe.cmd` will regenerate them with 2htm if it finds it, which
+`buildHomerScribe.cmd` will regenerate them with 2htm if it finds it, which
 keeps them current when the Markdown changes. When 2htm is absent the build
 leaves the existing files alone, so the documentation cannot fail a build.
 
@@ -281,25 +415,25 @@ other file and so a stale copy of a file cannot rewind the number.
 
 From there it flows outward:
 
-1. `buildHomerDescribe.cmd` increments it, then generates `Version.cs` holding
+1. `buildHomerScribe.cmd` increments it, then generates `Version.cs` holding
    `BuildVersion.Version`, so the program reports it through `--help`.
-2. `HomerDescribe_setup.iss` reads `version.txt` at compile time through
+2. `HomerScribe_setup.iss` reads `version.txt` at compile time through
    `FileOpen` and `FileRead`, and writes it into the version resource of
-   `HomerDescribe_setup.exe` through `VersionInfoVersion` and
+   `HomerScribe_setup.exe` through `VersionInfoVersion` and
    `VersionInfoTextVersion`. The text form is set explicitly because tagRelease
    reads the FileVersion *string*, and a tag of `v1.0.0` is wanted rather than
    `v1.0.0.0`.
 3. `tagRelease` reads that FileVersion, forms the tag, and posts
-   `HomerDescribe_setup.exe`, whose name it takes from `OutputBaseFilename`.
+   `HomerScribe_setup.exe`, whose name it takes from `OutputBaseFilename`.
 
-So a release is: run `buildHomerDescribe.cmd`, commit, run `tagRelease`. The
+So a release is: run `buildHomerScribe.cmd`, commit, run `tagRelease`. The
 program, the installer, and the tag can never disagree.
 
 `Version.cs` is generated output. It is in `.gitignore` and should not be edited
 or committed.
 
 The first build increments 1.0.0 to 1.0.1. To release 1.0.0 itself, build once
-with `buildHomerDescribe.cmd nobump`.
+with `buildHomerScribe.cmd nobump`.
 
 ## The dialog
 
@@ -332,7 +466,7 @@ already printed there.
 
 ## Configuration
 
-`--use-configuration` loads settings from `HomerDescribe.ini` beside the program
+`--use-configuration` loads settings from `HomerScribe.ini` beside the program
 at startup, and saves them when the dialog is accepted. In dialog mode the file
 is loaded automatically when it exists, so the dialog opens showing last time's
 answers. Anything given on the
@@ -344,7 +478,7 @@ Homer ini codec, so hand edits and comments survive a round trip.
 `prototype\describeMovie.py` is the Python program this was grown from, and it
 still works. It is the reference implementation: quicker to change when trying a
 new prompt, and useful for checking that a change in behaviour is deliberate. It
-is not needed to run HomerDescribe.
+is not needed to run HomerScribe.
 
 ## How the model is asked
 
@@ -403,11 +537,11 @@ actually be held to are these.
 - **Report, do not interpret.** A describer says what is visible and lets the
   listener draw the conclusion. Not "he is furious" but "he clenches his fist";
   not "the atmosphere is tense" but whatever on screen made you think so. This is
-  the rule earlier versions broke most often, and HomerDescribe now checks its own
+  the rule earlier versions broke most often, and HomerScribe now checks its own
   output for judging words and asks again when it finds one. `--objective no`
   turns the check off.
 - **Establish the place first when the scene changes.** General to specific: "In
-  the palace hall, Penelope sits at her loom." HomerDescribe already compares each
+  the palace hall, Penelope sits at her loom." HomerScribe already compares each
   moment's picture with the last one; when the picture has changed enough to be a
   new scene, the model is told so and asked to begin with where we are.
 - **Present tense, active voice, third person**, and the exact verb rather than a
@@ -428,11 +562,11 @@ actually be held to are these.
   describing; the standards are firm that description exists to supply what sound
   cannot.
 - **Who and what before where, and detail last**, when the pause is short.
-- **Keep the same names and words throughout.** HomerDescribe now carries the
+- **Keep the same names and words throughout.** HomerScribe now carries the
   names it has already used forward into later prompts, so a character does not
   become "a man in a grey cloak" three minutes after being called Odysseus.
 - **Let the music play.** The standards ask that a score not be talked over
-  except for something that genuinely matters. HomerDescribe's guaranteed interval
+  except for something that genuinely matters. HomerScribe's guaranteed interval
   works against that by design, since a continuously scored film would otherwise
   get almost nothing. The compromise: a description placed where no pause existed
   is told that it will fall across the sound, and to answer SKIP unless the moment
@@ -445,7 +579,7 @@ Two points from the standards are deliberately left to you rather than built in.
 The standards say a describer must not censor: nudity, violence and sexual
 content are described as objectively as anything else, because the listener has
 the same right to that information as a sighted viewer. A local model may refuse
-or soften such material of its own accord. HomerDescribe does not fight it, and
+or soften such material of its own accord. HomerScribe does not fight it, and
 you should know that is a gap rather than a policy.
 
 The standards also say that when race, ethnicity or nationality is something a
@@ -462,7 +596,7 @@ with a capable graphics card, and **two to three minutes on one without** — th
 model runs on the processor instead, which is perhaps forty times slower. A
 twenty minute video that takes three minutes here can take four hours there.
 
-HomerDescribe now reports its pace from the second description onward, and says
+HomerScribe now reports its pace from the second description onward, and says
 plainly when a run is going to take hours and why. If you see that, the choices
 are:
 
@@ -471,6 +605,14 @@ are:
 - Send the model less to look at: `--frames 1 --width 384`.
 - Describe a five minute stretch first, with `--begin` and `--minutes`, to find
   out what a whole film would cost before starting it.
+- Ask the model to do less. Each description takes two calls, and each rejected
+  one takes another: `--summarise no` roughly halves the work, `--objective no`
+  removes the second attempt when a description judges rather than observes.
+
+Nothing is ever lost by stopping. Every description is saved as it is made, so
+running the same command again carries on where it stopped — and `--rebuild`
+makes the film from the descriptions already written, without asking the model
+anything.
 
 ## Honest limits
 

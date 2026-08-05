@@ -1,4 +1,4 @@
-﻿; HomerDescribe_setup.iss -- installer for HomerDescribe.
+﻿; HomerScribe_setup.iss -- installer for HomerScribe.
 ;
 ; Follows the pattern of 2htm, extCheck, urlFido, bookFido and helpFido:
 ; per-machine install under Program Files, no "who is this for" question, the
@@ -7,13 +7,13 @@
 ;
 ; ---- Version -----------------------------------------------------------------
 ; The version number is NOT stored in this script. It lives in version.txt, one
-; line, which buildHomerDescribe.cmd increments on every build. Inno reads it
+; line, which buildHomerScribe.cmd increments on every build. Inno reads it
 ; here, and the build script also generates Version.cs from it, so the program,
 ; the installer, and the release tag always report the same number. Because no
 ; version literal appears in this file, a stale copy of it cannot rewind the
 ; version.
 
-#define AppName       "HomerDescribe"
+#define AppName       "HomerScribe"
 
 #define VerFile FileOpen(AddBackslash(SourcePath) + "version.txt")
 #define AppVersion Trim(FileRead(VerFile))
@@ -21,8 +21,8 @@
 #undef VerFile
 
 #define AppPublisher  "Jamal Mazrui"
-#define AppUrl        "https://github.com/JamalMazrui/HomerDescribe"
-#define AppExeName    "HomerDescribe.exe"
+#define AppUrl        "https://github.com/JamalMazrui/HomerScribe"
+#define AppExeName    "HomerScribe.exe"
 #define AppCopyright  "Copyright (c) 2026 Jamal Mazrui. MIT License."
 
 ; HotKey is the Inno Setup HotKey: directive value, which requires Ctrl syntax.
@@ -34,7 +34,7 @@
 #define HotKeyDisplay "Alt+Control+H"
 
 [Setup]
-AppId={{7C1D5A64-3E9B-4D2A-9F17-1B6C0A8E4D53}
+AppId={{B4E27A19-6C08-4F3D-8A52-D9137E60C4BB}
 
 AppName={#AppName}
 AppVersion={#AppVersion}
@@ -63,11 +63,10 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 UsePreviousAppDir=yes
 
-; Always show the destination page, even on reinstall. Left at its default of
-; "auto", Inno hides it whenever a prior install of the same AppId is found.
-; UsePreviousAppDir fills in the previous directory, so a reinstall is one press
-; of Next, but the path is visible and editable.
-DisableDirPage=no
+; Hide the destination page when a previous install of the same AppId is found,
+; which is what the other Homer Tools do: a reinstall then asks nothing at all
+; and goes where the last one went. A first install still chooses the folder.
+DisableDirPage=auto
 UsePreviousGroup=yes
 
 OutputDir=.
@@ -79,9 +78,9 @@ LicenseFile=
 WizardStyle=modern
 Compression=lzma2/max
 MinVersion=10.0
-AppComments=Generates audio description for local video files, on this machine.
+AppComments=Describes video and transcribes speech, on this machine.
 
-#if FileExists(AddBackslash(SourcePath) + "HomerDescribe.ico")
+#if FileExists(AddBackslash(SourcePath) + "HomerScribe.ico")
 SetupIconFile={#AppName}.ico
 #endif
 
@@ -105,7 +104,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 ; Every line below the program itself carries skipifsourcedoesntexist. Only
-; HomerDescribe.exe is genuinely required; a missing document or an empty
+; HomerScribe.exe is genuinely required; a missing document or an empty
 ; context folder must not abort a build, and a wildcard matching nothing is a
 ; fatal error in Inno unless the line says otherwise.
 ;
@@ -122,10 +121,10 @@ Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesnt
 Source: "Developer.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
-; buildHomerDescribe.cmd downloads them when they are missing, so normally they
+; buildHomerScribe.cmd downloads them when they are missing, so normally they
 ; are here. skipifsourcedoesntexist means a build without them still succeeds;
-; HomerDescribe then looks on the PATH instead. Installing them beside
-; HomerDescribe.exe is what makes the program work with nothing else set up,
+; HomerScribe then looks on the PATH instead. Installing them beside
+; HomerScribe.exe is what makes the program work with nothing else set up,
 ; since its own folder is the first place it looks.
 Source: "ffmpeg.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ffprobe.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
@@ -133,6 +132,7 @@ Source: "yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesnte
 
 Source: "installOllama.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installModels.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "installWhisper.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "context\*.md"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 Source: "context\*.htm"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
@@ -147,12 +147,12 @@ Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{userdocs}"; HotKey: "{#HotKey}"
 
 [Run]
-; Post-install checkboxes shown on the final wizard page. What HomerDescribe
+; Post-install checkboxes shown on the final wizard page. What HomerScribe
 ; needs comes first, then what to do next. All four default to checked; any can
 ; be unchecked to skip.
 ;
 ; helpFido leaves its Ollama box unchecked because helpFido works without it.
-; HomerDescribe does not: with no local model there is nothing to write the
+; HomerScribe does not: with no local model there is nothing to write the
 ; descriptions. Both are shown every time rather than being hidden when already
 ; present -- the scripts themselves notice what is installed and say so in a
 ; second, and a checkbox that sometimes vanishes is worse than one that
@@ -166,13 +166,19 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installOllama.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install Ollama and the vision model (about 6.5 GB in all; this is what {#AppName} describes with)"; \
+  Description: "Install Ollama and the vision model, for DESCRIBING video (about 6.5 GB; not needed for transcribing)"; \
   Flags: postinstall skipifsilent runascurrentuser
 
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installModels.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install the vision model only (about 5.5 GB; tick this if Ollama is already installed)"; \
+  Description: "Install the vision model only, for describing video (about 5.5 GB; tick this if Ollama is already installed)"; \
+  Flags: postinstall skipifsilent runascurrentuser
+
+FileName: "{cmd}"; \
+  Parameters: "/c """"{app}\installWhisper.cmd"""""; \
+  WorkingDir: "{app}"; \
+  Description: "Install Whisper, for TRANSCRIBING speech and for placing descriptions well (about 500 MB)"; \
   Flags: postinstall skipifsilent runascurrentuser
 
 FileName: "{app}\{#AppExeName}"; \
@@ -188,7 +194,7 @@ FileName: "{app}\ReadMe.htm"; \
 Type: filesandordirs; Name: "{app}\context"
 
 ; The settings, the resume records and the working files, so nothing of
-; HomerDescribe is left behind. Described films and scripts are never touched:
+; HomerScribe is left behind. Described films and scripts are never touched:
 ; they live wherever the user chose to put them.
-Type: filesandordirs; Name: "{localappdata}\HomerDescribe"
+Type: filesandordirs; Name: "{localappdata}\HomerScribe"
 
