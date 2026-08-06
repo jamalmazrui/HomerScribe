@@ -214,6 +214,9 @@ id="toc-where-the-rules-come-from">Where the rules come from</a></li>
 <li><a href="#if-it-seems-to-have-stopped"
 id="toc-if-it-seems-to-have-stopped">If it seems to have
 stopped</a></li>
+<li><a href="#what-it-is-and-what-it-is-not"
+id="toc-what-it-is-and-what-it-is-not">What it is, and what it is
+not</a></li>
 <li><a href="#honest-limits" id="toc-honest-limits">Honest
 limits</a></li>
 <li><a href="#documentation-in-two-forms"
@@ -246,12 +249,19 @@ the words and the descriptions interleaved in the order they happen. For
 someone who can neither see nor hear the film, that one document is the
 whole of it.</li>
 </ul>
-<p>Nothing is uploaded and no account is needed. The vision model runs
-locally through Ollama, the speech recognition through Whisper, the
-voice comes from Windows, and the only other programs involved are
-ffmpeg and, for web addresses, yt-dlp. <strong>Transcribing needs
-Whisper alone</strong> — the 5.5 GB vision model is required only for
-describing.</p>
+<p>Once installed, nothing leaves your machine. No part of the video is
+uploaded, no request reaches anyone’s server, and there is no account,
+no subscription and no key. That also means no tokens: describing a two
+hour film asks an AI model several hundred questions and shows it
+several hundred pictures, and the count here is zero. You can describe
+material you would not send anywhere at all.</p>
+<p>The vision model runs locally through Ollama, the speech recognition
+through Whisper, the voice comes from Windows, and the only other
+programs involved are ffmpeg and, for web addresses, yt-dlp.
+<strong>Transcribing needs Whisper alone</strong> — about half a
+gigabyte. Describing needs about six and a half, because it needs a
+model that can look at pictures as well as a service to run it in. The
+installer offers each separately, and they are downloaded once.</p>
 <p>HomerScribe is one of the Homer Tools, alongside 2htm, extCheck,
 urlCheck, urlFido, bookFido, HomerView, EdSharp, FileDir and DbDo.</p>
 <p><code>Developer.md</code> describes what the program is built from,
@@ -866,6 +876,23 @@ description judges rather than observes.</li>
 made, so running the same command again carries on where it stopped —
 and <code>--rebuild</code> makes the film from the descriptions already
 written, without asking the model anything.</p>
+<h2 id="what-it-is-and-what-it-is-not">What it is, and what it is
+not</h2>
+<p>AI small enough to run on a home computer is not as capable as the AI
+reached through a commercial service, and the difference shows.</p>
+<p>More to the point: <strong>audio description written and performed by
+professionals is better than this, by a wide margin.</strong>
+Description is a craft — knowing what matters in a shot and what does
+not, when to stay silent, how to reveal something at the moment the film
+reveals it, and how to say a great deal in four seconds. HomerScribe is
+not that, and nobody should install it expecting it.</p>
+<p>What it is for is everything with no description at all, which is
+most things. A lecture recording. A family video. A documentary that was
+never described. For those the question is not whether this matches a
+professional describer, but whether it beats silence, and it beats
+silence easily.</p>
+<p>Transcription is the stronger of the two halves. On clear speech it
+is close to what a person would write down.</p>
 <h2 id="honest-limits">Honest limits</h2>
 <ul>
 <li>The model sees still frames, not motion. Four frames tiled in time
