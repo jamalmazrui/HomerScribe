@@ -229,6 +229,7 @@ namespace Homer
             addParam("min-gap", "g", "number", "2.0", "Shortest gap worth describing");
             addParam("spacing", "", "number", "10.0", "Least seconds between descriptions");
             addParam("every", "y", "number", "14.0", "Guarantee a description at least this often; 0 turns it off");
+            addParam("max-words", "", "integer", "45", "Longest a single description may be, however much room the gap allows");
             addParam("words-per-second", "", "number", "2.67", "Speaking rate used to budget words; 2.67 is the 160 words a minute the standards call comfortable");
             addParam("url", "", "string", "http://localhost:11434", "Address of the Ollama service");
             addParam("frames", "", "integer", "4", "Frames tiled into each montage: 1, 2 or 4");
@@ -391,7 +392,7 @@ namespace Homer
             { "What to do, and to what", "describe transcribe source-paths begin minutes" },
             { "Knowing what it is watching", "context-file web-context" },
             { "Where things go", "output-dir audio-only view-output force rebuild" },
-            { "What the description says", "detail words-per-second summarise objective" },
+            { "What the description says", "detail words-per-second max-words summarise objective" },
             { "The voice", "voice rate ad-volume announce" },
             { "Hearing the film, and where descriptions go", "speech whisper-model dialogue-window every spacing min-gap forced-length noise-floor silence-length dialogue-channel max-silence" },
             { "Not saying the same thing twice", "similarity same-shot" },
@@ -2474,7 +2475,10 @@ namespace Homer
             @"\b(camera|frames?|panels?|footage|montage)\b",
             @"\bthe\s+(shot|image|picture|still|sequence)\b",
             @"\b(scene|view|perspective|focus)\s+(then\s+)?(shifts?|cuts?|turns?|changes?|switches?)\b",
-            @"\bwe\s+(see|watch|observe|are\s+shown)\b"
+            @"\bwe\s+(see|watch|observe|are\s+shown)\b",
+            @"\b(off|on)[\s\-]?screen\b",
+            @"\bout\s+of\s+(frame|shot)\b",
+            @"\bin\s+(frame|shot)\b"
         };
 
         static List<string> splitSentences(string sText)
@@ -4489,6 +4493,7 @@ namespace Homer
                 iIndex = iIndex + 1;
                 double nAllowed = oGap.nLength + overrunFor(text("detail"));
                 int iMaxWords = Math.Max(6, (int)(nAllowed * number("words-per-second")));
+                if (integer("max-words") > 0 && iMaxWords > integer("max-words")) iMaxWords = integer("max-words");
                 nWaitingAt = oGap.nStart;
                 string sJustSaid = spokenBefore(lFilmSpeech, oGap.nStart);
                 if (sJustSaid.Length > 600) sJustSaid = sJustSaid.Substring(sJustSaid.Length - 600);

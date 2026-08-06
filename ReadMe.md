@@ -18,11 +18,18 @@ Two checkboxes decide what it does:
   interleaved in the order they happen. For someone who can neither see nor hear
   the film, that one document is the whole of it.
 
-Nothing is uploaded and no account is needed. The vision model runs locally
-through Ollama, the speech recognition through Whisper, the voice comes from
-Windows, and the only other programs involved are ffmpeg and, for web addresses,
-yt-dlp. **Transcribing needs Whisper alone** — the 5.5 GB vision model is
-required only for describing.
+Once installed, nothing leaves your machine. No part of the video is uploaded,
+no request reaches anyone's server, and there is no account, no subscription and
+no key. That also means no tokens: describing a two hour film asks an AI model
+several hundred questions and shows it several hundred pictures, and the count
+here is zero. You can describe material you would not send anywhere at all.
+
+The vision model runs locally through Ollama, the speech recognition through
+Whisper, the voice comes from Windows, and the only other programs involved are
+ffmpeg and, for web addresses, yt-dlp. **Transcribing needs Whisper alone** —
+about half a gigabyte. Describing needs about six and a half, because it needs a
+model that can look at pictures as well as a service to run it in. The installer
+offers each separately, and they are downloaded once.
 
 HomerScribe is one of the Homer Tools, alongside 2htm, extCheck, urlCheck,
 urlFido, bookFido, HomerView, EdSharp, FileDir and DbDo.
@@ -657,6 +664,25 @@ Nothing is ever lost by stopping. Every description is saved as it is made, so
 running the same command again carries on where it stopped — and `--rebuild`
 makes the film from the descriptions already written, without asking the model
 anything.
+
+## What it is, and what it is not
+
+AI small enough to run on a home computer is not as capable as the AI reached
+through a commercial service, and the difference shows.
+
+More to the point: **audio description written and performed by professionals is
+better than this, by a wide margin.** Description is a craft — knowing what
+matters in a shot and what does not, when to stay silent, how to reveal
+something at the moment the film reveals it, and how to say a great deal in four
+seconds. HomerScribe is not that, and nobody should install it expecting it.
+
+What it is for is everything with no description at all, which is most things. A
+lecture recording. A family video. A documentary that was never described. For
+those the question is not whether this matches a professional describer, but
+whether it beats silence, and it beats silence easily.
+
+Transcription is the stronger of the two halves. On clear speech it is close to
+what a person would write down.
 
 ## Honest limits
 
