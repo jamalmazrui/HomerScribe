@@ -198,6 +198,10 @@ The Source paths box, and the command line, accept:
 
 A `.txt` file is always taken as a list, never as something to describe.
 
+A source under a minute long is flagged in the results as possibly damaged or
+incomplete. A truncated download is easy to miss among a dozen good files, and
+looks from the outside like a very short film.
+
 ## What it writes
 
 Every video gets a folder of its own, named after the video. `video.mkv` gives a
@@ -517,6 +521,10 @@ documentary:
   the time
 - `--every 45`: about half as often
 - `--every 90`: less than a third as often
+- `--max-words`, 45 by default, caps a single description however much room the
+  gap allows. A long gap is not a reason to fill it: a description of a hundred
+  words is three quarters of a minute of unbroken speech, and the listener has to
+  hold all of it while the film carries on
 - `--detail brief`, which shortens each description, helps again on top
 
 For a heavily narrated documentary, `--every 45 --detail brief` is a far better

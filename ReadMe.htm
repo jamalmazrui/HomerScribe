@@ -410,6 +410,9 @@ files and addresses freely. Lines beginning with <code>#</code> or
 </ul>
 <p>A <code>.txt</code> file is always taken as a list, never as
 something to describe.</p>
+<p>A source under a minute long is flagged in the results as possibly
+damaged or incomplete. A truncated download is easy to miss among a
+dozen good files, and looks from the outside like a very short film.</p>
 <h2 id="what-it-writes">What it writes</h2>
 <p>Every video gets a folder of its own, named after the video.
 <code>video.mkv</code> gives a folder called <code>video</code>, beside
@@ -724,6 +727,11 @@ often. Measured against a model of that documentary:</p>
 about 90 percent of the time</li>
 <li><code>--every 45</code>: about half as often</li>
 <li><code>--every 90</code>: less than a third as often</li>
+<li><code>--max-words</code>, 45 by default, caps a single description
+however much room the gap allows. A long gap is not a reason to fill it:
+a description of a hundred words is three quarters of a minute of
+unbroken speech, and the listener has to hold all of it while the film
+carries on</li>
 <li><code>--detail brief</code>, which shortens each description, helps
 again on top</li>
 </ul>
