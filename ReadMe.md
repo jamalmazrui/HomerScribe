@@ -187,8 +187,12 @@ The Source paths box, and the command line, accept:
 
 - one path, with or without spaces, quoted or not
 - several, separated by spaces, or one to a line
-- wildcard patterns such as `C:\video\*.mp4`
-- web addresses
+- wildcard patterns such as `C:\video\*.mp4`, which yield only videos and
+  recordings: a playlist, a subtitle file or a stray text file that happens to
+  match is passed over and the count is reported
+- web addresses, including **playlist addresses**, which are expanded into the
+  videos they hold. A playlist of more than a dozen prompts a warning, since
+  describing them all may take days
 - **a text file listing one source per line**, mixing files and addresses freely.
   Lines beginning with `#` or `;` are ignored, so a list can carry notes.
 
@@ -233,6 +237,24 @@ exit code, and any error. The console shows only what was actually put into the
 film, each description prefixed by its position, as `2:14` or `1:37:52`.
 
 ## Where it looks and where it writes
+
+A video fetched from a web address is kept, **in the same folder as its own
+results**. HomerScribe asks for the title before downloading, so it knows where
+the results will go and puts the video there: the downloaded film, the described
+copy and the script all sit together. It is not deleted afterwards, because
+fetching it again to redescribe it would be slow for you and discourteous to the
+server.
+
+Asking for the title first also means the download announces itself by name
+rather than by address, which matters because downloading a large video is
+otherwise a long silence.
+
+A video that cannot be fetched — withdrawn, blocked in your country, or asking
+you to sign in — is reported by name in the results, with the reason the service
+gave, rather than being quietly left out of the count. For a video that asks you
+to sign in, `--browser-cookies chrome` (or `edge`, `firefox`, `brave`, `opera`)
+lets yt-dlp use the cookies of a browser where you are already signed in.
+
 
 HomerScribe uses the folders Windows nominates rather than whatever directory
 it happened to be started from. Starting in the program's own folder is how a

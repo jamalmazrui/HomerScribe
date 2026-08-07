@@ -398,8 +398,12 @@ out of a folder.</p>
 <ul>
 <li>one path, with or without spaces, quoted or not</li>
 <li>several, separated by spaces, or one to a line</li>
-<li>wildcard patterns such as <code>C:\video\*.mp4</code></li>
-<li>web addresses</li>
+<li>wildcard patterns such as <code>C:\video\*.mp4</code>, which yield
+only videos and recordings: a playlist, a subtitle file or a stray text
+file that happens to match is passed over and the count is reported</li>
+<li>web addresses, including <strong>playlist addresses</strong>, which
+are expanded into the videos they hold. A playlist of more than a dozen
+prompts a warning, since describing them all may take days</li>
 <li><strong>a text file listing one source per line</strong>, mixing
 files and addresses freely. Lines beginning with <code>#</code> or
 <code>;</code> are ignored, so a list can carry notes.</li>
@@ -451,6 +455,22 @@ prefixed by its position, as <code>2:14</code> or
 <code>1:37:52</code>.</p>
 <h2 id="where-it-looks-and-where-it-writes">Where it looks and where it
 writes</h2>
+<p>A video fetched from a web address is kept, <strong>in the same
+folder as its own results</strong>. HomerScribe asks for the title
+before downloading, so it knows where the results will go and puts the
+video there: the downloaded film, the described copy and the script all
+sit together. It is not deleted afterwards, because fetching it again to
+redescribe it would be slow for you and discourteous to the server.</p>
+<p>Asking for the title first also means the download announces itself
+by name rather than by address, which matters because downloading a
+large video is otherwise a long silence.</p>
+<p>A video that cannot be fetched — withdrawn, blocked in your country,
+or asking you to sign in — is reported by name in the results, with the
+reason the service gave, rather than being quietly left out of the
+count. For a video that asks you to sign in,
+<code>--browser-cookies chrome</code> (or <code>edge</code>,
+<code>firefox</code>, <code>brave</code>, <code>opera</code>) lets
+yt-dlp use the cookies of a browser where you are already signed in.</p>
 <p>HomerScribe uses the folders Windows nominates rather than whatever
 directory it happened to be started from. Starting in the program’s own
 folder is how a tool ends up dropping results among its own source
