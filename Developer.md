@@ -124,6 +124,38 @@ Hiding does not remove the entry from Alt+Tab. That is Windows, not a bug, and
 the only cure would be building as a Windows subsystem executable and attaching a
 console when one is wanted — which trades away console behaviour we want to keep.
 
+## What counts as a source
+
+`splitPaths` turns the Source paths box, or the command line, into a list. It
+asks the file system rather than guessing: a whole line that names something real
+is one source, and only otherwise is the line split and rejoined greedily, so an
+unquoted path with spaces still resolves. Quoting works but is not required,
+because a dialog box is not a shell.
+
+Each item is then resolved by kind:
+
+- **A wildcard** yields only videos and recordings. `looksLikeMedia` filters by
+  extension, so a playlist, a subtitle file or a stray text file that happens to
+  match is passed over and the count reported. A file named outright is attempted
+  whatever its extension.
+- **A `.txt` file** is a list of sources, one per line, with `#` and `;` for
+  notes. Nothing else could be meant by handing over a text file.
+- **A playlist address** is expanded with `yt-dlp --flat-playlist --print url`.
+  This matters because the download itself passes `--no-playlist`: without the
+  expansion a playlist would yield its first video and report success, which is
+  the worst kind of failure. Over a dozen videos it says so, since describing
+  them all may take days.
+- **A video address** is fetched with yt-dlp. The title AND the filename yt-dlp
+  will use are asked for first, in one call. The filename decides the folder, so
+  the video lands where its own results go; the title is what gets spoken, since
+  a long download is otherwise silent. Sanitising the title here instead produced
+  a folder by one name holding a file by another, and then a second folder.
+
+A source that cannot be fetched is named in the results with the reason the
+service gave. `whyItFailed` reduces yt-dlp's output to the sentence that matters:
+it also emits warnings about JavaScript runtimes that explain nothing. Counting
+only successes made seven of nine look like completion.
+
 ## Speaking to the user
 
 Everything the user hears goes through `announce()`, and nothing else may raise a

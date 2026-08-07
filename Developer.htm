@@ -182,6 +182,8 @@ id="toc-homerscribe-for-developers">HomerScribe for Developers</a>
 <li><a href="#how-a-description-is-made"
 id="toc-how-a-description-is-made">How a description is made</a></li>
 <li><a href="#the-console" id="toc-the-console">The console</a></li>
+<li><a href="#what-counts-as-a-source"
+id="toc-what-counts-as-a-source">What counts as a source</a></li>
 <li><a href="#speaking-to-the-user"
 id="toc-speaking-to-the-user">Speaking to the user</a></li>
 <li><a href="#naming-the-presenter" id="toc-naming-the-presenter">Naming
@@ -340,6 +342,41 @@ afterwards.</p>
 bug, and the only cure would be building as a Windows subsystem
 executable and attaching a console when one is wanted — which trades
 away console behaviour we want to keep.</p>
+<h2 id="what-counts-as-a-source">What counts as a source</h2>
+<p><code>splitPaths</code> turns the Source paths box, or the command
+line, into a list. It asks the file system rather than guessing: a whole
+line that names something real is one source, and only otherwise is the
+line split and rejoined greedily, so an unquoted path with spaces still
+resolves. Quoting works but is not required, because a dialog box is not
+a shell.</p>
+<p>Each item is then resolved by kind:</p>
+<ul>
+<li><strong>A wildcard</strong> yields only videos and recordings.
+<code>looksLikeMedia</code> filters by extension, so a playlist, a
+subtitle file or a stray text file that happens to match is passed over
+and the count reported. A file named outright is attempted whatever its
+extension.</li>
+<li><strong>A <code>.txt</code> file</strong> is a list of sources, one
+per line, with <code>#</code> and <code>;</code> for notes. Nothing else
+could be meant by handing over a text file.</li>
+<li><strong>A playlist address</strong> is expanded with
+<code>yt-dlp --flat-playlist --print url</code>. This matters because
+the download itself passes <code>--no-playlist</code>: without the
+expansion a playlist would yield its first video and report success,
+which is the worst kind of failure. Over a dozen videos it says so,
+since describing them all may take days.</li>
+<li><strong>A video address</strong> is fetched with yt-dlp. The title
+AND the filename yt-dlp will use are asked for first, in one call. The
+filename decides the folder, so the video lands where its own results
+go; the title is what gets spoken, since a long download is otherwise
+silent. Sanitising the title here instead produced a folder by one name
+holding a file by another, and then a second folder.</li>
+</ul>
+<p>A source that cannot be fetched is named in the results with the
+reason the service gave. <code>whyItFailed</code> reduces yt-dlp’s
+output to the sentence that matters: it also emits warnings about
+JavaScript runtimes that explain nothing. Counting only successes made
+seven of nine look like completion.</p>
 <h2 id="speaking-to-the-user">Speaking to the user</h2>
 <p>Everything the user hears goes through <code>announce()</code>, and
 nothing else may raise a message. It collects consecutive messages of

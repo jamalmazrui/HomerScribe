@@ -2565,6 +2565,65 @@ namespace Homer
         // sentence. Refuses when the result would be too short, would end on a
         // word that needs something after it, or would be only the opening
         // phrase of the sentence, which is a phrase and not a sentence.
+        // Take out the part that judges, provided what is left is still a
+        // description. A whole sentence goes if another sentence survives it;
+        // otherwise the trailing clause holding the word goes. If neither leaves
+        // enough behind, the text is returned unchanged and kept as it was --
+        // an interpretive description is better than none.
+        static string withoutJudgingPart(string sText, string sWord)
+        {
+            if (sWord == "") return sText;
+            List<string> lParts = splitSentences(sText);
+            if (lParts.Count > 1)
+            {
+                StringBuilder oKept = new StringBuilder();
+                foreach (string sPart in lParts)
+                {
+                    if (Regex.IsMatch(sPart, @"\b" + Regex.Escape(sWord) + @"\b", RegexOptions.IgnoreCase)) continue;
+                    if (oKept.Length > 0) oKept.Append(" ");
+                    oKept.Append(sPart.Trim());
+                }
+                string sLeft = oKept.ToString().Trim();
+                // Three words is a description: "A man walks." Requiring six
+                // rejected perfectly good remainders and sent the text down the
+                // clause-cutting path, which mangled it.
+                if (sLeft.Split(' ').Length >= 3) return sLeft;
+            }
+            // One sentence, so the clause carrying the word is dropped instead.
+            string sShorter = sText;
+            for (int iTry = 0; iTry < 3; iTry++)
+            {
+                if (!Regex.IsMatch(sShorter, @"\b" + Regex.Escape(sWord) + @"\b", RegexOptions.IgnoreCase)) break;
+                string sCut = dropLastClause(sShorter);
+                if (sCut == sShorter) break;
+                sShorter = sCut;
+            }
+            if (sShorter != sText && !Regex.IsMatch(sShorter, @"\b" + Regex.Escape(sWord) + @"\b", RegexOptions.IgnoreCase)
+                && sShorter.Split(' ').Length >= 6) return sShorter;
+            // Nothing safe to cut. A word like "suggesting" often joins two
+            // observed things: dropping from it to the end leaves the first.
+            Match oAt = Regex.Match(sText, @"\s*\b" + Regex.Escape(sWord) + @"\b.*$", RegexOptions.IgnoreCase);
+            if (oAt.Success)
+            {
+                string sHead = sText.Substring(0, oAt.Index).Trim().TrimEnd(',', ';', ' ');
+                sHead = Regex.Replace(sHead, @"\s+\b(and|but|or|with|as|while|that|which)\s*$", "", RegexOptions.IgnoreCase);
+                // "The mood is tense" must not become "The mood is." A sentence
+                // left hanging on its verb is worse than one that judges.
+                // Cutting at the word can leave a short trailing phrase with
+                // nothing to do: "by the shore, their posture". If the last
+                // clause is that short it goes with the rest.
+                int iComma = sHead.LastIndexOf(", ");
+                if (iComma > 0 && sHead.Substring(iComma + 2).Trim().Split(' ').Length <= 3) sHead = sHead.Substring(0, iComma).Trim();
+                bool bDangling = Regex.IsMatch(sHead, @"\b(is|are|was|were|be|been|being|seems?|appears?|looks?|feels?|remains?)\s*$", RegexOptions.IgnoreCase);
+                if (!bDangling && sHead.Split(' ').Length >= 6)
+                {
+                    if (!sHead.EndsWith(".")) sHead = sHead + ".";
+                    return sHead;
+                }
+            }
+            return sText;
+        }
+
         static string dropLastClause(string sText)
         {
             string sBody = sText.TrimEnd('.', '!', '?', ' ');
@@ -4754,6 +4813,16 @@ namespace Homer
                                 logMessage("Removed the judging adverb \"" + sStill + "\".", "INFO", "");
                                 sText = sPlainer;
                                 sStill = judgmentFound(sText);
+                            }
+                        }
+                        if (sStill != "")
+                        {
+                            string sPlainer = withoutJudgingPart(sText, sStill);
+                            if (sPlainer != sText && judgmentFound(sPlainer) == "")
+                            {
+                                logMessage("Dropped the part that judged, at \"" + sStill + "\": " + sText, "INFO", "");
+                                sText = sPlainer;
+                                sStill = "";
                             }
                         }
                         if (sStill != "") logMessage("It still judges, at \"" + sStill + "\". Keeping it rather than losing the moment.", "INFO", "");
