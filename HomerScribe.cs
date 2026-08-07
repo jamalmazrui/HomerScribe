@@ -161,6 +161,7 @@ namespace Homer
         const int iDefaultSpokenReport = 20;
         const int iDefaultGroupLength = 700;
         const int iDefaultSpokenLimit = 1500;
+        const int iDefaultBigPlaylist = 12;
         const int iDefaultTimeout = 300000;
         const int iDefaultHeartbeat = 25;
         const double nDefaultChapter = 600.0;
@@ -242,6 +243,7 @@ namespace Homer
             addParam("ad-volume", "", "number", "0.9", "Loudness of the description against the film");
             addParam("checkpoint", "", "integer", "15", "Rebuild the description track every this many moments");
             addParam("mux-minutes", "", "number", "0", "Least minutes between background writes of the film so far; 0 writes it only at the end");
+            addParam("browser-cookies", "", "string", "", "Name of a browser whose cookies yt-dlp may use, for a video that asks the viewer to sign in: chrome, edge, firefox, brave or opera");
             addParam("ffmpeg-dir", "", "string", "", "Folder holding ffmpeg.exe, searched in addition to the PATH");
             addParam("objective", "", "flag", "yes", "Ask again when a description states a mood or a judgement instead of what is visible");
             addParam("announce", "", "flag", "yes", "Speak an opening line confirming description is running");
@@ -397,7 +399,7 @@ namespace Homer
             { "Hearing the film, and where descriptions go", "speech whisper-model dialogue-window every spacing min-gap forced-length noise-floor silence-length dialogue-channel max-silence" },
             { "Not saying the same thing twice", "similarity same-shot" },
             { "The model and the picture", "model url frames width crop-bottom" },
-            { "Settings, logs and diagnostics", "use-configuration log-session log-file checkpoint mux-minutes ffmpeg-dir announce-progress boxes gui check list-voices verbose help" },
+            { "Settings, logs and diagnostics", "use-configuration log-session log-file checkpoint mux-minutes ffmpeg-dir browser-cookies announce-progress boxes gui check list-voices verbose help" },
         };
 
         static void writeWrapped(string sIndent, string sText, int iWidth)
@@ -927,8 +929,13 @@ namespace Homer
         static string sSpeechWorkDir = "";
         static bool bConsoleHidden = false;
         static string sLastSkippedFolder = "";
+        static int iSourceAt = 0;
+        static int iSourceCount = 0;
         static string sLastOutputFolder = "";
         static List<string> lResults = new List<string>();
+        static List<string> lFailures = new List<string>();
+        static string sLastFetchTrouble = "";
+        static string sLastStreamedTrouble = "";
         static List<Moment> lLastGaps = null;
         static Dictionary<string, object> dLastSignature = null;
 
@@ -3625,6 +3632,10 @@ namespace Homer
                 }
             }
             oProcess.WaitForExit();
+            // Kept, not merely logged: whoever called needs to be able to say
+            // WHY it failed, and until now the reason was written down and
+            // thrown away.
+            sLastStreamedTrouble = oErr.ToString();
             logMessage("Exit code " + oProcess.ExitCode.ToString() + " after " + num(DateTime.Now.Subtract(dtBegan).TotalSeconds) + " seconds", "CMD");
             if (oProcess.ExitCode != 0) logMessage("Error output: " + tail(oErr.ToString(), 1500), "ERROR", "");
             return oProcess.ExitCode;
@@ -3632,6 +3643,21 @@ namespace Homer
 
         // Expand a source that names several files at once. A star or a question
         // mark is a pattern, not a path, and Path.GetFullPath throws on one.
+        static readonly string[] asMediaKinds = new string[] {
+            ".mkv", ".mp4", ".m4v", ".avi", ".mov", ".webm", ".mpg", ".mpeg", ".wmv", ".flv", ".ts", ".m2ts", ".ogv",
+            ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".oga", ".opus", ".aac", ".wma", ".aiff", ".aif"
+        };
+
+        static bool looksLikeMedia(string sPath)
+        {
+            string sKind = Path.GetExtension(sPath).ToLower();
+            foreach (string sOne in asMediaKinds)
+            {
+                if (sOne == sKind) return true;
+            }
+            return false;
+        }
+
         static List<string> expandPattern(string sSource)
         {
             List<string> lFound = new List<string>();
@@ -3669,10 +3695,69 @@ namespace Homer
                 return lFound;
             }
             Array.Sort(asFiles);
-            foreach (string sFile in asFiles) lFound.Add(sFile);
+            int iNotMedia = 0;
+            foreach (string sFile in asFiles)
+            {
+                if (!looksLikeMedia(sFile))
+                {
+                    iNotMedia = iNotMedia + 1;
+                    logMessage("  Passing over " + Path.GetFileName(sFile) + ": not a video or a recording.", "INFO", "");
+                    continue;
+                }
+                lFound.Add(sFile);
+            }
+            if (iNotMedia > 0) logMessage(iNotMedia.ToString() + " file(s) matching the pattern are not video or audio and were passed over.",
+                                          "INFO", iNotMedia.ToString() + " matching file(s) are not video or audio and were passed over.");
             logMessage(sSource + " matches " + lFound.Count.ToString() + " files",
                        "INFO", sSource + " matches " + lFound.Count.ToString() + " files.");
             if (lFound.Count == 0) logMessage("Nothing matched " + sSource, "ERROR");
+            return lFound;
+        }
+
+        // A playlist address names many videos, and yt-dlp is asked which. The
+        // download itself passes --no-playlist, so without this a playlist would
+        // quietly yield only its first video -- the worst kind of failure,
+        // because it looks like success.
+        static bool looksLikePlaylist(string sAddress)
+        {
+            if (sAddress.IndexOf("/playlist", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (Regex.IsMatch(sAddress, @"[?&]list=", RegexOptions.IgnoreCase) && sAddress.IndexOf("watch", StringComparison.OrdinalIgnoreCase) < 0) return true;
+            return false;
+        }
+
+        static List<string> expandPlaylist(string sAddress)
+        {
+            List<string> lFound = new List<string>();
+            string sYtDlp = findTool("yt-dlp");
+            if (sYtDlp == "")
+            {
+                logMessage("yt-dlp was not found, so the playlist cannot be read.", "ERROR");
+                return lFound;
+            }
+            logMessage("Reading the playlist at " + sAddress, "INFO", "Reading the playlist.");
+            announce("Initializing", -1.0, 1.0, "Reading the playlist.");
+            string sOut = "";
+            string sErr = "";
+            int iCode = runCommand(sYtDlp, "--flat-playlist --no-warnings --print " + quoted("%(url)s") + " " + quoted(sAddress), out sOut, out sErr);
+            if (iCode != 0 && sOut.Trim() == "")
+            {
+                logMessage("The playlist could not be read: " + tail(sErr.Trim(), 400), "ERROR");
+                return lFound;
+            }
+            foreach (string sLine in sOut.Replace("\r\n", "\n").Split('\n'))
+            {
+                string sTrim = sLine.Trim();
+                if (sTrim.StartsWith("http")) lFound.Add(sTrim);
+            }
+            logMessage("The playlist holds " + lFound.Count.ToString() + " videos.",
+                       "INFO", "The playlist holds " + lFound.Count.ToString() + " videos.");
+            if (lFound.Count > iDefaultBigPlaylist)
+            {
+                string sBig = "That playlist holds " + lFound.Count.ToString() + " videos. Describing them all would take days. "
+                            + "Consider putting just the ones you want in a text file, one address per line, and giving that instead.";
+                logMessage(sBig, "HINT");
+                announce("Initializing", -1.0, 1.0, sBig);
+            }
             return lFound;
         }
 
@@ -3719,6 +3804,25 @@ namespace Homer
         // nothing. And the best video and best audio arrive as separate
         // streams that ffmpeg merges, so yt-dlp is told where ffmpeg is,
         // rather than being left to find it on the PATH.
+        // yt-dlp's complaint, reduced to the sentence a person needs. Its output
+        // carries warnings about JavaScript runtimes and suchlike that are not
+        // the reason for anything.
+        static string whyItFailed(string sErr)
+        {
+            foreach (string sLine in (sErr == null ? "" : sErr).Replace("\r\n", "\n").Split('\n'))
+            {
+                string sTrim = sLine.Trim();
+                if (sTrim.IndexOf("ERROR:", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                string sSaid = sTrim.Substring(sTrim.IndexOf("ERROR:", StringComparison.OrdinalIgnoreCase) + 6).Trim();
+                // Drop the identifier yt-dlp puts in front of its message.
+                sSaid = Regex.Replace(sSaid, @"^\[[^\]]+\]\s*", "");
+                sSaid = Regex.Replace(sSaid, @"^[A-Za-z0-9_-]{6,}:\s*", "");
+                if (sSaid.Length > 200) sSaid = sSaid.Substring(0, 200);
+                if (sSaid != "") return sSaid;
+            }
+            return "";
+        }
+
         static string fetchFromWeb(string sAddress, string sFolder, string sFfmpeg)
         {
             string sYtDlp = findTool("yt-dlp");
@@ -3739,9 +3843,57 @@ namespace Homer
             catch (Exception)
             {
             }
-            logMessage("Downloading " + sAddress + " with " + sYtDlp, "INFO", "Downloading " + sAddress);
-            announce("Initializing", -1.0, 1.0, "Downloading " + sAddress);
-            string sArguments = "--no-playlist --no-simulate --newline --restrict-filenames"
+            // What is it called? Asked first, so the video can be put where its
+            // results will go and so the listener hears a title rather than an
+            // address.
+            // TWO things are asked for, and the distinction matters. The title is
+            // what the listener should hear. The FILENAME is what yt-dlp will
+            // actually write, and only yt-dlp knows that: --restrict-filenames
+            // turns "The Africans: A Triple Heritage - Program 1" into
+            // "The_Africans_-_A_Triple_Heritage_-_Program_1". Sanitising the
+            // title here instead produced a folder by one name holding a file by
+            // another, and then a second folder was made for the file.
+            string sTitle = "";
+            string sStem = "";
+            string sNameOut = "";
+            string sNameErr = "";
+            runCommand(sYtDlp, "--no-playlist --no-warnings --restrict-filenames"
+                             + " --print " + quoted("%(title)s")
+                             + " --print filename"
+                             + " -o " + quoted("%(title)s.%(ext)s")
+                             + " " + quoted(sAddress), out sNameOut, out sNameErr);
+            List<string> lSaid = new List<string>();
+            foreach (string sLine in sNameOut.Replace("\r\n", "\n").Split('\n'))
+            {
+                if (sLine.Trim() != "") lSaid.Add(sLine.Trim());
+            }
+            if (lSaid.Count > 0) sTitle = lSaid[0];
+            if (lSaid.Count > 1)
+            {
+                try
+                {
+                    sStem = Path.GetFileNameWithoutExtension(lSaid[1]);
+                }
+                catch (Exception)
+                {
+                    sStem = "";
+                }
+            }
+            if (sStem != "")
+            {
+                logMessage("It is called \"" + sTitle + "\" and will be written as " + sStem, "INFO", "");
+                // The folder takes the name yt-dlp will give the file, so the
+                // two agree and the results land beside the video.
+                sFolder = Path.Combine(sFolder, sStem);
+                Directory.CreateDirectory(sFolder);
+                sPathFile = Path.Combine(sFolder, "downloaded.txt");
+            }
+            string sSaying = sTitle == "" ? sAddress : sTitle;
+            logMessage("Downloading " + sAddress + " (" + sSaying + ") with " + sYtDlp, "INFO", "Downloading " + sSaying);
+            announce("Initializing", -1.0, 1.0, "Downloading " + sSaying);
+            string sCookies = "";
+            if (text("browser-cookies") != "") sCookies = " --cookies-from-browser " + text("browser-cookies");
+            string sArguments = "--no-playlist --no-simulate --newline --restrict-filenames" + sCookies
                               + " --merge-output-format mkv"
                               + " --ffmpeg-location " + quoted(Path.GetDirectoryName(sFfmpeg))
                               + " --print-to-file after_move:filepath " + quoted(sPathFile)
@@ -3749,7 +3901,13 @@ namespace Homer
                               + " -o " + quoted(Path.Combine(sFolder, "%(title)s.%(ext)s"))
                               + " " + quoted(sAddress);
             int iCode = runStreamed(sYtDlp, sArguments, "Downloading");
-            if (iCode != 0) return "";
+            if (iCode != 0)
+            {
+                sLastFetchTrouble = whyItFailed(sLastStreamedTrouble);
+                logMessage("The video could not be fetched. " + (sLastFetchTrouble == "" ? "yt-dlp gave no reason." : "yt-dlp said: " + sLastFetchTrouble),
+                           "ERROR", "Could not fetch that video. " + sLastFetchTrouble);
+                return "";
+            }
             string sPath = "";
             try
             {
@@ -3777,6 +3935,7 @@ namespace Homer
         {
             DateTime dtRunBegan = DateTime.Now;
             lResults.Clear();
+            lFailures.Clear();
             bool bReady = checkEnvironment();
             if (flag("check"))
             {
@@ -3798,6 +3957,11 @@ namespace Homer
             {
                 if (sGiven.StartsWith("http://") || sGiven.StartsWith("https://"))
                 {
+                    if (looksLikePlaylist(sGiven))
+                    {
+                        foreach (string sOne in expandPlaylist(sGiven)) lSources.Add(sOne);
+                        continue;
+                    }
                     lSources.Add(sGiven);
                     continue;
                 }
@@ -3836,16 +4000,22 @@ namespace Homer
             foreach (string sSource in lSources)
             {
                 iAt = iAt + 1;
+                iSourceAt = iAt;
+                iSourceCount = lSources.Count;
                 if (lSources.Count > 1) logMessage("Source " + iAt.ToString() + " of " + lSources.Count.ToString() + ": " + sSource,
                                                    "INFO", "Source " + iAt.ToString() + " of " + lSources.Count.ToString() + ": " + sSource);
                 string sPath = sSource;
                 if (sSource.StartsWith("http://") || sSource.StartsWith("https://"))
                 {
+                    // The root the results go under. fetchFromWeb makes the
+                    // per-video folder inside it once it knows the title, so the
+                    // video and its results share one place.
                     string sFolder = text("output-dir");
                     if (sFolder == "") sFolder = Path.Combine(appDataFolder(), "downloads");
                     sPath = fetchFromWeb(sSource, sFolder, findTool("ffmpeg"));
                     if (sPath == "")
                     {
+                        lFailures.Add(sSource + (sLastFetchTrouble == "" ? "" : Environment.NewLine + "    " + sLastFetchTrouble));
                         iWorst = 1;
                         continue;
                     }
@@ -4014,10 +4184,16 @@ namespace Homer
             if (iDone == 0) oSaid.Append("Nothing was done.");
             if (iSkipped > 0) oSaid.Append(" " + iSkipped.ToString() + " already done and skipped.");
             oSaid.Append(Environment.NewLine + "Took " + formatClock(oTook.TotalSeconds) + ".");
+            if (lFailures.Count > 0) oSaid.Append(" " + lFailures.Count.ToString() + (lFailures.Count == 1 ? " could not be used." : " could not be used."));
             if (lResults.Count > 0)
             {
                 oSaid.Append(Environment.NewLine);
                 foreach (string sOne in lResults) oSaid.Append(Environment.NewLine + sOne);
+            }
+            if (lFailures.Count > 0)
+            {
+                oSaid.Append(Environment.NewLine + Environment.NewLine + "Could not be used:");
+                foreach (string sOne in lFailures) oSaid.Append(Environment.NewLine + sOne);
             }
             string sSaid = oSaid.ToString();
             logMessage("RESULTS: " + sSaid.Replace(Environment.NewLine, " | "), "INFO", sSaid);
@@ -4305,6 +4481,18 @@ namespace Homer
             string sBase = text("output-dir");
             if (sBase == "") sBase = Path.GetDirectoryName(sInput);
             string sOutputDir = Path.Combine(sBase, sRoot);
+            // A downloaded video is already sitting in a folder named after
+            // itself, because that is where its results are going. Making
+            // another folder of the same name inside it would nest one pointlessly
+            // within another.
+            try
+            {
+                string sHolding = Path.GetDirectoryName(Path.GetFullPath(sInput));
+                if (sHolding != null && string.Compare(Path.GetFileName(sHolding), sRoot, true) == 0) sOutputDir = sHolding;
+            }
+            catch (Exception)
+            {
+            }
 
             // Finished is now per job, since a run may describe, transcribe, or
             // both. Testing for the folder would skip an interrupted run; testing
@@ -4342,6 +4530,9 @@ namespace Homer
             string sWorkDir = workFolderFor(sInput);
             Directory.CreateDirectory(sOutputDir);
             Directory.CreateDirectory(sWorkDir);
+            string sSaying = "Processing " + Path.GetFileName(sInput);
+            if (iSourceCount > 1) sSaying = "Processing " + iSourceAt.ToString() + " of " + iSourceCount.ToString() + ", " + Path.GetFileName(sInput);
+            announce("Initializing", -1.0, 1.0, sSaying);
             logMessage("Working files are under " + sWorkDir, "INFO", "");
             sSpeechWorkDir = sWorkDir;
             lFilmSpeech = new List<Speech>();
@@ -4801,7 +4992,9 @@ namespace Homer
             // until somebody presses a key, which defeats the point of giving
             // HomerScribe a folder full of them. The results are collected and
             // shown once, at the end.
-            lResults.Add(Path.GetFileName(sInput) + ": " + lDone.Count.ToString() + " descriptions, " + formatClock(nDuration)
+            string sOddity = "";
+            if (nDuration < 60.0) sOddity = "  (only " + formatClock(nDuration) + " long: the file may be damaged or incomplete)";
+            lResults.Add(Path.GetFileName(sInput) + ": " + lDone.Count.ToString() + " descriptions, " + formatClock(nDuration) + sOddity
                          + Environment.NewLine + "    " + Path.Combine(sOutputDir, outputName(sInput)));
             sLastOutputFolder = sOutputDir;
             return 0;
