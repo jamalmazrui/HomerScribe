@@ -78,6 +78,3 @@ temp.*
 *_HomerScribe.exe
 Thumbs.db
 desktop.ini
-
-# Media and results. Large, regenerable, and not part of the program.
-*_setup.exe

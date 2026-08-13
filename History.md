@@ -1,5 +1,79 @@
 ﻿# HomerScribe History
 
+## 1.0.138, 13 August 2026
+
+- purgeRepo.py failed with "You have unstaged changes", and the cause was itself:
+  its own log is written as it runs, and the repository was tracking it, so the
+  tree was dirtied by the act of recording what was being done. The check passed,
+  the log was written, and the rewrite then refused.
+  The log is now untracked before anything looks at the tree, along with
+  fixRepo.log and buildHomerScribe.log, and *.log is added to .gitignore.
+- Genuine uncommitted changes are now found before the folder is copied rather
+  than after, and committed rather than discarded -- they are the user's changes
+  and a commit is the one operation here that cannot lose anything. Line endings
+  are the usual reason: git calls a file changed when it would write it back
+  differently.
+- Tested on two repositories, one with the log tracked and one with a genuinely
+  modified file: both rewritten, the executables gone from local history and from
+  the remote, the source and the modified file intact, and everything still on
+  disk.
+
+## 1.0.137, 13 August 2026
+
+- Added purgeRepo.py, which removes a file from every commit rather than merely
+  from the future. It uses git filter-repo when installed and git filter-branch
+  otherwise, the latter being part of git and needing nothing fetched.
+- Two things it got wrong and now does not, both found by testing rather than
+  reasoning. Rewriting the history checks the working tree out again, and a file
+  that is in no commit any more is deleted from disk along with it -- which for a
+  5.7 GB video would be unforgivable. And setting the files aside by MOVING them
+  leaves the tree dirty, which makes the rewrite refuse to run; they are copied
+  instead and the originals put back afterwards.
+- Verified against a repository built to match: the installer stayed on disk
+  byte for byte, it and the other executables left every commit and the remote,
+  and the source history and tags were untouched.
+
+## 1.0.137, 13 August 2026
+
+- purgeRepo.py now also offers to remove the three stray *_HomerScribe.exe files
+  and the describer's guide, which are in the history and were not on its list.
+  A file that turns out not to be in the history is reported and skipped, so
+  naming one harmlessly costs nothing.
+- Tested end to end against a repository with two executables committed and
+  pushed: both gone from the local history and from the remote, the source
+  changes intact, both files still on disk, and a copy of the folder taken
+  first. It used git filter-branch, filter-repo not being installed, which is
+  the fallback working as intended.
+
+## 1.0.136, 13 August 2026
+
+- fixRepo.py used 50 MB as the size that blocks a push. That is GitHub's warning;
+  the limit that blocks is 100. So an 87 MB installer looked like the cause, and
+  since it was already in the remote's history the script stopped over a file
+  that was never the problem -- the 5.7 GB video was.
+  It now asks two separate questions: what is over GitHub's limit and blocked
+  the push, and what should not be tracked at all whatever its size. Only the
+  first, when already in the remote's history, is a reason to stop; a merely
+  unwanted file is untracked from here on and its old copies stay where they are,
+  costing space and blocking nothing.
+- Where it must stop, it now gives the git filter-repo command needed and says
+  to copy the folder first.
+- A new .gitignore covering build products, fetched tools, media, run output and
+  the maintainer's own drafts and notes. Checked against every file in the
+  repository as it stands: nothing that belongs is excluded and nothing that
+  does not is kept.
+
+## 1.0.135, 12 August 2026
+
+- Added fixRepo.py, for a push rejected because a file is too large. It rewinds
+  to the remote's last commit keeping every file on disk, drops the large files
+  from the index, adds patterns to .gitignore, commits and pushes. Nothing is
+  deleted from disk.
+  Tested against four repositories built to match: one with a large file in an
+  unpushed commit, which it repaired; one where the large file was already on the
+  remote, which it correctly refused; one with nothing to push; and a folder that
+  is not a repository.
+
 ## 1.0.134, 12 August 2026
 
 From counting how often a film's protagonist was named.

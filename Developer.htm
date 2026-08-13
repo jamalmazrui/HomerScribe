@@ -199,6 +199,12 @@ prototype</a></li>
 <li><a href="#testing-the-placement-without-a-film"
 id="toc-testing-the-placement-without-a-film">Testing the placement
 without a film</a></li>
+<li><a href="#taking-something-out-of-the-history"
+id="toc-taking-something-out-of-the-history">Taking something out of the
+history</a></li>
+<li><a href="#when-a-push-is-rejected-for-file-size"
+id="toc-when-a-push-is-rejected-for-file-size">When a push is rejected
+for file size</a></li>
 <li><a href="#measuring-a-run" id="toc-measuring-a-run">Measuring a
 run</a></li>
 <li><a href="#what-is-not-done" id="toc-what-is-not-done">What is not
@@ -571,6 +577,38 @@ talkative film put 21 percent of descriptions over speech, because a
 description cannot be cut below about twelve words and four seconds does
 not hold twelve words. At five seconds it is nought across the whole
 range.</p>
+<h2 id="taking-something-out-of-the-history">Taking something out of the
+history</h2>
+<p><code>fixRepo.py</code> stops a file being tracked from now on.
+Anything already committed and pushed stays in the history, where it
+still occupies space and can still be downloaded.
+<code>purgeRepo.py</code> removes it from every commit.</p>
+<pre><code>python purgeRepo.py            what would happen, and nothing else
+python purgeRepo.py --do-it    do it</code></pre>
+<p>It uses <code>git filter-repo</code> when installed and
+<code>git filter-branch</code> otherwise, which is part of git and needs
+nothing fetched. Commit identifiers change, so anybody else who cloned
+the repository must clone it again.</p>
+<p>A copy of the folder is made first, media excluded. The files being
+purged are copied aside before the rewrite and put back after it,
+because rewriting checks the working tree out again and a file in no
+commit is deleted along with it — copied rather than moved, since a
+dirty tree makes the rewrite refuse to run.</p>
+<h2 id="when-a-push-is-rejected-for-file-size">When a push is rejected
+for file size</h2>
+<p><code>fixRepo.py</code> undoes it. A rejected push leaves the remote
+untouched and the local branch carrying the offending commit, so nothing
+has to be undone on GitHub — only the local history, which is safe to
+rewrite precisely because it was never pushed.</p>
+<pre><code>python fixRepo.py            what would happen, and nothing else
+python fixRepo.py --do-it    do it</code></pre>
+<p>It rewinds to the remote’s last commit keeping every file on disk,
+drops the large files from the index, adds patterns for them to
+<code>.gitignore</code>, commits and pushes. Nothing is deleted from
+disk.</p>
+<p>It stops rather than half-working if a large file is already in a
+commit the remote has, since rewinding would not remove it and the
+repair is then a different and larger job.</p>
 <h2 id="measuring-a-run">Measuring a run</h2>
 <p><code>measure.py</code> reads a results folder, or a folder of them,
 and prints a short report: how many descriptions, how many landed on

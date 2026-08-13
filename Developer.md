@@ -346,6 +346,42 @@ film put 21 percent of descriptions over speech, because a description cannot be
 cut below about twelve words and four seconds does not hold twelve words. At
 five seconds it is nought across the whole range.
 
+## Taking something out of the history
+
+`fixRepo.py` stops a file being tracked from now on. Anything already committed
+and pushed stays in the history, where it still occupies space and can still be
+downloaded. `purgeRepo.py` removes it from every commit.
+
+    python purgeRepo.py            what would happen, and nothing else
+    python purgeRepo.py --do-it    do it
+
+It uses `git filter-repo` when installed and `git filter-branch` otherwise,
+which is part of git and needs nothing fetched. Commit identifiers change, so
+anybody else who cloned the repository must clone it again.
+
+A copy of the folder is made first, media excluded. The files being purged are
+copied aside before the rewrite and put back after it, because rewriting checks
+the working tree out again and a file in no commit is deleted along with it —
+copied rather than moved, since a dirty tree makes the rewrite refuse to run.
+
+## When a push is rejected for file size
+
+`fixRepo.py` undoes it. A rejected push leaves the remote untouched and the local
+branch carrying the offending commit, so nothing has to be undone on GitHub —
+only the local history, which is safe to rewrite precisely because it was never
+pushed.
+
+    python fixRepo.py            what would happen, and nothing else
+    python fixRepo.py --do-it    do it
+
+It rewinds to the remote's last commit keeping every file on disk, drops the
+large files from the index, adds patterns for them to `.gitignore`, commits and
+pushes. Nothing is deleted from disk.
+
+It stops rather than half-working if a large file is already in a commit the
+remote has, since rewinding would not remove it and the repair is then a
+different and larger job.
+
 ## Measuring a run
 
 `measure.py` reads a results folder, or a folder of them, and prints a short
