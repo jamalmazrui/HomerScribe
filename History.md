@@ -1,5 +1,22 @@
 ﻿# HomerScribe History
 
+## 1.0.139, 13 August 2026
+
+- Added tidyRepo.py, which finishes the repository clean-up in one run and takes
+  no arguments: it checks the set-aside files came back, takes the testing
+  material and build products out of the history, updates the remote to the
+  address GitHub asks for, reclaims the space, and removes the backup folders
+  once it can see nothing is missing.
+- Two faults in purgeRepo.py found by testing it, both of which had let files
+  come back after being removed. filter-branch rewrites the commits and leaves
+  the INDEX alone, so the purged files were still staged and the next commit put
+  them straight back; the index is now brought into line, mixed rather than
+  hard, so nothing leaves the disk. And purgeRepo never accepted paths on the
+  command line at all, though I had said it did -- it silently used its own list
+  instead, which is why a first attempt removed the wrong files.
+- Verified end to end: source alone in the repository and on the remote, every
+  other file still on disk.
+
 ## 1.0.138, 13 August 2026
 
 - purgeRepo.py failed with "You have unstaged changes", and the cause was itself:
