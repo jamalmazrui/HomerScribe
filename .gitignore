@@ -90,3 +90,7 @@ context/The_Odyssey.*
 *_HomerScribe.exe
 Thumbs.db
 desktop.ini
+
+# Taken out of the history; kept out of it.
+context/video-sequences.md
+context/video.md
