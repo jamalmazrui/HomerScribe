@@ -1,5 +1,19 @@
 ﻿# HomerScribe History
 
+## 1.0.142, 13 August 2026
+
+- Files purged by one run came back in the next. The commit purgeRepo takes
+  before rewriting used "git add -A", which stages UNTRACKED files as well --
+  and files purged earlier were sitting on disk untracked, exactly as intended.
+  It hoovered them straight back in: committed, rewritten past, and pushed.
+  Three returned that way. It uses "git add -u" now, which stages changes to
+  files git already tracks and nothing else, which is all that was ever wanted.
+- .gitignore covers context/video* and video.htm, which the replacement I sent
+  had dropped without noticing: purgeRepo had added them itself in an earlier
+  run and my file overwrote that.
+- Tested by running the whole thing twice over. What is purged in the first run
+  is still purged after the second, and every file is still on disk.
+
 ## 1.0.141, 13 August 2026
 
 - The Python scripts and the Odyssey context files are taken out of the

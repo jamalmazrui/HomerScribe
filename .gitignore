@@ -70,8 +70,10 @@ temp.*
 
 # The context file for a particular film belongs to whoever wrote it; the ones
 # in context/ are examples and ARE kept.
-/video.md
-/video-sequences.md
+video.md
+video.htm
+video-sequences.md
+context/video*
 
 # ---- tools and notes that are not the program ------------------------------
 # The build script uses no Python at all, so none of it belongs here. These
@@ -88,13 +90,3 @@ context/The_Odyssey.*
 *_HomerScribe.exe
 Thumbs.db
 desktop.ini
-
-# Taken out of the history; kept out of it.
-context/The_Odyssey.htm
-context/The_Odyssey.md
-fixRepo.py
-measure.py
-placement_test.py
-prototype/describeMovie.py
-purgeRepo.py
-tidyRepo.py
