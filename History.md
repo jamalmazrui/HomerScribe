@@ -1,5 +1,40 @@
 ﻿# HomerScribe History
 
+## 1.0.141, 13 August 2026
+
+- The Python scripts and the Odyssey context files are taken out of the
+  repository. The build script uses no Python at all -- checked rather than
+  assumed -- so none of it belongs there, and one film's context is not part of
+  the program. The installer no longer claims to ship measure.py and
+  placement_test.py. All of them stay in the working folder.
+- Two faults in purgeRepo, both about files in a subfolder: the copy set aside
+  used only the base name, so two files of the same name in different folders
+  would have become one; and the restore never recreated the folder, which git
+  removes once it holds nothing tracked, so the move failed and the exception
+  was swallowed. Found by testing rather than reading: context/The_Odyssey.md
+  and prototype/describeMovie.py disappeared from the disk.
+- When the collection cannot free the space, a fresh copy of the repository is
+  now fetched and its .git swapped in rather than the user being told to do it.
+  Only the hidden folder is replaced; every file stays where it is, and the old
+  one is kept aside until the next run.
+
+## 1.0.140, 13 August 2026
+
+Two things tidyRepo did not finish, both found from its own log.
+
+- The space was not reclaimed: the pack was 516 MB before the collection and
+  516 MB after. git gc leaves an unreachable object where it is when it is
+  already inside a pack, so nothing moved. It now clears everything that can
+  still be holding them -- the backups filter-branch keeps, the reflog including
+  unreachable entries, the stash, stale remote-tracking refs -- and then repacks
+  from scratch rather than collecting. Measured on a test repository: 7.9 MB of
+  git folder down to 192 KB.
+- The backup folders could not be deleted: git marks its object files read-only
+  and Windows refuses. The flag is now cleared and the deletion retried, which
+  is the standard remedy.
+- If the size still does not move, it says so and gives the one certain cure, a
+  fresh clone, rather than reporting success.
+
 ## 1.0.139, 13 August 2026
 
 - Added tidyRepo.py, which finishes the repository clean-up in one run and takes

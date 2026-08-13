@@ -205,6 +205,8 @@ history</a></li>
 <li><a href="#when-a-push-is-rejected-for-file-size"
 id="toc-when-a-push-is-rejected-for-file-size">When a push is rejected
 for file size</a></li>
+<li><a href="#the-helper-scripts" id="toc-the-helper-scripts">The helper
+scripts</a></li>
 <li><a href="#measuring-a-run" id="toc-measuring-a-run">Measuring a
 run</a></li>
 <li><a href="#what-is-not-done" id="toc-what-is-not-done">What is not
@@ -609,6 +611,14 @@ disk.</p>
 <p>It stops rather than half-working if a large file is already in a
 commit the remote has, since rewinding would not remove it and the
 repair is then a different and larger job.</p>
+<h2 id="the-helper-scripts">The helper scripts</h2>
+<p><code>measure.py</code>, <code>placement_test.py</code>,
+<code>fixRepo.py</code>, <code>purgeRepo.py</code> and
+<code>tidyRepo.py</code> live in the working folder and are
+<strong>not</strong> in the repository. The build uses no Python at all,
+and none of them is part of the program; they are handed over directly
+when they are wanted. <code>HomerScribe_setup.iss</code> no longer ships
+the first two for the same reason.</p>
 <h2 id="measuring-a-run">Measuring a run</h2>
 <p><code>measure.py</code> reads a results folder, or a folder of them,
 and prints a short report: how many descriptions, how many landed on

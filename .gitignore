@@ -73,16 +73,18 @@ temp.*
 /video.md
 /video-sequences.md
 
+# ---- tools and notes that are not the program ------------------------------
+# The build script uses no Python at all, so none of it belongs here. These
+# stay in the working folder and are handed over directly when wanted.
+*.py
+
+# One film's context. The program does not need it and the next person will
+# write their own.
+context/The_Odyssey.*
+*Odyssey*
+
 # ---- leftovers -------------------------------------------------------------
 *.lockcheck
 *_HomerScribe.exe
 Thumbs.db
 desktop.ini
-
-# Taken out of the history; kept out of it.
-AccessOn.md
-DavidGoldfield.md
-TopTechTidbits.md
-context/video-sequences.md
-context/video.md
-video.htm

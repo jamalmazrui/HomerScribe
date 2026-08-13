@@ -382,6 +382,14 @@ It stops rather than half-working if a large file is already in a commit the
 remote has, since rewinding would not remove it and the repair is then a
 different and larger job.
 
+## The helper scripts
+
+`measure.py`, `placement_test.py`, `fixRepo.py`, `purgeRepo.py` and `tidyRepo.py`
+live in the working folder and are **not** in the repository. The build uses no
+Python at all, and none of them is part of the program; they are handed over
+directly when they are wanted. `HomerScribe_setup.iss` no longer ships the first
+two for the same reason.
+
 ## Measuring a run
 
 `measure.py` reads a results folder, or a folder of them, and prints a short

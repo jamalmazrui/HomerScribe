@@ -139,8 +139,6 @@ Source: "yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesnte
 Source: "installOllama.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installModels.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installWhisper.cmd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "measure.py"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "placement_test.py"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "context\*.md"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 Source: "context\*.htm"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
