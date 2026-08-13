@@ -1427,7 +1427,15 @@ public class LbcDialog : IDisposable
             }
             registerWidget(btn, "Button", sCaptured);
             pnlButtonRow.Controls.Add(btn);
-            if (i == 0) btnAccept = btn;
+            // Enter presses the button that MEANS accept, wherever it sits in
+            // the row. Taking the first button regardless made Enter press Help
+            // in a dialog whose row reads Help, Default settings, OK, Cancel --
+            // an order Microsoft's own guidance gives for a secondary window.
+            // Falling back to the first button keeps every existing dialog,
+            // where OK leads the row, behaving exactly as before.
+            if (string.Equals(sCaptured, "OK", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(sCaptured, "Yes", StringComparison.OrdinalIgnoreCase)) btnAccept = btn;
+            else if (i == 0 && btnAccept == null) btnAccept = btn;
             if (string.Equals(sCaptured, "Cancel", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(sCaptured, "Close", StringComparison.OrdinalIgnoreCase))
                 btnCancel = btn;

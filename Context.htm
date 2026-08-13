@@ -1,0 +1,445 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>HomerScribe — Writing a context file</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
+  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  code, pre { font-family: Consolas, monospace; }
+  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
+  </style>
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#writing-a-context-file"
+id="toc-writing-a-context-file">Writing a context file</a>
+<ul>
+<li><a href="#the-one-constraint-that-governs-everything"
+id="toc-the-one-constraint-that-governs-everything">The one constraint
+that governs everything</a></li>
+<li><a href="#the-rule-that-matters-more-than-any-other"
+id="toc-the-rule-that-matters-more-than-any-other">The rule that matters
+more than any other</a></li>
+<li><a href="#what-helps-most-in-order"
+id="toc-what-helps-most-in-order">What helps most, in order</a></li>
+<li><a href="#what-different-material-needs"
+id="toc-what-different-material-needs">What different material
+needs</a></li>
+<li><a href="#what-does-not-help" id="toc-what-does-not-help">What does
+not help</a></li>
+<li><a href="#dividing-a-file-by-time"
+id="toc-dividing-a-file-by-time">Dividing a file by time</a></li>
+<li><a href="#building-one-from-a-guide-written-for-a-person"
+id="toc-building-one-from-a-guide-written-for-a-person">Building one
+from a guide written for a person</a></li>
+<li><a href="#a-worked-comparison-a-narrative-film"
+id="toc-a-worked-comparison-a-narrative-film">A worked comparison (a
+narrative film)</a></li>
+<li><a href="#checking-that-it-worked"
+id="toc-checking-that-it-worked">Checking that it worked</a></li>
+<li><a href="#a-template" id="toc-a-template">A template</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="writing-a-context-file">Writing a context file</h1>
+<p>A context file tells HomerScribe what a film is, so that descriptions
+use the right words and avoid the wrong ones. Pass it with
+<code>--context-file</code>.</p>
+<p>These notes are about what works with <strong>this</strong>
+arrangement — a vision model of about seven billion parameters, shown
+four frames at a time, on your own machine. Some of it would be wrong
+advice for a person, and some of it would be wrong advice for a larger
+model.</p>
+<h2 id="the-one-constraint-that-governs-everything">The one constraint
+that governs everything</h2>
+<p><strong>The whole file goes into every prompt.</strong> Not once at
+the start — every time, for every description. A film with six hundred
+moments sends it six hundred times.</p>
+<p>So a thousand-line scene-by-scene guide is not merely wasteful. It
+buries the instruction that matters under material the model must read
+past, and it makes every description slower.</p>
+<p><strong>Keep it under about 250 words.</strong> If you cannot say it
+in 250, it is probably not the kind of thing that helps.</p>
+<h2 id="the-rule-that-matters-more-than-any-other">The rule that matters
+more than any other</h2>
+<p><strong>A context file supplies nouns and names. It must not supply
+observations.</strong></p>
+<p>The difference decides whether HomerScribe is describing a film or
+reciting somebody else’s description of it.</p>
+<p>“Setting: a cave on a rocky island. Present: Odysseus, his crew,
+Polyphemus” is context. It gives the model the words to use for what it
+sees.</p>
+<p>“A vast cave entrance; the barrier that prevents escape; his single
+eye; the position of men, animals and the exit” is a description. Given
+that, the model will produce it — whether or not any of it is in the
+frame in front of it. The output would then be a paraphrase of the file,
+timed to the film, and no more truthful than whoever wrote the file.</p>
+<p>This is easy to get wrong, because a guide written for a human
+describer is full of exactly that material, and it is the most
+useful-looking part.</p>
+<p>The test: <strong>could this sentence be false of the picture and
+still be in the file?</strong> A setting cannot — the film is either in
+a cave or it is not. An observation can, and will be repeated
+anyway.</p>
+<h2 id="what-helps-most-in-order">What helps most, in order</h2>
+<p><strong>1. Vocabulary.</strong> This is the highest-value content,
+and the least obvious.</p>
+<p>A vision model shown a bronze age warship will say “a boat” unless it
+has been told what world this is. Told the film is Bronze Age
+Mediterranean, it says “warship”, “oars”, “bronze armour”, “linen robe”.
+The picture has not changed; the words available to describe it
+have.</p>
+<p>Give the nouns the film will need again and again.</p>
+<p><strong>2. What not to name.</strong> Negative instructions work well
+and are cheap.</p>
+<p>“Do not name anyone who appears disguised or hooded” is one sentence,
+and it prevents a whole class of error the model would otherwise make
+confidently.</p>
+<p><strong>3. Who can be told apart, and how.</strong> A vision model
+cannot recognise a face. Giving it a name gives it something to attach,
+and it will attach it — rightly or wrongly — for the length of the
+film.</p>
+<p>So a name is only safe when you can say <strong>what makes that
+person distinguishable in the picture</strong>. “The presenter is Ali
+Mazrui, a Black man in a light jacket who speaks to the camera” works:
+there is one such person and the model can tell when it is looking at
+him. “The protagonists are Odysseus and Telemachus” does not: the model
+cannot tell a bearded man of forty from a bearded man of twenty-five
+with any reliability, and half the film will carry the wrong name.</p>
+<p>The test is whether a stranger could pick the person out of a still
+frame from what you wrote. If not, do not give the name — say what is
+visible instead.</p>
+<p><strong>And say to use the name every time</strong>, not where it
+seems plain. Measured on a two and three quarter hour film: the
+protagonist was named in 117 descriptions of 341, and an unnamed
+“bearded man” appeared in 37 more, spread evenly throughout. The model
+was following an instruction to name only where confident, and its
+confidence varied between one frame and the next.</p>
+<p>That is worse for a listener than either extreme. “A bearded man
+strides across the deck” at 26 minutes and “Odysseus looks out to sea”
+at 27 give no way of knowing they are the same man. Consistently wrong
+would at least be followable; inconsistently right is not.</p>
+<p>So tie the name to something visible and require it: “Odysseus is the
+bearded man of middle years at the centre of most of the film; call him
+Odysseus every time rather than describing him afresh.” That turns
+recognising a person, which the model cannot do, into matching an
+attribute, which it can.</p>
+<p>In practice this means documentaries and lectures take names well,
+because there is usually one person who addresses the camera. Drama
+takes them badly unless a character is visually singular: the only woman
+in armour, the only man with a staff.</p>
+<p>A single line saying that everyone else is described by appearance
+and not named is worth including whatever the material.</p>
+<p><strong>4. Ambiguities to preserve.</strong> If a film leaves
+something open — whether a god acted, whether a memory is real — say so.
+The model resolves ambiguity by default, because a flat statement reads
+more fluently than a careful one.</p>
+<h2 id="what-different-material-needs">What different material
+needs</h2>
+<p>The rules above are general; what they amount to is not.</p>
+<p><strong>Documentary.</strong> The presenter’s name and appearance,
+and the subject’s vocabulary — the words for the things being filmed.
+HomerScribe already tries to find a presenter for itself, and stating
+one is more reliable.</p>
+<p><strong>Science and technical.</strong> The most valuable thing you
+can add, and the least obvious: say that diagrams, labels and captions
+appear, and that reading them aloud is wanted. On NASA material the
+descriptions that carried real information were the ones reading labels
+off schematics — the narration says “as you can see here” and moves on,
+and the words on screen are the content.</p>
+<p><strong>Drama.</strong> Setting and period vocabulary. Names only
+where a character is visually singular. Whatever the film deliberately
+withholds — a disguise, an identity, an ambiguity — stated as something
+not to give away.</p>
+<p><strong>Silent film.</strong> Say that the dialogue appears as
+printed cards and that they should be read out. This is the one case
+where the on-screen text is the whole of the speech, and it is what
+HomerScribe does best.</p>
+<p><strong>Lecture or talk.</strong> Very little is needed and very
+little will help. The picture is a person and a slide, the slide is
+usually read aloud, and there is not much for a description to add.</p>
+<p><strong>Anything you know nothing about.</strong> Do not invent.
+HomerScribe looks the film up for itself and will use what it finds. An
+empty context file is better than a speculative one, because a wrong
+setting supplies wrong nouns with total confidence.</p>
+<h2 id="what-does-not-help">What does not help</h2>
+<p><strong>Scene-by-scene narrative without times.</strong> HomerScribe
+knows the timestamp of each moment and nothing else, so it cannot tell
+that 41 minutes in is “the Cyclops’s island” unless the file says
+so.</p>
+<p><strong>With times, it can</strong> — see the next section. A
+narrative map is then not only usable but the best thing you can give
+it.</p>
+<p><strong>Plot, themes, interpretation.</strong> The model is
+describing four still frames. It cannot use “the film explores the cost
+of homecoming”, and the words will find their way into descriptions as
+commentary, which is the one thing description must not be.</p>
+<p><strong>Anything the sound already carries.</strong> The dialogue is
+transcribed separately and the previous 25 seconds of it are given to
+the model anyway.</p>
+<h2 id="dividing-a-file-by-time">Dividing a file by time</h2>
+<p>A heading that begins with a time marks a section that applies only
+from then on:</p>
+<pre><code>Christopher Nolan&#39;s The Odyssey, 2026. Bronze Age Mediterranean.
+Do not name anyone disguised.
+
+## 12:00 Troy and the end of the war
+Wooden horse, burning city, Greek warriors in bronze.
+
+## 41:00 The Cyclops&#39;s island
+A cave, a giant, sheep. Polyphemus is the giant.
+
+## 1:12:30 Circe&#39;s island
+A stone hall on a wooded island; men and pigs.</code></pre>
+<p>Everything before the first timed heading is sent with every
+description. A timed section is sent only while the film is inside
+it.</p>
+<p><strong>This removes the length limit for anything you can put a time
+against.</strong> A forty-section guide costs no more per description
+than a four-section one, because only the section covering this minute
+is sent. The 250-word limit applies to the general part alone.</p>
+<p>Times may be written <code>41:00</code> or <code>1:12:30</code>. The
+heading text is used, so give the section a name that says where the
+film is.</p>
+<p>Where do the times come from? Watching and noting them is the
+reliable way. Chapter marks in the file are another. A transcript can
+anchor some of them — searching HomerScribe’s own
+<code>transcribed.md</code> for a distinctive line of dialogue gives the
+time it is spoken — though this works only where the dialogue names what
+the scene is about, which is less often than you would hope.</p>
+<h2 id="building-one-from-a-guide-written-for-a-person">Building one
+from a guide written for a person</h2>
+<p>A guide written for a human describer is the best raw material there
+is, and almost none of it transfers unchanged. Working through a 1,043
+line one for The Odyssey, what came across and what did not:</p>
+<p><strong>Kept, per sequence:</strong> the setting, and who is present.
+Nothing else — about twenty words each.</p>
+<p><strong>Dropped:</strong> the reasoning behind each principle, the
+reliability ratings, the notes on what the describer should decide, and
+production facts such as where a set was built. All of it valuable to a
+person; none of it something a vision model can act on, and the
+production facts would be read aloud as though they were in the
+picture.</p>
+<p><strong>Dropped hardest, and least obviously:</strong> the “key
+visual information” bullets. They are the most useful-looking part of
+such a guide and the most dangerous here, because they are descriptions.
+See the rule above.</p>
+<p>Also dropped: anything phrased as advice rather than fact. “Orient
+the cave before the violence begins” is a good instruction for someone
+writing a script and nothing to a model describing one frame of it.</p>
+<p>The result was 50 sections averaging fifty words, each attached to a
+time.</p>
+<p><strong>The times are the work.</strong> They cannot come out of the
+guide, and inventing them is worse than leaving them out — a section
+naming the Cyclops’s island arriving ten minutes early injects wrong
+vocabulary with confidence. An untimed heading is simply ignored, so a
+file can be filled in a few sections at a time and used at any
+stage.</p>
+<h2 id="a-worked-comparison-a-narrative-film">A worked comparison (a
+narrative film)</h2>
+<p>A guide written for a human describer, for the same film, ran to
+1,043 lines: narrative sequences, reliability ratings, the reasoning
+behind each principle. Every word of it is sound and most of it is
+unusable here — not because it is wrong, but because it answers
+questions the model is not in a position to ask.</p>
+<p>What survived into 246 words: the period and its vocabulary, three
+names that can be recognised and an instruction to describe everyone
+else by sight, the rule about disguises, the rule about the
+supernatural, and one sentence telling it not to explain the story.</p>
+<p>The reasoning was dropped. A person needs to know <em>why</em> not to
+name a disguised character; the model needs only the instruction.</p>
+<h2 id="checking-that-it-worked">Checking that it worked</h2>
+<p>The log answers this without guesswork.</p>
+<p><code>From here the context section is: ...</code> appears each time
+the film moves into a new section, so you can see which applied and
+when.</p>
+<p>At the end of each film, a <code>MEASURE:</code> line reports how
+many descriptions were given a timed section, and <strong>how many
+repeat half or more of their words from the context</strong>. That
+second number is the one to watch: a few is normal, since a description
+of a cave and a context naming a cave will share words. Many means the
+model is reciting rather than describing, and the file has observations
+in it that should come out.</p>
+<h2 id="a-template">A template</h2>
+<pre><code>&lt;What it is: title, year, kind, and the world or subject it belongs to.&gt;
+
+&lt;The vocabulary of that world or subject: the things that appear again and
+again, named in the words you want used. This is the part that does most
+of the work.&gt;
+
+&lt;Anyone who can be picked out of a still frame from what you write, with
+what makes them recognisable. Then: everyone else is described by
+appearance and not named. Omit this whole paragraph if nobody qualifies.&gt;
+
+&lt;Anything that must not be named or resolved — one line each.&gt;
+
+&lt;Anything on screen that should be read aloud: labels, captions, printed
+cards. Omit if there is none.&gt;</code></pre>
+<p>Nothing in that list is compulsory. A file of three lines naming a
+period and its vocabulary is a real improvement on nothing; a file that
+guesses is worse than nothing.</p>
+</body>
+</html>

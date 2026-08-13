@@ -1,5 +1,520 @@
 ﻿# HomerScribe History
 
+## 1.0.134, 12 August 2026
+
+From counting how often a film's protagonist was named.
+
+- On a two and three quarter hour film he was named in 117 descriptions of 341,
+  and an unnamed "bearded man" appeared in 37 more, spread evenly throughout --
+  not absent, INCONSISTENT. The model was following an instruction to name only
+  where the picture made it plain, and its confidence varied from one frame to
+  the next.
+  That is worse for a listener than either extreme. "A bearded man strides across
+  the deck" at 26 minutes and "Odysseus looks out to sea" at 27 give no way of
+  knowing they are the same man; consistently wrong would at least be followable.
+- The prompt used to say "names you have already used, so keep using them",
+  which is a list with nothing to attach to. It now says to use a name again
+  whenever somebody matches how that person was described, and explains why: a
+  listener cannot tell that "a bearded man" and a name are the same person.
+- Context.md and the Odyssey context file both changed to tie a name to
+  something visible and require its use every time, rather than leaving the model
+  to judge when it is sure. That turns recognising a person, which it cannot do,
+  into matching an attribute, which it can.
+
+## 1.0.133, 12 August 2026
+
+- Context.md was written entirely from one narrative film and gave advice that
+  is wrong elsewhere. Two corrections.
+  The naming rule said to name the two or three people the picture makes plain.
+  That holds for a documentary, where one person addresses the camera, and fails
+  for drama: a model cannot tell a bearded man of forty from a bearded man of
+  twenty-five, and half a film will carry the wrong name. A name is now advised
+  only where you can say what makes that person distinguishable in a still frame
+  -- the test being whether a stranger could pick them out from what you wrote.
+  Added what different material needs: documentary, science and technical, drama,
+  silent film, lecture, and the case of knowing nothing about it. The science
+  entry is the one most likely to be missed -- saying that labels and captions
+  appear and should be read out, since on such material the words on screen are
+  the content and the narration says "as you can see here".
+- The template no longer assumes a cast, and says which parts to leave out.
+
+## 1.0.132, 12 August 2026
+
+Three symptoms, one cause: the window was never given the chance to redraw.
+
+- A model call blocks this thread for ten seconds or more, and nothing pumped the
+  message queue meanwhile. So Windows decided the program had stopped, which is
+  the "Not responding" a screen reader reports; the window never repainted; and
+  a screen reader coming back to it read the title it had last been told about,
+  which is why Alt+Tabbing back two hours into a run said "Starting".
+  The model call now goes to a thread and this one pumps until it returns.
+- The queue is also pumped immediately after every status update, as 2htm does.
+  Setting the text is not enough on its own: until the queue is pumped, Windows
+  has not repainted the window or told anybody the title changed.
+- Measured from that run, and NOT explained by these changes: 32.5 seconds a
+  description against 10.3 the run before, with the same model, picture size,
+  frames and detail. That is still to be accounted for.
+
+## 1.0.131, 12 August 2026
+
+- When there is a dialog, the console now carries the same messages the dialog
+  gave, one to a line, in the order they were spoken. It carried the log stream
+  instead: command lines, exit codes and paths, which are useful when there is
+  no dialog and unreadable when there is. Those are in the log, where somebody
+  looking for them will go.
+- Lines are written whether or not the message was spoken aloud, since the
+  console is a record to be read back rather than an interruption. Errors still
+  appear in both, and --verbose puts everything back.
+- Running from the command line with no dialog is unchanged.
+
+## 1.0.130, 12 August 2026
+
+- Fixed a build failure I introduced with the timed context sections. The code
+  that builds a prompt asked which section covers this moment, but had never been
+  told which moment it was: nothing in a prompt had depended on the time before.
+  The time is now passed to it, through describeImage and its five callers.
+  It failed to compile rather than doing something wrong, which is the good
+  outcome, but it should not have reached you.
+
+## 1.0.129, 12 August 2026
+
+- The context sections now carry setting and who is present, and nothing else.
+  They had carried the "key visual information" bullets from the guide they came
+  from, which are descriptions: given one, a model produces it whether or not it
+  is in the frame, and the output becomes a paraphrase of the file rather than an
+  account of the picture. 44 sections, about twenty words each.
+- The prompt now says outright what a section is for: where the film is, not
+  what is in this picture; use it for the right words and names, describe only
+  what can be seen.
+- The log measures whether that held. Each move into a new section is logged, and
+  a MEASURE line at the end of each film reports how many descriptions were given
+  a section and how many repeat half or more of their words from it -- which
+  would mean reciting rather than describing.
+- Context.md leads with the rule this comes down to: a context file supplies
+  nouns and names, never observations. The test given is whether a sentence could
+  be false of the picture and still be in the file.
+
+## 1.0.128, 12 August 2026
+
+- context/video-sequences.md: all 50 sequences of a describer's guide for The
+  Odyssey turned into timed sections, each about fifty words of setting, who is
+  present, and what is seen. Three carry times taken from the film's own
+  transcript; the rest are marked TIME and are ignored until filled in, so the
+  file works at any stage of being completed.
+- Context.md gained a section on doing this: what transfers from a guide written
+  for a person and what does not. Reasoning, reliability ratings and production
+  facts all go -- the last would be read aloud as though they were in the
+  picture -- and anything phrased as advice rather than fact goes with them.
+
+## 1.0.127, 12 August 2026
+
+- A context file may now be divided by time. A heading beginning with a time --
+  "## 41:00 The Cyclops's island" -- marks a section sent only while the film is
+  inside it; everything before the first such heading is sent with every
+  description.
+  I had said a scene-by-scene guide was unusable because a moment could not be
+  matched to a scene. That was wrong: nothing had been built to match them. The
+  length objection goes with it, since a forty-section guide now costs no more
+  per description than a four-section one.
+
+## 1.0.126, 12 August 2026
+
+- Added Context.md: how to write a context file for this arrangement, which is
+  not how one would brief a person. The governing fact is that the whole file
+  goes into EVERY prompt, so it must be short -- under about 250 words -- and
+  vocabulary helps far more than plot, since a vision model shown a bronze age
+  warship says "a boat" until it is told what world it is looking at.
+- Added context/video.md for Nolan's The Odyssey, 246 words, distilled from a
+  1,043 line guide written for a human describer. What survived: the period and
+  its vocabulary, the three names the picture makes plain and an instruction to
+  describe everyone else by sight, the rule about disguises, the rule about the
+  supernatural. The reasoning was dropped -- a person needs to know why, the
+  model needs only the instruction.
+
+## 1.0.125, 12 August 2026
+
+From a run where the film was moved or deleted while it was being described.
+
+- A source that disappears mid-run now stops that film at once, says so, and is
+  named in the results as an error. It used to fail on every moment in turn --
+  639 times in 47 seconds, silently -- and then report "1 descriptions" as
+  though that were a result.
+- Frames that cannot be read twelve times in a row also stop the film, since
+  that is the file or the disk rather than any particular moment. One failure
+  can happen for ordinary reasons; a dozen cannot.
+- Nothing is written from a film that fell over. An empty described film left in
+  a results folder looks finished, and the next run would skip it as already
+  done.
+- The new MEASURE lines earned their place immediately: "room available, middle
+  0s" is what identified this as a missing file rather than a fault in the
+  placement, which was working correctly throughout.
+
+## 1.0.124, 12 August 2026
+
+- Dropped two opening messages that told the user nothing they could act on:
+  looking for the programs, and asking Ollama for its models. Both were under
+  the hood.
+- The first thing said about the work is now how many files there are, which one
+  this is, and where its results go: "Processing 1 file, video.mkv" or
+  "Processing 3 of 9 files, The Africans - Episode 4.mp4". The results folder is
+  named only when it is not simply the file name without its extension, since
+  saying that would be repetition.
+
+## 1.0.123, 12 August 2026
+
+- The first eight messages of a run are spoken at once rather than collected.
+  Messages are grouped so that descriptions arriving every few seconds do not
+  interrupt constantly, and a message waits up to twenty seconds for company.
+  That is right in the middle of a film and wrong at the beginning, where they
+  are rare, each is informative, and somebody is waiting to hear the program is
+  alive: "Starting" was spoken and everything after it waited twenty seconds.
+  After the first few, grouping resumes exactly as before.
+- A message that was WITHHELD no longer counts as having been said. It reset the
+  clock that decides whether the next one waits, so a message nobody heard could
+  silence the one after it for twenty seconds.
+- The rule that keeps HomerScribe quiet when it is not the window in front is
+  unchanged, as is everything that decides it.
+
+## 1.0.122, 12 August 2026
+
+- A description was allowed its gap PLUS up to 3.5 seconds at --detail rich.
+  That allowance was written when a moment sat in whatever silence happened to
+  exist and a little overrun was the price of a whole sentence. Under the current
+  design it is wrong: a moment is placed in measured room and given the whole of
+  it, with a margin already kept at each end, so a licensed overrun is licensed
+  talking over the dialogue. It is nought now, whatever the detail.
+  This is also why the rule meant to drop an overrunning description had never
+  fired in two versions: descriptions were not exceeding their allowance, they
+  were using it. Eleven overlapped speech on the last run and not one exceeded
+  what it was allowed.
+- Two MEASURE lines are written at the end of each film: words and seconds per
+  description against the room available, how many still judge rather than
+  observe, how many name somebody, and how often the film's memory was
+  rewritten. One block that answers the questions that have needed a whole log
+  read to answer.
+
+## 1.0.121, 12 August 2026
+
+- Naming the session log for its session left the old un-timestamped
+  HomerScribe.log sitting beside it, stale. It is the obvious name to reach for,
+  so it was reached for, and a fresh run was compared against a two day old one.
+  An older log of that name is now moved aside as HomerScribe-superseded.log the
+  first time a timestamped one is written, so the only HomerScribe.log left in a
+  results folder is the per-film one, which is current by construction.
+- The results box now ends with the path of this run's log, so the right file is
+  named rather than guessed at.
+
+## 1.0.120, 11 August 2026
+
+- Each finished film now gets its own log, in its own results folder, holding
+  only the entries that belong to it. Somebody looking at one film's results
+  should not have to search a whole session for the part about it.
+- The session log is named for when the session began --
+  HomerScribe-20260811-134216.log -- so a later run never erases an earlier one,
+  and it is opened for appending rather than rewriting. It was already flushed
+  to disk every second, so it stays current while a run is going on.
+
+## 1.0.119, 11 August 2026
+
+- Removed the batch look-ahead added in the previous version. Films are worked
+  on one at a time again.
+- Within one film, the ffmpeg work for the next moment is now done while the
+  model works on this one: cutting and tiling the frames, and reducing them to a
+  thumbprint. That work depends only on the film and a timestamp, so doing it
+  early alters nothing the model is shown -- the same frames, the same picture,
+  the same prompt. It is the only saving inside a single film that costs
+  nothing.
+  The ready file is renamed into place rather than juggling two path variables
+  through a loop with many exits, and the run waits for the thread before
+  finishing so nothing is left writing.
+
+## 1.0.118, 11 August 2026
+
+- On a batch, the next film is transcribed while the current one is described.
+  The two use different hardware, so neither waits for the other: about 1.6 times
+  quicker per film, 120 minutes becoming roughly 75.
+  It was chosen over the alternatives for what it does NOT touch. The background
+  work writes one file -- the next film's transcript, in that film's own folder
+  -- and shares nothing else. When that film's turn comes the ordinary path finds
+  it, exactly as it finds the transcript of an interrupted run. Not one line of
+  the describing path changed. If it fails or is unfinished, that film is
+  transcribed as usual.
+- It is started only once the current film's descriptions begin, by which time
+  that film's own transcript is made, so two transcriptions never contend for the
+  processor.
+
+## 1.0.117, 11 August 2026
+
+- The build no longer crawls when it fetches ffmpeg. PowerShell's
+  Invoke-WebRequest draws a progress meter unless told not to, and for a hundred
+  megabyte file that meter costs far more than the transfer: tens of times
+  slower, and it is what prints about writing a request stream. Every download
+  now sets $ProgressPreference to SilentlyContinue first.
+- And it usually will not download at all. Building in a second folder is the
+  ordinary case rather than a rare one, so the build looks for ffmpeg, ffprobe
+  and yt-dlp in an existing HomerScribe folder and copies them. They are large
+  and change rarely; fetching them again to sit beside a second copy of the same
+  source is waste.
+
+## 1.0.116, 11 August 2026
+
+- Two HomerScribes may now be run at once without any care being taken. The
+  second notices the first, writes its own log rather than overwriting it, and
+  does not save the shared settings while the other may be reading them. Working
+  folders were already separate. This is worth doing because transcribing uses
+  the processor and describing the graphics card, so two runs on halves of a list
+  overlap: about 1.4 times quicker on four films, 1.5 on eight, with a ceiling of
+  1.6.
+- Fixed a check added two versions ago that would have blocked exactly this. It
+  asked whether a process named HomerScribe was running, which matches one in ANY
+  folder -- including the case where building is entirely safe because the file
+  being written is a different file. The only question that matters is whether
+  this file can be opened for writing, so that test is now the authoritative one
+  and the process check merely explains the answer.
+
+## 1.0.115, 11 August 2026
+
+- The opening no longer goes quiet after "Starting". Between that word and the
+  first message about the actual work, HomerScribe finds its programs, asks
+  yt-dlp its version, looks for Whisper, asks Ollama for its model list, reads a
+  list file and expands a playlist -- any of which can take seconds, and all of
+  which was silent. Each step now says what it is about to do before doing it,
+  so the longest silence is one step rather than all of them.
+- The moment the sources are known it says how many there are and names the
+  first, which is the confirmation that the program understood what it was
+  given.
+- Names are said as a person would say them: no folders, no extension, and
+  underscores read as the spaces they stand for. A file called
+  The_Africans_-_Episode_1.mkv is announced as "The Africans - Episode 1".
+
+## 1.0.114, 11 August 2026
+
+Written after a review of the whole project, which is in Review.md.
+
+- The montage no longer samples the gap. It sampled frames from the start of the
+  gap to its end -- but a gap is a pause in the speech, frequently the least
+  eventful part of a film, and what the listener needs described usually happened
+  while somebody was talking just before it. The published systems separate the
+  INTERVAL being described from the PLACEMENT PERIOD it is spoken in; this
+  program was conflating them and describing the pause. The window now runs back
+  from the end of the gap far enough to cover the run-up, never shorter than the
+  gap itself. This is the change most likely to improve the descriptions
+  themselves rather than their placement.
+- Every run now logs "This build does:" and the names of the behaviours compiled
+  into it. Five rounds of analysis in this project were spent on logs from builds
+  that did not contain the change being analysed, because nothing in a log said
+  what was in the build and a version number says only when it was made.
+- Added Review.md: why the same kinds of mistake recurred, and what now prevents
+  each. Five kinds, each with its safeguard.
+
+## 1.0.113, 10 August 2026
+
+Two of my own decisions reversed by measurement.
+
+- The frames go back to 512 pixels from 768. I raised them arguing that quality
+  comes before time; the measurement says 2.25 times the pixels cost 3.9 times
+  the time -- attention is quadratic, so image tokens are worse than linear --
+  and bought nothing detectable. The same film took 6 hours 6 rather than 2
+  hours, with overlap and interpretive language unchanged. The setting now
+  records that cost so the next person to reach for it knows.
+- A moment placed on the timer started at the MIDDLE of the quiet that had been
+  measured for it, so a description had half the room the program thought it
+  had, and the second half ran into the speech. That is where the residual 6.6
+  percent came from, and why the rule added in the previous version to drop an
+  overrunning description never once fired: the overrun was not detected,
+  because the room was recorded as larger than what remained. The moment now
+  starts where the quiet starts, keeping the same margin a natural gap keeps,
+  and is given the whole of the quiet that was measured.
+- placement_test.py shared the same fault and has been corrected. It now reports
+  nought overlap from 4 percent speech to 93.
+
+## 1.0.112, 10 August 2026
+
+Measured on the same film across three runs as the floor was corrected:
+
+    min-gap   descriptions   over speech
+      2s          315          38  (12.1%)
+      4s          315          38  (12.1%)
+      5s          279          17  ( 6.1%)
+
+Speech occupies 11.1 percent of that film, so at the old floor a description
+landed on speech as often as speech occurred -- chance. It now lands on it about
+half as often as chance would give, for 36 fewer descriptions out of 315, all of
+which would have been spoken over the dialogue.
+
+- The remaining overlap had one cause: the ladder that shortens a description to
+  fit its gap said it anyway when it could not. Those seventeen ran past their
+  gap into the speech. A description that will not fit AND would be spoken over
+  the dialogue is now dropped. Running past the end into more silence is
+  harmless and still allowed, and the two cases are told apart rather than
+  treated alike.
+
+## 1.0.111, 10 August 2026
+
+- Added placement_test.py, which runs the real placement rules against generated
+  speech patterns from 4 percent speech to 93. Judging the algorithm from runs
+  on particular films cannot tell a general improvement from one that happens to
+  suit those films; this can.
+- It immediately found what no run had. With the floor at four seconds, a
+  talkative film put 21 percent of its descriptions over speech -- because a
+  description cannot be cut below about twelve words, and four seconds does not
+  hold twelve words, so the words overran the room they were given.
+  --min-gap is now five seconds, above the shortest description the program is
+  willing to say. Across the whole range the figure is nought.
+
+## 1.0.110, 10 August 2026
+
+The room rule ran for the first time, and its own figures showed its floor was
+wrong.
+
+- A timer-placed moment needed two seconds of quiet, while a description takes
+  four and a half at its shortest and eight at its usual length. So a moment was
+  accepted with room for a quarter of what would be said in it and the rest ran
+  into the speech. On a film that is 11.1 percent speech, 12.1 percent of the
+  descriptions landed on speech: the placement was doing no better than chance
+  at the one thing it exists to do.
+- The floor is now --min-gap, the same requirement a natural pause has to meet.
+  There was never a reason for a timer-placed description to need less room than
+  any other; it is the same description.
+- One fewer number to be wrong about: the separate two-second constant is gone.
+
+## 1.0.109, 10 August 2026
+
+- Force overwrite cleared the record from disk and left it in memory. The
+  already-done check reads that record BEFORE the clearing happens, so the
+  moments it held survived the deletion of the file they came from, and the run
+  reused moments whose record no longer existed -- announcing "(reused)" while
+  doing it.
+  This is why the room rule has never once run: every run since it was written
+  reused moments worked out before it existed. The memory is now discarded with
+  the files, and reset between films.
+- Measured from that run, on a two hour forty-five minute film at 11 percent
+  speech: 304 descriptions, 36 of them over speech (11.8 percent), the film
+  memory refreshed twelve times, and 12.4 seconds a description against 9.7
+  before -- the cost of the wider frames.
+
+## 1.0.108, 10 August 2026
+
+- Force overwrite did not apply to the transcript. It was reused whenever the
+  file existed, so the one part of the work that takes twenty minutes was the
+  one part force did not redo. It now redoes it, and clears the described film,
+  the script, the transcript, the interleaved account and the records before
+  starting -- everything HomerScribe itself wrote, and nothing else, since a
+  folder may hold a context file or notes that are the user's.
+- The model now carries a memory of the film it is describing. It cannot learn:
+  the model is fixed and forgets everything between calls. But every 25
+  descriptions the same model is asked, with no picture, to write 70 words on
+  what the film has established -- who keeps appearing, where it takes place,
+  what is going on -- and that note goes into every later description with an
+  instruction to take it as known. Before this, the hundred and fiftieth
+  description knew the two before it and nothing of the other 148.
+
+## 1.0.107, 10 August 2026
+
+- When several sources ask you to sign in, the results now say so once and name
+  the setting that answers it. One run had 34 refusals of 81 quoting yt-dlp's own
+  advice to use cookies from a browser, which HomerScribe has a setting for; the
+  advice was repeated in yt-dlp's terms eighty times and in the program's terms
+  never.
+- Recorded from that run, which the new status words made legible in nine
+  minutes: of 106 videos in that playlist, 25 were already described and 81 could
+  not be fetched -- 40 blocked by country, 29 private, 5 needing a sign-in, 7
+  withdrawn. The playlist holds 25 usable films and all 25 are done.
+
+## 1.0.106, 10 August 2026
+
+- Added the Resuming status. A film described in part by an earlier run has
+  those descriptions read back and only the rest asked for -- the record is
+  written after every single description, so an interrupted run loses at most
+  one -- but it said so only in the log and on a console that is hidden. It now
+  announces "Resuming", with how many descriptions it is carrying forward.
+- A transcript made in an earlier run announces the same thing, since not
+  listening to an hour of film again is the largest single saving there is and
+  the silence while it did not happen was indistinguishable from the silence
+  while it did.
+
+## 1.0.105, 10 August 2026
+
+- A source that is skipped, refused or fails now says one word: Skipped, Error
+  or Rejected, followed by the reason. Every one of those endings was silent, so
+  a run said "Processing 7 of 98 files" and then nothing until the next -- which
+  on a playlist where two videos in five have been withdrawn sounds like a
+  program racing through work it is not doing. Seven separate paths ended that
+  way and all seven now speak.
+- The word is the kind of the announcement, so a screen reader hears it before
+  the name, and a run of refusals groups into one message rather than
+  interrupting once each.
+
+## 1.0.104, 10 August 2026
+
+One rule where there were three thresholds.
+
+- A talkative rule at 70 percent, a crowded rule at 85, and a fixed interval
+  underneath both were all proxies for a single question that can be asked
+  directly: is there room here for anything to be heard? The code already
+  measured the quiet at each point it considered and then placed a description
+  regardless. It now declines when there is less than two seconds of it.
+- The thresholds become unnecessary. A film with room gets many descriptions, a
+  film without gets few, and nothing has to be classified in advance: about 240
+  an hour at 10 percent speech, 210 at 35, 145 at 80, and 27 at 95.
+- The time spent is now proportional to what there is to gain, which is the
+  answer to "80 percent of the quality in the least time": the moments that were
+  costing ten seconds each to produce a description nobody could hear are simply
+  not attempted.
+
+## 1.0.103, 10 August 2026
+
+Quality before time, as asked.
+
+- Each frame is now 768 pixels wide rather than 512. Everything the program does
+  afterwards -- the two passes, the checks, the context -- works on what the
+  model could see, and it was reading faces, signs and gestures out of a 512
+  wide picture. This costs time in the model and nothing in correctness, which
+  is the trade that was asked for.
+- Added measure.py, which reads a results folder and prints a short report:
+  descriptions, how many landed on speech, their length, spacing, how many judge
+  rather than observe, and a sample. Two kilobytes instead of a twenty megabyte
+  log, so a question about quality can be answered without uploading a run.
+
+## 1.0.102, 10 August 2026
+
+The entries between 1.0.39 and 1.0.101 were lost. Each was written as a
+replacement against the entry above it, and when that replacement found nothing
+to match it did nothing and said nothing -- the same silent no-op that has
+caused two build failures in this project. Twenty-six entries survived out of
+about ninety. Rather than invent the missing ones, the work of that period is
+recorded here in one place, and the numbering now matches what a build actually
+produces.
+
+What changed between 1.0.39 and 1.0.102:
+
+- The program became HomerScribe, describing video and transcribing speech,
+  either or both, with scribed.md interleaving them in the order they happen.
+- Descriptions are placed by listening for SPEECH rather than for silence, using
+  Whisper. Above 70 percent speech the spacing widens to 45 seconds; above 85
+  percent nothing is placed on the timer at all, because a description spoken
+  over narration costs the listener the narration too.
+- A gap must be at least 4 seconds to count as room. Two seconds holds five
+  words, which is a fragment that runs into the speech that follows.
+- Whisper's repetition loop is filtered out, and a transcript that comes back
+  almost empty is recognised rather than believed.
+- Subtitles are refused three ways: the frame is cropped, the rules forbid it,
+  and what comes back is checked for a language the film is not spoken in or for
+  text that repeats the dialogue.
+- Descriptions that judge rather than observe have the judging word, clause or
+  sentence removed, provided what remains is still a sentence.
+- The presenter is named, since a vision model cannot recognise a face: whoever
+  addresses the viewer is the presenter, and saying so took one documentary from
+  naming nobody to naming him in 53 of 94 descriptions.
+- Progress is spoken through a UIA live region on the dialog's status line
+  rather than by timed message boxes, so the keyboard is never taken; only while
+  HomerScribe is the window in front, though the title and status line stay
+  current regardless.
+- Sources may be files, wildcards, web addresses, playlists, or a text file
+  listing any of those. Everything that could not be used is named in the
+  results with its reason.
+- The log opens before anything can fail and grows visibly on disk.
+
 ## 1.0.38, 4 August 2026
 
 - Fixed the failure to write the described film, which had never worked since

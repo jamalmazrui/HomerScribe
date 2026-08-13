@@ -162,10 +162,23 @@ rem identically here, and the LGPL build carries lighter obligations when the
 rem installer is redistributed. See License.md.
 
 if exist "ffmpeg.exe" if exist "ffprobe.exe" goto :haveFfmpeg
+rem Already on this machine? A second working copy is the ordinary case, and
+rem these are a hundred megabytes that change rarely. Copying beats fetching.
+set "haveTools="
+if not defined haveTools if exist "C:\HomerScribe\ffmpeg.exe" set "haveTools=C:\HomerScribe"
+if not defined haveTools if exist "%LOCALAPPDATA%\Programs\HomerScribe\ffmpeg.exe" set "haveTools=%LOCALAPPDATA%\Programs\HomerScribe"
+if not defined haveTools if exist "%ProgramFiles%\HomerScribe\ffmpeg.exe" set "haveTools=%ProgramFiles%\HomerScribe"
+if defined haveTools echo Copying ffmpeg from %haveTools% rather than downloading it.
+if defined haveTools echo Copying ffmpeg from %haveTools%>> "%log%"
+if defined haveTools copy /y "%haveTools%\ffmpeg.exe" "ffmpeg.exe" >nul 2>&1
+if defined haveTools if exist "%haveTools%\ffprobe.exe" copy /y "%haveTools%\ffprobe.exe" "ffprobe.exe" >nul 2>&1
+if defined haveTools if exist "%haveTools%\yt-dlp.exe" if not exist "yt-dlp.exe" copy /y "%haveTools%\yt-dlp.exe" "yt-dlp.exe" >nul 2>&1
+if exist "ffmpeg.exe" if exist "ffprobe.exe" goto :haveFfmpeg
+
 echo Fetching ffmpeg and ffprobe. This is a large download and happens once.
 echo Fetching ffmpeg and ffprobe>> "%log%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$ErrorActionPreference='Stop';" ^
+  "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue';" ^
   "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;" ^
   "$url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl.zip';" ^
   "$tmpZip = Join-Path $env:TEMP 'homerFfmpeg.zip';" ^
@@ -197,7 +210,7 @@ if exist "yt-dlp.exe" goto :haveYtDlp
 echo Fetching yt-dlp.
 echo Fetching yt-dlp>> "%log%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$ErrorActionPreference='Stop';" ^
+  "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue';" ^
   "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;" ^
   "$url = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe';" ^
   "Invoke-WebRequest -Uri $url -OutFile 'yt-dlp.exe' -UseBasicParsing;" >> "%log%" 2>&1
@@ -230,26 +243,55 @@ if exist "%app%.ico" set "icon=/win32icon:%app%.ico"
 if defined icon echo Icon: %app%.ico>> "%log%"
 
 rem ---- is the program still running? ---------------------------------
-rem The compiler cannot replace an executable that is open, and its message
-rem for that -- CS2012, "used by another process" -- looks like a build fault
-rem when it is nothing of the kind. Renaming the file is the cheap test: it
-rem succeeds only if nothing holds it.
+rem The compiler cannot replace an executable that is open, and its message for
+rem that -- CS2012, "used by another process" -- reads like a fault in the code
+rem when it is nothing of the kind.
+rem
+rem Renaming the file was the old test, and it does not work: Windows allows a
+rem RUNNING executable to be renamed, because a handle refers to the file and
+rem not to its name. The rename succeeded every time and the check never fired.
+rem
+rem Two tests instead. Ask Windows whether the process is running, and try to
+rem open the file for writing, which is what the compiler is about to do and the
+rem only question that really matters.
 
 if not exist "%app%.exe" goto :notRunning
-move /y "%app%.exe" "%app%.exe.lockcheck" >nul 2>&1
-if exist "%app%.exe" goto :stillRunning
-move /y "%app%.exe.lockcheck" "%app%.exe" >nul 2>&1
-goto :notRunning
+
+rem Can THIS file be written? That is the only question, and it is the same
+rem operation the compiler is about to attempt. A HomerScribe running from
+rem another folder is a different file and no obstacle at all.
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "try { $f=[IO.File]::Open('%cd%\%app%.exe','Open','Write','None'); $f.Close(); exit 0 } catch { exit 1 }" >nul 2>&1
+if not errorlevel 1 goto :notRunning
+
+rem It cannot. Is a HomerScribe running, so the message can say which case it is?
+tasklist /fi "imagename eq %app%.exe" /nh 2>nul | find /i "%app%.exe" >nul
+if not errorlevel 1 goto :stillRunning
+goto :lockedByOther
 
 :stillRunning
 echo(
-echo ERROR: %app%.exe is in use, so the compiler cannot replace it.
+echo ERROR: %app%.exe is running, so the compiler cannot replace it.
 echo(
 echo Close %app% and run this again. If no window is open, a run may have been
-echo left behind: end it with
+echo left behind; end it with
 echo     taskkill /im %app%.exe /f
 echo(
-echo ERROR: %app%.exe is locked by a running process.>> "%log%"
+echo To build WITHOUT stopping a run, unpack the source into another folder and
+echo build there. The file being written is then a different file, and the two
+echo do not interfere.
+echo(
+echo ERROR: %app%.exe is running, found by tasklist.>> "%log%"
+goto :failed
+
+:lockedByOther
+echo(
+echo ERROR: %app%.exe cannot be opened for writing, so the compiler cannot
+echo replace it. No process of that name is running, so something else holds
+echo the file: an antivirus scan, an Explorer preview, or a debugger.
+echo Wait a moment and run this again.
+echo(
+echo ERROR: %app%.exe is locked, though no process of that name is running.>> "%log%"
 goto :failed
 
 :notRunning

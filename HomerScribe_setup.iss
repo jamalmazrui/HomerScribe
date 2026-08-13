@@ -115,11 +115,15 @@ Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntex
 Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Developer.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Review.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Context.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Announce.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Developer.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Review.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Context.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Announce.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
@@ -135,6 +139,8 @@ Source: "yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesnte
 Source: "installOllama.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installModels.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installWhisper.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "measure.py"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "placement_test.py"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "context\*.md"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 Source: "context\*.htm"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 

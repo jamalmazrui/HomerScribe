@@ -196,7 +196,10 @@ The Source paths box, and the command line, accept:
 - **a text file listing one source per line**, mixing files and addresses freely.
   Lines beginning with `#` or `;` are ignored, so a list can carry notes.
 
-A `.txt` file is always taken as a list, never as something to describe.
+A text file is always taken as a list, never as something to describe: `.txt`,
+`.md`, `.markdown`, `.lst` or `.list`. A file that is neither a recording nor a
+list is reported as unusable by name, rather than counted among the things that
+produced nothing.
 
 A source under a minute long is flagged in the results as possibly damaged or
 incomplete. A truncated download is easy to miss among a dozen good files, and
@@ -242,12 +245,29 @@ film, each description prefixed by its position, as `2:14` or `1:37:52`.
 
 ## Where it looks and where it writes
 
+Two logs are kept. The **session log** holds everything from one run of
+HomerScribe and is named for when that run started —
+`HomerScribe-20260811-134216.log` — so a later run never erases an earlier one.
+It is appended to rather than rewritten, and flushed every second, so it is
+current even while a run is going on.
+
+Each finished film also gets **its own log**, `HomerScribe.log`, in its results
+folder, holding only the entries that belong to it. Somebody looking at one
+film's results should not have to search a session log for the part about it.
+
+
 A video fetched from a web address is kept, **in the same folder as its own
 results**. HomerScribe asks for the title before downloading, so it knows where
 the results will go and puts the video there: the downloaded film, the described
 copy and the script all sit together. It is not deleted afterwards, because
 fetching it again to redescribe it would be slow for you and discourteous to the
 server.
+
+Asking for the title first has a second use: it settles whether the video has
+already been described **before** it is downloaded. With Force overwrite off, a
+video whose results are already in place is skipped without fetching it at all,
+which on an hour-long programme saves the download rather than discovering
+afterwards that it was not needed.
 
 Asking for the title first also means the download announces itself by name
 rather than by address, which matters because downloading a large video is
@@ -296,6 +316,33 @@ length costs time on every description.
 
 If no context file is found, HomerScribe says so plainly at the start of the
 run rather than quietly producing nameless descriptions.
+
+## What the model remembers
+
+It does not learn. Ollama serves a fixed model, and nothing said to it today is
+remembered tomorrow. What it can do is work from what it is told each time, and
+HomerScribe tells it a good deal: the last two descriptions, every name used so
+far, the dialogue from the previous 25 seconds, and any context file.
+
+What was missing was the middle distance. At the hundred and fiftieth
+description the model knew the two before it and nothing of the other 148, so a
+film's setting, its recurring people and its shape had to be worked out afresh
+from four frames every time.
+
+So every 25 descriptions HomerScribe asks the same model, with no picture
+attached, to write 70 words on what the film has established — who keeps
+appearing and how they are dressed, where it takes place, what is going on. That
+note goes into every later description with an instruction to take it as known
+and describe what is new.
+
+It costs one text call per 25 descriptions. It is reset for each film, because it
+belongs to that film.
+
+A context file of your own, passed with `--context-file`, is the strongest
+single lever on description quality. **Context.md** explains what belongs in one
+and what does not — the short version being that the whole file goes into every
+prompt, so it must be under about 250 words, and that vocabulary helps far more
+than plot.
 
 ## Telling it about the film automatically
 
@@ -351,17 +398,28 @@ want as controls and where, and they go in.
 
 HomerScribe is a console program that also has a dialog, which is how all the
 Homer Tools are built: everything available at the command line stays available.
-Started from a shortcut, it hides its console at the first instant — before the
-settings are even read — because that window is not the program and is only
-confusing.
-
-Hiding it does not take it out of the Alt+Tab list, which is a limitation of
-Windows rather than a choice. So while a run is going on you may find two
-HomerScribe entries there: the dialog, which is the one you want, and the hidden
-console. The dialog is the one whose title says what the program is doing.
+Started from a shortcut, it hides its console at the first instant, because that
+window is not the program and is only confusing.
 
 Started from a command prompt you already had open, the console is left alone,
-because it is yours and the output is wanted.
+because it is yours. **In that case it holds the same messages the dialog gave**,
+one to a line, in the order they were spoken:
+
+    Initializing: Processing 1 file, video.mkv
+    Transcribing: 12 min, 7%
+    Describing: 1 hour 4 min, 51% A train crosses a bridge above a dry riverbed.
+    Finalizing: 2 hours 45 min, 100%
+
+So the window can be read back at leisure with a screen reader's cursor. Lines
+appear whether or not they were spoken aloud, since this is a record rather than
+an interruption. The command lines, exit codes and paths that used to fill it
+are in the log, which is where somebody looking for them will go; errors still
+appear in both. `--verbose` puts everything back.
+
+Hiding the console does not take it out of the Alt+Tab list, which is a
+limitation of Windows rather than a choice, so during a run you may find two
+HomerScribe entries there. The dialog is the one whose title says what the
+program is doing.
 
 ## The window stays
 
@@ -379,6 +437,16 @@ card — Windows may mark the window as not responding. It is still there, still
 named, still in Alt+Tab, and it recovers at the next description.
 
 ## What you hear while it runs
+
+Each source announces itself as it begins. Given a list — a playlist, a wildcard
+pattern, or a text file naming several — it says the position too:
+
+    Processing 3 of 9 files, The_Africans_Episode_3.mkv
+
+A single named file or address has no position worth stating, so it simply says
+which one it is.
+
+### The announcements themselves
 
 **Audio only** produces sound alone: a single `described.mp3` holding the film's
 own audio with the descriptions mixed into it, and no video. It is a quarter the
@@ -422,6 +490,34 @@ where the film had reached when the group started, then the messages:
     Describing. 1 hour 4 min, 51%. A train crosses a bridge above a dry
     riverbed. Ali Mazrui walks along a harbour wall, speaking to the viewer.
     Cranes stand against a pale sky.
+
+The opening says what it is doing at each step rather than going quiet while it
+finds its programs, asks Ollama for its models, and reads a list or a playlist.
+Nothing before the first description takes more than a few seconds without
+saying so:
+
+    Initializing. Starting.
+    Looking for the programs it needs.
+    Asking Ollama which models it has.
+    8 files to work on. The first is The Africans Episode 1.
+    Processing 1 of 8 files: The Africans Episode 1
+    Listening to the film to find where the speech is.
+
+Names are said as a person would say them: no folders, no extension, and
+underscores read as the spaces they stand for.
+
+Four more kinds appear when a source is not worked on from the beginning, so a run never
+passes over something in silence:
+
+- **Resuming** — some of this film was described in an earlier run, so those
+  descriptions are read back and only the rest are asked for
+- **Skipped** — already described, and Force overwrite is off
+- **Error** — could not be fetched or could not be finished, with the reason
+- **Rejected** — not a video, a recording, or a list; or not found
+
+On a playlist where two videos in five have been withdrawn, this is the
+difference between a program that sounds like it is racing through work it is
+not doing, and one that tells you it is being refused.
 
 There are four kinds — **Initializing**, **Transcribing**, **Describing**,
 **Finalizing**. The position is a time and a percentage: minutes below the hour,
@@ -504,31 +600,71 @@ with a graphics card.
 speech is, not what every word was. `--dialogue-window` sets how much preceding
 dialogue the model sees, or `0` for none.
 
-### When a film is nearly all talking
+### When the transcript comes back empty
 
-Hearing the film tells the truth, and sometimes the truth is that there is no
-room. One measured documentary was **85.8 percent speech**: only 41 real gaps
-existed in 57 minutes, so most descriptions had to interrupt somebody, and 60
-percent of them landed on the narration.
+Occasionally Whisper returns almost nothing from a film that plainly has speech
+in it — a sound track in a form it could not read, or a file carrying more than
+one audio track where the wrong one was taken. One episode of a series spent 42%
+of its own length being listened to and returned six seconds of speech from
+fifty-seven minutes.
 
-HomerScribe now says so when speech takes more than 70 percent of a film, and
-places the unavoidable interruptions at the quietest instant the transcript can
-find rather than on a clock. That helps, but not enormously — on such a film,
-what helps far more is interrupting less often. Measured against a model of that
-documentary:
+If less than 2% of a film over five minutes long is speech, HomerScribe says so,
+notes how many audio tracks the file carries, and places descriptions by
+listening for silence instead.
 
-- `--every 14` (the default): a description falls on speech about 90 percent of
-  the time
-- `--every 45`: about half as often
-- `--every 90`: less than a third as often
-- `--max-words`, 45 by default, caps a single description however much room the
-  gap allows. A long gap is not a reason to fill it: a description of a hundred
-  words is three quarters of a minute of unbroken speech, and the listener has to
-  hold all of it while the film carries on
-- `--detail brief`, which shortens each description, helps again on top
+It does not assume a fault, because there is an innocent explanation: the film
+may genuinely have no speech in it. A silent film is exactly this case — Buster
+Keaton's *The General* yielded five seconds of imagined speech from seventy-nine
+minutes — and falling back to silence detection is the right response either way.
 
-For a heavily narrated documentary, `--every 45 --detail brief` is a far better
-starting point than the defaults, which are tuned for drama.
+Silent films are, as it happens, where HomerScribe does its best work. That run
+placed 262 descriptions with **none** overlapping speech, and 21 of them read out
+intertitles: the printed cards carrying the dialogue, which are the one part of
+such a film a blind viewer could never reach.
+
+### What counts as a gap
+
+`--min-gap`, four seconds by default, is the shortest silence HomerScribe will
+treat as room for a description. It used to be two, and two seconds is not room:
+at the standard pace it holds five words, which is a fragment, and anything
+longer runs into the speech that follows.
+
+That is how a film could report most of its moments as falling in real gaps and
+still have ninety percent of its descriptions landing on the narration. The gaps
+were real and too short. The log now states how long the accepted gaps actually
+are, alongside how long a twelve-word description needs, so the two can be
+compared.
+
+### How many descriptions a film gets
+
+HomerScribe does not decide this by the clock. It asks one question at each
+point it considers: **is there enough quiet here for anything to be heard?**
+
+If a moment has less clear space than `--min-gap` — four seconds, about ten
+words — no description is placed. That is the same requirement a natural pause
+has to meet, because it is the same description and the listener hears it the
+same way.
+A description spoken over the narration is not merely a poor description — it
+costs the listener the sentence it covered as well as itself, so it is worse
+than saying nothing.
+
+That single rule handles every kind of film without being told which it is:
+
+| speech in the film | descriptions an hour |
+| --- | --- |
+| 10% — a silent film with a score | about 240 |
+| 35% — drama | about 210 |
+| 60% — a documentary with scenes | about 190 |
+| 80% — a lecture with pictures | about 145 |
+| 95% — continuous narration | about 27 |
+
+The last row will look like a failure and is not. A programme narrated end to
+end has perhaps twenty places where something can be said without talking over
+it. Saying two hundred things instead does not describe it better; it makes it
+harder to follow.
+
+It also means the time spent is proportional to what there is to gain. A film
+with room takes longer because there is more worth describing.
 
 ### When the model keeps declining
 
@@ -541,6 +677,18 @@ stretch of nearly ten minutes in silence.
 passed over, not just a description too like a recent one. When nothing has been
 said for that long, the moment is asked again with no leave to skip: say
 something, however ordinary. A film should never go minutes without a word.
+
+### When a description will not fit
+
+A description is shortened to fit the room it has: the voice speeds up, then
+whole sentences go, then trailing clauses, then the model is asked to say it
+again in fewer words. Words are never cut off the end.
+
+If after all that it still runs past its gap, what happens depends on what
+follows. Running into more silence is harmless and allowed. Running into speech
+is not, and the description is dropped instead — for the same reason as
+everywhere else: spoken over the dialogue it costs the listener the dialogue
+too, so it is worth less than nothing.
 
 ### Judging whether it helped
 
@@ -563,20 +711,29 @@ see the difference on your own material.
 
 ## On subtitles
 
-Yes, and by two routes, because one is not enough.
+A subtitle must never be read out. It is not a description of anything: at best
+it repeats what is being said, and at worst it is a translation for somebody
+else. Three defences, because two were not enough.
 
-The prompt tells the model that subtitles belong to people who cannot hear, that
-the words in them are already spoken aloud in the film, and that it should
-neither read them nor mention their presence. It distinguishes them from words
-that do carry meaning -- a sign, a letter, a name on a door -- which are worth
-reading and are introduced as "Words appear:".
+**The frame is cut.** The bottom 18% of every frame is removed before the model
+sees it, which physically removes most burnt-in subtitles. `--crop-bottom`
+changes it; raise it if a print puts its subtitles higher.
 
-But a model told to ignore text on screen will often read it anyway, because the
-text is right there in the picture. So `--crop-bottom` removes the lower part of
-every frame before the model ever sees it, twelve percent by default, which is
-where burnt-in subtitles almost always sit. Instruction handles the ones that
-appear elsewhere; cropping handles the ordinary case, and it cannot be talked
-out of.
+**The rules forbid it**, in capitals, in any language.
+
+**And what comes back is checked**, which is the new one, because a rule that is
+stated can still be forgotten. Text the model reports is dropped when either of
+two things is true, and both can be recognised without seeing the picture:
+
+- It is in a language the film is not spoken in. Function words give a language
+  away in a sentence or two — Spanish, French, German, Portuguese and Italian are
+  recognised. Every word in that list was checked against English first, since a
+  false match would silence a caption that deserved to be read.
+- It repeats what is being said at that moment, which the transcript already
+  holds. Text echoing the dialogue is a caption by definition.
+
+An intertitle in a silent film is neither, and survives both tests — which
+matters, since reading those is the best thing HomerScribe does.
 
 ## How the model is asked
 
@@ -747,6 +904,42 @@ link. Nothing needs to be run to produce them.
 
 The build does not regenerate them: they are written with the Markdown and ship
 beside it, so there is nothing to install and nothing that can fail.
+
+## Time spent on one film
+
+Each moment needs ffmpeg work before the model can be asked anything: four
+frames cut from the film and tiled, then reduced to a thumbprint for the
+shot comparison. That work depends only on the film and a timestamp — nothing
+from the previous description — so it is done for the **next** moment while the
+model is working on this one.
+
+Nothing the model sees changes: the same frames, the same picture, the same
+prompt. Only the waiting is removed.
+
+Beyond that there is little left inside a single film that is free. The time is
+the two model calls, and the ways to shorten those all cost something: a smaller
+picture, fewer frames, one pass instead of two, or a smaller model. Each is
+available as a setting and each is a trade rather than a saving.
+
+## Running two at once
+
+Transcribing uses the processor and describing uses the graphics card, so a
+single run leaves each idle in turn. Splitting a list in two and running
+HomerScribe on each half lets one describe while the other transcribes.
+
+Measured from one film's timings — 45 minutes transcribing, 75 describing — the
+expected gain is about 1.2 times on two films, 1.4 on four, and 1.5 on eight,
+with a ceiling of 1.6 since the card cannot overlap with itself. Setting
+`OLLAMA_NUM_PARALLEL=2` before starting Ollama may raise that to about 2, because
+one vision request rarely occupies a card fully.
+
+Nothing needs to be adjusted. A second HomerScribe notices the first, writes its
+own log rather than overwriting it, and leaves the shared settings alone. Working
+folders are already separate, being named after each source.
+
+**Building while a run is in progress:** unpack the source into another folder
+and build there. The file being written is then a different file, and the running
+program is untouched.
 
 ## Building
 

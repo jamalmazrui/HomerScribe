@@ -153,13 +153,20 @@ namespace Homer
     {
         const int iNothingToDo = 2;
         const int iAlreadyDone = 3;
+        const string sAlreadyDone = "*already*";
         const int iDefaultCompare = 10;
         const int iDefaultNames = 12;
         const int iDefaultRecent = 2;
+        const int iDefaultRememberEvery = 25;
         const int iDefaultSampleRate = 48000;
         const int iDefaultScanReport = 10;
         const int iDefaultSpokenReport = 20;
         const int iDefaultGroupLength = 700;
+        const int iDefaultEarlyMessages = 8;
+        const int iDefaultGiveUpAfter = 12;
+        const double nDefaultEchoWorry = 0.5;
+        const int iDefaultConsoleLine = 160;
+        const int iDefaultPumpRest = 40;
         const int iDefaultSpokenLimit = 1500;
         const int iDefaultBigPlaylist = 12;
         const int iDefaultTimeout = 300000;
@@ -167,7 +174,12 @@ namespace Homer
         const double nDefaultChapter = 600.0;
         const double nDefaultNewScene = 25.0;
         const double nDefaultSlowSeconds = 30.0;
+        const double nDefaultLookBack = 14.0;
         const double nDefaultTalkative = 70.0;
+        const double nDefaultCrowded = 85.0;
+        const double nDefaultTalkativeEvery = 45.0;
+        const double nDefaultEvery = 14.0;
+        const double nDefaultTooQuiet = 2.0;
         const double nDefaultTitleAgreement = 0.8;
         const double nDefaultLead = 0.20;
         // Somewhere to start. The W3C Web Accessibility Initiative's ten
@@ -189,6 +201,14 @@ namespace Homer
         static FileStream fLogStream = null;
         static DateTime dtLogFlushed = DateTime.MinValue;
         static string sLogPath = "";
+
+        // Everything logged while one film is being worked on, kept so that a
+        // copy can be left in that film's own folder. Somebody looking at a
+        // film's results should not have to search a session log for the part
+        // that belongs to it.
+        static StringBuilder oFileLog = null;
+        static bool bSecondInstance = false;
+        static readonly DateTime dtSessionBegan = DateTime.Now;
         static readonly object oLogLock = new object();
         static bool bVerbose = false;
         static Dictionary<string, Param> dParams = new Dictionary<string, Param>();
@@ -224,10 +244,10 @@ namespace Homer
             addParam("detail", "", "string", "rich", "How much to say: brief, normal or rich");
             addParam("voice", "", "string", "", "Name of the Windows speech voice");
             addParam("rate", "r", "integer", "1", "Speech rate, from minus ten to ten");
-            addParam("width", "", "integer", "512", "Width in pixels of each frame before tiling");
-            addParam("crop-bottom", "p", "number", "12", "Percentage cut off the bottom of each frame, to hide burnt-in subtitles");
+            addParam("width", "", "integer", "512", "Width in pixels of each frame before tiling. Cost rises faster than the pixels: 768 is 2.25 times the pixels of 512 and measured 3.9 times the time, for no measurable gain");
+            addParam("crop-bottom", "p", "number", "18", "Percentage cut off the bottom of each frame, to hide burnt-in subtitles");
             addParam("noise-floor", "n", "number", "-24", "Level in dB below which sound counts as a gap");
-            addParam("min-gap", "g", "number", "2.0", "Shortest gap worth describing");
+            addParam("min-gap", "g", "number", "5.0", "Shortest gap worth describing");
             addParam("spacing", "", "number", "10.0", "Least seconds between descriptions");
             addParam("every", "y", "number", "14.0", "Guarantee a description at least this often; 0 turns it off");
             addParam("max-words", "", "integer", "45", "Longest a single description may be, however much room the gap allows");
@@ -617,19 +637,74 @@ namespace Homer
         static void openLog()
         {
             string sPath = text("log-file");
-            if (sPath == "") sPath = Path.Combine(chooseLogFolder(), sDefaultLogName);
+            if (sPath == "")
+            {
+                string sStem = Path.GetFileNameWithoutExtension(sDefaultLogName);
+                sPath = Path.Combine(chooseLogFolder(), sStem + "-" + dtSessionBegan.ToString("yyyyMMdd-HHmmss") + Path.GetExtension(sDefaultLogName));
+            }
             if (string.Compare(sLogPath, sPath, true) == 0) return;
             openLogAt(sPath);
             logMessage("Log file: " + sLogPath, "INFO", "Log: " + sLogPath);
             return;
         }
 
-        static void openLogFile(string sPath)
+        // Another HomerScribe is running. Not an error -- running two on halves
+        // of a list is a reasonable thing to do, since transcribing uses the
+        // processor and describing the graphics card, so the two overlap.
+        static bool anotherIsRunning()
         {
             try
             {
+                Process[] aoOthers = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
+                return aoOthers.Length > 1;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // A copy of this film's own log, beside its results. The session log still
+        // holds everything; this holds only what belongs here.
+        static void writeFileLog(string sOutputDir)
+        {
+            if (oFileLog == null) return;
+            try
+            {
+                Directory.CreateDirectory(sOutputDir);
+                string sWhere = Path.Combine(sOutputDir, sDefaultLogName);
+                StreamWriter fOne = new StreamWriter(sWhere, false, new UTF8Encoding(true));
+                fOne.Write(oFileLog.ToString());
+                fOne.Close();
+                logMessage("A log of this film alone is in " + sWhere, "INFO", "");
+            }
+            catch (Exception oError)
+            {
+                logMessage("The per-film log could not be written: " + oError.Message, "ERROR");
+            }
+            oFileLog = null;
+        }
+
+        static void openLogFile(string sPath)
+        {
+            // A second instance writes its own log rather than overwriting the
+            // first one's. The number is the process, so the two are told apart.
+            if (bSecondInstance)
+            {
+                try
+                {
+                    string sFolder = Path.GetDirectoryName(sPath);
+                    string sStem = Path.GetFileNameWithoutExtension(sPath);
+                    sPath = Path.Combine(sFolder, sStem + "-" + Process.GetCurrentProcess().Id.ToString() + Path.GetExtension(sPath));
+                }
+                catch (Exception)
+                {
+                }
+            }
+            try
+            {
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(sPath)));
-                fLogStream = new FileStream(sPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                fLogStream = new FileStream(sPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                 fLog = new StreamWriter(fLogStream, new UTF8Encoding(true));
                 fLog.AutoFlush = true;
                 sLogPath = sPath;
@@ -640,7 +715,7 @@ namespace Homer
                 sPath = Path.Combine(appDataFolder(), sDefaultLogName);
                 try
                 {
-                    fLogStream = new FileStream(sPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                    fLogStream = new FileStream(sPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                     fLog = new StreamWriter(fLogStream, new UTF8Encoding(true));
                     fLog.AutoFlush = true;
                     sLogPath = sPath;
@@ -650,6 +725,24 @@ namespace Homer
                     Console.WriteLine("Nor at " + sPath + ": " + oSecond.Message);
                     return;
                 }
+            }
+            // An un-timestamped log from an older version is stale and shares the
+            // obvious name, so it gets reached for. Moved aside, so the only
+            // HomerScribe.log left in a results folder is the per-film one,
+            // which is current by construction.
+            try
+            {
+                string sStale = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(sPath)), sDefaultLogName);
+                if (File.Exists(sStale) && string.Compare(sStale, sPath, true) != 0)
+                {
+                    string sAside = Path.Combine(Path.GetDirectoryName(sStale),
+                                                 Path.GetFileNameWithoutExtension(sStale) + "-superseded" + Path.GetExtension(sStale));
+                    if (File.Exists(sAside)) File.Delete(sAside);
+                    File.Move(sStale, sAside);
+                }
+            }
+            catch (Exception)
+            {
             }
             lock (oLogLock)
             {
@@ -720,10 +813,17 @@ namespace Homer
                     }
                 }
                 else if (oEarlyLog != null) oEarlyLog.AppendLine(sLine);
+                if (oFileLog != null) oFileLog.AppendLine(sLine);
             }
             if (sLevel == "CMD" && !bVerbose) return;
             // The console is hidden, so there is nobody to write to.
             if (bConsoleHidden) return;
+            // With a dialog on screen the console carries the same messages the
+            // dialog gave, written by announce, and nothing else. The log stream
+            // -- command lines, exit codes, paths -- belongs in the log, which is
+            // where somebody looking for it will go. Errors are kept, since an
+            // error that never reached an announcement would otherwise vanish.
+            if (bGuiMode && !bVerbose && sLevel != "ERROR" && sLevel != "FATAL" && sLevel != "HINT") return;
             string sShow = sText;
             if (sConsole != null) sShow = sConsole;
             if (sShow == "") return;
@@ -741,8 +841,27 @@ namespace Homer
         // Everything said while one video is being described, kept so a copy can
         // be left in that video's own folder. The running log beside the program
         // still holds the whole session.
+        // What this build actually does, listed at startup. A version number says
+        // when a build was made, not what was decided by then, and five rounds of
+        // analysis were spent on logs from builds that did not contain the change
+        // under discussion. Each line is a behaviour, named so that its presence
+        // or absence in a log is unambiguous.
+        static readonly string[] asBehaviours = new string[] {
+            "speech-placement", "room-required", "room-floor-is-min-gap",
+            "moment-at-start-of-quiet", "look-back-window", "drop-if-covers-speech",
+            "film-memory", "presenter-named", "subtitle-filter", "whisper-loop-filter",
+            "empty-transcript-check", "force-clears-memory", "status-words", "montage-ahead", "per-film-log", "stop-if-source-vanishes"
+        };
+
         static void logEnvironment()
         {
+            StringBuilder oWhat = new StringBuilder();
+            foreach (string sOne in asBehaviours)
+            {
+                if (oWhat.Length > 0) oWhat.Append(", ");
+                oWhat.Append(sOne);
+            }
+            logMessage("This build does: " + oWhat.ToString(), "INFO", "");
             logMessage("HomerScribe " + version() + " starting", "INFO", "");
             logMessage("Program: " + System.Reflection.Assembly.GetExecutingAssembly().Location, "INFO", "");
             logMessage("Framework: " + Environment.Version.ToString(), "INFO", "");
@@ -934,6 +1053,7 @@ namespace Homer
         static string sLastOutputFolder = "";
         static List<string> lResults = new List<string>();
         static List<string> lFailures = new List<string>();
+        static List<string> lListsRead = new List<string>();
         static string sLastFetchTrouble = "";
         static string sLastStreamedTrouble = "";
         static List<Moment> lLastGaps = null;
@@ -998,6 +1118,7 @@ namespace Homer
         static double nPendingTotal = 1.0;
         static DateTime dtPendingSince = DateTime.MinValue;
         static DateTime dtLastSpoken = DateTime.MinValue;
+        static int iSaidSoFar = 0;
 
         // "Listening" and "Scanning" are what the work is called in the log.
         // What the listener needs is which part of the job it belongs to.
@@ -1069,6 +1190,20 @@ namespace Homer
             // and what was in each. A screen reader reads a box once; hearing
             // something twice means it was presented twice.
             logMessage("SAID [" + sTitle + "] " + sBody.Replace(Environment.NewLine, " / "), "INFO", "");
+            // The console gets it whether or not it was spoken: it is a written
+            // record to be read back at leisure, not an interruption.
+            if (!bConsoleHidden)
+            {
+                try
+                {
+                    string sOneLine = Regex.Replace(sTitle + ": " + sBody, @"\s+", " ").Trim();
+                    if (sOneLine.Length > iDefaultConsoleLine) sOneLine = sOneLine.Substring(0, iDefaultConsoleLine - 1) + "\u2026";
+                    Console.WriteLine(sOneLine);
+                }
+                catch (Exception)
+                {
+                }
+            }
             // EMPTIED FIRST, and always. The live-region path used to return
             // before this, so the collected messages were never cleared: every
             // announcement repeated all of its predecessors and grew as it went.
@@ -1076,7 +1211,13 @@ namespace Homer
             lPending.Clear();
             nPendingAt = -1.0;
             dtPendingSince = DateTime.Now;
-            dtLastSpoken = DateTime.Now;
+            // Only a message that was actually SPOKEN counts as having been said.
+            // A withheld one used to reset this clock, so the message after it
+            // waited twenty seconds behind something nobody heard. That is the
+            // silence after "Starting": the first message of a run is withheld
+            // while the window settles to the front after OK, and it took the
+            // next twenty seconds down with it.
+            if (weAreInFront()) dtLastSpoken = DateTime.Now;
             if (!flag("boxes"))
             {
                 sayLive(sTitle, sBody);
@@ -1121,6 +1262,19 @@ namespace Homer
                 dtPendingSince = DateTime.Now;
             }
             lPending.Add(sText);
+            // Nothing is held back at the start of a run. Messages are collected
+            // into groups so that descriptions arriving every few seconds do not
+            // interrupt constantly, and a message waits up to twenty seconds for
+            // company. That is right in the middle of a film and wrong at the
+            // beginning, where messages are rare, each one is informative, and
+            // somebody is waiting to hear that the program is alive. After the
+            // first few, grouping resumes exactly as before.
+            if (iSaidSoFar < iDefaultEarlyMessages)
+            {
+                iSaidSoFar = iSaidSoFar + 1;
+                flushAnnouncements();
+                return;
+            }
             // Spoken at once when nothing has been said for a while, so a quiet
             // stretch never leaves the listener wondering; collected into a
             // group when messages are arriving faster than they can be heard.
@@ -1225,6 +1379,11 @@ namespace Homer
                 }
                 Form oForm = ownerForm();
                 if (oForm != null) oForm.Text = "HomerScribe, " + sWhole;
+                // Pumped here, as 2htm does after every status update. Setting
+                // the text is not enough: until the queue is pumped, Windows has
+                // not repainted the window or told anybody the title changed, and
+                // a screen reader reads what it was told last.
+                Application.DoEvents();
             }
             catch (Exception)
             {
@@ -1484,6 +1643,36 @@ namespace Homer
         // each line separately; a whole line that already names something; and
         // only then a split, rejoined greedily so that an unquoted path with
         // spaces in it is still found.
+
+
+        // How many, which one, and where it is going. Said as early as it can be
+        // known, because it is the confirmation that the program understood what
+        // it was given.
+        static string processingSaid(string sSource, int iAt, int iCount)
+        {
+            string sSaid = iCount == 1
+                ? "Processing 1 file"
+                : "Processing " + iAt.ToString() + " of " + iCount.ToString() + " files";
+            if (sSource.StartsWith("http")) return sSaid + ", " + sSource;
+            string sBase = "";
+            string sFolder = "";
+            try
+            {
+                sBase = Path.GetFileName(sSource);
+                sFolder = Path.GetFileNameWithoutExtension(sSource);
+            }
+            catch (Exception)
+            {
+                return sSaid + ", " + sSource;
+            }
+            sSaid = sSaid + ", " + sBase;
+            // Only worth saying when it is not simply the name without its
+            // extension, which is the ordinary case and would be repetition.
+            string sPlain = Path.GetFileNameWithoutExtension(sBase);
+            if (sFolder != "" && string.Compare(sFolder, sPlain, false) != 0) sSaid = sSaid + ", results in " + sFolder;
+            return sSaid;
+        }
+
         static List<string> splitPaths(string sList)
         {
             List<string> lItems = new List<string>();
@@ -1731,6 +1920,17 @@ namespace Homer
 
         // Whisper wants sixteen kilohertz mono. Producing that is a fraction of
         // the cost of transcribing it.
+        // A file may carry more than one sound track: a commentary, another
+        // language, or a silent one left by an encoder. Knowing how many there
+        // are turns "the transcript is empty" from a mystery into a lead.
+        static int audioTrackCount(string sFfmpeg, string sInput)
+        {
+            string sOut = "";
+            string sErr = "";
+            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
+            return Regex.Matches(sOut + sErr, @"Stream #\d+:\d+.*: Audio:").Count;
+        }
+
         static string speechWave(string sFfmpeg, string sInput, string sWorkDir)
         {
             string sWave = Path.Combine(sWorkDir, "speech.wav");
@@ -1792,13 +1992,13 @@ namespace Homer
         {
             List<Speech> lSpeech = new List<Speech>();
             string sJson = Path.Combine(sWorkDir, "transcript.json");
-            if (File.Exists(sJson))
+            if (File.Exists(sJson) && !flag("force"))
             {
                 lSpeech = readTranscript(sJson);
                 if (lSpeech.Count > 0)
                 {
-                    logMessage("Reusing the transcript from an earlier run: " + lSpeech.Count.ToString() + " spoken stretches.",
-                               "INFO", "Reusing the transcript from the earlier run, so there is nothing to listen to again.");
+                    logMessage("Reusing the transcript from an earlier run: " + lSpeech.Count.ToString() + " spoken stretches.", "INFO", "");
+                    announce("Resuming", -1.0, 1.0, "The transcript was made in an earlier run, so there is nothing to listen to again.");
                     return lSpeech;
                 }
             }
@@ -1814,6 +2014,7 @@ namespace Homer
             }
             logMessage("Whisper: " + sWhisper, "INFO", "");
             logMessage("Whisper model: " + sModel + ", " + num(new FileInfo(sModel).Length / 1048576.0) + " MB", "INFO", "");
+            logMessage("Audio tracks in this file: " + audioTrackCount(sFfmpeg, sInput).ToString(), "INFO", "");
             string sWave = speechWave(sFfmpeg, sInput, sWorkDir);
             if (sWave == "")
             {
@@ -1837,6 +2038,25 @@ namespace Homer
             double nSpoken = 0.0;
             foreach (Speech oSpeech in lSpeech) nSpoken = nSpoken + (oSpeech.nEnd - oSpeech.nStart);
             logMessage("Transcribed in " + num(nTook) + " seconds, " + num(nTook / Math.Max(nDuration, 1.0) * 100.0) + " percent of the film's length.", "INFO", "");
+            // Almost nothing heard in a film long enough to expect speech. One
+            // episode spent 42 percent of its own length being listened to and
+            // returned six seconds of speech from fifty-seven minutes. Nothing
+            // noticed: every description then went on the timer, and the report
+            // said 1.1 percent of them landed on speech, which looked like the
+            // best result in the series and meant nothing, since there was no
+            // speech recorded for them to land on.
+            double nShareHeard = nSpoken / Math.Max(nDuration, 1.0) * 100.0;
+            if (nDuration > 300.0 && nShareHeard < nDefaultTooQuiet)
+            {
+                string sWrong = "Only " + formatClock(nSpoken) + " of speech was heard in " + formatClock(nDuration)
+                              + ". Either this film has almost no speech in it -- a silent film, or one carrying only music -- "
+                              + "or the sound track is in a form Whisper could not read, or the file holds more than one audio "
+                              + "track and the wrong one was taken. Descriptions will be placed by listening for silence, which "
+                              + "is the right thing to do in any of those cases.";
+                logMessage(sWrong, "INFO");
+                announce("Initializing", -1.0, 1.0, sWrong);
+                bSpeechDoubtful = true;
+            }
             logMessage("Speech: " + lSpeech.Count.ToString() + " stretches, " + formatClock(nSpoken) + " of " + formatClock(nDuration)
                        + ", " + num(nSpoken / Math.Max(nDuration, 1.0) * 100.0) + " percent of the film.",
                        "INFO", "Heard " + lSpeech.Count.ToString() + " stretches of speech, " + ((int)(nSpoken / Math.Max(nDuration, 1.0) * 100.0)).ToString() + " percent of the film.");
@@ -1893,6 +2113,15 @@ namespace Homer
                 oLast.nLength = Math.Round(nDuration - nAt - nDefaultLead * 2.0, 3);
                 lGaps.Add(oLast);
             }
+            if (lGaps.Count > 0)
+            {
+                List<double> lLengths = new List<double>();
+                foreach (Moment oOne in lGaps) lLengths.Add(oOne.nLength);
+                lLengths.Sort();
+                logMessage("Those gaps run from " + num(lLengths[0]) + "s to " + num(lLengths[lLengths.Count - 1])
+                           + "s, the middle one " + num(lLengths[lLengths.Count / 2]) + "s. A description needs about "
+                           + num(12.0 / number("words-per-second")) + "s to say twelve words.", "INFO", "");
+            }
             logMessage("Speech-free intervals usable as gaps: " + lGaps.Count.ToString()
                        + ". Rejected " + iTooShort.ToString() + " as shorter than " + num(nMinGap) + "s and "
                        + iTooClose.ToString() + " as closer than " + num(nSpacing) + "s to the one before.", "INFO", "");
@@ -1938,6 +2167,7 @@ namespace Homer
             lEdges.Add(nDuration);
             double nPrevious = 0.0;
             int iPlaced = 0;
+            int iNoRoom = 0;
             double nRoomTotal = 0.0;
             int iAt = 0;
             foreach (double nEdge in lEdges)
@@ -1948,9 +2178,23 @@ namespace Homer
                     double nWindowEnd = Math.Min(nPrevious + nEvery * 1.5, nEdge);
                     double nWhere = quietestWithin(lSpeech, nPrevious + nEvery * 0.5, nWindowEnd, out nRoom);
                     if (nWhere + nForcedLength > nEdge) break;
+                    // Not enough quiet here for anything to be heard. Placing a
+                    // description anyway costs the listener the sentence being
+                    // spoken as well as the description, so it is not placed.
+                    if (nRoom < number("min-gap"))
+                    {
+                        iNoRoom = iNoRoom + 1;
+                        nPrevious = nWhere;
+                        continue;
+                    }
                     Moment oPlaced = new Moment();
-                    oPlaced.nStart = Math.Round(nWhere, 3);
-                    oPlaced.nLength = nForcedLength;
+                    // At the START of the quiet, with the same margin a natural
+                    // gap keeps, not in the middle of it. Placing it centrally
+                    // gave a description half the room that had been measured,
+                    // so the second half of it ran into the speech.
+                    oPlaced.nStart = Math.Round(nWhere - nRoom / 2.0 + nDefaultLead, 3);
+                    if (oPlaced.nStart < 0.0) oPlaced.nStart = 0.0;
+                    oPlaced.nLength = Math.Max(nForcedLength, nRoom - nDefaultLead * 2.0);
                     oPlaced.bForced = true;
                     lResult.Add(oPlaced);
                     iPlaced = iPlaced + 1;
@@ -1961,6 +2205,9 @@ namespace Homer
                 nPrevious = nEdge;
                 iAt = iAt + 1;
             }
+            if (iNoRoom > 0) logMessage("Passed over " + iNoRoom.ToString() + " places with less than " + num(number("min-gap"))
+                                        + "s of quiet. A description there would cost the listener the speech it covered as well as itself.",
+                                        "INFO", "");
             logMessage("Placed " + iPlaced.ToString() + " extra descriptions at the quietest point available"
                        + (iPlaced > 0 ? ", with " + num(nRoomTotal / iPlaced) + "s of quiet on average" : "") + ".", "INFO", "");
             return lResult;
@@ -1993,8 +2240,64 @@ namespace Homer
             return false;
         }
 
+        // How talkative is this film, and what follows from it. Measured once,
+        // before anything depends on it.
+        static void settleSpacing(double nDuration)
+        {
+            double nTalk = 0.0;
+            foreach (Speech oSpeech in lFilmSpeech) nTalk = nTalk + (oSpeech.nEnd - oSpeech.nStart);
+            double nShare = nTalk / Math.Max(nDuration, 1.0) * 100.0;
+            if (nShare < nDefaultTalkative) return;
+            if (!dParams["every"].bGiven && number("every") != nDefaultTalkativeEvery)
+            {
+                dParams["every"].sValue = num(nDefaultTalkativeEvery);
+                logMessage("Somebody is talking for " + ((int)nShare).ToString() + " percent of this film, so descriptions are spaced "
+                           + num(nDefaultTalkativeEvery) + " seconds apart rather than " + num(nDefaultEvery)
+                           + ". Closer together, most moments fall on speech and the model declines to describe them, which costs as much "
+                           + "as a description does. Pass --every to choose for yourself.", "INFO",
+                           "Spacing descriptions " + ((int)nDefaultTalkativeEvery).ToString() + " seconds apart, since this film is mostly talking.");
+                // The ceiling on silence must stay above the spacing, or every
+                // declined moment is immediately asked again and the model never
+                // gets to decline at all.
+                if (!dParams["max-silence"].bGiven && number("max-silence") < nDefaultTalkativeEvery * 2.0)
+                {
+                    dParams["max-silence"].sValue = num(nDefaultTalkativeEvery * 2.0);
+                    logMessage("The longest silence allowed is raised to " + num(nDefaultTalkativeEvery * 2.0)
+                               + " seconds to match, so the model may still decline a moment that holds nothing.", "INFO", "");
+                }
+            }
+            if (nShare >= nDefaultCrowded && !dParams["every"].bGiven)
+            {
+                dParams["every"].sValue = "0";
+                if (!dParams["max-silence"].bGiven) dParams["max-silence"].sValue = "0";
+                string sNoRoom = "Somebody is talking for " + ((int)nShare).ToString() + " percent of this film. There is no room to "
+                               + "describe it, so descriptions are placed ONLY where there is a genuine pause, and there will be few of them. "
+                               + "A description spoken over the narration is worse than none: the listener loses the sentence being spoken and "
+                               + "cannot attend to the description either. Pass --every to fill the film regardless.";
+                logMessage(sNoRoom, "INFO");
+                logMessage("", "INFO", sNoRoom);
+                return;
+            }
+            string sCrowded = "Somebody is talking for " + ((int)nShare).ToString() + " percent of this film, so there is very little room "
+                            + "for description. Descriptions will fall across the narration whatever is done; they are placed at the quietest "
+                            + "points that exist. Interrupting less often helps more than anything else: with --every 45 a description falls on "
+                            + "speech about half as often as at the default of 14, and with --every 90 less than a third as often. "
+                            + "--detail brief shortens each one, which helps again.";
+            logMessage(sCrowded, "HINT");
+            logMessage("", "INFO", sCrowded);
+        }
+
         static List<Moment> findGaps(string sFfmpeg, string sPath, double nDuration)
         {
+            // Measured BEFORE the cache is consulted. The transcript is cheap
+            // when it has already been made, and the spacing depends on it.
+            if (flag("speech") && !bSpeechReady)
+            {
+                lFilmSpeech = transcribe(sFfmpeg, sPath, sSpeechWorkDir, nDuration);
+                bSpeechReady = true;
+            }
+            if (flag("speech") && lFilmSpeech.Count > 0 && !bSpeechDoubtful) settleSpacing(nDuration);
+
             dLastSignature = gapSignature(nDuration);
             if (lCachedGaps != null && sameSignature(dLastSignature, dCachedSignature))
             {
@@ -2016,24 +2319,23 @@ namespace Homer
             int iFromSpeech = 0;
             if (flag("speech"))
             {
-                if (!bSpeechReady) lFilmSpeech = transcribe(sFfmpeg, sPath, sSpeechWorkDir, nDuration);
-                if (lFilmSpeech.Count > 0)
+                // Already made above, before the cache was consulted.
+                if (lFilmSpeech.Count > 0 && !bSpeechDoubtful)
                 {
                     lGaps = gapsFromSpeech(lFilmSpeech, nDuration);
                     iFromSpeech = lGaps.Count;
                     double nTalk = 0.0;
                     foreach (Speech oSpeech in lFilmSpeech) nTalk = nTalk + (oSpeech.nEnd - oSpeech.nStart);
                     double nShare = nTalk / Math.Max(nDuration, 1.0) * 100.0;
-                    if (nShare >= nDefaultTalkative)
-                    {
-                        string sCrowded = "Somebody is talking for " + ((int)nShare).ToString() + " percent of this film, so there is very little room for description. "
-                                        + "Descriptions will fall across the narration whatever is done; they are placed at the quietest points that exist. "
-                                        + "Interrupting less often helps more than anything else: with --every 45 a description "
-                                        + "falls on speech about half as often as at the default of 14, and with --every 90 less "
-                                        + "than a third as often. --detail brief shortens each one, which helps again.";
-                        logMessage(sCrowded, "HINT");
-                        logMessage("", "INFO", sCrowded);
-                    }
+                    // On a film that is mostly talking, most moments are placed
+                    // on the timer, and the model is asked about a moment where
+                    // it will decline. This one: 216 of 412 moments produced
+                    // nothing, half the calls spent to be told there was nothing
+                    // to say, and 86 percent of what survived landed on the
+                    // narration anyway. Both faults have the same cure, and the
+                    // program already measured the condition and advised the cure
+                    // in words. It now applies it, when the interval was left at
+                    // its default.
                 }
             }
             if (lGaps == null)
@@ -2065,6 +2367,49 @@ namespace Homer
 
         // One ffmpeg call takes several frames spanning the moment and tiles
         // them in time order, which gives a still-image model a sense of motion.
+        // The montage for the moment after this one, made while the model is
+        // working on this one. It depends only on the film and a timestamp --
+        // nothing from the previous description -- so making it early alters
+        // nothing the model is shown. The same frames, the same picture, the
+        // same prompt. Only the waiting is removed.
+        static Thread threadMontage = null;
+        static string sReadyMontage = "";
+        static bool bReadyMontageGood = false;
+
+        static void montageAheadOfTime(string sFfmpeg, string sPath, double nMiddle, double nSpan, string sImagePath)
+        {
+            waitForMontage();
+            sReadyMontage = sImagePath;
+            bReadyMontageGood = false;
+            threadMontage = new Thread(delegate()
+            {
+                try
+                {
+                    bReadyMontageGood = buildMontage(sFfmpeg, sPath, nMiddle, nSpan, sImagePath);
+                }
+                catch (Exception)
+                {
+                    bReadyMontageGood = false;
+                }
+            });
+            threadMontage.IsBackground = true;
+            threadMontage.Start();
+        }
+
+        static bool waitForMontage()
+        {
+            if (threadMontage == null) return false;
+            try
+            {
+                threadMontage.Join();
+            }
+            catch (Exception)
+            {
+            }
+            threadMontage = null;
+            return bReadyMontageGood;
+        }
+
         static bool buildMontage(string sFfmpeg, string sPath, double nMiddle, double nSpan, string sImagePath)
         {
             int iFrames = integer("frames");
@@ -2154,7 +2499,8 @@ namespace Homer
             oRules.Append("What the listener already has:\n");
             oRules.Append("- Every word of dialogue, all the music, and every sound effect. Never narrate a sound.\n");
             oRules.Append("- Subtitles are for people who cannot hear. They are not yours to read, and the words in them ");
-            oRules.Append("are already spoken aloud in the film. Never read a subtitle and never mention that subtitles are present.\n");
+            oRules.Append("are already spoken aloud in the film. NEVER read a subtitle or a caption, in any language, "
+                        + "and never mention that subtitles are present.\n");
             oRules.Append("- Words that carry meaning and are NOT subtitles -- a sign, a letter, a title card, a name on a door -- ");
             oRules.Append("are worth reading, introduced as: Words appear: followed by the words.\n\n");
 
@@ -2163,12 +2509,28 @@ namespace Homer
             return oRules.ToString();
         }
 
-        static string promptFor(int iMaxWords, List<string> lRecent, string sContext, bool bNewScene, bool bOverSound, List<string> lNames, string sJustSaid)
+        static string promptFor(int iMaxWords, List<string> lRecent, string sContext, bool bNewScene, bool bOverSound, List<string> lNames, string sJustSaid, double nAt)
         {
             StringBuilder oPrompt = new StringBuilder();
+            if (sEstablished != "")
+            {
+                oPrompt.Append("What this film has established so far: " + sEstablished + "\n");
+                oPrompt.Append("Take that as known. Do not work it out again and do not repeat it; describe what is new in this moment.\n\n");
+            }
             if (sContext.Trim() != "")
             {
                 oPrompt.Append("About this film: " + sContext.Trim() + "\n");
+                string sHere = contextForMoment(nAt);
+                if (sHere != "")
+                {
+                    oPrompt.Append("Where the film has reached: " + sHere + "\n");
+                    oPrompt.Append("That is where the film is, not what is in this picture. Use it for the right words and names; describe only what you can see.\n");
+                    if (sHere != sContextLast)
+                    {
+                        sContextLast = sHere;
+                        logMessage("From here the context section is: " + sHere, "INFO", "");
+                    }
+                }
                 string sFront = presenterIn(sContext);
                 if (sFront != "") oPrompt.Append("The person addressing the viewer in this film is " + sFront
                     + ". When someone looks towards the viewer and speaks, name " + sFront + " rather than writing \"a man\".\n");
@@ -2178,9 +2540,17 @@ namespace Homer
             oPrompt.Append("tiled left to right then top to bottom. They are one continuous moment, not separate pictures.\n\n");
             if (lNames.Count > 0)
             {
-                oPrompt.Append("Names you have already used, so keep using them: ");
+                // A list of names with nothing to attach them to produces a name
+                // a third of the time and "a bearded man" the rest, spread evenly
+                // through a film -- worse for a listener than either extreme,
+                // since there is no telling whether the bearded man at 26 minutes
+                // is the one named at 27.
+                oPrompt.Append("Names you have already used in this film: ");
                 foreach (string sName in lNames) oPrompt.Append(sName + ", ");
                 oPrompt.Append("\n");
+                oPrompt.Append("Be consistent. If somebody here matches how one of those was described, use that name again rather than ");
+                oPrompt.Append("saying what they look like: a listener cannot tell that \"a bearded man\" and a name are the same person. ");
+                oPrompt.Append("If nobody matches, describe by appearance and do not guess a name.\n");
             }
             if (lRecent.Count > 0)
             {
@@ -2263,9 +2633,9 @@ namespace Homer
 
         static double overrunFor(string sDetail)
         {
-            if (sDetail == "brief") return 0.0;
-            if (sDetail == "rich") return 3.5;
-            return 1.5;
+            // Nought, whatever the detail. The room was measured and the margins
+            // are already inside it; anything past that is over the dialogue.
+            return 0.0;
         }
 
         // The second stage, after AutoAD-Zero (Oxford VGG): the vision model is
@@ -2276,6 +2646,61 @@ namespace Homer
         //
         // No second model is installed: this is the same model with no image
         // attached, so nothing is loaded or unloaded between the two calls.
+        static string sEstablished = "";
+        static int iEstablishedAt = 0;
+
+        // A short account of what this film has turned out to be, written from
+        // the descriptions so far by the same model with no picture attached.
+        // Cheap -- one text call every twenty-five descriptions -- and it gives
+        // every later description a memory of the film it belongs to.
+        static void rememberFilm(List<Moment> lDone)
+        {
+            if (lDone.Count < iDefaultRememberEvery) return;
+            if (lDone.Count - iEstablishedAt < iDefaultRememberEvery) return;
+            iEstablishedAt = lDone.Count;
+            StringBuilder oSoFar = new StringBuilder();
+            int iFrom = Math.Max(0, lDone.Count - 60);
+            for (int iAt = iFrom; iAt < lDone.Count; iAt++)
+            {
+                if (lDone[iAt].sText != "") oSoFar.Append(lDone[iAt].sText + " ");
+            }
+            if (oSoFar.Length < 200) return;
+            StringBuilder oPrompt = new StringBuilder();
+            if (sEstablished != "") oPrompt.Append("What was established earlier in this film:\n" + sEstablished + "\n\n");
+            oPrompt.Append("Descriptions written since:\n" + oSoFar.ToString() + "\n\n");
+            oPrompt.Append("In no more than 70 words, say what has been established about this film: who keeps appearing and how they are dressed, ");
+            oPrompt.Append("where it takes place, and what is going on. Facts only, nothing about the descriptions themselves. ");
+            oPrompt.Append("This is a note to yourself, to save working it out again.");
+            Dictionary<string, object> dOptions = new Dictionary<string, object>();
+            dOptions["temperature"] = 0.2;
+            dOptions["num_predict"] = 160;
+            Dictionary<string, object> dPayload = new Dictionary<string, object>();
+            dPayload["model"] = text("model");
+            dPayload["prompt"] = oPrompt.ToString();
+            dPayload["stream"] = false;
+            dPayload["keep_alive"] = "30m";
+            dPayload["options"] = dOptions;
+            JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+            oSerializer.MaxJsonLength = int.MaxValue;
+            waitingOn("noting what the film has established");
+            string sAnswer = postJsonPumping(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
+            waitingOn("");
+            if (sAnswer == "") return;
+            try
+            {
+                Dictionary<string, object> dReply = oSerializer.Deserialize<Dictionary<string, object>>(sAnswer);
+                if (!dReply.ContainsKey("response")) return;
+                string sNote = Convert.ToString(dReply["response"]).Trim();
+                if (sNote.Length > 700) sNote = sNote.Substring(0, 700);
+                if (sNote.Split(' ').Length < 8) return;
+                sEstablished = sNote;
+                logMessage("What the film has established, after " + lDone.Count.ToString() + " descriptions: " + sNote, "INFO", "");
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         static string summarise(string sSeen, int iMaxWords, List<string> lRecent)
         {
             if (sSeen.Trim() == "") return "";
@@ -2312,7 +2737,7 @@ namespace Homer
             JavaScriptSerializer oSerializer = new JavaScriptSerializer();
             oSerializer.MaxJsonLength = int.MaxValue;
             waitingOn("writing the description");
-            string sAnswer = postJson(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
+            string sAnswer = postJsonPumping(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
             waitingOn("");
             if (sAnswer == "") return sSeen;
             Dictionary<string, object> dReply = null;
@@ -2334,9 +2759,9 @@ namespace Homer
             return tidyText(sShort);
         }
 
-        static string describeImage(string sImagePath, int iMaxWords, List<string> lRecent, string sContext, bool bAgain, bool bNewScene, string sJudgment, bool bOverSound, List<string> lNames, string sJustSaid, bool bInsist)
+        static string describeImage(string sImagePath, int iMaxWords, List<string> lRecent, string sContext, bool bAgain, bool bNewScene, string sJudgment, bool bOverSound, List<string> lNames, string sJustSaid, bool bInsist, double nAt)
         {
-            string sPrompt = promptFor(iMaxWords, lRecent, sContext, bNewScene, bOverSound && !bInsist, lNames, sJustSaid);
+            string sPrompt = promptFor(iMaxWords, lRecent, sContext, bNewScene, bOverSound && !bInsist, lNames, sJustSaid, nAt);
             if (bInsist) sPrompt = sPrompt + "\n\nThe listener has heard nothing for a long time, so say something this time. Describe whatever is most worth knowing about this moment, however ordinary. Do not answer SKIP.";
             if (bAgain) sPrompt = sPrompt + "\n\nYour last answer repeated what you had already said, which tells the listener nothing. Look for what is different. If truly nothing has changed, answer SKIP.";
             if (sJudgment != "") sPrompt = sPrompt + "\n\nYour last answer used the word \"" + sJudgment + "\". That states a conclusion. Write what you can see that led you to it, and let the listener conclude for themselves.";
@@ -2364,7 +2789,7 @@ namespace Homer
             JavaScriptSerializer oSerializer = new JavaScriptSerializer();
             oSerializer.MaxJsonLength = int.MaxValue;
             waitingOn("looking at " + formatClock(nWaitingAt));
-            string sAnswer = postJson(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
+            string sAnswer = postJsonPumping(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
             waitingOn("");
             if (sAnswer == "") return "";
             Dictionary<string, object> dReply = null;
@@ -2386,6 +2811,36 @@ namespace Homer
             sText = Regex.Replace(sText, @"[\s.]*\bskip\s*[.!]?\s*$", "", RegexOptions.IgnoreCase);
             if (sText.Trim() == "") return "";
             return tidyText(sText);
+        }
+
+        // The same call, with the window kept alive while it runs. The call blocks
+        // this thread for ten seconds or more, and nothing pumps the message queue
+        // meanwhile: Windows decides the program has stopped, the window never
+        // repaints, and a screen reader reads the title it was last told about --
+        // which is why Alt+Tabbing back said "Starting" two hours into a run.
+        // The work goes to a thread and this one pumps until it returns.
+        static string postJsonPumping(string sUrl, string sBody)
+        {
+            if (ownerForm() == null) return postJson(sUrl, sBody);
+            string sAnswer = "";
+            Thread oCall = new Thread(delegate()
+            {
+                sAnswer = postJson(sUrl, sBody);
+            });
+            oCall.IsBackground = true;
+            oCall.Start();
+            while (oCall.IsAlive)
+            {
+                try
+                {
+                    Application.DoEvents();
+                }
+                catch (Exception)
+                {
+                }
+                Thread.Sleep(iDefaultPumpRest);
+            }
+            return sAnswer;
         }
 
         static string postJson(string sUrl, string sBody)
@@ -2503,6 +2958,175 @@ namespace Homer
                 if (sPart != "") lParts.Add(sPart);
             }
             return lParts;
+        }
+
+        // Function words that give a language away and are NOT English words.
+        // Every entry was checked against English: "no", "me", "die", "sie" and
+        // the like are left out, because a false match would silence a caption
+        // that should have been read.
+        static readonly string[] asNotEnglish = new string[] {
+            // Spanish
+            "el", "la", "los", "las", "que", "de", "del", "para", "por", "con", "pero", "esta", "está", "esto",
+            "eso", "esa", "ese", "como", "una", "uno", "muy", "más", "mas", "donde", "dónde", "cuando", "cuándo",
+            "porque", "también", "tambien", "hay", "son", "está", "usted", "señor", "señora", "gracias", "nada",
+            "todo", "todos", "aquí", "aqui", "allí", "ahora", "siempre", "nunca", "puede", "tiene", "hacer",
+            // French
+            "le", "les", "des", "une", "est", "pas", "vous", "nous", "dans", "qui", "mais", "avec", "pour",
+            "tout", "plus", "cette", "être", "etre", "avez", "faire", "bien", "très", "tres", "alors", "aussi",
+            // German
+            "der", "das", "ist", "nicht", "und", "ich", "wir", "mit", "auf", "aber", "sich", "auch", "eine",
+            "einen", "haben", "sind", "wird", "kann", "noch", "schon", "immer",
+            // Portuguese and Italian
+            "não", "nao", "você", "voce", "ele", "ela", "isso", "che", "non", "sono", "questo", "della",
+            "anche", "però", "quando", "perché", "perche", "molto", "sempre", "grazie"
+        };
+
+
+        // Does this look like a language the film is not being spoken in? Judged
+        // on function words, which are what differ most between languages and
+        // what a subtitle is full of.
+        static bool notTheFilmsLanguage(string sText)
+        {
+            List<string> lWords = new List<string>();
+            foreach (Match oWord in Regex.Matches(sText.ToLower(), @"[a-zà-ÿ']+"))
+            {
+                lWords.Add(oWord.Value.Trim('\''));
+            }
+            if (lWords.Count < 3) return false;
+            int iForeign = 0;
+            foreach (string sWord in lWords)
+            {
+                foreach (string sOne in asNotEnglish)
+                {
+                    if (sOne == sWord)
+                    {
+                        iForeign = iForeign + 1;
+                        break;
+                    }
+                }
+            }
+            // Two function words of another language in a short line, or a fifth
+            // of a longer one, is not a coincidence.
+            if (iForeign >= 2 && lWords.Count <= 12) return true;
+            return (double)iForeign / (double)lWords.Count >= 0.2;
+        }
+
+        // Words on screen that merely repeat what is being said are a caption of
+        // the dialogue, whatever else they might be.
+        static bool echoesTheDialogue(string sQuoted, string sJustSaid)
+        {
+            if (sJustSaid.Trim() == "") return false;
+            List<string> lSeen = contentWords(sQuoted);
+            if (lSeen.Count < 3) return false;
+            List<string> lHeard = contentWords(sJustSaid);
+            if (lHeard.Count == 0) return false;
+            int iShared = 0;
+            foreach (string sWord in lSeen)
+            {
+                if (lHeard.Contains(sWord)) iShared = iShared + 1;
+            }
+            return (double)iShared / (double)lSeen.Count >= 0.6;
+        }
+
+        // Take the subtitle out and leave the description. The convention that
+        // introduces on-screen text carries the text with it, so both go.
+        static string withoutSubtitles(string sText, string sJustSaid)
+        {
+            if (sText.Trim() == "") return sText;
+            string sLeft = sText;
+            foreach (Match oQuote in Regex.Matches(sText, @"(?:Words appear|Text appears|A caption reads|The subtitle reads|Subtitles read)\s*:?\s*""?([^""\r\n]{3,160})""?", RegexOptions.IgnoreCase))
+            {
+                string sQuoted = oQuote.Groups[1].Value.Trim();
+                if (!notTheFilmsLanguage(sQuoted) && !echoesTheDialogue(sQuoted, sJustSaid)) continue;
+                logMessage("Removed what looks like a subtitle: " + sQuoted, "INFO", "");
+                sLeft = sLeft.Replace(oQuote.Value, "");
+            }
+            foreach (Match oQuote in Regex.Matches(sText, @"""([^""\r\n]{6,160})"""))
+            {
+                string sQuoted = oQuote.Groups[1].Value.Trim();
+                if (!notTheFilmsLanguage(sQuoted) && !echoesTheDialogue(sQuoted, sJustSaid)) continue;
+                logMessage("Removed what looks like a subtitle: " + sQuoted, "INFO", "");
+                sLeft = sLeft.Replace(oQuote.Value, "");
+            }
+            sLeft = Regex.Replace(sLeft, @"\s+", " ").Replace(" .", ".").Replace(" ,", ",").Trim();
+            sLeft = Regex.Replace(sLeft, @"[,;:]\s*$", ".");
+            if (sLeft.Trim(' ', '.', ',', ';', ':', '"').Split(' ').Length < 3) return "";
+            return sLeft;
+        }
+
+        // Sections of the context file headed by a time, so that a long guide can
+        // be carried without sending all of it with every description. A heading
+        // looks like "## 41:00 The Cyclops's island" or "## 1:12:30 Ithaca".
+        // Everything before the first such heading belongs to the whole film.
+        static List<double> lContextAt = new List<double>();
+        static List<string> lContextSaid = new List<string>();
+
+        static string splitContextByTime(string sWhole)
+        {
+            lContextAt.Clear();
+            lContextSaid.Clear();
+            if (sWhole == null) return "";
+            StringBuilder oGeneral = new StringBuilder();
+            StringBuilder oSection = null;
+            foreach (string sLine in sWhole.Replace("\r\n", "\n").Split('\n'))
+            {
+                Match oHead = Regex.Match(sLine.Trim(), @"^#{1,6}\s+(?:(\d+):)?(\d{1,2}):(\d{2})\b\s*(.*)$");
+                if (oHead.Success)
+                {
+                    double nWhen = (oHead.Groups[1].Value == "" ? 0.0 : double.Parse(oHead.Groups[1].Value) * 3600.0)
+                                 + double.Parse(oHead.Groups[2].Value) * 60.0
+                                 + double.Parse(oHead.Groups[3].Value);
+                    oSection = new StringBuilder();
+                    if (oHead.Groups[4].Value.Trim() != "") oSection.Append(oHead.Groups[4].Value.Trim() + ". ");
+                    lContextAt.Add(nWhen);
+                    lContextSaid.Add("");
+                    continue;
+                }
+                if (oSection != null)
+                {
+                    if (sLine.Trim() != "") oSection.Append(sLine.Trim() + " ");
+                    lContextSaid[lContextSaid.Count - 1] = Regex.Replace(oSection.ToString(), @"\s+", " ").Trim();
+                    continue;
+                }
+                if (sLine.Trim() != "") oGeneral.Append(sLine.Trim() + " ");
+            }
+            if (lContextAt.Count > 0) logMessage("The context file is divided into " + lContextAt.Count.ToString()
+                                                 + " timed sections; each description is given only the one covering it.", "INFO", "");
+            return Regex.Replace(oGeneral.ToString(), @"\s+", " ").Trim();
+        }
+
+        static string sContextLast = "";
+        static int iContextUsed = 0;
+        static int iContextEchoed = 0;
+
+        // Words this description shares with the context it was given, as a
+        // fraction of the description. High means the model is repeating what it
+        // was told rather than describing the picture.
+        static double echoOfContext(string sText, string sGiven)
+        {
+            if (sText == "" || sGiven == "") return 0.0;
+            List<string> lSaid = contentWords(sText);
+            if (lSaid.Count == 0) return 0.0;
+            List<string> lGiven = contentWords(sGiven);
+            if (lGiven.Count == 0) return 0.0;
+            int iShared = 0;
+            foreach (string sWord in lSaid)
+            {
+                if (lGiven.Contains(sWord)) iShared = iShared + 1;
+            }
+            return (double)iShared / (double)lSaid.Count;
+        }
+
+        static string contextForMoment(double nAt)
+        {
+            if (lContextAt.Count == 0) return "";
+            int iBest = -1;
+            for (int iAt = 0; iAt < lContextAt.Count; iAt++)
+            {
+                if (lContextAt[iAt] <= nAt) iBest = iAt;
+            }
+            if (iBest < 0) return "";
+            return lContextSaid[iBest];
         }
 
         static string tidyText(string sText)
@@ -3038,6 +3662,7 @@ namespace Homer
 
         static bool bTranscribed = false;
         static bool bSpeechReady = false;
+        static bool bSpeechDoubtful = false;
 
         // Writing the record when only a transcript has been made, so the job is
         // remembered as done even though no description exists.
@@ -3420,7 +4045,7 @@ namespace Homer
                         "Open the folder holding the results when the run finishes.");
 
                     logMessage("Dialog buttons: Help, Default settings, OK, Cancel", "INFO", "");
-                    sButton = oDialog.runWithButtons(new string[] { "Help", "Default settings", "OK", "Cancel" }, false);
+                    sButton = oDialog.runWithButtons(new string[] { "Help", "Default settings", "OK", "Cancel" }, true);
                     logMessage("Dialog answered with: " + (sButton == null ? "(nothing)" : sButton), "INFO", "");
 
                     sSources = (oSourceBox.Text == null ? "" : oSourceBox.Text).Trim();
@@ -3484,6 +4109,14 @@ namespace Homer
                         + "Transcribe audio writes down what is said." + Environment.NewLine
                         + "Both together also write the two interleaved, in the order they happen.",
                         "HomerScribe", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    continue;
+                }
+                // Only OK means go. Anything else -- a button added later, or one
+                // whose handling changed underneath us -- returns to the dialog
+                // rather than being taken for agreement.
+                if (string.Compare(sButton, "OK", true) != 0)
+                {
+                    logMessage("The dialog returned \"" + sButton + "\", which is not OK, so it is shown again.", "INFO", "");
                     continue;
                 }
                 if (bUseConfig) saveConfig();
@@ -3589,6 +4222,11 @@ namespace Homer
 
         static void saveConfig()
         {
+            if (bSecondInstance)
+            {
+                logMessage("Not saving the settings: another HomerScribe is running and they are shared.", "INFO", "");
+                return;
+            }
             string sPath = configPath();
             try
             {
@@ -3696,7 +4334,14 @@ namespace Homer
             // thrown away.
             sLastStreamedTrouble = oErr.ToString();
             logMessage("Exit code " + oProcess.ExitCode.ToString() + " after " + num(DateTime.Now.Subtract(dtBegan).TotalSeconds) + " seconds", "CMD");
-            if (oProcess.ExitCode != 0) logMessage("Error output: " + tail(oErr.ToString(), 1500), "ERROR", "");
+            if (oProcess.ExitCode != 0)
+            {
+                string sTrouble = oErr.ToString();
+                // A geographic refusal drags a list of countries behind it.
+                int iList = sTrouble.IndexOf("The video is available in", StringComparison.OrdinalIgnoreCase);
+                if (iList > 0) sTrouble = sTrouble.Substring(0, iList).Trim() + " [country list omitted]";
+                logMessage("Error output: " + tail(sTrouble, 1500), "ERROR", "");
+            }
             return oProcess.ExitCode;
         }
 
@@ -3793,8 +4438,8 @@ namespace Homer
                 logMessage("yt-dlp was not found, so the playlist cannot be read.", "ERROR");
                 return lFound;
             }
-            logMessage("Reading the playlist at " + sAddress, "INFO", "Reading the playlist.");
-            announce("Initializing", -1.0, 1.0, "Reading the playlist.");
+            logMessage("Reading the playlist at " + sAddress, "INFO", "");
+            announce("Initializing", -1.0, 1.0, "Reading the playlist, which may take a moment.");
             string sOut = "";
             string sErr = "";
             int iCode = runCommand(sYtDlp, "--flat-playlist --no-warnings --print " + quoted("%(url)s") + " " + quoted(sAddress), out sOut, out sErr);
@@ -3823,6 +4468,18 @@ namespace Homer
         // A plain text file naming one source per line. Handing HomerScribe a
         // list is easier than typing sixteen paths, and a list is what people
         // already keep.
+        static readonly string[] asListKinds = new string[] { ".txt", ".md", ".lst", ".list", ".markdown" };
+
+        static bool looksLikeList(string sPath)
+        {
+            string sKind = Path.GetExtension(sPath).ToLower();
+            foreach (string sOne in asListKinds)
+            {
+                if (sOne == sKind) return true;
+            }
+            return false;
+        }
+
         static List<string> readListFile(string sPath)
         {
             List<string> lFound = new List<string>();
@@ -3876,6 +4533,11 @@ namespace Homer
                 // Drop the identifier yt-dlp puts in front of its message.
                 sSaid = Regex.Replace(sSaid, @"^\[[^\]]+\]\s*", "");
                 sSaid = Regex.Replace(sSaid, @"^[A-Za-z0-9_-]{6,}:\s*", "");
+                // Cut at the country list, which yt-dlp appends to a geographic
+                // refusal and which runs to several hundred names.
+                int iList = sSaid.IndexOf(". The video is available in", StringComparison.OrdinalIgnoreCase);
+                if (iList < 0) iList = sSaid.IndexOf("available in the following countries", StringComparison.OrdinalIgnoreCase);
+                if (iList > 0) sSaid = sSaid.Substring(0, iList).Trim();
                 if (sSaid.Length > 200) sSaid = sSaid.Substring(0, 200);
                 if (sSaid != "") return sSaid;
             }
@@ -3947,6 +4609,24 @@ namespace Homer
                 Directory.CreateDirectory(sFolder);
                 sPathFile = Path.Combine(sFolder, "downloaded.txt");
             }
+            if (sStem != "" && !flag("force"))
+            {
+                string sWouldBe = Path.Combine(sFolder, sDefaultDescribedStem + ".mkv");
+                string sWouldBeMp3 = Path.Combine(sFolder, sDefaultDescribedStem + ".mp3");
+                string sWouldBeText = Path.Combine(sFolder, sDefaultTranscriptName);
+                bool bFilmThere = File.Exists(sWouldBe) || File.Exists(sWouldBeMp3);
+                bool bTextThere = File.Exists(sWouldBeText);
+                bool bWantedFilm = flag("describe");
+                bool bWantedText = flag("transcribe");
+                if ((!bWantedFilm || bFilmThere) && (!bWantedText || bTextThere))
+                {
+                    logMessage("Not downloading " + sAddress + ": what was asked for is already in " + sFolder + ". "
+                               + "Tick Force overwrite to do it again.", "INFO",
+                               "Already done, so it is not downloaded again: " + (sTitle == "" ? sAddress : sTitle));
+                    sLastSkippedFolder = sFolder;
+                    return sAlreadyDone;
+                }
+            }
             string sSaying = sTitle == "" ? sAddress : sTitle;
             logMessage("Downloading " + sAddress + " (" + sSaying + ") with " + sYtDlp, "INFO", "Downloading " + sSaying);
             announce("Initializing", -1.0, 1.0, "Downloading " + sSaying);
@@ -4012,6 +4692,7 @@ namespace Homer
             }
             List<string> lGiven = splitPaths(text("source-paths"));
             List<string> lSources = new List<string>();
+            lListsRead.Clear();
             foreach (string sGiven in lGiven)
             {
                 if (sGiven.StartsWith("http://") || sGiven.StartsWith("https://"))
@@ -4025,13 +4706,32 @@ namespace Homer
                     continue;
                 }
                 // A text file is a list of what to work on, not something to
-                // describe. Nothing else could be meant by handing over a .txt.
-                if (sGiven.ToLower().EndsWith(".txt") && File.Exists(sGiven))
+                // describe. Nothing else could be meant by handing one over.
+                if (looksLikeList(sGiven) && !File.Exists(sGiven))
                 {
+                    announce("Rejected", -1.0, 1.0, Path.GetFileName(sGiven) + " was not found.");
+                    string sGone = sGiven + Environment.NewLine
+                                 + "    That list was not found. It may have been moved or renamed, or saved somewhere else by the browser.";
+                    logMessage(sGone.Replace(Environment.NewLine, " "), "ERROR");
+                    lFailures.Add(sGone);
+                    continue;
+                }
+                if (looksLikeList(sGiven) && File.Exists(sGiven))
+                {
+                    lListsRead.Add(sGiven);
                     foreach (string sListed in readListFile(sGiven))
                     {
-                        if (sListed.StartsWith("http://") || sListed.StartsWith("https://")) lSources.Add(sListed);
-                        else foreach (string sOne in expandPattern(sListed)) lSources.Add(sOne);
+                        if (sListed.StartsWith("http://") || sListed.StartsWith("https://"))
+                        {
+                            if (looksLikePlaylist(sListed))
+                            {
+                                foreach (string sOne in expandPlaylist(sListed)) lSources.Add(sOne);
+                                continue;
+                            }
+                            lSources.Add(sListed);
+                            continue;
+                        }
+                        foreach (string sOne in expandPattern(sListed)) lSources.Add(sOne);
                     }
                     continue;
                 }
@@ -4043,6 +4743,16 @@ namespace Homer
                 string sSaid = sTried == ""
                     ? "No source was given, so there is nothing to describe."
                     : "Nothing was found matching:" + Environment.NewLine + Environment.NewLine + sTried;
+                // The list was read and understood; it simply named nothing.
+                // Saying "nothing was found matching" sends someone looking for
+                // a file that is sitting right there.
+                if (lListsRead.Count > 0)
+                {
+                    sSaid = "The list " + Path.GetFileName(lListsRead[0]) + " was read, but it names no sources."
+                          + Environment.NewLine + Environment.NewLine
+                          + "Every line in it is blank or begins with # or ; which marks a note. "
+                          + "Take the # off the line you want to use, or add a file or address on a line of its own.";
+                }
                 logMessage(sSaid.Replace(Environment.NewLine, " "), "ERROR");
                 if (!bGuiMode) logMessage("Name a video file or a YouTube address, or run HomerScribe with no arguments for the dialog.", "HINT");
                 if (bGuiMode) sayToUser(sSaid, "HomerScribe", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -4063,6 +4773,9 @@ namespace Homer
                 iSourceCount = lSources.Count;
                 if (lSources.Count > 1) logMessage("Source " + iAt.ToString() + " of " + lSources.Count.ToString() + ": " + sSource,
                                                    "INFO", "Source " + iAt.ToString() + " of " + lSources.Count.ToString() + ": " + sSource);
+                iSourceAt = iAt;
+                iSourceCount = lSources.Count;
+                announce("Initializing", -1.0, 1.0, processingSaid(sSource, iAt, lSources.Count));
                 string sPath = sSource;
                 if (sSource.StartsWith("http://") || sSource.StartsWith("https://"))
                 {
@@ -4072,8 +4785,15 @@ namespace Homer
                     string sFolder = text("output-dir");
                     if (sFolder == "") sFolder = Path.Combine(appDataFolder(), "downloads");
                     sPath = fetchFromWeb(sSource, sFolder, findTool("ffmpeg"));
+                    if (sPath == sAlreadyDone)
+                    {
+                        announce("Skipped", -1.0, 1.0, "Already done: " + sSource);
+                        iSkippedWhole = iSkippedWhole + 1;
+                        continue;
+                    }
                     if (sPath == "")
                     {
+                        announce("Error", -1.0, 1.0, (sLastFetchTrouble == "" ? "Could not be fetched." : sLastFetchTrouble));
                         lFailures.Add(sSource + (sLastFetchTrouble == "" ? "" : Environment.NewLine + "    " + sLastFetchTrouble));
                         iWorst = 1;
                         continue;
@@ -4090,10 +4810,34 @@ namespace Homer
                     iWorst = 1;
                     continue;
                 }
+                if (!sSource.StartsWith("http") && !looksLikeMedia(sFull) && File.Exists(sFull))
+                {
+                    announce("Rejected", -1.0, 1.0, Path.GetFileName(sFull) + " is not a video, a recording, or a list of sources.");
+                    string sNot = sFull + Environment.NewLine + "    Not a video or a recording, and not a list of sources.";
+                    logMessage(sNot.Replace(Environment.NewLine, " "), "ERROR");
+                    lFailures.Add(sNot);
+                    iWorst = 1;
+                    continue;
+                }
                 int iOne = runOne(sFull, sSource.StartsWith("http") ? sSource : "");
-                if (iOne == iAlreadyDone) iSkippedWhole = iSkippedWhole + 1;
+                if (iOne == iAlreadyDone)
+                {
+                    announce("Skipped", -1.0, 1.0, "Already done: " + Path.GetFileName(sFull));
+                    iSkippedWhole = iSkippedWhole + 1;
+                }
                 if (iOne == 0) iDescribedWhole = iDescribedWhole + 1;
-                if (iOne != 0 && iOne != iAlreadyDone) iWorst = iOne;
+                if (iOne != 0 && iOne != iAlreadyDone)
+                {
+                    iWorst = iOne;
+                    bool bAlreadyNamed = false;
+                    foreach (string sOne in lFailures)
+                    {
+                        if (sOne.StartsWith(sFull) || sOne.StartsWith(sSource)) bAlreadyNamed = true;
+                    }
+                    announce("Error", -1.0, 1.0, Path.GetFileName(sFull) + " could not be finished. The log says why.");
+                    if (!bAlreadyNamed) lFailures.Add(sFull + Environment.NewLine
+                        + "    Something went wrong while working on it. The log says what.");
+                }
             }
             // Every one already done. Not a failure, but not a result either,
             // and a run that ends without a word looks like one that never
@@ -4240,7 +4984,10 @@ namespace Homer
             StringBuilder oSaid = new StringBuilder();
             if (iDone == 1) oSaid.Append("One source done.");
             if (iDone > 1) oSaid.Append(iDone.ToString() + " sources done.");
-            if (iDone == 0) oSaid.Append("Nothing was done.");
+            if (iDone == 0 && lFailures.Count == 0) oSaid.Append("Nothing was done.");
+            if (iDone == 0 && lFailures.Count > 0) oSaid.Append(lFailures.Count == 1
+                ? "Nothing was done: the one source given could not be used."
+                : "Nothing was done: none of the " + lFailures.Count.ToString() + " sources given could be used.");
             if (iSkipped > 0) oSaid.Append(" " + iSkipped.ToString() + " already done and skipped.");
             oSaid.Append(Environment.NewLine + "Took " + formatClock(oTook.TotalSeconds) + ".");
             if (lFailures.Count > 0) oSaid.Append(" " + lFailures.Count.ToString() + (lFailures.Count == 1 ? " could not be used." : " could not be used."));
@@ -4251,9 +4998,22 @@ namespace Homer
             }
             if (lFailures.Count > 0)
             {
+                int iNeedSignIn = 0;
+                foreach (string sOne in lFailures)
+                {
+                    if (sOne.IndexOf("sign in", StringComparison.OrdinalIgnoreCase) >= 0
+                        || sOne.IndexOf("cookies", StringComparison.OrdinalIgnoreCase) >= 0) iNeedSignIn = iNeedSignIn + 1;
+                }
+                if (iNeedSignIn > 0 && text("browser-cookies") == "")
+                {
+                    oSaid.Append(Environment.NewLine + Environment.NewLine
+                               + iNeedSignIn.ToString() + " of these asked you to sign in. If you are signed in to that site in a browser, "
+                               + "--browser-cookies chrome (or edge, firefox, brave, opera) lets the download use it.");
+                }
                 oSaid.Append(Environment.NewLine + Environment.NewLine + "Could not be used:");
                 foreach (string sOne in lFailures) oSaid.Append(Environment.NewLine + sOne);
             }
+            if (sLogPath != "") oSaid.Append(Environment.NewLine + Environment.NewLine + "Log of this run:" + Environment.NewLine + sLogPath);
             string sSaid = oSaid.ToString();
             logMessage("RESULTS: " + sSaid.Replace(Environment.NewLine, " | "), "INFO", sSaid);
             if (!bGuiMode) return;
@@ -4531,6 +5291,8 @@ namespace Homer
             if (!File.Exists(sInput))
             {
                 logMessage("The file was not found: " + sInput, "ERROR");
+                announce("Rejected", -1.0, 1.0, Path.GetFileName(sInput) + " was not found.");
+                lFailures.Add(sInput + Environment.NewLine + "    Not found. It may have been moved, renamed or deleted since the path was saved.");
                 return 1;
             }
             // Each video gets a folder of its own, named after the video, so a
@@ -4589,13 +5351,68 @@ namespace Homer
             string sWorkDir = workFolderFor(sInput);
             Directory.CreateDirectory(sOutputDir);
             Directory.CreateDirectory(sWorkDir);
-            string sSaying = "Processing " + Path.GetFileName(sInput);
-            if (iSourceCount > 1) sSaying = "Processing " + iSourceAt.ToString() + " of " + iSourceCount.ToString() + ", " + Path.GetFileName(sInput);
-            announce("Initializing", -1.0, 1.0, sSaying);
+            // Where a list was given -- a playlist, a pattern, or a file naming
+            // several -- the position in it is said, because knowing there are
+            // eight more to come is worth as much as knowing which one this is.
+            // A single named file has no position worth stating.
+            // The position and the name were said before the fetch, in run().
+            // Saying them again here would repeat them for a local file.
+            if (flag("force"))
+            {
+                int iCleared = 0;
+                string[] asOurs = new string[] {
+                    Path.Combine(sOutputDir, sDefaultTranscriptName),
+                    Path.Combine(sOutputDir, sDefaultBothName),
+                    Path.Combine(sOutputDir, sDefaultMarkdownName),
+                    Path.Combine(sWorkDir, sDefaultJsonName),
+                    Path.Combine(sWorkDir, "transcript.json"),
+                    Path.Combine(sWorkDir, sDefaultVttName) };
+                foreach (string sOld in asOurs)
+                {
+                    try
+                    {
+                        if (!File.Exists(sOld)) continue;
+                        File.Delete(sOld);
+                        iCleared = iCleared + 1;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+                foreach (string sOld in Directory.GetFiles(sOutputDir, sDefaultDescribedStem + ".*"))
+                {
+                    try
+                    {
+                        File.Delete(sOld);
+                        iCleared = iCleared + 1;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+                // And what was already read out of them, or the moments live on
+                // in memory after their record has gone.
+                lCachedGaps = null;
+                dCachedSignature = null;
+                bLastCacheFinished = false;
+                bLastTranscriptFinished = false;
+                if (iCleared > 0) logMessage("Force overwrite: removed " + iCleared.ToString() + " file(s) left by the earlier run, so this one starts clean.",
+                                             "INFO", "Starting clean: what the earlier run left has been removed.");
+                logMessage("The moments and the transcript held in memory from that record are discarded too.", "INFO", "");
+            }
+            oFileLog = new StringBuilder();
             logMessage("Working files are under " + sWorkDir, "INFO", "");
             sSpeechWorkDir = sWorkDir;
             lFilmSpeech = new List<Speech>();
             bSpeechReady = false;
+            sEstablished = "";
+            iEstablishedAt = 0;
+            sContextLast = "";
+            iContextUsed = 0;
+            iContextEchoed = 0;
+            lCachedGaps = null;
+            dCachedSignature = null;
+            bSpeechDoubtful = false;
             logMessage("Input: " + sInput, "INFO", "");
             logMessage("Results go to: " + sOutputDir, "INFO", "Results go to " + sOutputDir);
 
@@ -4614,7 +5431,7 @@ namespace Homer
             }
             if (sContextFile != "" && File.Exists(sContextFile))
             {
-                sContext = Regex.Replace(File.ReadAllText(sContextFile), @"\s+", " ").Trim();
+                sContext = splitContextByTime(File.ReadAllText(sContextFile));
                 logMessage("Context loaded from " + sContextFile + ", " + sContext.Split(' ').Length.ToString() + " words",
                            "INFO", "Context loaded from " + Path.GetFileName(sContextFile) + ", " + sContext.Split(' ').Length.ToString() + " words.");
             }
@@ -4679,6 +5496,7 @@ namespace Homer
                     writeCache(new List<Moment>(), sJsonPathEarly(sWorkDir), false, null, null);
                     logMessage("Transcript written to " + sTranscriptPath,
                                "INFO", "Transcript written: " + lFilmSpeech.Count.ToString() + " spoken stretches.");
+                    if (!bWantDescribe) writeFileLog(sOutputDir);
                     lResults.Add(Path.GetFileName(sInput) + ": transcript of " + lFilmSpeech.Count.ToString() + " spoken stretches"
                                  + Environment.NewLine + "    " + sTranscriptPath);
                     sLastOutputFolder = sOutputDir;
@@ -4695,8 +5513,13 @@ namespace Homer
             Dictionary<string, string> dCache = new Dictionary<string, string>();
             string sJsonPath = Path.Combine(sWorkDir, sDefaultJsonName);
             if (!flag("force")) dCache = readCache(sJsonPath);
-            if (dCache.Count > 0) logMessage("Picking up where the last run stopped: " + dCache.Count.ToString() + " descriptions already written",
-                                             "INFO", "Carrying on from " + dCache.Count.ToString() + " descriptions already written.");
+            if (dCache.Count > 0)
+            {
+                logMessage("Picking up where the last run stopped: " + dCache.Count.ToString() + " descriptions already written",
+                           "INFO", "");
+                announce("Resuming", -1.0, 1.0, Path.GetFileName(sInput) + ", carrying on from "
+                         + dCache.Count.ToString() + " descriptions already written.");
+            }
 
             List<Moment> lGaps = findGaps(sFfmpeg, sInput, nDuration);
             List<Moment> lDone = new List<Moment>();
@@ -4716,6 +5539,10 @@ namespace Homer
             byte[] binLast = new byte[0];
             int iIndex = 0;
             int iSkipped = 0;
+            int iNothing = 0;
+            int iNoPicture = 0;
+            bool bVanished = false;
+            int iTooLong = 0;
             int iLastPercent = -1;
             int iSpokenAt = 0;
             bool bWarnedSlow = false;
@@ -4737,7 +5564,10 @@ namespace Homer
                 if (oOpening.binAudio.Length > 0) lDone.Add(oOpening);
             }
 
+            // Two montage files used alternately: the one being looked at is
+            // never the one being written.
             string sImagePath = Path.Combine(sWorkDir, "montage.jpg");
+            string sNextImagePath = Path.Combine(sWorkDir, "montage-next.jpg");
             foreach (Moment oGap in lGaps)
             {
                 iIndex = iIndex + 1;
@@ -4756,12 +5586,81 @@ namespace Homer
                     // Rebuilding: speak and assemble what is already written.
                     // A moment never described stays undescribed.
                     if (flag("rebuild")) continue;
-                    if (!buildMontage(sFfmpeg, sInput, oGap.nStart + oGap.nLength / 2.0, oGap.nLength + 2.0, sImagePath)) continue;
+                    // The window looked at is NOT the gap. A gap is a pause in the
+                    // speech, and what the listener needs described is usually what
+                    // happened while somebody was talking, just before it. The
+                    // published systems separate the INTERVAL being described from
+                    // the PLACEMENT PERIOD it is spoken in; this program was
+                    // conflating the two and describing the pause.
+                    double nSpan = Math.Max(oGap.nLength + 2.0, nDefaultLookBack);
+                    double nCentre = oGap.nStart + oGap.nLength - nSpan / 2.0;
+                    if (nCentre - nSpan / 2.0 < 0.0) nCentre = nSpan / 2.0;
+                    // Made already, while the model was working on the moment
+                    // before this one, unless this is the first.
+                    bool bHaveIt = false;
+                    if (sReadyMontage != "")
+                    {
+                        bHaveIt = waitForMontage();
+                        if (bHaveIt)
+                        {
+                            try
+                            {
+                                if (File.Exists(sImagePath)) File.Delete(sImagePath);
+                                File.Move(sReadyMontage, sImagePath);
+                            }
+                            catch (Exception)
+                            {
+                                bHaveIt = false;
+                            }
+                        }
+                        sReadyMontage = "";
+                    }
+                    if (!bHaveIt && !buildMontage(sFfmpeg, sInput, nCentre, nSpan, sImagePath))
+                    {
+                        // Gone? Nothing that follows can work, and trying six
+                        // hundred more times helps nobody.
+                        if (!File.Exists(sInput))
+                        {
+                            string sVanished = Path.GetFileName(sInput) + " is no longer where it was. It was read at the start of this run, "
+                                             + "so it has been moved, renamed or deleted since. Nothing more can be done with it.";
+                            logMessage(sVanished + " Full path: " + sInput, "ERROR");
+                            announce("Error", -1.0, 1.0, sVanished);
+                            lFailures.Add(sInput + Environment.NewLine + "    Disappeared while it was being worked on.");
+                            bVanished = true;
+                            break;
+                        }
+                        iNoPicture = iNoPicture + 1;
+                        // Frames can fail one at a time for ordinary reasons, but
+                        // not many in a row: that is the file or the disk, not
+                        // this moment.
+                        if (iNoPicture >= iDefaultGiveUpAfter)
+                        {
+                            string sBadly = "Could not take a picture from " + Path.GetFileName(sInput) + " " + iNoPicture.ToString()
+                                          + " times in a row, so this film is left. The log has what ffmpeg said.";
+                            logMessage(sBadly, "ERROR");
+                            announce("Error", -1.0, 1.0, sBadly);
+                            lFailures.Add(sInput + Environment.NewLine + "    Frames could not be read from it.");
+                            bVanished = true;
+                            break;
+                        }
+                        continue;
+                    }
+                    iNoPicture = 0;
+                    // And the next one is started now, so it is ready by the
+                    // time this description is finished.
+                    if (iIndex < lGaps.Count)
+                    {
+                        Moment oNext = lGaps[iIndex];
+                        double nNextSpan = Math.Max(oNext.nLength + 2.0, nDefaultLookBack);
+                        double nNextCentre = oNext.nStart + oNext.nLength - nNextSpan / 2.0;
+                        if (nNextCentre - nNextSpan / 2.0 < 0.0) nNextCentre = nNextSpan / 2.0;
+                        montageAheadOfTime(sFfmpeg, sInput, nNextCentre, nNextSpan, sNextImagePath);
+                    }
                     if (number("same-shot") > 0.0)
                     {
                         byte[] binNow = shotSignature(sFfmpeg, sImagePath, sWorkDir);
                         double nMoved = signatureDistance(binLast, binNow);
-                        bool bQuietTooLong = nLastSpoken >= 0.0 && oGap.nStart - nLastSpoken >= number("max-silence");
+                        bool bQuietTooLong = number("max-silence") > 0.0 && nLastSpoken >= 0.0 && oGap.nStart - nLastSpoken >= number("max-silence");
                         if (binLast.Length > 0 && nMoved < number("same-shot") && !bQuietTooLong)
                         {
                             iSkipped = iSkipped + 1;
@@ -4777,7 +5676,7 @@ namespace Homer
                     }
                     List<string> lShown = lRecent.GetRange(Math.Max(0, lRecent.Count - iDefaultRecent), Math.Min(iDefaultRecent, lRecent.Count));
                     int iLookWords = flag("summarise") ? iMaxWords * 3 : iMaxWords;
-                    sText = describeImage(sImagePath, iLookWords, lShown, sContext, false, bNewScene, "", oGap.bForced, lNames, sJustSaid, false);
+                    sText = describeImage(sImagePath, iLookWords, lShown, sContext, false, bNewScene, "", oGap.bForced, lNames, sJustSaid, false, oGap.nStart);
                     if (flag("summarise") && sText != "")
                     {
                         string sSeen = sText;
@@ -4790,7 +5689,7 @@ namespace Homer
                     if (sText != "" && nLike >= number("similarity"))
                     {
                         logMessage("That description was " + ((int)(nLike * 100)).ToString() + " percent the same as a recent one. Asking again.", "INFO", "");
-                        sText = describeImage(sImagePath, iMaxWords, lShown, sContext, true, bNewScene, "", oGap.bForced, lNames, sJustSaid, false);
+                        sText = describeImage(sImagePath, iMaxWords, lShown, sContext, true, bNewScene, "", oGap.bForced, lNames, sJustSaid, false, oGap.nStart);
                         nLike = worstLikeness(sText, lAgainst);
                     }
                     // One chance to replace a judgment with what was seen.
@@ -4798,7 +5697,7 @@ namespace Homer
                     if (sText != "" && sJudged != "" && flag("objective"))
                     {
                         logMessage("That description judged rather than observed, at the word \"" + sJudged + "\". Asking again.", "INFO", "");
-                        string sBetter = describeImage(sImagePath, iMaxWords, lShown, sContext, false, bNewScene, sJudged, oGap.bForced, lNames, sJustSaid, false);
+                        string sBetter = describeImage(sImagePath, iMaxWords, lShown, sContext, false, bNewScene, sJudged, oGap.bForced, lNames, sJustSaid, false, oGap.nStart);
                         if (sBetter != "" && worstLikeness(sBetter, lAgainst) < number("similarity")) sText = sBetter;
                         string sStill = judgmentFound(sText);
                         if (sStill != "" && sStill.EndsWith("ly"))
@@ -4847,19 +5746,30 @@ namespace Homer
                     if (sText != "" && sHedged != "")
                     {
                         logMessage("That description guessed, at \"" + sHedged + "\". Asking again.", "INFO", "");
-                        string sSurer = describeImage(sImagePath, iMaxWords, lShown, sContext, false, bNewScene, "", oGap.bForced, lNames, sJustSaid, false);
+                        string sSurer = describeImage(sImagePath, iMaxWords, lShown, sContext, false, bNewScene, "", oGap.bForced, lNames, sJustSaid, false, oGap.nStart);
                         if (sSurer != "" && hedgeFound(sSurer) == "") sText = sSurer;
                     }
                 }
-                if (sText == "" && !flag("rebuild") && nLastSpoken >= 0.0 && oGap.nStart - nLastSpoken >= number("max-silence"))
+                if (sText == "" && !flag("rebuild") && number("max-silence") > 0.0 && nLastSpoken >= 0.0 && oGap.nStart - nLastSpoken >= number("max-silence"))
                 {
                     logMessage("Nothing said for " + num(oGap.nStart - nLastSpoken) + "s, so this moment is asked again with no leave to skip.", "INFO", "");
                     List<string> lInsistOn = lRecent.GetRange(Math.Max(0, lRecent.Count - iDefaultRecent), Math.Min(iDefaultRecent, lRecent.Count));
-                    sText = describeImage(sImagePath, iMaxWords, lInsistOn, sContext, false, bNewScene, "", false, lNames, sJustSaid, true);
+                    sText = describeImage(sImagePath, iMaxWords, lInsistOn, sContext, false, bNewScene, "", false, lNames, sJustSaid, true, oGap.nStart);
                     if (flag("summarise") && sText != "") sText = summarise(sText, iMaxWords, lInsistOn);
+                }
+                if (sText != "")
+                {
+                    string sNoSubs = withoutSubtitles(sText, sJustSaid);
+                    if (sNoSubs != sText)
+                    {
+                        logMessage("Was: " + sText, "INFO", "");
+                        sText = sNoSubs;
+                        if (sText == "") logMessage("Nothing was left of that description once the subtitle was taken out.", "INFO", "");
+                    }
                 }
                 if (sText == "")
                 {
+                    iNothing = iNothing + 1;
                     logMessage("Moment " + iIndex.ToString() + " at " + num(oGap.nStart) + "s produced nothing", "INFO", "");
                     continue;
                 }
@@ -4902,7 +5812,28 @@ namespace Homer
                         binAudio = speakToPcm(sText, iRate);
                     }
                 }
-                if (pcmSeconds(binAudio) > nAllowed) logMessage("This description still runs " + num(pcmSeconds(binAudio) - nAllowed) + "s past what the gap allows: " + sText, "INFO", "");
+                if (pcmSeconds(binAudio) > nAllowed)
+                {
+                    double nOver = pcmSeconds(binAudio) - nAllowed;
+                    if (overlapsSpeech(lFilmSpeech, oGap.nStart, oGap.nStart + pcmSeconds(binAudio)))
+                    {
+                        // It would be spoken across the dialogue, and it could
+                        // not be made shorter. Better to say nothing here.
+                        iTooLong = iTooLong + 1;
+                        logMessage("Dropped: it runs " + num(nOver) + "s past the gap and would be spoken over the dialogue: " + sText, "INFO", "");
+                        continue;
+                    }
+                    logMessage("This description runs " + num(nOver) + "s past the gap, into silence, which is harmless: " + sText, "INFO", "");
+                }
+                string sGiven = sContext + " " + contextForMoment(oGap.nStart);
+                if (contextForMoment(oGap.nStart) != "") iContextUsed = iContextUsed + 1;
+                double nEcho = echoOfContext(sText, sGiven);
+                if (nEcho >= nDefaultEchoWorry)
+                {
+                    iContextEchoed = iContextEchoed + 1;
+                    logMessage("This description repeats the context heavily (" + num(nEcho * 100.0) + " percent of its words): " + sText,
+                               "INFO", "");
+                }
                 oGap.sText = sText;
                 oGap.binAudio = binAudio;
                 oGap.nSpoken = pcmSeconds(binAudio);
@@ -4911,6 +5842,7 @@ namespace Homer
                 if (sJustSaid != "") iWithDialogue = iWithDialogue + 1;
                 if (oGap.bForced) iForcedDescribed = iForcedDescribed + 1;
                 lDone.Add(oGap);
+                rememberFilm(lDone);
                 lRecent.Add(sText);
                 gatherNames(sText, lNames);
                 if (lRecent.Count > iDefaultCompare) lRecent.RemoveAt(0);
@@ -5008,6 +5940,7 @@ namespace Homer
                 if (oRest.Length > 0) announce("Transcribing", nFirstRest, nDuration, oRest.ToString());
             }
             flushAnnouncements();
+            waitForMontage();
             stopHeartbeat();
             // The report that lets the contribution of hearing the film be
             // judged rather than assumed. The number that matters is how many
@@ -5019,7 +5952,9 @@ namespace Homer
                            + iOverSpeech.ToString() + " overlap speech (" + num(iOverSpeech * 100.0 / lDone.Count) + " percent); "
                            + iForcedDescribed.ToString() + " were placed on the timer rather than in a real gap; "
                            + iWithDialogue.ToString() + " were written knowing what had just been said; "
-                           + iSkipped.ToString() + " moments left silent.", "INFO",
+                           + iNothing.ToString() + " moments were asked about and produced nothing; "
+                           + iTooLong.ToString() + " were dropped because they would not fit their gap and would have covered the dialogue; "
+                           + iSkipped.ToString() + " were passed over because the picture had not changed.", "INFO",
                            "Done: " + lDone.Count.ToString() + " descriptions, " + iOverSpeech.ToString() + " of them over speech.");
                 if (lFilmSpeech.Count == 0) logMessage("  No transcript was available, so none of that used speech detection.", "INFO", "");
             }
@@ -5063,6 +5998,57 @@ namespace Homer
             // shown once, at the end.
             string sOddity = "";
             if (nDuration < 60.0) sOddity = "  (only " + formatClock(nDuration) + " long: the file may be damaged or incomplete)";
+            // Everything worth knowing about this film's descriptions, in one
+            // place, so a question about quality does not need the whole log
+            // read to answer it.
+            if (lDone.Count > 0)
+            {
+                List<int> lWords = new List<int>();
+                List<double> lSaid = new List<double>();
+                List<double> lRoom = new List<double>();
+                int iJudging = 0;
+                int iNamed = 0;
+                foreach (Moment oOne in lDone)
+                {
+                    if (oOne.sText == "") continue;
+                    lWords.Add(oOne.sText.Split(' ').Length);
+                    lSaid.Add(oOne.nSpoken);
+                    lRoom.Add(oOne.nLength);
+                    if (judgmentFound(oOne.sText) != "") iJudging = iJudging + 1;
+                    foreach (string sName in lNames)
+                    {
+                        if (sName != "" && oOne.sText.IndexOf(sName, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            iNamed = iNamed + 1;
+                            break;
+                        }
+                    }
+                }
+                lWords.Sort();
+                lSaid.Sort();
+                lRoom.Sort();
+                if (lWords.Count > 0)
+                {
+                    logMessage("MEASURE: words per description, middle " + lWords[lWords.Count / 2].ToString()
+                               + ", longest " + lWords[lWords.Count - 1].ToString()
+                               + "; seconds spoken, middle " + num(lSaid[lSaid.Count / 2])
+                               + ", longest " + num(lSaid[lSaid.Count - 1])
+                               + "; room available, middle " + num(lRoom[lRoom.Count / 2]) + "s.", "INFO", "");
+                    logMessage("MEASURE: context was given to " + iContextUsed.ToString() + " of " + lWords.Count.ToString()
+                               + " descriptions from a timed section; " + iContextEchoed.ToString()
+                               + " repeat half or more of their words from the context, which would mean reciting rather than describing.", "INFO", "");
+                    logMessage("MEASURE: " + iJudging.ToString() + " of " + lWords.Count.ToString()
+                               + " still judge rather than observe; " + iNamed.ToString() + " name somebody; "
+                               + "the film's memory was rewritten " + (iEstablishedAt / iDefaultRememberEvery).ToString() + " times.", "INFO", "");
+                }
+            }
+            if (bVanished)
+            {
+                logMessage("Nothing is written for " + Path.GetFileName(sInput) + ", since the run did not finish.", "INFO", "");
+                writeFileLog(sOutputDir);
+                return 1;
+            }
+            writeFileLog(sOutputDir);
             lResults.Add(Path.GetFileName(sInput) + ": " + lDone.Count.ToString() + " descriptions, " + formatClock(nDuration) + sOddity
                          + Environment.NewLine + "    " + Path.Combine(sOutputDir, outputName(sInput)));
             sLastOutputFolder = sOutputDir;
@@ -5153,7 +6139,9 @@ namespace Homer
             // application data, which is always writable, and holds whatever
             // happens before the settings say where the real log belongs. If a
             // run dies at the dialog, this is the file that explains it.
+            bSecondInstance = anotherIsRunning();
             if (fLog == null) openLogAt(Path.Combine(appDataFolder(), sDefaultLogName));
+            if (bSecondInstance) logMessage("Another HomerScribe is already running, so this one writes its own log and leaves the settings alone.", "INFO", "");
             if (bGuiMode && !dParams["use-configuration"].bGiven && savedSaysUseConfiguration()) dParams["use-configuration"].sValue = "yes";
             if (flag("use-configuration")) loadConfig();
 

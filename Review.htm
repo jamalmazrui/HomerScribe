@@ -1,0 +1,323 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>HomerScribe — What went wrong, and what stops it happening again</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
+  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  code, pre { font-family: Consolas, monospace; }
+  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
+  </style>
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#what-went-wrong-and-what-stops-it-happening-again"
+id="toc-what-went-wrong-and-what-stops-it-happening-again">What went
+wrong, and what stops it happening again</a>
+<ul>
+<li><a href="#the-shape-of-the-problem"
+id="toc-the-shape-of-the-problem">The shape of the problem</a></li>
+<li><a
+href="#analysing-logs-from-builds-that-did-not-contain-the-change"
+id="toc-analysing-logs-from-builds-that-did-not-contain-the-change">1.
+Analysing logs from builds that did not contain the change</a></li>
+<li><a href="#edits-that-silently-did-nothing"
+id="toc-edits-that-silently-did-nothing">2. Edits that silently did
+nothing</a></li>
+<li><a href="#testing-against-my-own-belief"
+id="toc-testing-against-my-own-belief">3. Testing against my own
+belief</a></li>
+<li><a href="#optimising-a-proxy-instead-of-the-outcome"
+id="toc-optimising-a-proxy-instead-of-the-outcome">4. Optimising a proxy
+instead of the outcome</a></li>
+<li><a
+href="#confusing-what-the-program-knows-with-what-the-person-was-told"
+id="toc-confusing-what-the-program-knows-with-what-the-person-was-told">5.
+Confusing what the program knows with what the person was told</a></li>
+<li><a href="#what-the-field-does-and-where-this-differed"
+id="toc-what-the-field-does-and-where-this-differed">What the field
+does, and where this differed</a></li>
+<li><a href="#the-habits-that-follow"
+id="toc-the-habits-that-follow">The habits that follow</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="what-went-wrong-and-what-stops-it-happening-again">What went
+wrong, and what stops it happening again</h1>
+<p>A review of the development of HomerScribe, written after a run of
+changes that each looked correct and several of which were not. It is
+here rather than in a message because the next person to work on this,
+including me, needs it.</p>
+<h2 id="the-shape-of-the-problem">The shape of the problem</h2>
+<p>Between the merge into HomerScribe and version 1.0.113 there were
+roughly seventy changes. Most were sound. But a recognisable minority
+were not, and they were not random: they fell into five kinds, and each
+kind recurred.</p>
+<h2 id="analysing-logs-from-builds-that-did-not-contain-the-change">1.
+Analysing logs from builds that did not contain the change</h2>
+<p>The worst of them, by cost. The rule that refuses a moment with no
+room to describe it was written, and then five separate runs were
+analysed before it had ever executed once — variously because the
+moments were cached from an earlier run, because Force overwrite cleared
+the record from disk but not from memory, or because the build simply
+predated it.</p>
+<p>Each time, the log looked wrong, and each time I reasoned about the
+algorithm when the algorithm had not run.</p>
+<p><strong>Why it kept happening.</strong> Nothing in a log said what
+was in the build. A version number says when a build was made, not what
+was decided by then, and the two had drifted by sixty versions.</p>
+<p><strong>What now prevents it.</strong> Every run logs
+<code>This build does:</code> followed by the names of the behaviours
+compiled into it. If a behaviour is not on that line, it is not in that
+build, and no further analysis is warranted until it is.</p>
+<h2 id="edits-that-silently-did-nothing">2. Edits that silently did
+nothing</h2>
+<p>Changes are made by replacing one exact piece of text with another.
+When the text to be replaced is not present, the operation does nothing
+and reports nothing.</p>
+<p>This destroyed about sixty entries in <code>History.md</code> — each
+written as a replacement against the entry above it, each finding
+nothing, each failing in silence — and caused at least two build
+failures where a change was believed applied and was not.</p>
+<p><strong>What now prevents it.</strong> Every replacement asserts that
+its anchor exists before making it. An edit that cannot find its place
+now stops rather than proceeding as if it had worked.</p>
+<h2 id="testing-against-my-own-belief">3. Testing against my own
+belief</h2>
+<p>The most serious, because it is the one that can survive any amount
+of testing.</p>
+<p>Moments placed on the timer were positioned at the <em>midpoint</em>
+of the quiet measured for them, so a description had half the room the
+program believed it had. I did not find this by testing, because when I
+wrote <code>placement_test.py</code> I wrote it from the same mental
+picture as the code — and it agreed with the code, because both were
+wrong in the same way.</p>
+<p>A test derived from the same belief as the implementation cannot
+falsify that belief. It can only confirm it.</p>
+<p><strong>What now prevents it.</strong> <code>placement_test.py</code>
+is checked against measured behaviour from real runs, not against what
+the code is supposed to do. When the two disagree, the run is right.</p>
+<h2 id="optimising-a-proxy-instead-of-the-outcome">4. Optimising a proxy
+instead of the outcome</h2>
+<p>A great deal of effort went into raising “percent of moments in real
+gaps”, which is not what anybody wants. What is wanted is descriptions a
+listener can hear. Those came apart badly: one film reported 73 percent
+of its moments in real gaps while 82 percent of its descriptions were
+spoken over the narration.</p>
+<p><strong>What now prevents it.</strong> The measure of record is
+descriptions that overlap speech. The proxy is still logged, because it
+is diagnostic, but it is not the target.</p>
+<h2
+id="confusing-what-the-program-knows-with-what-the-person-was-told">5.
+Confusing what the program knows with what the person was told</h2>
+<p>Three separate times, HomerScribe established exactly what had gone
+wrong, wrote it to the log, and told the user “Nothing was done.” A
+missing file, a withdrawn video, and a source that was neither.
+Everything needed was recorded and none of it reached the person who
+needed it.</p>
+<p><strong>What now prevents it.</strong> Every source ends in one of a
+fixed set of announced outcomes — described, Skipped, Resuming, Error,
+Rejected — and anything that could not be used is named in the results
+with its reason. A silent ending is now a bug by definition.</p>
+<h2 id="what-the-field-does-and-where-this-differed">What the field
+does, and where this differed</h2>
+<p>Reviewing the published work was worth doing, and one finding
+mattered.</p>
+<p>The systems in the literature and in commercial use agree on the
+broad architecture HomerScribe already had: find the gaps in the speech,
+decide which of them deserve a description, generate the description,
+fit it to the gap. Gap-driven placement is standard, and the
+three-second minimum used commercially is close to the value arrived at
+here by measurement.</p>
+<p>But they separate two things this program was conflating. The
+<strong>interval</strong> being described — a stretch of picture with
+coherent content — is not the same as the <strong>placement
+period</strong> where the description is spoken. One system places a
+description within three seconds of the interval it describes, rather
+than describing whatever is visible at the moment of speaking.</p>
+<p>HomerScribe was sampling its frames <em>across the gap itself</em>. A
+gap is a pause in the speech, and is frequently the least eventful part
+of a film: the thing the listener needs described usually happened while
+somebody was talking, just before it. The window now runs back from the
+end of the gap far enough to cover the run-up, never shorter than the
+gap.</p>
+<p>This is the one change in this review that is likely to improve the
+descriptions themselves rather than their placement.</p>
+<h2 id="the-habits-that-follow">The habits that follow</h2>
+<ol type="1">
+<li>Check what is in the build before analysing what it did.</li>
+<li>Assert that an edit found its place.</li>
+<li>Do not write a test from the same picture as the code.</li>
+<li>Measure the outcome, not the proxy for it.</li>
+<li>If the program knows something, the person must be told it.</li>
+<li>State a prediction before a run and record whether it held.</li>
+</ol>
+<p>The sixth is the newest and the least practised. Two predictions in
+this project were wrong: that overlap would fall to near zero, and that
+wider frames would improve quality. Both were reasonable and both were
+refuted by measurement, which is the point of making them out loud.</p>
+</body>
+</html>

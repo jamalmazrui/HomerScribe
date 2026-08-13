@@ -31,7 +31,12 @@ Copied unmodified from urlFido so that improvements to them keep porting between
 tools. They compile into the same assembly, which is what keeps the result a
 single file.
 
-- **Lbc.cs** — layout-by-code dialogs. Builds the settings dialog without a
+- **Lbc.cs** — layout-by-code dialogs. **Modified here**, and the change should
+  be carried back to the other tools: the default button is now chosen as the one
+  labelled OK or Yes, wherever it sits in the row, rather than always the first.
+  A row reading Help, Default settings, OK, Cancel — the order Microsoft gives
+  for a secondary window — otherwise made Enter press Help. Dialogs whose row
+  starts with OK are unaffected, since the fallback is still the first button. Builds the settings dialog without a
   designer, and supplies the Help button, the Escape and Enter behaviour, and the
   accessible names a screen reader reads.
 - **Say.cs** — screen-reader announcements through UI Automation.
@@ -247,6 +252,12 @@ setup and forms the tag.
 No version literal appears in any other file, which is the point: a stale copy of
 a file cannot rewind the number.
 
+The build INCREMENTS `version.txt` before compiling, so the executable is always
+one ahead of what the file said. A History entry must therefore be numbered
+`version.txt` **plus one** — the number the next build will stamp — or a version
+in a log cannot be looked up. Getting this wrong is how sixty entries came to
+describe versions nobody ever ran.
+
 ### Releasing
 
     buildHomerScribe.cmd
@@ -271,7 +282,13 @@ maintainer tools and not part of the distribution.
   `installModels.cmd` therefore looks for `ollama.exe` where it is put rather
   than asking `where`.
 - `ffmpeg.exe` and `yt-dlp.exe` are downloaded at build time and are in
-  `.gitignore`. They are far too large for a repository.
+  `.gitignore`. They are far too large for a repository. The build looks for them in an
+  existing HomerScribe folder first and copies them, since a second working copy
+  is the ordinary case and these are a hundred megabytes that change rarely.
+- PowerShell's `Invoke-WebRequest` draws a progress meter by default, which for a
+  large file costs far more than the transfer — tens of times slower, and it is
+  what prints about writing a request stream. Every download here sets
+  `$ProgressPreference='SilentlyContinue'` first.
 - A build cannot replace a running executable. The script renames it first as a
   test and says so plainly, because the compiler's own message for this —
   CS2012, "used by another process" — reads like a fault in the source.
@@ -308,6 +325,40 @@ runs. It is the reference implementation, quicker to change when trying a new
 prompt, and useful for checking whether a change in behaviour was deliberate. It
 is behind the C# in several respects and is not needed to build or run
 HomerScribe.
+
+## Testing the placement without a film
+
+`placement_test.py` generates speech patterns across the whole range of films —
+from 4 percent speech to 93 — and runs the real placement rules against them.
+It reports, for each, how many real gaps were found, how many moments were
+placed, how many were refused for want of room, and the number that matters:
+how many descriptions would land on somebody talking.
+
+    python placement_test.py
+
+This exists because judging the algorithm from runs on particular films cannot
+distinguish a general improvement from a change that happens to suit that film.
+The test answers a question no single run can: does this get worse as films get
+denser? It should not. Denser films should simply get fewer descriptions.
+
+It also found something no run had: with the floor at four seconds, a talkative
+film put 21 percent of descriptions over speech, because a description cannot be
+cut below about twelve words and four seconds does not hold twelve words. At
+five seconds it is nought across the whole range.
+
+## Measuring a run
+
+`measure.py` reads a results folder, or a folder of them, and prints a short
+report: how many descriptions, how many landed on speech, their length, the
+spacing between them, how many judge rather than observe, and one sample.
+
+    python measure.py "C:\Users\Jamal\Videos\Some Film"
+    python measure.py "C:\Users\Jamal\Videos"
+
+It exists so that a question about quality can be answered from two kilobytes
+rather than from a twenty megabyte log. The log remains the right thing to read
+when something has gone wrong; it is the wrong thing to read when the question
+is whether the descriptions are any good.
 
 ## What is not done
 
