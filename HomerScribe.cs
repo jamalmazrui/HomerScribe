@@ -850,7 +850,7 @@ namespace Homer
             "speech-placement", "room-required", "room-floor-is-min-gap",
             "moment-at-start-of-quiet", "look-back-window", "drop-if-covers-speech",
             "film-memory", "presenter-named", "subtitle-filter", "whisper-loop-filter",
-            "empty-transcript-check", "force-clears-memory", "status-words", "montage-ahead", "per-film-log", "stop-if-source-vanishes"
+            "empty-transcript-check", "force-clears-memory", "status-words", "montage-ahead", "per-film-log", "stop-if-source-vanishes", "picture-required"
         };
 
         static void logEnvironment()
@@ -1923,6 +1923,28 @@ namespace Homer
         // A file may carry more than one sound track: a commentary, another
         // language, or a silent one left by an encoder. Knowing how many there
         // are turns "the transcript is empty" from a mystery into a lead.
+        // Is there a picture at all? A recording has none, and there is then
+        // nothing to describe: asked to describe twenty-nine mp3 files, the model
+        // invented a sentence apiece from a blank montage and each was written
+        // out as though it meant something.
+        static bool hasPicture(string sFfmpeg, string sInput)
+        {
+            string sOut = "";
+            string sErr = "";
+            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
+            string sBoth = sOut + sErr;
+            foreach (Match oOne in Regex.Matches(sBoth, @"Stream #\d+:\d+.*?: Video:"))
+            {
+                // Cover art is carried as a video stream of one still frame.
+                // Not a picture to describe.
+                int iFrom = oOne.Index;
+                string sAfter = sBoth.Substring(iFrom, Math.Min(400, sBoth.Length - iFrom));
+                if (sAfter.IndexOf("attached pic", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                return true;
+            }
+            return false;
+        }
+
         static int audioTrackCount(string sFfmpeg, string sInput)
         {
             string sOut = "";
@@ -5329,6 +5351,24 @@ namespace Homer
             bool bTranscribeDone = File.Exists(sTranscriptPath) && bLastTranscriptFinished;
             bool bWantDescribe = flag("describe") && !(bDescribeDone && !flag("force"));
             bool bWantTranscribe = flag("transcribe") && !(bTranscribeDone && !flag("force"));
+            if (bWantDescribe && !hasPicture(sFfmpeg, sInput))
+            {
+                string sNoPicture = Path.GetFileName(sInput) + " is a recording with no picture in it, so there is nothing to describe.";
+                bWantDescribe = false;
+                if (bWantTranscribe)
+                {
+                    logMessage(sNoPicture + " It will be transcribed instead.", "INFO", "");
+                    announce("Initializing", -1.0, 1.0, sNoPicture + " Transcribing it instead.");
+                }
+                else
+                {
+                    logMessage(sNoPicture + " Tick Transcribe audio for a recording.", "ERROR");
+                    announce("Rejected", -1.0, 1.0, sNoPicture + " Tick Transcribe audio for a recording.");
+                    lFailures.Add(sInput + Environment.NewLine
+                                  + "    A recording with no picture. Describing needs a picture; transcribing does not.");
+                    return 1;
+                }
+            }
             if (!bWantDescribe && !bWantTranscribe)
             {
                 sLastSkippedFolder = sOutputDir;

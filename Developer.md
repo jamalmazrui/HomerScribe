@@ -382,6 +382,25 @@ It stops rather than half-working if a large file is already in a commit the
 remote has, since rewinding would not remove it and the repair is then a
 different and larger job.
 
+## Putting the repository right
+
+Four scripts, in the order they were needed. Each takes no arguments and writes
+a log beside itself.
+
+- `fixRepo.py` -- a push rejected for file size. Undoes the local commit and
+  pushes without the offending files.
+- `purgeRepo.py` -- takes files out of the history altogether, not just its
+  future. Destructive: it rewrites and force-pushes, and copies the folder first.
+- `tidyRepo.py` -- the whole clean-up in one run: checks the restores, purges
+  the testing material, fixes the remote address, reclaims space, removes the
+  backups.
+- `finishRepo.py` -- when the size will not come down. It reads the pack index
+  for the largest objects actually stored, names the file each belongs to, and
+  reports whether anything still reaches them. It then removes what is large and
+  does not belong, and rebuilds the pack with `repack -A`, which is the part that
+  matters: without `-A` an unreachable object stays inside the pack and repacking
+  changes nothing, which is why several attempts moved 516 MB not at all.
+
 ## The helper scripts
 
 `measure.py`, `placement_test.py`, `fixRepo.py`, `purgeRepo.py` and `tidyRepo.py`

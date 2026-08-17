@@ -1,5 +1,44 @@
 ﻿# HomerScribe History
 
+## 1.0.144, 13 August 2026
+
+- A recording is no longer described. Asked to describe twenty-nine mp3 files,
+  HomerScribe produced one description for each: the model inventing a sentence
+  from a blank montage, written out as though it meant something. There is no
+  picture in a recording and nothing to describe.
+  It now asks ffmpeg whether there is a picture at all. Cover art does not count
+  -- it is carried as a video stream of one still frame and is not something to
+  describe. With Transcribe audio also ticked it transcribes and says so; with
+  only Describe ticked it refuses the file and says to tick Transcribe audio.
+- Tested against ffmpeg's own output for three cases: an mp3, an mp3 carrying
+  cover art, and a film.
+
+## 1.0.143, 13 August 2026
+
+- The repository is now what it should be: thirty files, the program and its
+  documents and nothing else. Every note, script, film and build product is off
+  GitHub and still on the disk.
+- tidyRepo now names the ten largest objects in the repository and the path each
+  came from, saying plainly when one belongs to no commit at all and is merely
+  waiting to be collected. I had said I could not tell what was holding 516 MB;
+  that was a failure of effort rather than of possibility, since git can simply
+  be asked. Several rounds of guessing were the wrong response to a question with
+  a one-command answer.
+
+## 1.0.143, 13 August 2026
+
+- Added finishRepo.py, which settles the size question from evidence rather than
+  guesswork and needs no arguments. It reads the pack index for the largest
+  objects actually stored, names the file each belongs to from the object list,
+  and says how much is reachable and how much is not. Anything large that does
+  not belong is then removed and the pack rebuilt.
+- The reason nothing had worked: repack without -A keeps unreachable objects
+  inside the pack, so the pack never shrinks. With -A they are written out loose
+  and the prune that follows deletes them. Measured on a test repository: 38.16
+  MiB to 2.35 KiB, and on another with a file deleted in a later commit, 57.24
+  MiB to 1.69 KiB.
+- It also removes every leftover folder from the earlier runs.
+
 ## 1.0.142, 13 August 2026
 
 - Files purged by one run came back in the next. The commit purgeRepo takes

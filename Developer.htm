@@ -205,6 +205,9 @@ history</a></li>
 <li><a href="#when-a-push-is-rejected-for-file-size"
 id="toc-when-a-push-is-rejected-for-file-size">When a push is rejected
 for file size</a></li>
+<li><a href="#putting-the-repository-right"
+id="toc-putting-the-repository-right">Putting the repository
+right</a></li>
 <li><a href="#the-helper-scripts" id="toc-the-helper-scripts">The helper
 scripts</a></li>
 <li><a href="#measuring-a-run" id="toc-measuring-a-run">Measuring a
@@ -611,6 +614,27 @@ disk.</p>
 <p>It stops rather than half-working if a large file is already in a
 commit the remote has, since rewinding would not remove it and the
 repair is then a different and larger job.</p>
+<h2 id="putting-the-repository-right">Putting the repository right</h2>
+<p>Four scripts, in the order they were needed. Each takes no arguments
+and writes a log beside itself.</p>
+<ul>
+<li><code>fixRepo.py</code> – a push rejected for file size. Undoes the
+local commit and pushes without the offending files.</li>
+<li><code>purgeRepo.py</code> – takes files out of the history
+altogether, not just its future. Destructive: it rewrites and
+force-pushes, and copies the folder first.</li>
+<li><code>tidyRepo.py</code> – the whole clean-up in one run: checks the
+restores, purges the testing material, fixes the remote address,
+reclaims space, removes the backups.</li>
+<li><code>finishRepo.py</code> – when the size will not come down. It
+reads the pack index for the largest objects actually stored, names the
+file each belongs to, and reports whether anything still reaches them.
+It then removes what is large and does not belong, and rebuilds the pack
+with <code>repack -A</code>, which is the part that matters: without
+<code>-A</code> an unreachable object stays inside the pack and
+repacking changes nothing, which is why several attempts moved 516 MB
+not at all.</li>
+</ul>
 <h2 id="the-helper-scripts">The helper scripts</h2>
 <p><code>measure.py</code>, <code>placement_test.py</code>,
 <code>fixRepo.py</code>, <code>purgeRepo.py</code> and
