@@ -473,12 +473,13 @@ without it the executable still builds.</li>
 buildHomerScribe.cmd nobump</code></pre>
 <p>It writes <code>buildHomerScribe.log</code> beside itself and prints
 it at the end. What it does, in order: increments
-<code>version.txt</code> unless told not to, generates
-<code>Version.cs</code>, finds a compiler, finds the three full-path
-reference assemblies, downloads ffmpeg and yt-dlp if they are missing or
-stale, compiles seven sources into one assembly, and runs Inno Setup.
-The <code>.htm</code> documentation is built with the <code>.md</code>
-and ships beside it, so the build generates nothing.</p>
+<code>version.txt</code> unless told not to, stepping over any number
+already released, generates <code>Version.cs</code>, finds a compiler,
+finds the three full-path reference assemblies, downloads ffmpeg and
+yt-dlp if they are missing or stale, compiles seven sources into one
+assembly, and runs Inno Setup. The <code>.htm</code> documentation is
+built with the <code>.md</code> and ships beside it, so the build
+generates nothing.</p>
 <h3 id="versioning">Versioning</h3>
 <p><code>version.txt</code> holds the version and nothing else. It is
 the single source: the build reads it into <code>Version.cs</code>, and
@@ -494,6 +495,15 @@ entry must therefore be numbered <code>version.txt</code> <strong>plus
 one</strong> — the number the next build will stamp — or a version in a
 log cannot be looked up. Getting this wrong is how sixty entries came to
 describe versions nobody ever ran.</p>
+<p>Before it settles on a number, the build reads the release tags from
+the origin remote with one <code>git ls-remote --tags</code> and steps
+over any number already tagged. A working copy whose
+<code>version.txt</code> has fallen behind the repository would
+otherwise stamp a number that is already spent and be refused by
+<code>tagRelease</code> after the whole build had run, which is what
+happened on 17 August 2026. If the remote cannot be reached, the plain
+increment is used and <code>tagRelease</code> remains the check it has
+always been.</p>
 <h3 id="releasing">Releasing</h3>
 <pre><code>buildHomerScribe.cmd
 git add -A &amp;&amp; git commit -m &quot;...&quot;

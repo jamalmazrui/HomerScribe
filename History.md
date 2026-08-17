@@ -1,5 +1,20 @@
 ﻿# HomerScribe History
 
+## 1.0.145, 17 August 2026
+
+- The build now asks the repository which versions are already released, and
+  steps over any number it finds. A working copy whose `version.txt` has fallen
+  behind can no longer mint a number that is already spent.
+- That is what had happened. `version.txt` held 1.0.143 while 1.0.144 was
+  released and committed, so the build stamped a second 1.0.144 and tagRelease
+  refused it, publishing nothing. The refusal was right; the number should never
+  have been offered, and the wasted work was the whole build.
+- One `git ls-remote --tags` is the only network call the build makes. If it
+  fails the plain increment is used, so a machine with no network still builds,
+  and tagRelease stays the check of last resort it has always been.
+- `Developer.md` and `ReadMe.md` say so too, since a versioning rule that is
+  only in the script is a rule nobody reads.
+
 ## 1.0.144, 13 August 2026
 
 - A recording is no longer described. Asked to describe twenty-nine mp3 files,

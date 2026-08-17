@@ -978,8 +978,10 @@ other file and so a stale copy of a file cannot rewind the number.
 
 From there it flows outward:
 
-1. `buildHomerScribe.cmd` increments it, then generates `Version.cs` holding
-   `BuildVersion.Version`, so the program reports it through `--help`.
+1. `buildHomerScribe.cmd` increments it, stepping over any number already
+   released — which it learns from the repository's own tags, so a working copy
+   that has fallen behind cannot reuse a number — then generates `Version.cs`
+   holding `BuildVersion.Version`, so the program reports it through `--help`.
 2. `HomerScribe_setup.iss` reads `version.txt` at compile time through
    `FileOpen` and `FileRead`, and writes it into the version resource of
    `HomerScribe_setup.exe` through `VersionInfoVersion` and

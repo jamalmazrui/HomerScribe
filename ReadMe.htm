@@ -1193,9 +1193,12 @@ version literal appears in any other file and so a stale copy of a file
 cannot rewind the number.</p>
 <p>From there it flows outward:</p>
 <ol type="1">
-<li><code>buildHomerScribe.cmd</code> increments it, then generates
-<code>Version.cs</code> holding <code>BuildVersion.Version</code>, so
-the program reports it through <code>--help</code>.</li>
+<li><code>buildHomerScribe.cmd</code> increments it, stepping over any
+number already released — which it learns from the repository’s own
+tags, so a working copy that has fallen behind cannot reuse a number —
+then generates <code>Version.cs</code> holding
+<code>BuildVersion.Version</code>, so the program reports it through
+<code>--help</code>.</li>
 <li><code>HomerScribe_setup.iss</code> reads <code>version.txt</code> at
 compile time through <code>FileOpen</code> and <code>FileRead</code>,
 and writes it into the version resource of

@@ -5,9 +5,10 @@ rem
 rem Follows the pattern proven by buildDbDo.cmd and buildUrlFido.cmd.
 rem
 rem VERSION: version.txt is the SINGLE source of truth. It holds one
-rem line, nothing else. This script increments it on every build, then
-rem generates Version.cs from it, so the running program reports the
-rem same number. HomerScribe_setup.iss reads version.txt directly, so
+rem line, nothing else. This script increments it on every build --
+rem stepping over any number already released, which it learns from the
+rem repository's own tags -- then generates Version.cs from it, so the
+rem running program reports the same number. HomerScribe_setup.iss reads version.txt directly, so
 rem the installer reports it too, and tagRelease reads it back out of
 rem the built setup's version resource to form the tag. No version
 rem literal appears anywhere else, so a stale file cannot rewind it.
@@ -373,11 +374,50 @@ exit /b 1
 
 :takeNextVersion
 rem -------------------------------------------------------------------
-rem Take the next version: increment the last dotted part of !ver!.
-rem No network call is made; tagRelease does the "already released"
-rem check, which is where a stall would be visible and interruptible.
-rem This is a subroutine rather than a parenthesised block, so each line
+rem Take the next UNUSED version. The last dotted part of !ver! is
+rem incremented, and any number that already carries a release tag on
+rem the origin remote is stepped over, so a version.txt that has fallen
+rem behind the repository cannot mint a number that is already spent.
+rem That is what happened on 17 August 2026: version.txt held 1.0.143
+rem while 1.0.144 was already released, the build stamped a second
+rem 1.0.144, and tagRelease refused it at the end of the work.
+rem
+rem One "git ls-remote" is the only network call the build makes. If it
+rem fails, the plain increment is used and tagRelease remains the check
+rem it has always been, so a machine with no network still builds.
+rem
+rem These are subroutines rather than parenthesised blocks, so each line
 rem is parsed on its own.
+rem -------------------------------------------------------------------
+set "verOld=!ver!"
+set "sTagFile=%TEMP%\%app%_tags.txt"
+del "!sTagFile!" >nul 2>&1
+git ls-remote --tags origin "v*" > "!sTagFile!" 2>> "%log%"
+if errorlevel 1 echo WARN: the released tags could not be read, so the next number is taken blindly.>> "%log%"
+if errorlevel 1 del "!sTagFile!" >nul 2>&1
+
+:nextCandidate
+call :incrementVersion
+if not defined new goto :eof
+if not exist "!sTagFile!" goto :haveNextVersion
+findstr /e /c:"refs/tags/v!ver!" "!sTagFile!" >nul 2>&1
+if errorlevel 1 goto :haveNextVersion
+echo Version v!ver! is already released; stepping over it.
+echo Version v!ver! is already released; stepping over it.>> "%log%"
+goto :nextCandidate
+
+:haveNextVersion
+del "!sTagFile!" >nul 2>&1
+> version.txt echo !ver!
+echo Version: !verOld! -^> !ver!
+echo Version: !verOld! -^> !ver!>> "%log%"
+goto :eof
+
+:incrementVersion
+rem -------------------------------------------------------------------
+rem Increment the last dotted part of !ver!. Nothing is written here, so
+rem the caller may call this repeatedly while stepping over numbers that
+rem are already spent.
 rem -------------------------------------------------------------------
 set "p1=" & set "p2=" & set "p3=" & set "p4="
 set "new="
@@ -400,8 +440,5 @@ if not defined new (
   echo ERROR: could not work out the next version from "!ver!".>> "%log%"
   goto :eof
 )
-> version.txt echo !new!
-echo Version: !ver! -^> !new!
-echo Version: !ver! -^> !new!>> "%log%"
 set "ver=!new!"
 goto :eof

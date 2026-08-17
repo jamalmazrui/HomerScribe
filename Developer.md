@@ -235,7 +235,8 @@ and the working files.
     buildHomerScribe.cmd nobump
 
 It writes `buildHomerScribe.log` beside itself and prints it at the end. What
-it does, in order: increments `version.txt` unless told not to, generates
+it does, in order: increments `version.txt` unless told not to, stepping over
+any number already released, generates
 `Version.cs`, finds a compiler, finds the three full-path reference assemblies,
 downloads ffmpeg and yt-dlp if they are missing or stale, compiles seven sources
 into one assembly, and runs Inno Setup. The `.htm` documentation is built with
@@ -257,6 +258,14 @@ one ahead of what the file said. A History entry must therefore be numbered
 `version.txt` **plus one** — the number the next build will stamp — or a version
 in a log cannot be looked up. Getting this wrong is how sixty entries came to
 describe versions nobody ever ran.
+
+Before it settles on a number, the build reads the release tags from the origin
+remote with one `git ls-remote --tags` and steps over any number already tagged.
+A working copy whose `version.txt` has fallen behind the repository would
+otherwise stamp a number that is already spent and be refused by `tagRelease`
+after the whole build had run, which is what happened on 17 August 2026. If the
+remote cannot be reached, the plain increment is used and `tagRelease` remains
+the check it has always been.
 
 ### Releasing
 
