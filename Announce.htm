@@ -168,8 +168,8 @@
 <body>
 <header id="title-block-header">
 <h1 class="title">What’s New in HomerScribe</h1>
-<p class="subtitle">It now describes photographs, and it reads a film’s
-own captions</p>
+<p class="subtitle">It now describes photographs, and reads a film’s own
+captions</p>
 <p class="author">Jamal Mazrui</p>
 </header>
 <nav id="TOC" role="doc-toc">
@@ -178,138 +178,63 @@ own captions</p>
 id="toc-whats-new-in-homerscribe">What’s New in HomerScribe</a>
 <ul>
 <li><a
-href="#it-now-describes-photographs-and-it-reads-a-films-own-captions"
-id="toc-it-now-describes-photographs-and-it-reads-a-films-own-captions">It
-now describes photographs, and it reads a film’s own captions</a></li>
-<li><a href="#it-can-now-describe-a-folder-of-photographs"
-id="toc-it-can-now-describe-a-folder-of-photographs">It can now describe
-a folder of photographs</a>
-<ul>
-<li><a href="#you-can-tell-it-what-it-cannot-know"
-id="toc-you-can-tell-it-what-it-cannot-know">You can tell it what it
-cannot know</a></li>
-<li><a href="#what-it-cannot-do" id="toc-what-it-cannot-do">What it
-cannot do</a></li>
-</ul></li>
-<li><a href="#it-now-reads-a-films-own-captions"
-id="toc-it-now-reads-a-films-own-captions">It now reads a film’s own
+href="#it-now-describes-photographs-and-reads-a-films-own-captions"
+id="toc-it-now-describes-photographs-and-reads-a-films-own-captions">It
+now describes photographs, and reads a film’s own captions</a></li>
+<li><a href="#it-describes-a-folder-of-photographs"
+id="toc-it-describes-a-folder-of-photographs">It describes a folder of
+photographs</a></li>
+<li><a href="#it-reads-a-films-own-captions"
+id="toc-it-reads-a-films-own-captions">It reads a film’s own
 captions</a></li>
-<li><a href="#being-honest-about-it"
-id="toc-being-honest-about-it">Being honest about it</a></li>
-<li><a href="#it-stays-on-your-computer"
-id="toc-it-stays-on-your-computer">It stays on your computer</a></li>
 <li><a href="#try-it" id="toc-try-it">Try it</a></li>
 </ul></li>
 </ul>
 </nav>
 <h1 id="whats-new-in-homerscribe">What’s New in HomerScribe</h1>
-<h3
-id="it-now-describes-photographs-and-it-reads-a-films-own-captions">It
-now describes photographs, and it reads a film’s own captions</h3>
+<h3 id="it-now-describes-photographs-and-reads-a-films-own-captions">It
+now describes photographs, and reads a film’s own captions</h3>
 <p><a
 href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Windows
 installer</a> · <a
 href="https://github.com/JamalMazrui/HomerScribe">Project on
 GitHub</a></p>
 <p>HomerScribe describes video and transcribes speech on your own
-computer, without sending anything anywhere. I wrote about it here a
-while ago. Two things have been added since, and both are worth a few
-minutes of your time.</p>
-<p>It is free, and it is open source. There is no account to make and
-nothing to pay for later.</p>
-<h2 id="it-can-now-describe-a-folder-of-photographs">It can now describe
-a folder of photographs</h2>
-<p>This is the bigger of the two changes.</p>
-<p>Point HomerScribe at a zip file of pictures instead of a video, and
-it looks at each one and writes down what it sees.</p>
-<p>You get three things back:</p>
-<ul>
-<li><strong>Each picture, with the description written inside the
-file.</strong> Not in a note beside it, and not in some program’s
-database. Inside the picture, where it travels with the file wherever
-you send it.</li>
-<li><strong>The same pictures again under new names</strong>, in a
-second zip. <code>IMG_4471.JPG</code> becomes
-<code>Elderly woman in a blue floral dress beside a dry stone wall.jpg</code>.</li>
-<li><strong>A document listing every picture</strong> and everything now
-stored in it.</li>
-</ul>
-<p>The description goes into several places at once, because different
-programs look in different places. Two of them are the fields that
-<strong>Windows Explorer shows and a screen reader reads out of a file’s
-Properties</strong>. Select a picture, open Properties, and the
-description is simply there.</p>
-<p>Two others are fields the picture industry added in 2021 for exactly
-this purpose. They are what a web page should use as alt text. Not much
-software fills them in yet. HomerScribe does.</p>
-<p>Forty-nine photographs took under three minutes on my machine.</p>
-<h3 id="you-can-tell-it-what-it-cannot-know">You can tell it what it
-cannot know</h3>
-<p>A model can see that a picture holds three men and an older woman at
-a table. It cannot know who they are.</p>
-<p>So HomerScribe reads the file name. If a picture is called
-<code>Jeannie &amp; Jim - Lake Tahoe.jpg</code>, it takes those names as
-right, because somebody who was there typed them. You can also drop a
-short note into the zip saying who tends to appear and how to tell them
-apart.</p>
-<p>It will not name anyone it cannot actually match to what is in front
-of it. A guessed name is worse than no name, because you cannot tell the
-two apart.</p>
-<h3 id="what-it-cannot-do">What it cannot do</h3>
-<p>Some picture formats have nowhere to store a description. A GIF has
-only a plain comment field. A BMP has nothing at all. Those pictures are
-still described and still renamed, and the document says which they
-were.</p>
-<h2 id="it-now-reads-a-films-own-captions">It now reads a film’s own
+computer, without sending anything anywhere. It is free and open source.
+Two things have been added since I last wrote about it.</p>
+<h2 id="it-describes-a-folder-of-photographs">It describes a folder of
+photographs</h2>
+<p>Point it at a zip file of pictures instead of a video, and it looks
+at each one and writes down what it sees.</p>
+<p>You get each picture back <strong>with the description written inside
+the file</strong> — not in a note beside it, but in the picture, where
+it travels with the file wherever you send it. Select one in Windows
+Explorer, open Properties, and the description is simply there for a
+screen reader to read.</p>
+<p>You also get the same pictures under new names.
+<code>IMG_4471.JPG</code> becomes
+<code>Elderly woman in a blue floral dress beside a dry stone wall.jpg</code>.</p>
+<p>It uses what you can tell it. A picture called
+<code>Jeannie &amp; Jim - Lake Tahoe.jpg</code> gets those names,
+because somebody who was there typed them. You can drop a note into the
+zip saying who tends to appear and how to tell them apart. It will not
+name anyone it cannot match to what is in front of it.</p>
+<p>Forty-nine photographs took under three minutes.</p>
+<h2 id="it-reads-a-films-own-captions">It reads a film’s own
 captions</h2>
-<p>Many films already carry their words, either inside the file or in a
-caption file beside it. Where a <strong>person</strong> wrote those
-captions, HomerScribe now uses them instead of listening to the
-film.</p>
-<p>That is better than anything a machine can produce, and not only at
-the words:</p>
-<ul>
-<li>A person writes down <strong>who is speaking</strong>.</li>
-<li>A person writes down <strong>what can be heard but not
-spoken</strong> — a door slamming, music starting, laughter in the
-audience.</li>
-</ul>
-<p>That second one matters most. For someone who can neither see nor
-hear a film, the transcript is the whole of it, and until now it held
-nothing that was not a word.</p>
-<p>There is a practical gain too. If you only want the words,
-HomerScribe no longer downloads the film at all. Four videos,
-transcribed, in under a minute.</p>
-<p><strong>Captions a machine made are a different matter.</strong>
-YouTube’s automatic ones carry the words and nothing else — no speaker,
-no sounds, and punctuation only where the software guessed. HomerScribe
-can tell the two apart, and for a machine-made track it listens to the
-film instead, which produces better sentences. The transcript always
-says which it was.</p>
-<h2 id="being-honest-about-it">Being honest about it</h2>
-<p>Transcription is the stronger half. On clear speech it is close to
-what a person would write down, and where a person wrote the captions it
-is not a machine’s work at all.</p>
-<p>Description is harder, and it is worth being plain about that. The
-model describes what a frame holds. It does not always know what matters
-in it. It can tell you that a man is standing in a doorway; it cannot
-always tell you that this is the moment everything turns on.</p>
-<p>I also tried to make captions improve the descriptions, by handing
-the model the list of people the captions name. So far that has not
-worked, and I am not going to claim it has. Knowing that someone called
-Anil Seth speaks in a film does not help a model pick his face out of
-three. That work continues.</p>
-<p>None of this replaces a described version made by people who do it
-for a living. It is for the far larger number of films and photographs
-where nobody is going to do that, and the choice is this or nothing.</p>
-<h2 id="it-stays-on-your-computer">It stays on your computer</h2>
-<p>Nothing is uploaded. No account, no key, no subscription, no company
-seeing your family photographs. It needs a reasonably modern machine and
-some disk space for the models, and after that it costs nothing to
-run.</p>
-<p>It stands on other people’s work — ffmpeg, Whisper, Ollama, ExifTool,
-yt-dlp — all free and open source, and it would not exist without
-them.</p>
+<p>Many films already carry their words. Where a <strong>person</strong>
+wrote those captions, HomerScribe now uses them instead of listening to
+the film.</p>
+<p>A person’s captions are better than anything a machine makes, and not
+only at the words. They say who is speaking. They write down what can be
+heard but not spoken — a door slamming, music starting, laughter. For
+someone who can neither see nor hear a film, that is the part nothing
+else provides.</p>
+<p>If you only want the words, it no longer downloads the film at all.
+Four videos, transcribed, in under a minute.</p>
+<p>Captions a machine made are another matter, and HomerScribe can tell
+the difference. YouTube’s automatic ones have no speaker and no sounds,
+so it listens to the film instead and writes better sentences.</p>
 <h2 id="try-it">Try it</h2>
 <ul>
 <li><a
@@ -318,14 +243,12 @@ installer</a></li>
 <li><a href="https://github.com/JamalMazrui/HomerScribe">Project on
 GitHub</a></li>
 </ul>
-<p>Accept the defaults. On the last page of the installer, leave ticked
-whatever matches what you want to do, and let it fetch the models. That
-is the long part, and it happens once.</p>
-<p>Then run it. There is a short sample video in the box, so you can
-press OK and watch it work before you go looking for anything of your
-own.</p>
-<p>I would like to hear how it goes, and particularly where it goes
-wrong.</p>
+<p>Accept the defaults and let the installer fetch the models. That is
+the long part, and it happens once. There is a sample video in the box,
+so you can press OK and watch it work straight away.</p>
+<p>Transcription is the stronger half; description is harder, and I
+would rather you saw that for yourself than took my word for it. Tell me
+where it goes wrong.</p>
 <p>Jamal Mazrui</p>
 </body>
 </html>
