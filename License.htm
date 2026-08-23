@@ -1,10 +1,11 @@
-﻿<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>HomerScribe — License</title>
+  <meta name="author" content="Jamal Mazrui" />
+  <title>HomerScribe License</title>
   <style>
     html {
       color: #1a1a1a;
@@ -163,27 +164,45 @@
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
-  <style>
-  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
-  code, pre { font-family: Consolas, monospace; }
-  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
-  table { border-collapse: collapse; }
-  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
-  </style>
 </head>
 <body>
+<header id="title-block-header">
+<h1 class="title">HomerScribe License</h1>
+<p class="subtitle">MIT, by Jamal Mazrui</p>
+<p class="author">Jamal Mazrui</p>
+</header>
 <nav id="TOC" role="doc-toc">
 <ul>
-<li><a href="#license" id="toc-license">License</a>
+<li><a href="#homerscribe-license"
+id="toc-homerscribe-license">HomerScribe License</a>
 <ul>
-<li><a href="#programs-packaged-alongside"
-id="toc-programs-packaged-alongside">Programs packaged
-alongside</a></li>
+<li><a href="#mit-license" id="toc-mit-license">MIT License</a></li>
+<li><a href="#what-is-covered-and-what-is-not"
+id="toc-what-is-covered-and-what-is-not">What is covered, and what is
+not</a>
+<ul>
+<li><a href="#packaged-in-the-installer"
+id="toc-packaged-in-the-installer">Packaged in the installer</a></li>
+<li><a href="#fetched-not-packaged"
+id="toc-fetched-not-packaged">Fetched, not packaged</a></li>
+<li><a href="#what-would-change-this"
+id="toc-what-would-change-this">What would change this</a></li>
+</ul></li>
 </ul></li>
 </ul>
 </nav>
-<h1 id="license">License</h1>
-<p>MIT License</p>
+<h1 id="homerscribe-license">HomerScribe License</h1>
+<p><strong>HomerScribe</strong> was written by <strong>Jamal
+Mazrui</strong>, who is its author and developer, and is released under
+the MIT License.</p>
+<p>The license below is the standard MIT text, word for word. It is left
+exactly as it is written everywhere else so that anybody — a person, a
+company’s legal team, or a program that scans for licenses — recognises
+it at once. Where it says “the Software”, it means HomerScribe: the
+program, its source code, and the documents that come with it.</p>
+<p>In short: use it, change it, sell it, build something else out of it.
+Keep the notice below with it. There is no warranty.</p>
+<h2 id="mit-license">MIT License</h2>
 <p>Copyright (c) 2026 Jamal Mazrui</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -201,28 +220,73 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
-<h2 id="programs-packaged-alongside">Programs packaged alongside</h2>
-<p>HomerScribe calls three other programs. The MIT license above covers
-HomerScribe itself; each of the others carries its own terms, which
-apply to that program and not to this one.</p>
+<h2 id="what-is-covered-and-what-is-not">What is covered, and what is
+not</h2>
+<p>The MIT license above covers <strong>HomerScribe itself</strong> —
+the program, the source, and these documents. Nothing below changes
+that.</p>
+<p>HomerScribe does not link any of the programs it uses. It runs each
+as a separate process and talks to it through a command line, a file, or
+a local web request. The Free Software Foundation’s own guidance on the
+GPL says that <a
+href="https://www.gnu.org/licenses/old-licenses/gpl-2.0-faq.html#MereAggregation">pipes,
+sockets and command-line arguments are how separate programs talk</a>,
+and that putting separate programs side by side is <a
+href="https://www.gnu.org/licenses/old-licenses/gpl-2.0-faq.html#MereAggregation">mere
+aggregation, which leaves each one’s license alone</a>. So each program
+below carries its own terms, for itself, and HomerScribe stays MIT.</p>
+<p>I am not a lawyer, and this is a plain account rather than legal
+advice.</p>
+<h3 id="packaged-in-the-installer">Packaged in the installer</h3>
 <ul>
-<li><strong>ffmpeg</strong> (https://ffmpeg.org) does all the video and
-audio work. The installer packages <code>ffmpeg.exe</code> when it is
-present at build time. Which license applies depends on the build: the
-widely used Gyan “essentials” builds are GPL, so distributing one
-carries the GPL’s obligations for that binary, including making its
-corresponding source available. An LGPL build, such as those from BtbN,
-carries lighter obligations and is worth preferring if HomerScribe is to
-be distributed widely. I am not a lawyer; this is a pointer, not
-advice.</li>
-<li><strong>yt-dlp</strong> (https://github.com/yt-dlp/yt-dlp) downloads
-video from web addresses. It is released into the public domain under
-the Unlicense, so packaging it carries no obligation.</li>
-<li><strong>Ollama</strong> (https://ollama.com) serves the vision
-model. It is not packaged; the installer offers to fetch it, and it is
-MIT licensed.</li>
+<li><strong><a href="https://ffmpeg.org">ffmpeg</a></strong> does all
+the video and audio work. <code>buildHomerScribe.cmd</code> fetches the
+<strong>LGPL</strong> build from <a
+href="https://github.com/BtbN/FFmpeg-Builds">BtbN’s FFmpeg-Builds</a>,
+never a GPL one, and this is deliberate: the widely used GPL builds
+would oblige anyone redistributing HomerScribe to supply ffmpeg’s source
+as well. Under the <a
+href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">LGPL
+version 2.1</a> the duties are to say which license applies, to say
+where the source can be had, and not to stop anyone replacing the copy
+with their own. All three are met here: this file says so, the build is
+unmodified and its source is at the link above, and
+<code>ffmpeg.exe</code> is a plain file in the program folder that
+anybody may overwrite.</li>
+<li><strong><a
+href="https://github.com/yt-dlp/yt-dlp">yt-dlp</a></strong> downloads
+video from web addresses. It is released into the public domain under <a
+href="https://unlicense.org">the Unlicense</a>, so packaging it carries
+no duty at all.</li>
+<li><strong><a href="https://exiftool.org">ExifTool</a></strong> writes
+a picture’s description into the picture itself. It is released under <a
+href="https://dev.perl.org/licenses/">the same terms as Perl</a> — the
+Artistic License or the GPL, whichever the redistributor prefers. The
+copy packaged here is unmodified and its source is at the link above,
+which is what either license asks of somebody passing it on.
+<code>exiftool.exe</code> and its <code>exiftool_files</code> folder sit
+in the program folder and may be replaced.</li>
+</ul>
+<h3 id="fetched-not-packaged">Fetched, not packaged</h3>
+<p>These are not in the installer. HomerScribe offers to fetch them, and
+each is then the user’s own copy under its own terms.</p>
+<ul>
+<li><strong><a
+href="https://github.com/ggml-org/whisper.cpp">whisper.cpp</a></strong>
+hears the speech. MIT, like HomerScribe.</li>
+<li><strong><a href="https://ollama.com">Ollama</a></strong> serves the
+vision model. MIT.</li>
 </ul>
 <p>The models Ollama runs carry their own licenses, set by whoever
-published them.</p>
+published them. Those govern what may be done with what the model
+produces, and they are worth reading before publishing a description
+made with one.</p>
+<h3 id="what-would-change-this">What would change this</h3>
+<p>If HomerScribe ever <strong>linked</strong> a library covered by the
+GPL or LGPL into its own executable — rather than running a separate
+program — the answer above would no longer hold, and the LGPL in
+particular would bring duties that a single self-contained
+<code>.exe</code> cannot easily meet. It does not do this, and should
+not start.</p>
 </body>
 </html>

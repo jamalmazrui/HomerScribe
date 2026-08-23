@@ -1528,11 +1528,35 @@ public class LbcDialog : IDisposable
         frm.ClientSize = new Size(DefaultDialogWidth, iTotalHeight);
 
         if (ctlFirstFocusable != null) frm.ActiveControl = ctlFirstFocusable;
-        if (ctlInitialFocus != null)
+        // The field that opens with the focus has its text SELECTED.
+        //
+        // Windows convention, and Microsoft's own guidance for data entry
+        // fields: highlighting the whole value lets somebody type, or paste
+        // with Control+V, and replace what was there -- or press Tab to leave
+        // it alone. Without it the caret sits at one end and a paste joins
+        // itself onto the old value.
+        //
+        // WinForms selects the text when a box is reached by Tab, but not when
+        // the box is simply made the active control before the form opens,
+        // which is how this one starts. So it is done explicitly, on Shown,
+        // once the form is really there.
+        //
+        // Only where there is something to select, and only for an editable
+        // box: selecting the whole of a read-only field says nothing useful.
+        Control ctlFocusLater = ctlInitialFocus != null ? ctlInitialFocus : ctlFirstFocusable;
+        if (ctlFocusLater != null)
         {
-            Control ctlFocusLater = ctlInitialFocus;
+            Control ctlOpenOn = ctlFocusLater;
             frm.Shown += delegate(object o, EventArgs e)
-            { try { ctlFocusLater.Focus(); } catch { } };
+            {
+                try
+                {
+                    ctlOpenOn.Focus();
+                    TextBoxBase tbOpen = ctlOpenOn as TextBoxBase;
+                    if (tbOpen != null && !tbOpen.ReadOnly && tbOpen.Text.Length > 0) tbOpen.SelectAll();
+                }
+                catch { }
+            };
         }
         frm.ShowDialog(owner);
         return sResult;

@@ -112,6 +112,11 @@ Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 ; on a braille display, and HTML for opening in a browser, which is what the
 ; shortcuts point at.
 Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+; The complete guide and the hotkey summary. ReadMe.md is the short way in and
+; points at both.
+Source: "HomerScribe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Hotkeys.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "video_formats.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Developer.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
@@ -119,6 +124,9 @@ Source: "Review.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntex
 Source: "Context.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Announce.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "HomerScribe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Hotkeys.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "video_formats.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "History.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "Developer.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
@@ -135,6 +143,11 @@ Source: "Announce.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesn
 Source: "ffmpeg.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ffprobe.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+; ExifTool writes the descriptions into the pictures. A SINGLE FILE only --
+; no "exiftool_files" folder is packaged, deliberately. See License.md and
+; the ExifTool section of buildHomerScribe.cmd for why.
+Source: "exiftool.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "installExifTool.cmd"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 Source: "installOllama.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installModels.cmd"; DestDir: "{app}"; Flags: ignoreversion

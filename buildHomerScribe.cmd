@@ -225,6 +225,109 @@ if errorlevel 1 (
 :haveYtDlp
 if exist "yt-dlp.exe" echo yt-dlp.exe is present>> "%log%"
 
+rem ---- keep yt-dlp current ---------------------------------------------
+rem YouTube changes what it serves, sometimes deliberately to break
+rem downloaders, and yt-dlp ships the fixes within days. A copy a few weeks
+rem old is a copy from before several of those changes, and the symptom is a
+rem video that used to download being refused.
+rem
+rem So it is updated on EVERY build rather than left to age. yt-dlp updates
+rem itself: "-U" takes the newest stable, "--update-to nightly" the newest
+rem nightly. Nightly is what yt-dlp's own README recommends for regular users,
+rem and it is the channel to be on when something has just broken.
+rem
+rem This is one quick call that prints "yt-dlp is up to date" and stops when
+rem there is nothing to do. It never fails the build: no network, or a copy
+rem that cannot write to itself, and the build carries on with what is there.
+if not exist "yt-dlp.exe" goto :ytDlpDone
+echo Making sure yt-dlp is current.
+echo ---- yt-dlp update ---->> "%log%"
+"yt-dlp.exe" --version >> "%log%" 2>&1
+"yt-dlp.exe" --update-to nightly >> "%log%" 2>&1
+if errorlevel 1 (
+  echo yt-dlp could not update itself; the copy already here will be used.
+  echo NOTE: yt-dlp did not update. Carrying on with the copy already here.>> "%log%"
+)
+echo yt-dlp version after the update attempt:>> "%log%"
+"yt-dlp.exe" --version >> "%log%" 2>&1
+:ytDlpDone
+
+rem ---- ExifTool --------------------------------------------------------
+rem Writes the descriptions into the pictures themselves.
+rem
+rem ONE FILE, AND ONLY ONE FILE. Jamal's requirement, and it settles what may
+rem be used here. exiftool.exe must be a self-contained binary with nothing
+rem beside it -- no "exiftool_files" folder, no Perl DLLs.
+rem
+rem That rules out everything currently published, and it is worth writing
+rem down why so nobody undoes this later:
+rem
+rem   exiftool.org / SourceForge 13.59  a small launcher PLUS an
+rem                                     "exiftool_files" folder holding Perl
+rem   winget OliverBetz.ExifTool        the same thing, installed
+rem   Image-ExifTool-<ver>.tar.gz       Perl source, needs Perl installed
+rem
+rem NOBODY publishes a current single-file build. The one-file form is the OLD
+rem exiftool.org format, a PAR-packed archive, and it was replaced by the
+rem launcher deliberately: unpacking a PAR archive on every invocation is slow,
+rem and HomerScribe invokes ExifTool once per picture. A third-party single
+rem file exists on GitHub but is a personal archive with no following, and is
+rem not something to hang a build on.
+rem
+rem NONE OF THIS COSTS ANYTHING, because HomerScribe no longer needs a recent
+rem ExifTool: it carries the definitions of the two IPTC accessibility
+rem properties itself and hands them over with -config. An older single-file
+rem copy writes all nine fields.
+rem
+rem So: use a single-file copy if one is here, say which and how old, and
+rem never fetch or keep the folder kind.
+
+set "exifWant=12.41"
+set "exifSingle="
+
+rem Is the copy in the build folder a single file that runs?
+if not exist "exiftool.exe" goto :exifToolFind
+if exist "exiftool_files" goto :exifToolNotSingle
+call :exifToolOldEnough "exiftool.exe"
+if defined exifVer set "exifSingle=%CD%"
+if defined exifSingle goto :exifToolDone
+
+:exifToolNotSingle
+if exist "exiftool_files" (
+  echo Removing exiftool_files: only a single-file ExifTool is wanted here.>> "%log%"
+  rmdir /s /q "exiftool_files" >nul 2>&1
+)
+
+:exifToolFind
+rem Look for a single-file copy elsewhere on this machine. A folder beside the
+rem exe disqualifies it, whatever its version.
+set "haveExif="
+call :exifToolTrySingle "C:\HomerScribe"
+call :exifToolTrySingle "%LOCALAPPDATA%\HomerScribe\exiftool"
+call :exifToolTrySingle "%ProgramFiles%\HomerScribe"
+call :exifToolTrySingle "%LOCALAPPDATA%\Programs\HomerScribe"
+if not defined haveExif goto :exifToolNone
+if /i "%haveExif%"=="%CD%" goto :exifToolDone
+echo Using the single-file ExifTool %exifVer% from %haveExif%>> "%log%"
+echo Using the single-file ExifTool %exifVer% from %haveExif%
+copy /y "%haveExif%\exiftool.exe" "exiftool.exe" >nul 2>&1
+goto :exifToolDone
+
+:exifToolNone
+echo NOTE: no single-file exiftool.exe was found, and none is fetched: every>> "%log%"
+echo NOTE: current package needs an exiftool_files folder beside it, which is>> "%log%"
+echo NOTE: not wanted here. Put a self-contained exiftool.exe in this folder>> "%log%"
+echo NOTE: and the build will use it. Without one, pictures are still described>> "%log%"
+echo NOTE: but the descriptions are not written into them.>> "%log%"
+echo No single-file exiftool.exe found. Pictures will be described but not tagged.
+
+:exifToolDone
+if not exist "exiftool.exe" goto :exifToolSaid
+call :exifToolOldEnough "exiftool.exe"
+echo exiftool.exe is present, version %exifVer%, a single file with nothing beside it>> "%log%"
+if not "%exifOk%"=="yes" echo NOTE: that is older than %exifWant%, so it does not know the IPTC accessibility fields by name. HomerScribe supplies their definitions, so they are still written.>> "%log%"
+:exifToolSaid
+
 rem ---- JSON -----------------------------------------------------------
 rem No JSON package is fetched, because none is needed. HomerScribe reads and
 rem writes JSON with JavaScriptSerializer from System.Web.Extensions, which is
@@ -307,6 +410,11 @@ rem   Say.cs            -- Homer screen-reader announcements
 rem   Inix.cs           -- Homer ini codec and input history
 rem   Util.cs           -- Homer general utilities
 rem   Web.cs            -- Homer web helpers
+rem System.IO.Compression and its FileSystem partner are for reading a zip of
+rem pictures. Both are part of the .NET Framework itself, so referencing them
+rem adds nothing beside HomerScribe.exe. They must go BEFORE the csc line and
+rem not among its continued arguments: a "rem" inside a "^" continuation is
+rem handed to the compiler as a file name.
 echo Compiling>> "%log%"
 echo(>> "%log%"
 "!csc!" /nologo /target:exe /platform:x64 /optimize+ ^
@@ -319,6 +427,8 @@ echo(>> "%log%"
   /reference:System.Web.Extensions.dll ^
   /reference:System.Net.Http.dll ^
   /reference:System.Xml.dll ^
+  /reference:System.IO.Compression.dll ^
+  /reference:System.IO.Compression.FileSystem.dll ^
   /reference:Microsoft.VisualBasic.dll ^
   /reference:"!speech!" ^
   /reference:"!uiaProv!" ^
@@ -441,4 +551,36 @@ if not defined new (
   goto :eof
 )
 set "ver=!new!"
+goto :eof
+
+
+rem ---- is this ExifTool new enough? --------------------------------------
+rem Sets exifVer and exifOk. Called with the path to an exiftool.exe.
+rem A version is "11.79" or "13.59"; comparing them as numbers goes wrong at
+rem 11.9 against 11.79, so they are compared as version objects.
+:exifToolOldEnough
+set "exifVer="
+set "exifOk=no"
+if not exist %1 goto :eof
+for /f "usebackq delims=" %%v in (`%1 -ver 2^>nul`) do set "exifVer=%%v"
+if not defined exifVer goto :eof
+for /f "usebackq delims=" %%o in (`powershell -NoProfile -Command ^
+  "try { if ([version]('%exifVer%' + '.0') -ge [version]('%exifWant%' + '.0')) { 'yes' } else { 'no' } } catch { 'no' }"`) do set "exifOk=%%o"
+goto :eof
+
+rem ---- is there a single-file exiftool.exe in this folder? ----------------
+rem Sets haveExif if the folder holds an exiftool.exe that RUNS and has no
+rem "exiftool_files" beside it. A folder beside the exe disqualifies it,
+rem whatever its version, because Jamal wants one file and nothing else.
+:exifToolTrySingle
+if defined haveExif goto :eof
+if "%~1"=="" goto :eof
+if not exist "%~1\exiftool.exe" goto :eof
+if exist "%~1\exiftool_files" (
+  echo Passing over %~1: it needs an exiftool_files folder beside it.>> "%log%"
+  goto :eof
+)
+call :exifToolOldEnough "%~1\exiftool.exe"
+if not defined exifVer goto :eof
+set "haveExif=%~1"
 goto :eof

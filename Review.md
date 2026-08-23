@@ -4,6 +4,43 @@ A review of the development of HomerScribe, written after a run of changes that
 each looked correct and several of which were not. It is here rather than in a
 message because the next person to work on this, including me, needs it.
 
+## What the runs show, as of 22 August 2026
+
+Measured from the logs rather than judged by eye.
+
+**Transcription is better where a person wrote the captions**, and that is now
+the only case where captions are used at all. A person's caption track carries
+the words, who is speaking, and the sounds that are not speech; a machine's
+carries the words alone, punctuated where the recogniser guessed. Since 1.0.177
+a machine-made track is passed over and the film is listened to instead, which
+gives better sentences. The transcript records which it was, every time.
+
+**Descriptions are not yet better for it, and that must not be claimed.**
+Across every run to date, no speaker name from a caption track has appeared in
+any description. Two reasons, both found by reading logs rather than by
+reasoning about them:
+
+- Until 1.0.178 the cast list was handed to the model inside a paragraph headed
+  "Names you have already used in this film", which is meaningless for a name
+  the model had never used. It is now given as what it is.
+- Until 1.0.179 the nearby-speaker hint included NARRATOR, and a narrator is
+  never in shot. Nearly every hint carried one, turning the useful single-name
+  case into a three-name guess. On the eleven real hints of 22 August,
+  filtering narrators and other non-people takes the hints naming exactly one
+  person from one in eleven to three in eleven.
+
+Whether that is enough to put a name into a description is open, and a run of a
+documentary with named speakers will answer it. **Until a log shows it, the
+announcement does not say it.**
+
+### A logging failure worth remembering
+
+Moving the cast list out of `lNames` in 1.0.178 left its log line still reading
+`lNames`, so it stopped firing. Six runs later there was no way to tell from a
+log whether the cast list had reached the model at all. **Moving a thing and
+leaving its evidence behind is the same mistake as trusting an exit code**, and
+it cost a whole round of testing.
+
 ## The shape of the problem
 
 Between the merge into HomerScribe and version 1.0.113 there were roughly
@@ -83,6 +120,21 @@ and none of it reached the person who needed it.
 outcomes — described, Skipped, Resuming, Error, Rejected — and anything that
 could not be used is named in the results with its reason. A silent ending is
 now a bug by definition.
+
+## 6. The test that was actually run, for once
+
+The rolling-caption merge in 1.0.147 was wrong when it was written, and it was
+wrong in the way that would have been hardest to see afterwards: it produced
+plausible prose with every phrase in it twice. In a two-hour lecture nobody would
+have read far enough to notice, and the transcript would simply have been poor.
+
+What caught it was porting the logic to Python and running it against a real
+automatic caption track before claiming it worked, rather than reading it over
+and finding it convincing. It took a minute. The bug was in the first output.
+
+This is mistake 3 inverted. Mistake 3 was writing a test that carried the same
+wrong picture as the code, because both came from the same head. The defence is
+not more careful thinking; it is a sample that came from somewhere else.
 
 ## What the field does, and where this differed
 

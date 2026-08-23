@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Jamal Mazrui" />
-  <title>Announcing HomerScribe</title>
+  <title>What’s New in HomerScribe</title>
   <style>
     html {
       color: #1a1a1a;
@@ -164,158 +164,167 @@
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
-  <style>
-  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
-  code, pre { font-family: Consolas, monospace; }
-  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
-  table { border-collapse: collapse; }
-  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
-  </style>
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">Announcing HomerScribe</h1>
-<p class="subtitle">Audio Description and Transcription on Your Own
-Computer</p>
+<h1 class="title">What’s New in HomerScribe</h1>
+<p class="subtitle">It now describes photographs, and it reads a film’s
+own captions</p>
 <p class="author">Jamal Mazrui</p>
 </header>
 <nav id="TOC" role="doc-toc">
 <ul>
-<li><a href="#announcing-homerscribe"
-id="toc-announcing-homerscribe">Announcing HomerScribe</a>
+<li><a href="#whats-new-in-homerscribe"
+id="toc-whats-new-in-homerscribe">What’s New in HomerScribe</a>
 <ul>
-<li><a href="#the-two-things-it-does"
-id="toc-the-two-things-it-does">The two things it does</a></li>
-<li><a href="#it-runs-on-your-computer-and-only-on-your-computer"
-id="toc-it-runs-on-your-computer-and-only-on-your-computer">It runs on
-your computer, and only on your computer</a></li>
-<li><a href="#what-it-will-cost-you-in-disk-space"
-id="toc-what-it-will-cost-you-in-disk-space">What it will cost you in
-disk space</a></li>
-<li><a href="#being-honest-about-the-quality"
-id="toc-being-honest-about-the-quality">Being honest about the
-quality</a></li>
-<li><a href="#how-long-it-takes-and-what-makes-the-difference"
-id="toc-how-long-it-takes-and-what-makes-the-difference">How long it
-takes, and what makes the difference</a></li>
-<li><a href="#it-was-built-for-us" id="toc-it-was-built-for-us">It was
-built for us</a></li>
+<li><a
+href="#it-now-describes-photographs-and-it-reads-a-films-own-captions"
+id="toc-it-now-describes-photographs-and-it-reads-a-films-own-captions">It
+now describes photographs, and it reads a film’s own captions</a></li>
+<li><a href="#it-can-now-describe-a-folder-of-photographs"
+id="toc-it-can-now-describe-a-folder-of-photographs">It can now describe
+a folder of photographs</a>
+<ul>
+<li><a href="#you-can-tell-it-what-it-cannot-know"
+id="toc-you-can-tell-it-what-it-cannot-know">You can tell it what it
+cannot know</a></li>
+<li><a href="#what-it-cannot-do" id="toc-what-it-cannot-do">What it
+cannot do</a></li>
+</ul></li>
+<li><a href="#it-now-reads-a-films-own-captions"
+id="toc-it-now-reads-a-films-own-captions">It now reads a film’s own
+captions</a></li>
+<li><a href="#being-honest-about-it"
+id="toc-being-honest-about-it">Being honest about it</a></li>
+<li><a href="#it-stays-on-your-computer"
+id="toc-it-stays-on-your-computer">It stays on your computer</a></li>
 <li><a href="#try-it" id="toc-try-it">Try it</a></li>
 </ul></li>
 </ul>
 </nav>
-<h1 id="announcing-homerscribe">Announcing HomerScribe</h1>
-<h3 id="audio-description-and-transcription-on-your-own-computer">Audio
-Description and Transcription on Your Own Computer</h3>
+<h1 id="whats-new-in-homerscribe">What’s New in HomerScribe</h1>
+<h3
+id="it-now-describes-photographs-and-it-reads-a-films-own-captions">It
+now describes photographs, and it reads a film’s own captions</h3>
 <p><a
-href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Download
-the HomerScribe installer for Windows</a></p>
-<p>HomerScribe is free and open source. It costs nothing to try and
-nothing to keep, and there is no account to make, no subscription, and
+href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Windows
+installer</a> · <a
+href="https://github.com/JamalMazrui/HomerScribe">Project on
+GitHub</a></p>
+<p>HomerScribe describes video and transcribes speech on your own
+computer, without sending anything anywhere. I wrote about it here a
+while ago. Two things have been added since, and both are worth a few
+minutes of your time.</p>
+<p>It is free, and it is open source. There is no account to make and
 nothing to pay for later.</p>
-<h2 id="the-two-things-it-does">The two things it does</h2>
-<p>Point HomerScribe at a video or an audio recording, on your own disk
-or at a web address, and tick one box or both.</p>
-<p><strong>Describe video</strong> watches what happens on screen and
-says it aloud. It finds the moments where a description can be spoken
-without covering the dialogue, asks a vision model what is there, speaks
-the answer in a Windows voice, and writes you a new copy of the film
-with that description mixed into it. You get the described film, and you
-get the script of every description with the time it is spoken, in a
-plain text form that reads well on a braille display.</p>
-<p><strong>Transcribe audio</strong> writes down what is said. You get
-the whole transcript, with the time of each stretch of speech.</p>
-<p><strong>Tick both</strong> and you get a third thing, which is the
-one I did not expect to care about as much as I do: the words of the
-film and the descriptions interleaved, in the order they happen. For
-someone who can neither see nor hear a film, that single document is the
-whole of it.</p>
-<h2 id="it-runs-on-your-computer-and-only-on-your-computer">It runs on
-your computer, and only on your computer</h2>
-<p>This is the part worth being clear about.</p>
-<p>Once HomerScribe is installed, nothing leaves your machine. No part
-of your video is uploaded. No request goes to any company’s server.
-There is no account, no login, and no key to paste in.</p>
-<p>That also means there are no tokens. Describing a two hour film means
-asking an AI model several hundred questions and giving it several
-hundred pictures to look at. Done through a commercial subscription,
-that is a great deal of consumption. Done here, it is your own computer
-working for a while, and the count is zero.</p>
-<p>It also means you can describe material you would not want to send
-anywhere: a family recording, a confidential meeting, an unreleased
-film, a medical video.</p>
-<h2 id="what-it-will-cost-you-in-disk-space">What it will cost you in
-disk space</h2>
-<p>HomerScribe itself is small. The AI models it uses are not, and you
-only need the ones for the job you want to do.</p>
+<h2 id="it-can-now-describe-a-folder-of-photographs">It can now describe
+a folder of photographs</h2>
+<p>This is the bigger of the two changes.</p>
+<p>Point HomerScribe at a zip file of pictures instead of a video, and
+it looks at each one and writes down what it sees.</p>
+<p>You get three things back:</p>
 <ul>
-<li><strong>Transcribing</strong> needs about <strong>half a
-gigabyte</strong>.</li>
-<li><strong>Describing</strong> needs about <strong>six and a half
-gigabytes</strong>, because it needs a model that can look at pictures
-as well as a service to run it in.</li>
+<li><strong>Each picture, with the description written inside the
+file.</strong> Not in a note beside it, and not in some program’s
+database. Inside the picture, where it travels with the file wherever
+you send it.</li>
+<li><strong>The same pictures again under new names</strong>, in a
+second zip. <code>IMG_4471.JPG</code> becomes
+<code>Elderly woman in a blue floral dress beside a dry stone wall.jpg</code>.</li>
+<li><strong>A document listing every picture</strong> and everything now
+stored in it.</li>
 </ul>
-<p>Both together come to about <strong>seven gigabytes</strong>. The
-installer offers each separately, so if you only want transcripts you
-can skip the larger download entirely.</p>
-<p>They are downloaded once and kept. Nothing is downloaded again when
-you use the program.</p>
-<h2 id="being-honest-about-the-quality">Being honest about the
-quality</h2>
-<p>I would rather you hear this from me than discover it yourself.</p>
-<p>The AI that runs on your own computer is not as capable as the AI you
-reach through a commercial service. It cannot be. A model small enough
-to sit on an ordinary desktop is a fraction of the size of the ones
-running in a data centre, and that difference shows. HomerScribe uses
-the best model I have found that still fits, and it is genuinely good;
-it is not the equal of what a paid cloud service would give you.</p>
-<p>More important than that: <strong>audio description written and
-performed by professionals is better than this, and it is better by a
-wide margin.</strong> Audio description is a craft. A skilled describer
-knows what matters in a shot and what does not, when to stay silent, how
-to reveal something at the moment the film reveals it, and how to say a
-great deal in four seconds. HomerScribe is not that, and I do not want
-anyone installing it expecting that.</p>
-<p>What it is for is everything with no description at all, which is
-most things. A lecture recording. A family video. A documentary that was
-never described. A film in a language whose described version was never
-made. For those, the question is not whether this is as good as a
-professional describer. It is whether it is better than nothing, and it
-is very much better than nothing.</p>
+<p>The description goes into several places at once, because different
+programs look in different places. Two of them are the fields that
+<strong>Windows Explorer shows and a screen reader reads out of a file’s
+Properties</strong>. Select a picture, open Properties, and the
+description is simply there.</p>
+<p>Two others are fields the picture industry added in 2021 for exactly
+this purpose. They are what a web page should use as alt text. Not much
+software fills them in yet. HomerScribe does.</p>
+<p>Forty-nine photographs took under three minutes on my machine.</p>
+<h3 id="you-can-tell-it-what-it-cannot-know">You can tell it what it
+cannot know</h3>
+<p>A model can see that a picture holds three men and an older woman at
+a table. It cannot know who they are.</p>
+<p>So HomerScribe reads the file name. If a picture is called
+<code>Jeannie &amp; Jim - Lake Tahoe.jpg</code>, it takes those names as
+right, because somebody who was there typed them. You can also drop a
+short note into the zip saying who tends to appear and how to tell them
+apart.</p>
+<p>It will not name anyone it cannot actually match to what is in front
+of it. A guessed name is worse than no name, because you cannot tell the
+two apart.</p>
+<h3 id="what-it-cannot-do">What it cannot do</h3>
+<p>Some picture formats have nowhere to store a description. A GIF has
+only a plain comment field. A BMP has nothing at all. Those pictures are
+still described and still renamed, and the document says which they
+were.</p>
+<h2 id="it-now-reads-a-films-own-captions">It now reads a film’s own
+captions</h2>
+<p>Many films already carry their words, either inside the file or in a
+caption file beside it. Where a <strong>person</strong> wrote those
+captions, HomerScribe now uses them instead of listening to the
+film.</p>
+<p>That is better than anything a machine can produce, and not only at
+the words:</p>
+<ul>
+<li>A person writes down <strong>who is speaking</strong>.</li>
+<li>A person writes down <strong>what can be heard but not
+spoken</strong> — a door slamming, music starting, laughter in the
+audience.</li>
+</ul>
+<p>That second one matters most. For someone who can neither see nor
+hear a film, the transcript is the whole of it, and until now it held
+nothing that was not a word.</p>
+<p>There is a practical gain too. If you only want the words,
+HomerScribe no longer downloads the film at all. Four videos,
+transcribed, in under a minute.</p>
+<p><strong>Captions a machine made are a different matter.</strong>
+YouTube’s automatic ones carry the words and nothing else — no speaker,
+no sounds, and punctuation only where the software guessed. HomerScribe
+can tell the two apart, and for a machine-made track it listens to the
+film instead, which produces better sentences. The transcript always
+says which it was.</p>
+<h2 id="being-honest-about-it">Being honest about it</h2>
 <p>Transcription is the stronger half. On clear speech it is close to
-what a person would write down.</p>
-<h2 id="how-long-it-takes-and-what-makes-the-difference">How long it
-takes, and what makes the difference</h2>
-<p>On a computer with a capable graphics card, a feature film takes
-somewhere over an hour. Transcribing alone is much quicker.</p>
-<p>Without a graphics card, describing is slow: a single description can
-take minutes rather than seconds, and a long film becomes an overnight
-job. HomerScribe tells you when it has noticed this, says how long the
-run is likely to take, and suggests what to change. Transcribing is
-perfectly comfortable without one.</p>
-<p>If you are choosing a computer with this kind of work in mind, the
-graphics card matters far more than the processor or the age of the
-machine.</p>
-<h2 id="it-was-built-for-us">It was built for us</h2>
-<p>HomerScribe is a Windows program with a dialog laid out for a screen
-reader, where every field has an access key and every control says what
-it is. It tells you what it is doing as it goes, without taking the
-keyboard away from you, so you can work in another window while a film
-is being described and hear the progress by switching back to it.</p>
-<p>It can be run entirely from the command line as well, so it can be
-scripted and given a whole folder of files to work through
-unattended.</p>
+what a person would write down, and where a person wrote the captions it
+is not a machine’s work at all.</p>
+<p>Description is harder, and it is worth being plain about that. The
+model describes what a frame holds. It does not always know what matters
+in it. It can tell you that a man is standing in a doorway; it cannot
+always tell you that this is the moment everything turns on.</p>
+<p>I also tried to make captions improve the descriptions, by handing
+the model the list of people the captions name. So far that has not
+worked, and I am not going to claim it has. Knowing that someone called
+Anil Seth speaks in a film does not help a model pick his face out of
+three. That work continues.</p>
+<p>None of this replaces a described version made by people who do it
+for a living. It is for the far larger number of films and photographs
+where nobody is going to do that, and the choice is this or nothing.</p>
+<h2 id="it-stays-on-your-computer">It stays on your computer</h2>
+<p>Nothing is uploaded. No account, no key, no subscription, no company
+seeing your family photographs. It needs a reasonably modern machine and
+some disk space for the models, and after that it costs nothing to
+run.</p>
+<p>It stands on other people’s work — ffmpeg, Whisper, Ollama, ExifTool,
+yt-dlp — all free and open source, and it would not exist without
+them.</p>
 <h2 id="try-it">Try it</h2>
-<p><a
-href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Download
-the HomerScribe installer for Windows</a></p>
+<ul>
+<li><a
+href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Windows
+installer</a></li>
+<li><a href="https://github.com/JamalMazrui/HomerScribe">Project on
+GitHub</a></li>
+</ul>
 <p>Accept the defaults. On the last page of the installer, leave ticked
-whatever matches what you want to do, and let it fetch the models; that
+whatever matches what you want to do, and let it fetch the models. That
 is the long part, and it happens once.</p>
-<p>Then run HomerScribe. There is already a short sample video in the
-box, so you can press OK and watch it work before you go looking for
-anything of your own.</p>
-<p>I would like to hear how it goes, particularly where it goes
+<p>Then run it. There is a short sample video in the box, so you can
+press OK and watch it work before you go looking for anything of your
+own.</p>
+<p>I would like to hear how it goes, and particularly where it goes
 wrong.</p>
 <p>Jamal Mazrui</p>
 </body>

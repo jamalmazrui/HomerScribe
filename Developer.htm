@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>HomerScribe — For Developers</title>
+  <title>HomerScribe for Developers</title>
   <style>
     html {
       color: #1a1a1a;
@@ -163,22 +163,30 @@
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
-  <style>
-  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
-  code, pre { font-family: Consolas, monospace; }
-  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
-  table { border-collapse: collapse; }
-  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
-  </style>
 </head>
 <body>
+<header id="title-block-header">
+<h1 class="title">HomerScribe for Developers</h1>
+</header>
 <nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#homerscribe-for-developers"
 id="toc-homerscribe-for-developers">HomerScribe for Developers</a>
 <ul>
 <li><a href="#what-it-is" id="toc-what-it-is">What it is</a></li>
-<li><a href="#the-parts" id="toc-the-parts">The parts</a></li>
+<li><a href="#the-parts" id="toc-the-parts">The parts</a>
+<ul>
+<li><a href="#written-here" id="toc-written-here">Written here</a></li>
+<li><a href="#shared-with-the-other-homer-tools"
+id="toc-shared-with-the-other-homer-tools">Shared with the other Homer
+Tools</a></li>
+<li><a href="#other-programs-called-not-linked"
+id="toc-other-programs-called-not-linked">Other programs, called not
+linked</a></li>
+<li><a href="#framework-pieces-worth-knowing"
+id="toc-framework-pieces-worth-knowing">Framework pieces worth
+knowing</a></li>
+</ul></li>
 <li><a href="#how-a-description-is-made"
 id="toc-how-a-description-is-made">How a description is made</a></li>
 <li><a href="#the-console" id="toc-the-console">The console</a></li>
@@ -186,11 +194,39 @@ id="toc-how-a-description-is-made">How a description is made</a></li>
 id="toc-what-counts-as-a-source">What counts as a source</a></li>
 <li><a href="#speaking-to-the-user"
 id="toc-speaking-to-the-user">Speaking to the user</a></li>
+<li><a href="#captions-and-the-one-thing-they-must-not-touch"
+id="toc-captions-and-the-one-thing-they-must-not-touch">Captions, and
+the one thing they must not touch</a>
+<ul>
+<li><a href="#the-route-in" id="toc-the-route-in">The route in</a></li>
+<li><a href="#rolling-and-the-bug-that-is-worth-remembering"
+id="toc-rolling-and-the-bug-that-is-worth-remembering">Rolling, and the
+bug that is worth remembering</a></li>
+</ul></li>
 <li><a href="#naming-the-presenter" id="toc-naming-the-presenter">Naming
 the presenter</a></li>
+<li><a href="#keeping-yt-dlp-current"
+id="toc-keeping-yt-dlp-current">Keeping yt-dlp current</a></li>
+<li><a href="#how-many-times-youtube-is-asked"
+id="toc-how-many-times-youtube-is-asked">How many times YouTube is
+asked</a></li>
+<li><a href="#what-the-video-says-about-itself"
+id="toc-what-the-video-says-about-itself">What the video says about
+itself</a></li>
+<li><a href="#writing-the-three-documents"
+id="toc-writing-the-three-documents">Writing the three
+documents</a></li>
 <li><a href="#where-things-live" id="toc-where-things-live">Where things
 live</a></li>
-<li><a href="#building" id="toc-building">Building</a></li>
+<li><a href="#building" id="toc-building">Building</a>
+<ul>
+<li><a href="#what-you-need" id="toc-what-you-need">What you
+need</a></li>
+<li><a href="#building-1" id="toc-building-1">Building</a></li>
+<li><a href="#versioning" id="toc-versioning">Versioning</a></li>
+<li><a href="#releasing" id="toc-releasing">Releasing</a></li>
+<li><a href="#traps" id="toc-traps">Traps</a></li>
+</ul></li>
 <li><a href="#changing-the-descriptions"
 id="toc-changing-the-descriptions">Changing the descriptions</a></li>
 <li><a href="#speed" id="toc-speed">Speed</a></li>
@@ -421,6 +457,71 @@ not, and every announcement repeated all its predecessors until one
 reached 32,587 characters, which a screen reader spends minutes reading
 and which made a working program look stopped. And nothing spoken may
 exceed 1,500 characters, whatever else goes wrong.</p>
+<h2 id="captions-and-the-one-thing-they-must-not-touch">Captions, and
+the one thing they must not touch</h2>
+<p><code>lFilmSpeech</code> used to serve two jobs at once, and the two
+are not the same job.</p>
+<ul>
+<li><strong>The words.</strong> <code>writeTranscript</code> turns them
+into <code>transcribed.md</code>.</li>
+<li><strong>The map of where the speech falls.</strong>
+<code>gapsFromSpeech</code>, <code>quietestWithin</code>,
+<code>overlapsSpeech</code> and <code>settleSpacing</code> all read it
+to decide where a description can be heard.</li>
+</ul>
+<p>Captions can do the first and must never do the second. A cue goes up
+early and comes down late so that a reader can finish it, and
+<code>joinCaptions</code> merges close cues further still. Hand those
+timings to the placement rule and the measured quiet shrinks and shifts.
+Nothing would report it: the overlap figure would look the same, because
+it would be measured against the same wrong map. It would show up only
+as a listener losing dialogue.</p>
+<p>So there are two lists, deliberately:</p>
+<ul>
+<li><code>lCaptions</code> — the words, when the film has usable English
+captions.</li>
+<li><code>lFilmSpeech</code> — Whisper’s stretches, always the map,
+never written out when captions exist.</li>
+</ul>
+<p><code>bMustListen</code> in <code>runOne</code> is the whole rule:
+listen when describing, or when transcribing without captions.
+Transcribing alone, with captions, skips Whisper entirely and the run is
+minutes shorter.</p>
+<h3 id="the-route-in">The route in</h3>
+<p><code>captionsFor</code> tries a subtitle track inside the film first
+(<code>captionsInFilm</code>, <code>ffprobe -select_streams s</code> for
+the languages, then <code>ffmpeg -map 0:s:N -c:s srt</code>), then a
+file beside it (<code>captionsBeside</code>). A bitmap track fails the
+srt conversion and falls through to Whisper, which is the right answer,
+since reading pictures of words is a different job.</p>
+<p><code>readCaptions</code> handles SRT and WebVTT with one reader,
+since they differ only in the separator and some decoration. Note that
+it <strong>keeps</strong> a cue that is nothing but brackets, where
+<code>readTranscript</code> drops one: from Whisper <code>[Music]</code>
+is an artefact, and from a caption file it is a person writing down a
+sound on purpose.</p>
+<h3 id="rolling-and-the-bug-that-is-worth-remembering">Rolling, and the
+bug that is worth remembering</h3>
+<p>A rolling track is recognised by <code>looksAutomatic</code>, which
+tests for the per-word timing tag YouTube puts in its automatic
+captions. That is a surer test than the file’s name, which yt-dlp does
+not reliably distinguish.</p>
+<p>The first version of the merge compared each cue with the one before
+and asked whether the OLD contained the NEW. A rolling caption grows the
+other way round — cue two holds all of cue one and more — so nothing
+ever matched, and the fallback stuck the two together. Every line came
+out twice.</p>
+<p>It was found because the logic was ported to Python and run against a
+real automatic track before anybody believed it. It is exactly mistake 3
+in <code>Review.md</code>, testing against your own belief, and the only
+thing that caught it was testing against something real instead.</p>
+<p><code>joinRolling</code> replaced it, and asks a different question.
+Not “how do these two cues compare” but “which words have not been
+written down yet”: it keeps a tail of what has already been emitted and
+adds only the part of each cue that is new. <code>overlapLength</code>
+finds the shared join, and refuses a short accidental match — a partial
+overlap must be twelve characters or more and must end where a word
+ends.</p>
 <h2 id="naming-the-presenter">Naming the presenter</h2>
 <p>A vision model cannot recognise a face, so telling it that a film was
 “written and narrated by Ali Mazrui” leaves it writing “a man”.
@@ -430,6 +531,107 @@ documentary makes safe: whoever addresses the viewer is the presenter.
 The name is seeded into the names carried between descriptions so it
 holds from the first. Measured effect: 53 of 94 descriptions named him,
 against none before.</p>
+<h2 id="keeping-yt-dlp-current">Keeping yt-dlp current</h2>
+<p><code>buildHomerScribe.cmd</code> runs
+<code>yt-dlp --update-to nightly</code> on every build, after the
+fetch-if-missing step. It is deliberately not allowed to fail the build:
+no network, or a copy under Program Files that cannot rewrite itself,
+and the build carries on with what is there.</p>
+<p>Nightly rather than stable because yt-dlp says so — it is the channel
+it recommends for regular users, and the one it asks people to be on
+before reporting a fault. YouTube breaks downloaders on its own schedule
+and the fixes land on nightly first.</p>
+<p>At run time HomerScribe says nothing about yt-dlp’s age. It records
+the version and the age in the log and leaves it there. Every yt-dlp
+call carries <code>--no-update</code> so that yt-dlp’s own ninety-day
+complaint stays off the console, which is carrying progress a listener
+is following. The only calls without it are the update itself and
+<code>--version</code>.</p>
+<h2 id="how-many-times-youtube-is-asked">How many times YouTube is
+asked</h2>
+<p><code>fetchFromWeb</code> on the describe path issues exactly two
+yt-dlp commands before any media is touched – <code>--print</code> for
+the title and filename, then the download. It briefly issued three, from
+1.0.147 to 1.0.152, because <code>webMetadata</code> was called at the
+top of the function for the sake of the document heading. Every download
+since 1.0.147 has met a 403 on the media stream.</p>
+<p>Whether that is cause or coincidence is still unproven, and
+<code>ytCheck.py</code>’s first three trials exist to prove it either
+way. But the ordering is right on its own merits: ask for the page’s
+details when the answer changes what happens next, which is when a
+transcript alone is wanted and the caption tracks decide whether the
+film is needed. Otherwise ask afterwards.</p>
+<p><strong>Do not move <code>webMetadata</code> back to the top of
+<code>fetchFromWeb</code>.</strong></p>
+<h2 id="what-the-video-says-about-itself">What the video says about
+itself</h2>
+<p><code>webMetadata</code> asks yt-dlp once, with
+<code>--dump-single-json</code>, and keeps the title, the publisher and
+the page’s own description in four statics. Two things want them, and
+only one was getting them: <code>webPageContext</code> builds the
+model’s context from them, and <code>writeVideoHeading</code> now puts
+them at the head of every document. Before this they were fetched, used
+for the context and thrown away.</p>
+<p>It is called from <code>fetchFromWeb</code> whether or not
+<code>--web-context</code> was asked for, because a heading should say
+what the film is even when the model was told nothing. A local file
+falls back to its own title tag, through <code>titleOf</code>.</p>
+<p>The statics belong to one video and a run may cover many, so
+<code>runOne</code> clears them unless they were fetched for this same
+address a moment before. That was written here before it was written in
+the code, and the mistake survived a whole release: a local file
+following a downloaded one headed its documents with the downloaded
+one’s title. Saying a thing is handled is not handling it.</p>
+<p><code>webMetadata</code> also keeps the English caption track names,
+split as the page splits them – <code>lTracksWritten</code> from
+“subtitles”, <code>lTracksAuto</code> from “automatic_captions”.
+<code>trackToFetch</code> picks ONE, preferring a person’s, and that one
+name is what <code>--sub-langs</code> is given. It used to be given
+<code>en.*</code>, which yt-dlp reads as a regular expression, and which
+matches every translation out of English. That fetched sixty-six tracks
+from one video and earned a 429 that took the whole run down with it.
+The address is written as a Markdown link with the title as its text,
+never bare: a screen reader reads a bare address one character at a
+time.</p>
+<h2 id="writing-the-three-documents">Writing the three documents</h2>
+<p><code>writeMarkdown</code>, <code>writeTranscript</code> and
+<code>writeScribed</code> share <code>writeHead</code>,
+<code>sectionTitle</code>, <code>wantsSections</code>,
+<code>tidyDescription</code> and <code>saidAs</code>. The rules they
+follow are the W3C Web Accessibility Initiative’s, at <a
+href="https://www.w3.org/WAI/media/av/transcripts/">Transcripts</a>, and
+the reasoning is in the History entry for 1.0.150 rather than repeated
+in the code.</p>
+<p>The two that are easy to get wrong again:</p>
+<ul>
+<li><strong><code>wantsSections</code> is two chapters, not
+one.</strong> A film with a single section heading has gained nothing
+and lost the plain start. Twenty minutes is the floor.</li>
+<li><strong><code>endsSentence</code> governs where a passage may
+end</strong>, in <code>joinCaptions</code> and <code>joinRolling</code>
+both. <code>iDefaultParagraph</code> is where a passage WANTS to stop
+and <code>iDefaultParagraphMost</code> is where it must. Between them it
+is waiting for a full stop. Remove that and paragraphs break mid-clause,
+which was invisible when every line carried a timestamp and is glaring
+in prose.</li>
+</ul>
+<p><code>tidyDescription</code> drops any sentence carrying a web
+address, plus the usual appeals and permission notices, then trims back
+to the last full stop so the result never ends on somebody else’s
+truncation. Under twelve words left and it returns nothing, which drops
+the whole section.</p>
+<p>Two traps in it, both hit on the first real run:</p>
+<ul>
+<li><strong>The sentence splitter breaks at the stop inside
+“e.g.”</strong> and leaves a fragment that passes every end-of-sentence
+test, because it does end with a full stop.
+<code>endsAbbreviation</code> exists for this, and a piece broken that
+way is joined back on to the one before it.</li>
+<li><strong>The trim-back loop must search from BEFORE the last
+character.</strong> Ending on “e.g.” the stop being complained about is
+the last character, so searching from the end finds it again, sets the
+same length, and never terminates.</li>
+</ul>
 <h2 id="where-things-live">Where things live</h2>
 <ul>
 <li>The video’s own folder: <code>described.mkv</code> (or

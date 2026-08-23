@@ -10,6 +10,7 @@
 // for methods and variables, constants named with a Default or Initial word.
 
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -140,12 +141,16 @@ namespace Homer
         public double nStart;
         public double nEnd;
         public string sText;
+        // Captions name who is speaking. Whisper cannot, so this is empty for
+        // anything heard rather than read.
+        public string sWho;
 
         public Speech()
         {
             nStart = 0.0;
             nEnd = 0.0;
             sText = "";
+            sWho = "";
         }
     }
 
@@ -154,6 +159,9 @@ namespace Homer
         const int iNothingToDo = 2;
         const int iAlreadyDone = 3;
         const string sAlreadyDone = "*already*";
+        // Returned by fetchFromWeb when the captions were taken and the film
+        // was deliberately not. There is no local file to hand back.
+        const string sCaptionsOnly = "*captions*";
         const int iDefaultCompare = 10;
         const int iDefaultNames = 12;
         const int iDefaultRecent = 2;
@@ -196,6 +204,73 @@ namespace Homer
         const string sDefaultTrackTitle = "Audio Description";
         const string sDefaultVttName = "described.vtt";
         const string sDefaultWaveName = "described.wav";
+        // Named to match described.mkv. It was descriptions.md, which was the
+        // odd one out among the documents.
+        const string sDefaultPicturesName = "described.md";
+        // What the model can be shown. Ollama reads these; anything else is
+        // turned into a PNG first, and anything that cannot be is passed over.
+        const string sDefaultSeenKinds = ".png,.jpg,.jpeg,.webp,.gif";
+        // What it can be shown once ffmpeg has turned it into a PNG.
+        const string sDefaultConvertKinds = ".bmp,.tif,.tiff";
+        // Where a description can be stored inside the picture itself. GIF has
+        // only a comment block and BMP has nowhere at all, which is a fact
+        // about those formats and not something to be worked around.
+        const string sDefaultMetadataKinds = ".png,.jpg,.jpeg,.webp,.tif,.tiff";
+        const string sDefaultPartMetadataKinds = ".gif";
+        // Longest root of a friendly name. There is no Microsoft figure for a
+        // RECOMMENDED length -- 255 is the ceiling for one name and 260 for a
+        // whole path -- and portable practice sits well under both.
+        //
+        // Seventy-nine, after PEP 8's line length, which he raised. It was
+        // sixty, and that was never the binding constraint: across
+        // twenty-four real pictures the longest name the model produced was
+        // twenty-four characters. The allowance matters only once the model is
+        // told to use it, which it now is.
+        const int iDefaultNameLength = 79;
+        // The joining words that are lowered when an identifier is turned back
+        // into a phrase. Nothing else is touched, so a name keeps its capital.
+        const string sDefaultSmallWords = "a,an,and,as,at,be,by,for,from,in,into,of,on,onto,or,over,"
+                                        + "the,to,under,up,with,without,near,beside,among,against,during";
+        // Characters that are LEGAL in a Windows file name and break things
+        // anyway. From Rentitle, where the comment beside them records that
+        // they stopped file-not-found errors in Python and in FileDir.
+        const string sDefaultBadLetters = "\u2018\u2019\u201a\u201c\u201d\u2026\u2013\u2014\u2039\u203a"
+                                        + "\u00ab\u00bb\u00a1\u00a8\u00a3\u00a5\u20ac\u2217\u00d7\u221a"
+                                        + "\u2264\u2310\u25aa\u25ab\u25bc\u25cb\u25cf\u25e6\u2192\u2190"
+                                        + "\u21b5\u00a7\u00a9\u00ae\u00b0\u00b5\u00b6\u00b7\u2630\u2713"
+                                        + "\u272a\u274f\u2705\u274c\u2022\u29c9\u00bc\u00bd\u00be\u279a"
+                                        + "\u221e\u00aa\u2122\u00ff\u2500\u2502\u250c\u2534\u253c\u2588";
+        // Answers that are not names. A vision model hands back "Image" and
+        // "Photo" as readily as anything, and a folder of pictures all called
+        // Image is worse than one full of IMG_4471. Rentitle carries the same
+        // idea as a list of placeholder document titles.
+        const string sDefaultNoNames = "image,images,picture,pictures,photo,photos,photograph,screenshot,"
+                                     + "untitled,unnamed,unknown,none,null,title,document,file,img,scan,"
+                                     + "no title,not known,n a,unspecified,new,copy";
+        // Rentitle stops after a thousand. Better to give up than to loop.
+        const int iDefaultMostClashes = 1000;
+        // Captions. Two cues closer together than this belong to one passage,
+        // and a passage stops growing once it is about a paragraph long.
+        const double nDefaultJoinWithin = 2.0;
+        // A passage stops at about a paragraph -- but only where a sentence
+        // stops. Breaking mid-clause reads as though the speaker was cut off,
+        // and in prose that is a real loss where in a timed list it was
+        // invisible. So it may run on to the second figure while it waits for
+        // a full stop.
+        const int iDefaultParagraph = 260;
+        const int iDefaultParagraphMost = 600;
+        // What a caption track must call itself to be used. Only English is
+        // supported, so anything else is left to Whisper.
+        //
+        // This is an EXACT list on purpose. Anything beginning "en-" used to
+        // count, and that is precisely how YouTube names a machine translation
+        // OUT OF English: en-ar is Arabic, en-sq is Albanian. Asking for those
+        // fetched sixty-six tracks from one video and earned a 429.
+        //
+        // "en-ca" and "en-in" are left out although they read like Canadian and
+        // Indian English. YouTube uses them for Catalan and Indonesian, and
+        // getting a translation is worse than missing a regional spelling.
+        const string sDefaultEnglishTags = "en,eng,english,en-orig,en-en,en-us,en-gb,en-au,en-nz,en-ie";
 
         static StreamWriter fLog = null;
         static FileStream fLogStream = null;
@@ -232,7 +307,10 @@ namespace Homer
             addParam("rebuild", "", "flag", "no", "Build the film from descriptions already made, asking the model nothing");
             addParam("log-file", "", "string", "", "Path of the run log; by default it goes with the results");
             addParam("speech", "", "flag", "yes", "Find where descriptions go by detecting speech with Whisper, rather than by listening for silence");
+            addParam("captions", "", "flag", "yes", "Use the film's own English captions as the transcript when it has them, instead of listening to it with Whisper");
+            addParam("auto-captions", "", "flag", "no", "Also accept captions a machine made, such as YouTube's automatic ones. They carry no speaker names and none of the sounds that are not speech, so listening to the film usually gives a richer transcript");
             addParam("whisper-model", "", "string", "small", "Which Whisper model to hear the film with: tiny, base, small, medium or large-v3");
+            addParam("speaker-window", "", "number", "120.0", "Seconds either side of a moment in which a caption speaker counts as being in the same scene. Scene-sized on purpose, which is much wider than the dialogue window");
             addParam("dialogue-window", "", "number", "25.0", "Seconds of dialogue before a moment shown to the model, so a description does not restate what was just said");
             addParam("summarise", "", "flag", "yes", "Look thoroughly with the vision model, then have the same model compress what it saw into one spoken description");
             addParam("log-session", "l", "flag", "no", "Keep a copy of the log in each video's own folder");
@@ -264,6 +342,12 @@ namespace Homer
             addParam("checkpoint", "", "integer", "15", "Rebuild the description track every this many moments");
             addParam("mux-minutes", "", "number", "0", "Least minutes between background writes of the film so far; 0 writes it only at the end");
             addParam("browser-cookies", "", "string", "", "Name of a browser whose cookies yt-dlp may use, for a video that asks the viewer to sign in: chrome, edge, firefox, brave or opera");
+            addParam("player-client", "", "string", "", "Which YouTube player to ask for the video: web, web_safari, tv, ios or mweb. Empty tries the usual one and then the others when it is refused");
+            addParam("name-length", "", "integer", "79", "Longest a picture's new name may be, before its extension. Cut at a word, never in the middle of one");
+            addParam("picture-width", "", "integer", "1024", "Longest side, in pixels, a picture is reduced to before the model is shown it");
+            addParam("update-tools", "", "flag", "yes", "Update yt-dlp and try once more when a video is refused every other way");
+            addParam("update-channel", "", "string", "nightly", "Which yt-dlp release to update to: nightly, stable or master. Nightly is what yt-dlp recommends and carries this week's fixes");
+            addParam("browser-session", "", "flag", "yes", "When a video is refused every other way, try again borrowing a browser's signed-in session, from Edge then Chrome then Firefox");
             addParam("ffmpeg-dir", "", "string", "", "Folder holding ffmpeg.exe, searched in addition to the PATH");
             addParam("objective", "", "flag", "yes", "Ask again when a description states a mood or a judgement instead of what is visible");
             addParam("announce", "", "flag", "yes", "Speak an opening line confirming description is running");
@@ -850,7 +934,23 @@ namespace Homer
             "speech-placement", "room-required", "room-floor-is-min-gap",
             "moment-at-start-of-quiet", "look-back-window", "drop-if-covers-speech",
             "film-memory", "presenter-named", "subtitle-filter", "whisper-loop-filter",
-            "empty-transcript-check", "force-clears-memory", "status-words", "montage-ahead", "per-film-log", "stop-if-source-vanishes", "picture-required"
+            "empty-transcript-check", "force-clears-memory", "status-words", "montage-ahead", "per-film-log", "stop-if-source-vanishes", "picture-required",
+            "captions-preferred", "captions-english-only", "captions-keep-sound", "captions-never-place", "video-heading",
+            "captions-one-track", "captions-track-from-page", "captions-fetched-apart",
+            "captions-without-the-film", "captions-converted-to-vtt", "sleep-between-requests",
+            "documents-as-prose", "times-only-in-headings", "descriptions-labelled", "publisher-blurb-tidied",
+            "other-ways-to-fetch", "update-tools-on-refusal", "tool-age-reported",
+            "build-updates-yt-dlp", "no-update-nagging", "browser-session-last-resort", "first-reason-reported",
+            "pictures-from-archives", "clash-numbering-whole-group", "metadata-standing-reported",
+            "notes-inside-archives", "caption-speaker-roster", "speaker-near-the-moment",
+            "names-as-phrases", "names-repaired", "no-guessed-identities",
+            "fewest-leading-zeros", "file-name-as-context", "pictures-normalised", "partial-answer-rescued",
+            "metadata-written", "renamed-copies-archived", "placeholder-names-refused", "wider-illegal-letters",
+            "metadata-read-back", "exiftool-version-logged", "minor-errors-ignored",
+            "metadata-self-test", "accessibility-tags-taught", "newest-exiftool-chosen",
+            "single-file-exiftool-only", "opening-names-the-film", "fuller-picture-names",
+            "done-between-sources", "source-box-selected", "described-md-in-both-places",
+            "fields-read-back-not-assumed", "film-announced-before-work", "person-captions-only"
         };
 
         static void logEnvironment()
@@ -1045,6 +1145,33 @@ namespace Homer
         }
 
         static List<Speech> lFilmSpeech = new List<Speech>();
+        // The film's own captions, when it has usable ones. Kept apart from
+        // lFilmSpeech on purpose: these are the WORDS, and lFilmSpeech is the
+        // MAP OF WHERE THE SPEECH FALLS. They are not interchangeable, because
+        // a cue is put on screen early and taken off late so that a reader can
+        // finish it. Placement uses lFilmSpeech and nothing else.
+        static List<Speech> lCaptions = new List<Speech>();
+        // Where the transcript's words came from, in words fit for a heading.
+        // Empty means Whisper heard them.
+        static string sTranscriptFrom = "";
+        // What the video says about itself, for the head of every document.
+        static string sVideoTitle = "";
+        static string sVideoBy = "";
+        static string sVideoAbout = "";
+        static string sVideoAddress = "";
+        // The English caption tracks the page says it has: the ones a person
+        // wrote, and the ones a machine made. Kept apart because a person's
+        // track is always preferred, and YouTube's own classification settles
+        // that better than looking at the contents afterwards.
+        static List<string> lTracksWritten = new List<string>();
+        static List<string> lTracksAuto = new List<string>();
+        // How long the video runs, from the page rather than from a file,
+        // because with captions alone there is no file to ask.
+        static double nVideoSeconds = 0.0;
+        static string sCaptionsOnlyFolder = "";
+        static string sCaptionsOnlyStem = "";
+        // Why the film could not be had, when the words were got anyway.
+        static string sCouldNotDescribe = "";
         static string sSpeechWorkDir = "";
         static bool bConsoleHidden = false;
         static string sLastSkippedFolder = "";
@@ -1470,6 +1597,13 @@ namespace Homer
             return GetForegroundWindow() == hWindow;
         }
 
+        // One match, not one matches. A count of nought is a real answer and
+        // is said plainly.
+        static string counted(int iHowMany, string sSingular, string sPlural)
+        {
+            return iHowMany.ToString() + " " + (iHowMany == 1 ? sSingular : sPlural);
+        }
+
         static string formatClock(double nSeconds)
         {
             int iWhole = (int)nSeconds;
@@ -1623,6 +1757,15 @@ namespace Homer
             iLastScanExit = oProcess.ExitCode;
             logMessage("Exit code " + oProcess.ExitCode.ToString() + " after " + num(DateTime.Now.Subtract(dtBegan).TotalSeconds) + " seconds", "CMD");
             return oErr.ToString();
+        }
+
+        // yt-dlp complains on the console when it is more than ninety days
+        // old. That is a fair thing for it to do and the wrong place to say it
+        // here, where the console is carrying progress a listener is following.
+        // --no-update is what the flag is documented for.
+        static string quietly()
+        {
+            return " --no-update";
         }
 
         static string quotedIfSpaced(string sItem)
@@ -2008,6 +2151,543 @@ namespace Homer
             return lSpeech;
         }
 
+
+        // ---------- captions ----------
+        //
+        // A film that carries captions carries something Whisper cannot make.
+        // A person wrote them, so the words are right; they name who is
+        // speaking; and they mark what can be heard but not spoken -- a door
+        // slamming, music starting -- which no transcript of speech holds. So
+        // when a transcript is wanted and the film has English captions, the
+        // captions ARE the transcript.
+        //
+        // What they are not is a map of where the speech falls. A cue is put on
+        // screen early and taken off late so that a reader can finish it, and
+        // the passages below are merged further still. Feeding those timings to
+        // the placement rule would shrink and shift the measured quiet, and the
+        // cost would show only as a listener losing dialogue. Placement
+        // therefore goes on using Whisper's stretches, measured from the sound
+        // itself.
+
+        static double secondsOfStamp(string sStamp)
+        {
+            double nSeconds = 0.0;
+            double nPart = 0.0;
+            int iHours = 0;
+            int iMinutes = 0;
+            string[] asBits = sStamp.Trim().Replace(",", ".").Split(':');
+            try
+            {
+                if (asBits.Length == 3)
+                {
+                    int.TryParse(asBits[0], out iHours);
+                    int.TryParse(asBits[1], out iMinutes);
+                    double.TryParse(asBits[2], NumberStyles.Any, CultureInfo.InvariantCulture, out nPart);
+                    nSeconds = iHours * 3600.0 + iMinutes * 60.0 + nPart;
+                }
+                else if (asBits.Length == 2)
+                {
+                    int.TryParse(asBits[0], out iMinutes);
+                    double.TryParse(asBits[1], NumberStyles.Any, CultureInfo.InvariantCulture, out nPart);
+                    nSeconds = iMinutes * 60.0 + nPart;
+                }
+            }
+            catch (Exception)
+            {
+                nSeconds = 0.0;
+            }
+            return nSeconds;
+        }
+
+        // What belongs to the display rather than to the words.
+        static string cleanCaptionLine(string sLine)
+        {
+            string sClean = Regex.Replace(sLine, @"<[^>]+>", "");
+            sClean = Regex.Replace(sClean, @"\{[^}]*\}", "");
+            sClean = sClean.Replace("&nbsp;", " ").Replace("&amp;", "&");
+            sClean = sClean.Replace("&lt;", "<").Replace("&gt;", ">");
+            sClean = sClean.Replace("&quot;", "\"").Replace("&#39;", "'");
+            // The marks that open a new speaker's line.
+            sClean = Regex.Replace(sClean, @"^\s*(>>+|-)\s+", "");
+            return Regex.Replace(sClean, @"\s+", " ").Trim();
+        }
+
+        // Captions name the speaker in capitals before a colon, sometimes in
+        // brackets. The name is taken off the front and kept separately, so the
+        // reader is told who spoke without the name being buried in the words.
+        static string speakerOf(string sSaid, out string sRest)
+        {
+            sRest = sSaid;
+            Match oNamed = Regex.Match(sSaid, @"^\s*[\[\(]?([A-Z][A-Z0-9'\.\- ]{1,28})[\]\)]?\s*:\s*(.+)$");
+            if (!oNamed.Success)
+            {
+                // A caption also names a speaker in brackets with no colon at
+                // all -- TED writes "(Audience) Good." The test that keeps this
+                // apart from a sound is what comes after: a speaker is followed
+                // by a sentence, which starts with a capital, where "(Music)
+                // plays softly" carries on in lower case.
+                Match oBracket = Regex.Match(sSaid, @"^\s*[\[\(]([A-Z][A-Za-z]*(?: [A-Z][A-Za-z]*){0,2})[\]\)]\s+([A-Z\""].*)$");
+                if (oBracket.Success)
+                {
+                    sRest = oBracket.Groups[2].Value.Trim();
+                    return oBracket.Groups[1].Value.Trim();
+                }
+                return "";
+            }
+            string sWho = oNamed.Groups[1].Value.Trim();
+            // Four words is a name and a note about it -- MAN ON RADIO. More
+            // than that is a shouted sentence that happens to end in a colon.
+            if (sWho == "" || sWho.Split(' ').Length > 4) return "";
+            sRest = oNamed.Groups[2].Value.Trim();
+            if (sRest == "") return "";
+            return sWho;
+        }
+
+        // Every cue, as a stretch. SRT and WebVTT differ only in the separator
+        // and some decoration, so one reader does both.
+        //
+        // Note what is NOT dropped here. readTranscript throws away a stretch
+        // that is nothing but brackets, because from Whisper "[Music]" is an
+        // artefact. From a caption file it is the opposite: somebody wrote it
+        // down deliberately, and it is exactly what a deafblind reader has no
+        // other way of learning.
+        static List<Speech> readCaptions(string sText)
+        {
+            List<Speech> lCues = new List<Speech>();
+            string sWhole = sText.Replace("\r\n", "\n").Replace("\r", "\n");
+            Regex oTiming = new Regex(@"(\d{1,3}:\d{2}:\d{2}[\.,]\d{1,3}|\d{1,3}:\d{2}[\.,]\d{1,3})"
+                                    + @"\s*-->\s*"
+                                    + @"(\d{1,3}:\d{2}:\d{2}[\.,]\d{1,3}|\d{1,3}:\d{2}[\.,]\d{1,3})");
+            string[] asLines = sWhole.Split('\n');
+            int iAt = 0;
+            while (iAt < asLines.Length)
+            {
+                Match oFound = oTiming.Match(asLines[iAt]);
+                if (!oFound.Success)
+                {
+                    iAt = iAt + 1;
+                    continue;
+                }
+                double nFrom = secondsOfStamp(oFound.Groups[1].Value);
+                double nTo = secondsOfStamp(oFound.Groups[2].Value);
+                iAt = iAt + 1;
+                List<string> lSaid = new List<string>();
+                while (iAt < asLines.Length && asLines[iAt].Trim() != "" && !oTiming.IsMatch(asLines[iAt]))
+                {
+                    // A line holding nothing but a number is SRT's cue index,
+                    // not something anybody said.
+                    if (!Regex.IsMatch(asLines[iAt].Trim(), @"^\d+$"))
+                    {
+                        string sClean = cleanCaptionLine(asLines[iAt]);
+                        if (sClean != "") lSaid.Add(sClean);
+                    }
+                    iAt = iAt + 1;
+                }
+                string sSaid = string.Join(" ", lSaid.ToArray()).Trim();
+                if (sSaid == "") continue;
+                if (nTo <= nFrom) nTo = nFrom + 1.0;
+                string sRest = "";
+                Speech oCue = new Speech();
+                oCue.nStart = nFrom;
+                oCue.nEnd = nTo;
+                oCue.sWho = speakerOf(sSaid, out sRest);
+                oCue.sText = oCue.sWho == "" ? sSaid : sRest;
+                lCues.Add(oCue);
+            }
+            return lCues;
+        }
+
+        // Where the end of what we already have is also the start of what has
+        // just arrived, that shared part is a repeat and only the rest is new.
+        // A few letters agreeing by chance is not a repeat, so a partial match
+        // must be a run of words and must end where a word ends.
+        static int overlapLength(string sHave, string sNew)
+        {
+            int iMost = Math.Min(sHave.Length, sNew.Length);
+            int iTry = iMost;
+            while (iTry > 0)
+            {
+                if (string.CompareOrdinal(sHave, sHave.Length - iTry, sNew, 0, iTry) == 0)
+                {
+                    if (iTry == sNew.Length || iTry == sHave.Length) return iTry;
+                    if (iTry >= 12 && sNew[iTry] == ' ') return iTry;
+                }
+                iTry = iTry - 1;
+            }
+            return 0;
+        }
+
+        // A rolling track shows each line two or three times as it scrolls up
+        // the screen, and each cue holds the one before it with more added. So
+        // the useful question is not how two cues compare but which words have
+        // not been written down yet. The words already used are remembered, and
+        // only what is new is added.
+        //
+        // This was got wrong first time. Comparing each cue with the one before
+        // asked whether the OLD held the NEW, when a rolling caption grows the
+        // other way, so nothing matched and every line was written twice.
+        static List<Speech> joinRolling(List<Speech> lCues)
+        {
+            List<Speech> lOut = new List<Speech>();
+            string sSeen = "";
+            foreach (Speech oCue in lCues)
+            {
+                string sNew = oCue.sText.Substring(overlapLength(sSeen, oCue.sText)).Trim();
+                if (sNew == "") continue;
+                sSeen = (sSeen + " " + sNew).Trim();
+                if (sSeen.Length > 400) sSeen = sSeen.Substring(sSeen.Length - 400);
+                bool bStartAgain = lOut.Count == 0;
+                if (!bStartAgain)
+                {
+                    Speech oEnding = lOut[lOut.Count - 1];
+                    bStartAgain = oCue.sWho != oEnding.sWho
+                               || (oEnding.sText.Length >= iDefaultParagraph && endsSentence(oEnding.sText))
+                               || oEnding.sText.Length >= iDefaultParagraphMost
+                               || oCue.nStart - oEnding.nEnd > nDefaultJoinWithin
+                               || soundOnly(sNew) || soundOnly(oEnding.sText);
+                }
+                if (bStartAgain)
+                {
+                    Speech oFresh = new Speech();
+                    oFresh.nStart = oCue.nStart;
+                    oFresh.nEnd = oCue.nEnd;
+                    oFresh.sWho = oCue.sWho;
+                    oFresh.sText = sNew;
+                    lOut.Add(oFresh);
+                }
+                else
+                {
+                    Speech oLast = lOut[lOut.Count - 1];
+                    oLast.sText = (oLast.sText + " " + sNew).Trim();
+                    oLast.nEnd = oCue.nEnd;
+                }
+            }
+            return lOut;
+        }
+
+        // A track written by a person does not roll. Cues that follow each
+        // other closely and belong to the same speaker are gathered into a
+        // passage, so the document reads as prose rather than as a list of
+        // fragments. A change of speaker always starts a new passage: running
+        // two people's words together would put one person's words in the
+        // other's mouth.
+        static List<Speech> joinCaptions(List<Speech> lCues)
+        {
+            List<Speech> lOut = new List<Speech>();
+            foreach (Speech oCue in lCues)
+            {
+                if (lOut.Count > 0)
+                {
+                    Speech oLast = lOut[lOut.Count - 1];
+                    if (oCue.sText == oLast.sText || oLast.sText.IndexOf(oCue.sText, StringComparison.Ordinal) >= 0)
+                    {
+                        oLast.nEnd = Math.Max(oLast.nEnd, oCue.nEnd);
+                        continue;
+                    }
+                    if (oCue.sWho == oLast.sWho && oCue.nStart - oLast.nEnd <= nDefaultJoinWithin
+                        && (oLast.sText.Length < iDefaultParagraph
+                            || (!endsSentence(oLast.sText) && oLast.sText.Length < iDefaultParagraphMost))
+                        && !soundOnly(oCue.sText) && !soundOnly(oLast.sText))
+                    {
+                        oLast.sText = (oLast.sText + " " + oCue.sText).Trim();
+                        oLast.nEnd = oCue.nEnd;
+                        continue;
+                    }
+                }
+                lOut.Add(oCue);
+            }
+            return lOut;
+        }
+
+        // A cue holding nothing but a sound: "[door slams]", "(Applause)".
+        // It is the one thing a caption file has that a transcript of speech
+        // never does, so it must never be folded into the speech around it.
+        // A full stop that belongs to an abbreviation is not the end of
+        // anything. TED's description reads "for commercial purposes (e.g."
+        // when split naively, and that fragment reached the top of the TED
+        // transcript looking like a fault in the program.
+        static bool endsAbbreviation(string sText)
+        {
+            string sTrim = sText.TrimEnd();
+            if (!sTrim.EndsWith(".")) return false;
+            foreach (string sShort in new string[] { "e.g", "i.e", "etc", "vs", "cf", "al",
+                                                     "Mr", "Mrs", "Ms", "Dr", "Prof", "Rev",
+                                                     "St", "Ave", "No", "Inc", "Ltd", "Co",
+                                                     "Jr", "Sr", "Fig", "approx", "Dept" })
+            {
+                if (sTrim.EndsWith(" " + sShort + ".", StringComparison.OrdinalIgnoreCase)) return true;
+                if (sTrim.EndsWith("(" + sShort + ".", StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Compare(sTrim, sShort + ".", true) == 0) return true;
+            }
+            // A lone initial: "Ken A." is still mid-name.
+            return Regex.IsMatch(sTrim, @"(^|[\s\(])[A-Z]\.$");
+        }
+
+        // A passage may end here without sounding cut off.
+        static bool endsSentence(string sText)
+        {
+            string sTrim = sText.TrimEnd();
+            if (sTrim == "") return true;
+            // A closing quotation mark or bracket after the stop still counts.
+            while (sTrim.Length > 1 && "\"\u201d\u2019')]".IndexOf(sTrim[sTrim.Length - 1]) >= 0)
+                sTrim = sTrim.Substring(0, sTrim.Length - 1).TrimEnd();
+            if (sTrim == "") return true;
+            return ".!?".IndexOf(sTrim[sTrim.Length - 1]) >= 0;
+        }
+
+        static bool soundOnly(string sText)
+        {
+            return Regex.IsMatch(sText, @"^[\[\(][^\]\)]*[\]\)]$");
+        }
+
+        static bool englishTag(string sTag)
+        {
+            string sLower = sTag.Trim().ToLower().Replace("_", "-");
+            if (sLower == "") return false;
+            // A track sometimes carries a note after its language: "en-US-cc"
+            // for closed captions, "eng-forced" for forced subtitles. The note
+            // says how the track is meant to be used, not what language it is.
+            // "-hi" for hearing impaired is deliberately NOT stripped: "en-hi"
+            // is YouTube's Hindi translation, and losing a rare marker beats
+            // reading a transcript in the wrong language.
+            foreach (string sNote in new string[] { "-cc", "-sdh", "-forced", "-default", "-dubbed" })
+            {
+                while (sLower.EndsWith(sNote)) sLower = sLower.Substring(0, sLower.Length - sNote.Length);
+            }
+            foreach (string sOne in sDefaultEnglishTags.Split(','))
+            {
+                if (sLower == sOne) return true;
+            }
+            return false;
+        }
+
+        // YouTube's automatic captions carry a timing tag around each word, so
+        // that the words can be lit up as they are said. A track written by a
+        // person never does. This is a surer test than the file's name.
+        static bool looksAutomatic(string sText)
+        {
+            return Regex.IsMatch(sText, @"<\d{2}:\d{2}:\d{2}\.\d{3}>");
+        }
+
+        // A subtitle track inside the film. Every track is asked its language,
+        // so an English one is taken even when it is not the first, and a film
+        // carrying only other languages is left to Whisper.
+        static string captionsInFilm(string sFfmpeg, string sInput, string sWorkDir, out string sWhy)
+        {
+            sWhy = "";
+            string sOut = "";
+            string sErr = "";
+            // ffmpeg lists every stream when asked to open a file and given
+            // nothing to do with it, the way probeDuration and hasPicture
+            // already use. A subtitle line reads
+            //   Stream #0:2(eng): Subtitle: subrip (default)
+            // and the language in brackets is missing when nobody set it.
+            // Their order in that listing is their order in the file, so the
+            // third subtitle stream found is 0:s:2.
+            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
+            List<string> lTags = new List<string>();
+            foreach (Match oOne in Regex.Matches(sOut + sErr, @"Stream #\d+:\d+(?:\(([^)]*)\))?[^\r\n]*?: Subtitle:"))
+            {
+                lTags.Add(oOne.Groups[1].Success ? oOne.Groups[1].Value.Trim() : "");
+            }
+            if (lTags.Count == 0)
+            {
+                sWhy = "The film holds no subtitle track.";
+                return "";
+            }
+            int iWanted = -1;
+            int iTrack = 0;
+            foreach (string sTag in lTags)
+            {
+                if (iWanted < 0 && englishTag(sTag)) iWanted = iTrack;
+                iTrack = iTrack + 1;
+            }
+            if (iWanted < 0 && lTags.Count == 1 && lTags[0] == "")
+            {
+                // One track, and nobody said what language it is in. Taking it
+                // is the useful guess, and the heading says the language was
+                // never stated.
+                iWanted = 0;
+                sWhy = "unlabelled";
+            }
+            if (iWanted < 0)
+            {
+                sWhy = "The film's subtitle " + counted(lTags.Count, "track is", "tracks are") + " in "
+                     + string.Join(", ", lTags.ToArray()) + ", and only English is supported.";
+                return "";
+            }
+            string sTemp = Path.Combine(sWorkDir, "captions.srt");
+            string sExOut = "";
+            string sExErr = "";
+            int iEx = runCommand(sFfmpeg, "-v error -y -i " + quoted(sInput)
+                                        + " -map 0:s:" + iWanted.ToString() + " -c:s srt " + quoted(sTemp),
+                                 out sExOut, out sExErr);
+            if (iEx != 0 || !File.Exists(sTemp))
+            {
+                // A track of pictures rather than text -- the kind a DVD or a
+                // Blu-ray carries -- cannot be turned into words without
+                // reading the pictures, which is a different job.
+                sWhy = "The subtitle track could not be read out as text. It may be a track of pictures rather than words. ffmpeg said: " + tail(sExErr, 200);
+                return "";
+            }
+            string sText = "";
+            try
+            {
+                sText = File.ReadAllText(sTemp);
+            }
+            catch (Exception oError)
+            {
+                sWhy = "The extracted subtitle file could not be read: " + oError.Message;
+                return "";
+            }
+            try
+            {
+                File.Delete(sTemp);
+            }
+            catch (Exception)
+            {
+            }
+            return sText;
+        }
+
+        // yt-dlp leaves its subtitles beside the video, named for the language:
+        // "<name>.en.vtt". Where more than one is there, the one a person wrote
+        // is preferred, judged by what is in it rather than what it is called.
+        static string captionsBeside(string sInput, out string sWhy)
+        {
+            sWhy = "";
+            string sBest = "";
+            string sBestText = "";
+            string sStem = Path.GetFileNameWithoutExtension(sInput);
+            string sFolder = Path.GetDirectoryName(Path.GetFullPath(sInput));
+            List<string> lFound = new List<string>();
+            try
+            {
+                foreach (string sName in Directory.GetFiles(sFolder))
+                {
+                    string sBare = Path.GetFileName(sName);
+                    string sLower = sBare.ToLower();
+                    if (!sLower.EndsWith(".vtt") && !sLower.EndsWith(".srt")) continue;
+                    if (!sBare.StartsWith(sStem, StringComparison.OrdinalIgnoreCase)) continue;
+                    // Whatever sits between the stem and the extension is the
+                    // language. Nothing there at all is taken as English.
+                    string sMiddle = Path.GetFileNameWithoutExtension(sBare);
+                    sMiddle = sMiddle.Length > sStem.Length ? sMiddle.Substring(sStem.Length).Trim('.') : "";
+                    if (sMiddle != "" && !englishTag(sMiddle)) continue;
+                    lFound.Add(sName);
+                }
+            }
+            catch (Exception oError)
+            {
+                sWhy = "The folder beside the film could not be read: " + oError.Message;
+                return "";
+            }
+            if (lFound.Count == 0)
+            {
+                sWhy = "There is no English caption file beside the film.";
+                return "";
+            }
+            foreach (string sName in lFound)
+            {
+                string sText = "";
+                try
+                {
+                    sText = File.ReadAllText(sName);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+                bool bAuto = looksAutomatic(sText);
+                logMessage("  Caption file beside the film: " + Path.GetFileName(sName)
+                           + ", " + (bAuto ? "made automatically" : "written by a person"), "INFO", "");
+                if (sBest == "" || (!bAuto && looksAutomatic(sBestText)))
+                {
+                    sBest = sName;
+                    sBestText = sText;
+                }
+            }
+            if (sBest == "")
+            {
+                sWhy = "No caption file beside the film could be read.";
+                return "";
+            }
+            logMessage("  Taking " + Path.GetFileName(sBest) + ".", "INFO", "");
+            return sBestText;
+        }
+
+        // The transcript, from the film's own captions when it has usable ones.
+        // An empty list means Whisper should do the work instead, and the
+        // reason is written to the log either way.
+        static List<Speech> captionsFor(string sFfmpeg, string sInput, string sWorkDir, out string sWhere)
+        {
+            List<Speech> lFrom = new List<Speech>();
+            bool bUnlabelled = false;
+            string sWhyFilm = "";
+            string sWhyBeside = "";
+            sWhere = "";
+            if (!flag("captions"))
+            {
+                logMessage("Captions are turned off, so the film is listened to instead.", "INFO", "");
+                return lFrom;
+            }
+            string sText = captionsInFilm(sFfmpeg, sInput, sWorkDir, out sWhyFilm);
+            if (sText != "")
+            {
+                bUnlabelled = sWhyFilm == "unlabelled";
+                sWhere = "the film's own captions";
+            }
+            else
+            {
+                logMessage("No captions inside the film. " + sWhyFilm, "INFO", "");
+                sText = captionsBeside(sInput, out sWhyBeside);
+                if (sText != "") sWhere = "a caption file beside the film";
+                else logMessage("None beside it either. " + sWhyBeside, "INFO", "");
+            }
+            if (sText.Trim() == "")
+            {
+                logMessage("No captions were found, so the film will be listened to with Whisper.", "INFO", "");
+                return lFrom;
+            }
+            // How the track was made decides how it is read. Only a track that
+            // rolls needs the repeats taking out, and doing that to a
+            // hand-written track would trim words that were meant to be there.
+            bool bRolling = looksAutomatic(sText);
+            // And now it decides something larger: whether these captions are
+            // trusted over listening to the film at all.
+            bCaptionsAuto = bRolling;
+            logMessage("These captions were " + (bRolling ? "made automatically, and roll up the screen, so the repeats are taken out."
+                                                          : "written by a person, so they are read as they stand."), "INFO", "");
+            lFrom = bRolling ? joinRolling(readCaptions(sText)) : joinCaptions(readCaptions(sText));
+            if (lFrom.Count == 0)
+            {
+                logMessage("Captions were found, but nothing could be read out of them. The film will be listened to with Whisper instead.", "INFO", "");
+                sWhere = "";
+                return lFrom;
+            }
+            int iWords = 0;
+            int iNamed = 0;
+            int iSounds = 0;
+            foreach (Speech oCue in lFrom)
+            {
+                iWords = iWords + oCue.sText.Split(' ').Length;
+                if (oCue.sWho != "") iNamed = iNamed + 1;
+                if (Regex.IsMatch(oCue.sText, @"^[\[\(][^\]\)]*[\]\)]$")) iSounds = iSounds + 1;
+            }
+            if (bUnlabelled)
+            {
+                logMessage("The film's one subtitle track does not say what language it is in. It is taken as English.", "INFO", "");
+                sWhere = sWhere + ", whose language is not stated";
+            }
+            logMessage("Captions from " + sWhere + ": " + counted(lFrom.Count, "passage", "passages")
+                       + ", " + counted(iWords, "word", "words")
+                       + ", " + counted(iNamed, "naming a speaker", "naming a speaker")
+                       + ", " + counted(iSounds, "marking a sound rather than speech", "marking a sound rather than speech")
+                       + ", up to " + formatClock(lFrom[lFrom.Count - 1].nEnd) + ".",
+                       "INFO", "Read " + counted(lFrom.Count, "passage", "passages") + " of the film's own captions.");
+            return lFrom;
+        }
+
         // Transcribing a long film is minutes of work, so the result is kept and
         // a resumed run never pays for it twice.
         static List<Speech> transcribe(string sFfmpeg, string sInput, string sWorkDir, double nDuration)
@@ -2250,6 +2930,65 @@ namespace Homer
                 oSaid.Append(oSpeech.sText + " ");
             }
             return oSaid.ToString().Trim();
+        }
+
+        // Who the captions say was speaking around this moment.
+        //
+        // He asked the obvious question: captions carry times, so why does a
+        // name at 12:03 not tell you who is on screen at 12:03? It partly
+        // does. In an interview, a talk, a piece to camera or most television
+        // drama the speaker IS in shot a good deal of the time.
+        //
+        // Three things weaken it, and the third is peculiar to this program.
+        // Narration is never in shot. Dialogue cuts to the listener's face as
+        // often as the speaker's, especially on the line that matters. And
+        // HomerScribe describes IN THE GAPS BETWEEN SPEECH, by design -- so at
+        // the moment a description is made, nobody is speaking at all, and the
+        // nearest speaker is on one side of the silence or the other.
+        //
+        // What survives all three is worth having: whoever spoke just before
+        // or just after is very likely in the SCENE, if not in the frame. So
+        // it is given as that and no more, and the model is left to check it
+        // against the picture.
+        static string spokeAround(List<Speech> lFrom, double nAt)
+        {
+            if (lFrom == null || lFrom.Count == 0) return "";
+            // NOT the dialogue window. That is twenty-five seconds, sized for
+            // quoting the line just spoken so a description does not repeat it,
+            // which is a different question from this one.
+            //
+            // "Who is in this scene" is a scene-sized question. At twenty-five
+            // seconds this found nobody at all across two NOVA documentaries --
+            // descriptions go in the rare silences of a narrated film, and the
+            // nearest labelled cue was always further off than that. Two
+            // minutes either way is about the length of a scene.
+            double nWindow = number("speaker-window");
+            if (nWindow <= 0.0) nWindow = 120.0;
+            List<string> lWho = new List<string>();
+            foreach (Speech oCue in lFrom)
+            {
+                if (oCue.sWho == null || oCue.sWho.Trim() == "") continue;
+                if (oCue.nEnd < nAt - nWindow) continue;
+                if (oCue.nStart > nAt + nWindow) continue;
+                // The same filter the roster uses, which this was missing.
+                // His logs read "GPS and FORTIER and NARRATOR speaking around
+                // 22:02": a narrator is never in shot, and GPS is not a person
+                // at all. Nearly every hint carried NARRATOR, which turned the
+                // useful single-name case into a three-name guess.
+                if (namesFromCaptions(new List<Speech>() { oCue }).Count == 0) continue;
+                bool bHaveIt = false;
+                foreach (string sOne in lWho)
+                {
+                    if (string.Compare(sOne, oCue.sWho.Trim(), true) == 0) bHaveIt = true;
+                }
+                if (!bHaveIt) lWho.Add(oCue.sWho.Trim());
+            }
+            if (lWho.Count == 0) return "";
+            // One name is evidence. A dozen is a cast list, and saying "these
+            // twelve are around here somewhere" invites exactly the guessing
+            // the prompt forbids.
+            if (lWho.Count > 3) return "";
+            return string.Join(" and ", lWho.ToArray());
         }
 
         static bool overlapsSpeech(List<Speech> lSpeech, double nStart, double nEnd)
@@ -2574,11 +3313,43 @@ namespace Homer
                 oPrompt.Append("saying what they look like: a listener cannot tell that \"a bearded man\" and a name are the same person. ");
                 oPrompt.Append("If nobody matches, describe by appearance and do not guess a name.\n");
             }
+            // The film's own cast list, said to be that.
+            //
+            // This used to be poured into the list above, which is headed
+            // "Names you have already used in this film" and asks the model to
+            // match somebody against how one of those was DESCRIBED. For a name
+            // out of the captions there is no earlier description to match, so
+            // the instruction was unanswerable and the names went unused. That
+            // was my plumbing, not a limit of the idea.
+            if (lSpeakerRoster.Count > 0)
+            {
+                oPrompt.Append("\nThe film's captions name these people as speaking somewhere in it: ");
+                oPrompt.Append(string.Join(", ", lSpeakerRoster.ToArray()));
+                oPrompt.Append("\n");
+                oPrompt.Append("That is the film's own cast list, spelled as its makers spell it. It does NOT say who ");
+                oPrompt.Append("is in this shot. Use one of those names when you can actually tell that this is that ");
+                oPrompt.Append("person — because you were told what they look like, or because the picture itself says ");
+                oPrompt.Append("so, such as a caption on screen naming them. Otherwise describe people by what you can ");
+                oPrompt.Append("see and give no name. Never pick a name from that list because it is the only one ");
+                oPrompt.Append("left, or because somebody of about the right sort is in shot.\n");
+            }
             if (lRecent.Count > 0)
             {
                 oPrompt.Append("You have just said, of the moments before this one: ");
                 foreach (string sOld in lRecent) oPrompt.Append("\"" + sOld + "\" ");
                 oPrompt.Append("\nSay none of that again. Describe only what has changed since.\n");
+            }
+            // Last, because a model weighs the end of a prompt most, and this
+            // is the one piece of caption evidence tied to THIS moment rather
+            // than to the film as a whole.
+            if (sSpeakerNear != "")
+            {
+                oPrompt.Append("\nAround this moment in the film, the captions have " + sSpeakerNear + " speaking.\n");
+                oPrompt.Append("Whoever speaks either side of a silence is almost certainly in this SCENE. They are ");
+                oPrompt.Append("not necessarily in this FRAME: a film cuts to the listener as often as the speaker, ");
+                oPrompt.Append("and this moment is a silence between lines. If exactly one person is named there and ");
+                oPrompt.Append("exactly one person is in shot, saying who it is will usually be right. If several are ");
+                oPrompt.Append("named, or several are in shot, do not guess which is which.\n");
             }
             if (sJustSaid != "")
             {
@@ -3321,6 +4092,56 @@ namespace Homer
         // The standards ask for the same names and words throughout a whole
         // production. Each moment is written knowing almost nothing of the rest,
         // so the names already used are gathered and handed forward.
+        // Everybody the captions name as speaking, in the order they first
+        // speak. This is a ROSTER, not a claim about any one frame: a film cuts
+        // to the listener as often as to the speaker, and a narrator is never
+        // in shot. What it is good for is knowing which names this film uses
+        // and how its makers spell them, so the model neither invents a name
+        // nor invents a spelling.
+        //
+        // On its own it cannot attach a name to a face. The context file is
+        // where appearances live. The captions say who exists; the context file
+        // says what they look like; a name can be used where the two meet.
+        static List<string> namesFromCaptions(List<Speech> lFrom)
+        {
+            List<string> lWho = new List<string>();
+            foreach (Speech oCue in lFrom)
+            {
+                string sWho = oCue.sWho == null ? "" : oCue.sWho.Trim();
+                if (sWho == "") continue;
+                // A note about the sound rather than a person: MAN ON RADIO is
+                // useful, NARRATOR and AUDIENCE name nobody who can be seen.
+                // Not a name, however the captions write it.
+                //
+                // Subtitles for the deaf label an unidentified speaker by what
+                // they are: MAN, WOMAN, GIRL, MAN 2, REPORTER. Those went into
+                // the roster as though they were people, and it showed: the
+                // only roster entries that ever turned up in a description of
+                // his NOVA film were MAN and WOMAN, which the description would
+                // have used anyway. Worse than useless -- it tells the model
+                // that "MAN" is a name this film uses, which invites it to
+                // treat a generic word as an identification.
+                if (Regex.IsMatch(sWho,
+                        @"^(narrator|announcer|audience|all|both|crowd|voice ?over|v\.?o\.?|"
+                      + @"man|woman|boy|girl|child|kid|baby|male|female|"
+                      + @"reporter|interviewer|host|presenter|speaker|guest|caller|operator|"
+                      + @"doctor|nurse|officer|teacher|student|driver|waiter|clerk|"
+                      + @"computer|television|tv|radio|phone|telephone|recording|automated voice)"
+                      + @"\s*\d*$", RegexOptions.IgnoreCase)) continue;
+                // Nor a role with a number or a qualifier: "MAN 2", "SECOND
+                // WOMAN", "MAN ON RADIO" names nobody you could pick out.
+                if (Regex.IsMatch(sWho, @"^(first|second|third|another|other|young|old|older|elderly)\s+"
+                      + @"(man|woman|boy|girl|child|voice|speaker)\s*\d*$", RegexOptions.IgnoreCase)) continue;
+                bool bHaveIt = false;
+                foreach (string sOne in lWho)
+                {
+                    if (string.Compare(sOne, sWho, true) == 0) bHaveIt = true;
+                }
+                if (!bHaveIt) lWho.Add(sWho);
+            }
+            return lWho;
+        }
+
         static void gatherNames(string sText, List<string> lNames)
         {
             foreach (Match oMatch in Regex.Matches(sText, @"(?<=[a-z,] )([A-Z][a-z]{2,})"))
@@ -3654,34 +4475,188 @@ namespace Homer
             fVtt.Close();
         }
 
+        // ---------- writing for a reader ----------
+        //
+        // Everything below exists to be listened to. The rules are the W3C Web
+        // Accessibility Initiative's, from its Transcripts guidance, and the
+        // reasoning is in the History entry rather than repeated here.
+
+        // A section heading a person would say out loud. "0:10:00 to 0:20:00"
+        // is four numbers; "From 10 minutes" is a place in the film.
+        static string sectionTitle(double nFrom)
+        {
+            if (nFrom < 30.0) return "From the start";
+            string sSaid = spokenTime(nFrom);
+            if (sSaid == "") return "From the start";
+            return "From " + sSaid.Replace(" min", " minutes");
+        }
+
+        // Sections earn their place only on a film long enough to want to move
+        // about in. Below that they are two more things to read past.
+        static bool wantsSections(double nDuration)
+        {
+            return nDuration >= nDefaultChapter * 2.0;
+        }
+
+        // A publisher's description is written to sell the video. The part
+        // worth keeping says what the video is; the rest is addresses, appeals
+        // to subscribe, and permission notices, and a screen reader says an
+        // address one character at a time.
+        static string tidyDescription(string sAbout)
+        {
+            if (sAbout == "") return "";
+            StringBuilder oKept = new StringBuilder();
+            List<string> lPieces = new List<string>();
+            string sFlat = Regex.Replace(sAbout, @"\s+", " ").Trim();
+            foreach (string sPiece in Regex.Split(sFlat, @"(?<=[\.\!\?])\s+"))
+            {
+                string sOne = sPiece.Trim();
+                if (sOne == "") continue;
+                // The splitter breaks after any full stop, including the one in
+                // "e.g.". Put such a piece back on the one before it rather
+                // than judging half a sentence on its own.
+                if (lPieces.Count > 0 && endsAbbreviation(lPieces[lPieces.Count - 1]))
+                {
+                    lPieces[lPieces.Count - 1] = lPieces[lPieces.Count - 1] + " " + sOne;
+                    continue;
+                }
+                lPieces.Add(sOne);
+            }
+            foreach (string sOne in lPieces)
+            {
+                // An address, and whatever sentence was carrying it.
+                if (Regex.IsMatch(sOne, @"https?://|www\.")) continue;
+                if (Regex.IsMatch(sOne, @"\b(subscribe|follow us|like us|our channel|twitter|facebook|instagram|patreon|"
+                                       + @"permission to use|copyright|all rights reserved|usage policy|for more information, see)\b",
+                                  RegexOptions.IgnoreCase)) continue;
+                // What is left of a sentence once its address is gone is often
+                // three words of nothing: "Visit", "See also".
+                if (sOne.Split(' ').Length < 4) continue;
+                // An ellipsis at the end is somebody else's truncation, and
+                // the words before it are half a thought.
+                if (sOne.TrimEnd().EndsWith("...") || sOne.TrimEnd().EndsWith("\u2026")) continue;
+                // A bracket opened and never closed is half a thought.
+                if (sOne.Split('(').Length != sOne.Split(')').Length) continue;
+                if (oKept.Length > 0) oKept.Append(" ");
+                oKept.Append(sOne);
+                if (oKept.Length > 700) break;
+            }
+            // A description cut off part way leaves a fragment at the end, and
+            // a fragment read aloud sounds like a fault in the program.
+            while (oKept.Length > 0 && (!endsSentence(oKept.ToString()) || endsAbbreviation(oKept.ToString())))
+            {
+                // The search must start BEFORE the last character. Ending on
+                // "e.g." the stop being complained about IS the last character,
+                // and looking from the end would find it again, set the same
+                // length, and go round for ever.
+                string sSoFar = oKept.ToString().TrimEnd();
+                int iBack = sSoFar.Length < 2 ? -1 : sSoFar.LastIndexOfAny(new char[] { '.', '!', '?' }, sSoFar.Length - 2);
+                if (iBack < 0) { oKept.Length = 0; break; }
+                oKept.Length = iBack + 1;
+            }
+            string sLeft = oKept.ToString().Trim();
+            // Too little left to be worth a heading and a paragraph.
+            if (sLeft.Split(' ').Length < 12) return "";
+            return sLeft;
+        }
+
+        // The head of every document: what it is, where it came from, how long
+        // it runs, and how it was made. Four or five lines, and no more, since
+        // everything here is read before the reader reaches a single word of
+        // the film.
+        static bool writeHead(StreamWriter fDoc, string sHeading, string sSourceName, double nDuration, string sMadeBy)
+        {
+            fDoc.WriteLine("# " + sHeading);
+            fDoc.WriteLine("");
+            if (sVideoTitle != "" && sVideoTitle != sSourceName) fDoc.WriteLine("- Title: " + sVideoTitle);
+            if (sVideoBy != "") fDoc.WriteLine("- Published by: " + sVideoBy);
+            if (nDuration > 0.0) fDoc.WriteLine("- Running time: " + formatClock(nDuration));
+            fDoc.WriteLine("- " + sMadeBy);
+            fDoc.WriteLine("- Made: " + DateTime.Now.ToString("d MMMM yyyy"));
+            if (sVideoAddress != "")
+            {
+                string sLabel = sVideoTitle == "" ? "the original video" : sVideoTitle;
+                fDoc.WriteLine("- Watch: [" + sLabel.Replace("[", "(").Replace("]", ")") + "](" + sVideoAddress + ")");
+            }
+            fDoc.WriteLine("");
+            string sAbout = tidyDescription(sVideoAbout);
+            if (sAbout != "")
+            {
+                fDoc.WriteLine("## About this video");
+                fDoc.WriteLine("");
+                fDoc.WriteLine(sAbout);
+                fDoc.WriteLine("");
+            }
+            return true;
+        }
+
+        // One paragraph of the film's own words. A speaker's name goes in bold
+        // at the front, which is how a transcript has always been laid out and
+        // which a screen reader can be asked to announce.
+        static string saidAs(Speech oSpeech)
+        {
+            if (oSpeech.sWho == "") return oSpeech.sText;
+            return "**" + oSpeech.sWho + ".** " + oSpeech.sText;
+        }
+
         static void writeMarkdown(List<Moment> lMoments, string sPath, string sSourceName, double nDuration)
         {
             StreamWriter fDoc = new StreamWriter(sPath, false, new UTF8Encoding(true));
-            fDoc.WriteLine("# Audio description of " + sSourceName);
-            fDoc.WriteLine("");
-            fDoc.WriteLine("- Descriptions: " + lMoments.Count.ToString());
-            fDoc.WriteLine("- Running time: " + formatClock(nDuration));
-            fDoc.WriteLine("- Written by: " + text("model"));
-            fDoc.WriteLine("- Generated: " + DateTime.Now.ToString("d MMMM yyyy"));
-            fDoc.WriteLine("");
-            fDoc.WriteLine("Each entry gives the time it is spoken, followed by the description. Times are counted from the start of the film.");
+            bool bSections = wantsSections(nDuration);
+            writeHead(fDoc, "What can be seen in " + sSourceName, sSourceName, nDuration,
+                      counted(lMoments.Count, "description", "descriptions") + ", written by " + text("model"));
+            fDoc.WriteLine("What a sighted viewer would have seen, in the order it happens.");
             fDoc.WriteLine("");
             double nChapter = -1.0;
+            if (!bSections)
+            {
+                fDoc.WriteLine("## The description");
+                fDoc.WriteLine("");
+            }
             foreach (Moment oMoment in lMoments)
             {
-                double nThis = Math.Floor(oMoment.nStart / nDefaultChapter) * nDefaultChapter;
-                if (nThis != nChapter)
+                if (bSections)
                 {
-                    nChapter = nThis;
-                    fDoc.WriteLine("");
-                    fDoc.WriteLine("## " + formatClock(nChapter) + " to " + formatClock(Math.Min(nChapter + nDefaultChapter, nDuration)));
-                    fDoc.WriteLine("");
+                    double nThis = Math.Floor(oMoment.nStart / nDefaultChapter) * nDefaultChapter;
+                    if (nThis != nChapter)
+                    {
+                        nChapter = nThis;
+                        fDoc.WriteLine("## " + sectionTitle(nChapter));
+                        fDoc.WriteLine("");
+                    }
                 }
-                fDoc.WriteLine("- " + formatClock(oMoment.nStart) + " " + oMoment.sText);
+                fDoc.WriteLine(oMoment.sText);
+                fDoc.WriteLine("");
             }
             fDoc.Close();
         }
 
+        // yt-dlp is updated at most once in a session, however many videos are
+        // refused.
+        // Set when ExifTool does not know the two IPTC accessibility fields by
+        // name, which means that copy predates them: they were added to the
+        // standard in October 2021. Decided once by the self test, then held.
+        // Formats this copy of ExifTool has told us it cannot write. Learnt
+        // during the run rather than listed, because the answer depends on the
+        // version in use.
+        static List<string> lNoRoomKinds = new List<string>();
+        // Whether the captions in hand were made by a machine. HomerScribe has
+        // always been able to tell -- looksAutomatic() decides from per-word
+        // timing tags and from cues that roll up the screen repeating the line
+        // before -- and the logs have said which all along. What it did not do
+        // was act on it.
+        // The film's cast list from its captions, and whoever the captions
+        // have speaking around the moment being described. Statics rather than
+        // two more arguments threaded through five call sites, which is how
+        // lCaptions and the rest already travel.
+        static List<string> lSpeakerRoster = new List<string>();
+        static string sSpeakerNear = "";
+        static bool bCaptionsAuto = false;
+        static bool bNoAltTags = false;
+        // Set when the definitions below are being supplied to make up for it.
+        static bool bTeachAltTags = false;
+        static string sAltConfigPath = "";
+        static bool bTriedUpdate = false;
         static bool bTranscribed = false;
         static bool bSpeechReady = false;
         static bool bSpeechDoubtful = false;
@@ -3818,28 +4793,52 @@ namespace Homer
         static void writeTranscript(List<Speech> lSpeech, string sPath, string sSourceName, double nDuration)
         {
             StreamWriter fDoc = new StreamWriter(sPath, false, new UTF8Encoding(true));
-            fDoc.WriteLine("# Transcript of " + sSourceName);
-            fDoc.WriteLine("");
-            fDoc.WriteLine("- Spoken stretches: " + lSpeech.Count.ToString());
-            fDoc.WriteLine("- Running time: " + formatClock(nDuration));
-            fDoc.WriteLine("- Heard by: Whisper " + text("whisper-model"));
-            fDoc.WriteLine("- Generated: " + DateTime.Now.ToString("d MMMM yyyy"));
-            fDoc.WriteLine("");
-            fDoc.WriteLine("Each entry gives the time it is spoken, followed by the words. Times are counted from the start.");
-            fDoc.WriteLine("");
+            bool bSections = wantsSections(nDuration);
+            bool bAnySounds = false;
+            bool bAnyNames = false;
+            foreach (Speech oSpeech in lSpeech)
+            {
+                if (soundOnly(oSpeech.sText)) bAnySounds = true;
+                if (oSpeech.sWho != "") bAnyNames = true;
+            }
+            // One transcript, whichever way it was made, with a line saying
+            // which way that was. Two files of near-identical words would only
+            // make the reader choose between them.
+            writeHead(fDoc, "What is said in " + sSourceName, sSourceName, nDuration,
+                      sTranscriptFrom == ""
+                      ? "Heard by Whisper " + text("whisper-model")
+                      : "Taken from " + sTranscriptFrom);
+            // A note only where there is something for it to explain. Telling
+            // a reader what a speaker's name looks like, in a film where
+            // nobody is named, is a sentence spent on nothing.
+            if (sTranscriptFrom != "")
+            {
+                fDoc.WriteLine("A person wrote these words down while the film was made, so they are more exact than any machine could hear."
+                             + (bAnyNames ? " A name in bold is whoever is speaking." : "")
+                             + (bAnySounds ? " Words inside brackets are a sound rather than speech, such as a door slamming or music starting." : ""));
+                fDoc.WriteLine("");
+            }
             double nChapter = -1.0;
+            if (!bSections)
+            {
+                fDoc.WriteLine("## What is said");
+                fDoc.WriteLine("");
+            }
             foreach (Speech oSpeech in lSpeech)
             {
                 if (oSpeech.sText == "") continue;
-                double nThis = Math.Floor(oSpeech.nStart / nDefaultChapter) * nDefaultChapter;
-                if (nThis != nChapter)
+                if (bSections)
                 {
-                    nChapter = nThis;
-                    fDoc.WriteLine("");
-                    fDoc.WriteLine("## " + formatClock(nChapter) + " to " + formatClock(Math.Min(nChapter + nDefaultChapter, nDuration)));
-                    fDoc.WriteLine("");
+                    double nThis = Math.Floor(oSpeech.nStart / nDefaultChapter) * nDefaultChapter;
+                    if (nThis != nChapter)
+                    {
+                        nChapter = nThis;
+                        fDoc.WriteLine("## " + sectionTitle(nChapter));
+                        fDoc.WriteLine("");
+                    }
                 }
-                fDoc.WriteLine("- " + formatClock(oSpeech.nStart) + " " + oSpeech.sText);
+                fDoc.WriteLine(saidAs(oSpeech));
+                fDoc.WriteLine("");
             }
             fDoc.Close();
         }
@@ -3860,7 +4859,11 @@ namespace Homer
             foreach (Speech oSpeech in lSpeech)
             {
                 if (oSpeech.sText == "") continue;
-                lLines.Add(new string[] { num(oSpeech.nStart), formatClock(oSpeech.nStart), "Spoken", oSpeech.sText });
+                // A caption in brackets is a sound, not speech -- and it is the
+                // single thing this document exists to carry that no transcript
+                // of speech ever holds. Labelling it Spoken would lose it.
+                string sKind = soundOnly(oSpeech.sText) ? "Sound" : "Spoken";
+                lLines.Add(new string[] { num(oSpeech.nStart), formatClock(oSpeech.nStart), sKind, saidAs(oSpeech) });
             }
             lLines.Sort(delegate(string[] asOne, string[] asTwo)
             {
@@ -3871,30 +4874,47 @@ namespace Homer
                 return nOne.CompareTo(nTwo);
             });
             StreamWriter fDoc = new StreamWriter(sPath, false, new UTF8Encoding(true));
-            fDoc.WriteLine("# " + sSourceName + ", described and transcribed");
+            bool bSections = wantsSections(nDuration);
+            writeHead(fDoc, "A descriptive transcript of " + sSourceName, sSourceName, nDuration,
+                      counted(lLines.Count, "entry", "entries")
+                      + (sTranscriptFrom == "" ? ", the words heard by Whisper " + text("whisper-model")
+                                               : ", the words taken from " + sTranscriptFrom));
+            // "Descriptive transcript" is the term of art, and the W3C Web
+            // Accessibility Initiative names this document as the one a reader
+            // who is both Deaf and blind needs. Saying so lets a reader who
+            // knows the term recognise what they have.
+            fDoc.WriteLine("Everything the film offers, in the order it happens: what was said, what could be heard, "
+                         + "and what could be seen. This is what is called a descriptive transcript, and it is the whole "
+                         + "of the film for a reader who can neither watch nor listen to it.");
             fDoc.WriteLine("");
-            fDoc.WriteLine("- Running time: " + formatClock(nDuration));
-            fDoc.WriteLine("- Entries: " + lLines.Count.ToString());
-            fDoc.WriteLine("- Generated: " + DateTime.Now.ToString("d MMMM yyyy"));
-            fDoc.WriteLine("");
-            fDoc.WriteLine("What was said and what was there to be seen, in the order it happens. "
-                         + "Each entry gives its time, then either Spoken, for the film's own words, "
-                         + "or Description, for what a sighted viewer would have seen.");
+            fDoc.WriteLine("**Paragraphs beginning \"Description\" are not part of the film.** They were written about it "
+                         + "afterwards, by a machine looking at the picture. Everything else is the film's own.");
             fDoc.WriteLine("");
             double nChapter = -1.0;
+            if (!bSections)
+            {
+                fDoc.WriteLine("## The film");
+                fDoc.WriteLine("");
+            }
             foreach (string[] asLine in lLines)
             {
                 double nAt = 0.0;
                 double.TryParse(asLine[0], NumberStyles.Any, CultureInfo.InvariantCulture, out nAt);
-                double nThis = Math.Floor(nAt / nDefaultChapter) * nDefaultChapter;
-                if (nThis != nChapter)
+                if (bSections)
                 {
-                    nChapter = nThis;
-                    fDoc.WriteLine("");
-                    fDoc.WriteLine("## " + formatClock(nChapter) + " to " + formatClock(Math.Min(nChapter + nDefaultChapter, nDuration)));
-                    fDoc.WriteLine("");
+                    double nThis = Math.Floor(nAt / nDefaultChapter) * nDefaultChapter;
+                    if (nThis != nChapter)
+                    {
+                        nChapter = nThis;
+                        fDoc.WriteLine("## " + sectionTitle(nChapter));
+                        fDoc.WriteLine("");
+                    }
                 }
-                fDoc.WriteLine("- " + asLine[1] + " " + asLine[2] + ": " + asLine[3]);
+                // Only what was added carries a label. An unlabelled paragraph
+                // is the film speaking for itself, which is most of them, and
+                // labelling those too would double the reading for nothing.
+                fDoc.WriteLine(asLine[2] == "Description" ? "**Description.** " + asLine[3] : asLine[3]);
+                fDoc.WriteLine("");
             }
             fDoc.Close();
         }
@@ -4464,7 +5484,7 @@ namespace Homer
             announce("Initializing", -1.0, 1.0, "Reading the playlist, which may take a moment.");
             string sOut = "";
             string sErr = "";
-            int iCode = runCommand(sYtDlp, "--flat-playlist --no-warnings --print " + quoted("%(url)s") + " " + quoted(sAddress), out sOut, out sErr);
+            int iCode = runCommand(sYtDlp, "--flat-playlist --no-warnings" + quietly() + " --print " + quoted("%(url)s") + " " + quoted(sAddress), out sOut, out sErr);
             if (iCode != 0 && sOut.Trim() == "")
             {
                 logMessage("The playlist could not be read: " + tail(sErr.Trim(), 400), "ERROR");
@@ -4545,6 +5565,78 @@ namespace Homer
         // yt-dlp's complaint, reduced to the sentence a person needs. Its output
         // carries warnings about JavaScript runtimes and suchlike that are not
         // the reason for anything.
+        // yt-dlp names its releases by date, "2026.07.04". YouTube changes
+        // often enough that an old copy is a real suspect rather than a
+        // formality, so the age is worked out and said once at startup.
+        static int daysOldTool(string sVersion)
+        {
+            Match oWhen = Regex.Match(sVersion == null ? "" : sVersion, @"(\d{4})\.(\d{2})\.(\d{2})");
+            if (!oWhen.Success) return -1;
+            try
+            {
+                DateTime dtMade = new DateTime(int.Parse(oWhen.Groups[1].Value),
+                                               int.Parse(oWhen.Groups[2].Value),
+                                               int.Parse(oWhen.Groups[3].Value));
+                return (int)DateTime.Now.Subtract(dtMade).TotalDays;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        // The ways of asking for a video, in the order they are tried. The
+        // first is what has always been asked for; the rest are what to do when
+        // that is refused. A player client is which of YouTube's own apps
+        // yt-dlp pretends to be, and they are not all served alike.
+        static List<string[]> waysToFetch()
+        {
+            List<string[]> lWays = new List<string[]>();
+            string sPinned = text("player-client");
+            if (sPinned != "")
+            {
+                lWays.Add(new string[] { "the " + sPinned + " player, as set",
+                                         " --extractor-args " + quoted("youtube:player_client=" + sPinned) });
+                return lWays;
+            }
+            lWays.Add(new string[] { "the usual way", "" });
+            // Not a player at all: one stream carrying both picture and sound,
+            // which is served differently from the best of each taken apart.
+            // Tried early because it is the cheapest thing that often works.
+            lWays.Add(new string[] { "a single combined stream", " ONE-STREAM" });
+            // Then the players. The television and iOS ones ask for less and
+            // are commonly served when the web one is not; the web player is
+            // tried last because it is the one most often handed an empty menu.
+            lWays.Add(new string[] { "the television player", " --extractor-args " + quoted("youtube:player_client=tv") });
+            lWays.Add(new string[] { "the iOS player", " --extractor-args " + quoted("youtube:player_client=ios") });
+            lWays.Add(new string[] { "the mobile web player", " --extractor-args " + quoted("youtube:player_client=mweb") });
+            lWays.Add(new string[] { "the Safari web player", " --extractor-args " + quoted("youtube:player_client=web_safari") });
+            lWays.Add(new string[] { "the web player", " --extractor-args " + quoted("youtube:player_client=web") });
+            // A player whose menu is empty leaves nothing for "best video plus
+            // best audio" to match, so the last try asks for anything at all.
+            lWays.Add(new string[] { "any format at all", " ANY-FORMAT" });
+            return lWays;
+        }
+
+        // A refusal is worth asking a different way. A video that is private,
+        // deleted or geo-blocked is not: it will be just as absent from every
+        // player, and six tries and an update would be six tries and an update
+        // spent to learn nothing.
+        static bool wasRefused(string sTrouble)
+        {
+            if (sTrouble == null || sTrouble == "") return true;
+            // "Requested format is not available" from a player client does NOT
+            // mean the video is missing. It means THAT player was handed an
+            // empty or different menu -- the web player needs a token it was
+            // not given, and so offers nothing that matches. Treating it as a
+            // dead end stopped the chain after ONE alternative on 21 August,
+            // and the four remaining ways were never tried.
+            return Regex.IsMatch(sTrouble, @"(403|429|forbidden|too many requests|unable to download video data|"
+                                         + @"fragment|throttl|precondition|requested format is not available|"
+                                         + @"no video formats|only images are available|sign in to confirm)",
+                                 RegexOptions.IgnoreCase);
+        }
+
         static string whyItFailed(string sErr)
         {
             foreach (string sLine in (sErr == null ? "" : sErr).Replace("\r\n", "\n").Split('\n'))
@@ -4578,6 +5670,22 @@ namespace Homer
                 return "";
             }
             Directory.CreateDirectory(sFolder);
+            // The page's own details are asked for HERE only when the answer
+            // decides what happens next -- that is, when a transcript alone is
+            // wanted and the caption tracks settle whether the film needs
+            // fetching at all. Otherwise the question waits until after the
+            // download.
+            //
+            // This ordering is not fussiness. Until 1.0.153 the question was
+            // always asked first, which put a THIRD full extraction of the
+            // video in front of every download where 1.0.146 had two. Every
+            // download since has met a 403 on the media stream, and the last
+            // version known to fetch a film successfully is the last version
+            // that did not make that extra call. That may be coincidence and it
+            // may not; asking only when the answer is needed costs nothing
+            // either way.
+            bool bWordsAlone = flag("transcribe") && !flag("describe") && flag("captions");
+            if (bWordsAlone) webMetadata(sAddress);
             string sPathFile = Path.Combine(sFolder, "downloaded.txt");
             try
             {
@@ -4600,7 +5708,7 @@ namespace Homer
             string sStem = "";
             string sNameOut = "";
             string sNameErr = "";
-            runCommand(sYtDlp, "--no-playlist --no-warnings --restrict-filenames"
+            runCommand(sYtDlp, "--no-playlist --no-warnings --restrict-filenames" + quietly()
                              + " --print " + quoted("%(title)s")
                              + " --print filename"
                              + " -o " + quoted("%(title)s.%(ext)s")
@@ -4650,23 +5758,201 @@ namespace Homer
                 }
             }
             string sSaying = sTitle == "" ? sAddress : sTitle;
-            logMessage("Downloading " + sAddress + " (" + sSaying + ") with " + sYtDlp, "INFO", "Downloading " + sSaying);
-            announce("Initializing", -1.0, 1.0, "Downloading " + sSaying);
             string sCookies = "";
             if (text("browser-cookies") != "") sCookies = " --cookies-from-browser " + text("browser-cookies");
-            string sArguments = "--no-playlist --no-simulate --newline --restrict-filenames" + sCookies
+            // Only the words were asked for, and the page has them written
+            // down. Then the film is not needed at all: not to hear, since the
+            // captions say what is said, and not to look at, since nothing is
+            // being described. Fetching it would be a hundred megabytes and
+            // several minutes spent to produce a file nobody asked for.
+            // sStem empty means yt-dlp would not say what it will call the
+            // file, and without that there is no per-video folder and no stem
+            // to find the captions by afterwards. Then the film is fetched, as
+            // before, and its name learnt from the download.
+            if (flag("transcribe") && !flag("describe") && flag("captions") && sStem != "")
+            {
+                bool bByHandEarly = false;
+                if (trackToFetch(out bByHandEarly) != "")
+                {
+                    logMessage("Only a transcript was asked for and this video carries its own captions, "
+                               + "so the film itself is not downloaded.", "INFO",
+                               "Taking the captions only, without the film: " + sSaying);
+                    if (fetchCaptions(sYtDlp, sAddress, sFolder, sFfmpeg, sCookies))
+                    {
+                        sCaptionsOnlyFolder = sFolder;
+                        sCaptionsOnlyStem = sStem;
+                        return sCaptionsOnly;
+                    }
+                    logMessage("The captions could not be had after all, so the film will be fetched and listened to instead.",
+                               "INFO", "");
+                }
+            }
+            logMessage("Downloading " + sAddress + " (" + sSaying + ") with " + sYtDlp, "INFO", "Downloading " + sSaying);
+            announce("Initializing", -1.0, 1.0, "Downloading " + sSaying);
+            // The captions are NOT asked for here. They used to be, and a
+            // subtitle yt-dlp could not fetch then aborted the whole download:
+            // on 21 August every one of four sources failed that way and no
+            // video came down at all. They are fetched by a command of their
+            // own once the film is safely here, where failing costs only the
+            // captions.
+            // Every way of asking, in turn, stopping at the first that works.
+            // The first is exactly what 1.0.146 asked for and what has always
+            // been asked for since; the rest exist because YouTube has begun
+            // refusing it, and one of them is usually still served.
+            int iCode = 1;
+            bool bSaidWhy = false;
+            // The reason worth reporting is why the USUAL way failed. A later
+            // attempt complaining that a player offers no matching format
+            // describes that attempt, not the problem, and putting it in the
+            // results box sent me looking in the wrong place.
+            string sFirstTrouble = "";
+            foreach (string[] asWay in waysToFetch())
+            {
+                string sExtra = asWay[1];
+                string sFormat = "bv*+ba/b";
+                if (sExtra == " ONE-STREAM")
+                {
+                    sExtra = "";
+                    sFormat = "b/bv*+ba";
+                }
+                if (sExtra == " ANY-FORMAT")
+                {
+                    sExtra = "";
+                    sFormat = "bv*+ba/b/best/worst";
+                }
+                string sArguments = "--no-playlist --no-simulate --newline --restrict-filenames" + sCookies + sExtra + quietly()
+                                  + " --merge-output-format mkv"
+                                  + " --ffmpeg-location " + quoted(Path.GetDirectoryName(sFfmpeg))
+                                  + " --print-to-file after_move:filepath " + quoted(sPathFile)
+                                  + " -f " + quoted(sFormat)
+                                  + " -o " + quoted(Path.Combine(sFolder, "%(title)s.%(ext)s"))
+                                  + " " + quoted(sAddress);
+                if (bSaidWhy) logMessage("Refused. Trying " + asWay[0] + ".", "INFO", "Refused. Trying " + asWay[0] + ".");
+                iCode = runStreamed(sYtDlp, sArguments, "Downloading");
+                if (iCode == 0)
+                {
+                    // The earlier complaints no longer describe anything: the
+                    // film is here. Leaving them set would put a stale reason
+                    // in a later message.
+                    sLastFetchTrouble = "";
+                    if (bSaidWhy) logMessage("That worked: " + asWay[0] + ". Set --player-client to keep it and save the tries.",
+                                             "INFO", "Fetched using " + asWay[0] + ".");
+                    break;
+                }
+                sLastFetchTrouble = whyItFailed(sLastStreamedTrouble);
+                if (sFirstTrouble == "") sFirstTrouble = sLastFetchTrouble;
+                if (!wasRefused(sLastFetchTrouble))
+                {
+                    logMessage("That is not a refusal, so asking a different way would not help: " + sLastFetchTrouble,
+                               "INFO", "");
+                    break;
+                }
+                if (!bSaidWhy)
+                {
+                    logMessage("The usual way was refused: " + (sLastFetchTrouble == "" ? "no reason given" : sLastFetchTrouble)
+                               + ". Trying the other ways of asking.", "INFO", "");
+                    bSaidWhy = true;
+                }
+            }
+            // Nothing was served. An out-of-date yt-dlp is the commonest reason
+            // for that, so it is updated here rather than left as something to
+            // be told to do, and the usual way tried once more.
+            // Still refused, and no browser cookies were offered. A signed-in
+            // session is often served what an anonymous one is not, and Edge is
+            // on every Windows machine. This is the sober half of "drive the
+            // browser": borrow its identity, not its download.
+            if (iCode != 0 && sCookies == "" && flag("browser-session"))
+            {
+                foreach (string sBrowser in new string[] { "edge", "chrome", "firefox" })
+                {
+                    logMessage("Refused every way. Trying again with " + sBrowser + "'s cookies.",
+                               "INFO", "Trying again with " + sBrowser + "'s cookies.");
+                    string sWith = "--no-playlist --no-simulate --newline --restrict-filenames" + quietly()
+                                 + " --cookies-from-browser " + sBrowser
+                                 + " --merge-output-format mkv"
+                                 + " --ffmpeg-location " + quoted(Path.GetDirectoryName(sFfmpeg))
+                                 + " --print-to-file after_move:filepath " + quoted(sPathFile)
+                                 + " -f " + quoted("bv*+ba/b")
+                                 + " -o " + quoted(Path.Combine(sFolder, "%(title)s.%(ext)s"))
+                                 + " " + quoted(sAddress);
+                    iCode = runStreamed(sYtDlp, sWith, "Downloading");
+                    if (iCode == 0)
+                    {
+                        sLastFetchTrouble = "";
+                        logMessage("That worked, using " + sBrowser + "'s cookies. Set --browser-cookies " + sBrowser
+                                   + " to do it first and save the tries.", "INFO", "Fetched using " + sBrowser + "'s cookies.");
+                        break;
+                    }
+                    // A browser that is not installed, or whose cookies cannot
+                    // be read, is not worth complaining about at length.
+                    logMessage("  " + sBrowser + ": " + whyItFailed(sLastStreamedTrouble), "INFO", "");
+                }
+            }
+            if (iCode != 0 && sFirstTrouble != "") sLastFetchTrouble = sFirstTrouble;
+            if (iCode != 0 && wasRefused(sLastFetchTrouble) && flag("update-tools") && !bTriedUpdate)
+            {
+                bTriedUpdate = true;
+                logMessage("Every way of asking was refused. Updating yt-dlp and trying once more.",
+                           "INFO", "Updating yt-dlp and trying once more.");
+                string sUpOut = "";
+                string sUpErr = "";
+                string sChannel = text("update-channel");
+                // Nightly is where a fix for something that broke this week is.
+                // yt-dlp's own guidance is to be on it before reporting a fault.
+                runCommand(sYtDlp, sChannel == "" || string.Compare(sChannel, "stable", true) == 0
+                                   ? "-U" : "--update-to " + quoted(sChannel), out sUpOut, out sUpErr);
+                logMessage("yt-dlp said: " + tail(sUpOut + sUpErr, 300), "INFO", "");
+                string sNowOut = "";
+                string sNowErr = "";
+                runCommand(sYtDlp, "--version", out sNowOut, out sNowErr);
+                logMessage("yt-dlp is now version " + (sNowOut + sNowErr).Trim(), "INFO", "");
+                string sAgain = "--no-playlist --no-simulate --newline --restrict-filenames" + sCookies + quietly()
                               + " --merge-output-format mkv"
                               + " --ffmpeg-location " + quoted(Path.GetDirectoryName(sFfmpeg))
                               + " --print-to-file after_move:filepath " + quoted(sPathFile)
                               + " -f " + quoted("bv*+ba/b")
                               + " -o " + quoted(Path.Combine(sFolder, "%(title)s.%(ext)s"))
                               + " " + quoted(sAddress);
-            int iCode = runStreamed(sYtDlp, sArguments, "Downloading");
+                iCode = runStreamed(sYtDlp, sAgain, "Downloading");
+                if (iCode == 0)
+                {
+                    sLastFetchTrouble = "";
+                    logMessage("That worked. yt-dlp was out of date.", "INFO", "That worked: yt-dlp was out of date.");
+                }
+                else
+                {
+                    sLastFetchTrouble = whyItFailed(sLastStreamedTrouble);
+                }
+            }
             if (iCode != 0)
             {
                 sLastFetchTrouble = whyItFailed(sLastStreamedTrouble);
                 logMessage("The video could not be fetched. " + (sLastFetchTrouble == "" ? "yt-dlp gave no reason." : "yt-dlp said: " + sLastFetchTrouble),
                            "ERROR", "Could not fetch that video. " + sLastFetchTrouble);
+                // The film is out of reach, but the words may not be. If a
+                // transcript was also asked for and the page carries captions,
+                // take those. Half of what was wanted, with the reason the
+                // other half failed said plainly, beats nothing at all --
+                // and the captions come down a different road from the media,
+                // which is the road that is shut.
+                if (flag("transcribe") && flag("captions") && sStem != "")
+                {
+                    bool bByHandLate = false;
+                    if (!bWordsAlone) webMetadata(sAddress);
+                    if (trackToFetch(out bByHandLate) != "")
+                    {
+                        logMessage("The film cannot be had, so it cannot be described. Trying for its captions instead, "
+                                   + "since a transcript was wanted too and captions do not come down the same road as the film.",
+                                   "INFO", "Could not fetch the film. Trying for its captions instead.");
+                        if (fetchCaptions(sYtDlp, sAddress, sFolder, sFfmpeg, sCookies))
+                        {
+                            sCaptionsOnlyFolder = sFolder;
+                            sCaptionsOnlyStem = sStem;
+                            sCouldNotDescribe = sLastFetchTrouble == "" ? "it could not be fetched" : sLastFetchTrouble;
+                            return sCaptionsOnly;
+                        }
+                    }
+                }
                 return "";
             }
             string sPath = "";
@@ -4689,7 +5975,1694 @@ namespace Homer
                 return "";
             }
             logMessage("Downloaded to " + sPath, "INFO", "Downloaded " + Path.GetFileName(sPath));
+            // Now that the film is safely here, ask the page what it says about
+            // itself, for the head of every document and for the caption track.
+            if (!bWordsAlone) webMetadata(sAddress);
+            // Now the captions, in a command of their own, asking for exactly
+            // one track chosen from what the page said it had. Whatever happens
+            // here, the film is already down and the run goes on: no captions
+            // means Whisper does the transcript, which is the old behaviour and
+            // a perfectly good one.
+            if (flag("transcribe") && flag("captions"))
+            {
+                if (!fetchCaptions(sYtDlp, sAddress, sFolder, sFfmpeg, sCookies))
+                    logMessage("So the film will be listened to instead.", "INFO", "");
+            }
             return sPath;
+        }
+
+        // The captions, and nothing else. --skip-download is the whole point:
+        // it asks for the words without asking for the film, which is both far
+        // less to fetch and the part of YouTube that has gone on working while
+        // media requests were being refused.
+        //
+        // --convert-subs vtt matters more than it looks. YouTube also serves
+        // srv3 and ttml, which readCaptions cannot parse, and "vtt/srt/best"
+        // will fall back to one of those quite happily.
+        static bool fetchCaptions(string sYtDlp, string sAddress, string sFolder, string sFfmpeg, string sCookies)
+        {
+            bool bByHand = false;
+            string sTrack = trackToFetch(out bByHand);
+            if (sTrack == "")
+            {
+                logMessage("The page named no English caption track.", "INFO", "");
+                return false;
+            }
+            logMessage("Fetching one caption track, " + sTrack + ", "
+                       + (bByHand ? "written by a person." : "made automatically, since nobody wrote one."), "INFO", "");
+            string sOut = "";
+            string sErr = "";
+            int iCode = runCommand(sYtDlp, "--no-playlist --skip-download --restrict-filenames --sleep-requests 1" + sCookies + quietly()
+                                         + (bByHand ? " --write-subs" : " --write-auto-subs")
+                                         + " --sub-langs " + quoted(sTrack)
+                                         + " --sub-format " + quoted("vtt/srt/best")
+                                         + " --convert-subs vtt"
+                                         + " --ffmpeg-location " + quoted(Path.GetDirectoryName(sFfmpeg))
+                                         + " -o " + quoted(Path.Combine(sFolder, "%(title)s.%(ext)s"))
+                                         + " " + quoted(sAddress), out sOut, out sErr);
+            if (iCode != 0)
+            {
+                logMessage("The captions could not be fetched. yt-dlp said: " + tail(sErr, 200), "INFO", "");
+                return false;
+            }
+            logMessage("Captions fetched.", "INFO", "");
+            return true;
+        }
+
+        // A transcript made from captions alone, with no film on the disk. The
+        // ordinary route through runOne cannot serve, because every step of it
+        // begins by opening a file.
+        static int transcribeFromCaptions(string sAddress)
+        {
+            string sFolder = sCaptionsOnlyFolder;
+            string sStem = sCaptionsOnlyStem;
+            // runOne opens this, and runOne is not on this route.
+            lCaptions = new List<Speech>();
+            sTranscriptFrom = "";
+            // captionsBeside looks in the folder holding the path it is given
+            // and matches on the stem, so a name that was never written serves
+            // perfectly well to point at where the captions landed.
+            string sWouldBe = Path.Combine(sFolder, sStem + ".mkv");
+            string sWhy = "";
+            string sText = captionsBeside(sWouldBe, out sWhy);
+            if (sText.Trim() == "")
+            {
+                logMessage("The captions were fetched but cannot be found beside where the film would have been. " + sWhy, "ERROR");
+                lFailures.Add(sAddress + Environment.NewLine + "    The captions were fetched and then could not be read.");
+                return 1;
+            }
+            bool bRolling = looksAutomatic(sText);
+            logMessage("These captions were " + (bRolling ? "made automatically, and roll up the screen, so the repeats are taken out."
+                                                          : "written by a person, so they are read as they stand."), "INFO", "");
+            lCaptions = bRolling ? joinRolling(readCaptions(sText)) : joinCaptions(readCaptions(sText));
+            if (lCaptions.Count == 0)
+            {
+                logMessage("Captions were fetched but nothing could be read out of them.", "ERROR");
+                lFailures.Add(sAddress + Environment.NewLine + "    Captions were fetched but nothing could be read out of them.");
+                return 1;
+            }
+            sTranscriptFrom = "the video's own captions";
+            double nRuns = nVideoSeconds;
+            if (nRuns <= 0.0) nRuns = lCaptions[lCaptions.Count - 1].nEnd;
+            int iSounds = 0;
+            int iNamed = 0;
+            foreach (Speech oCue in lCaptions)
+            {
+                if (soundOnly(oCue.sText)) iSounds = iSounds + 1;
+                if (oCue.sWho != "") iNamed = iNamed + 1;
+            }
+            string sPath = Path.Combine(sFolder, sDefaultTranscriptName);
+            writeTranscript(lCaptions, sPath, sVideoTitle == "" ? sStem : sVideoTitle, nRuns);
+            bTranscribed = true;
+            logMessage("Transcript written to " + sPath + ": " + counted(lCaptions.Count, "passage", "passages")
+                       + ", " + counted(iNamed, "naming a speaker", "naming a speaker")
+                       + ", " + counted(iSounds, "marking a sound rather than speech", "marking a sound rather than speech")
+                       + ". The film itself was not downloaded, because nothing in a transcript needs it.",
+                       "INFO", "Transcript written from the captions: " + counted(lCaptions.Count, "passage", "passages") + ".");
+            lResults.Add((sVideoTitle == "" ? sStem : sVideoTitle) + ": transcript of "
+                         + counted(lCaptions.Count, "passage of captions", "passages of captions")
+                         + (sCouldNotDescribe == "" ? "" : ", but NOT described: " + sCouldNotDescribe)
+                         + Environment.NewLine + "    " + sPath);
+            if (sCouldNotDescribe != "")
+            {
+                logMessage("Nothing was described for this one. The film itself could not be fetched: " + sCouldNotDescribe
+                           + ". The words were got from the captions, which come down a different road.", "ERROR");
+                announce("Error", -1.0, 1.0, "Transcribed from captions, but the film could not be fetched, so nothing was described.");
+            }
+            sLastOutputFolder = sFolder;
+            writeFileLog(sFolder);
+            return 0;
+        }
+
+        // ---------- pictures in an archive ----------
+
+        static bool looksLikeArchive(string sPath)
+        {
+            return string.Compare(Path.GetExtension(sPath), ".zip", true) == 0;
+        }
+
+        static bool kindIsIn(string sList, string sKind)
+        {
+            foreach (string sOne in sList.Split(','))
+            {
+                if (string.Compare(sOne, sKind, true) == 0) return true;
+            }
+            return false;
+        }
+
+        // What can be done with a picture of this kind, in words fit for a
+        // report. Empty means it is not a picture at all.
+        static string pictureKind(string sName)
+        {
+            string sKind = Path.GetExtension(sName).ToLower();
+            if (kindIsIn(sDefaultSeenKinds, sKind)) return "seen";
+            if (kindIsIn(sDefaultConvertKinds, sKind)) return "converted";
+            return "";
+        }
+
+        // An identifier turned back into words.
+        //
+        // Asked for a phrase "fit to be a file name", the model answered in
+        // code: OutdoorElderlyLady, Kenyan_ID_2024, Child_Bike_Ride_Sea_View.
+        // Not one of twenty-four names held a space. The prompt now says what
+        // shape is wanted and shows it, but a model does as it pleases, so
+        // whatever comes back is repaired here as well.
+        //
+        // A word is lowered ONLY when it is a small joining word AND is not
+        // already in capitals, so "JamalMazruiAmazonPoster" keeps its names
+        // and "WomanInWhiteTee" loses its stray capital: the error it can make
+        // is leaving a word capitalised, never destroying a name.
+        static string spacedOut(string sName)
+        {
+            if (sName.Trim().IndexOf(' ') >= 0) return sName;
+            string sWork = Regex.Replace(sName, @"[_\-]+", " ").Trim();
+            if (sWork.IndexOf(' ') < 0)
+            {
+                sWork = Regex.Replace(sWork, @"([a-z0-9])([A-Z])", "$1 $2");
+                sWork = Regex.Replace(sWork, @"([A-Z]+)([A-Z][a-z])", "$1 $2");
+            }
+            List<string> lWords = new List<string>();
+            foreach (string sOne in sWork.Split(' '))
+            {
+                if (sOne != "") lWords.Add(sOne);
+            }
+            if (lWords.Count < 2) return sName;
+            StringBuilder oSaid = new StringBuilder();
+            int iAt = 0;
+            foreach (string sWord in lWords)
+            {
+                if (oSaid.Length > 0) oSaid.Append(" ");
+                bool bSmall = false;
+                foreach (string sLittle in sDefaultSmallWords.Split(','))
+                {
+                    if (string.Compare(sWord, sLittle, true) == 0) bSmall = true;
+                }
+                if (iAt > 0 && bSmall && sWord != sWord.ToUpper()) oSaid.Append(sWord.ToLower());
+                else oSaid.Append(sWord);
+                iAt = iAt + 1;
+            }
+            return oSaid.ToString();
+        }
+
+        // The opening of a description, cut where a phrase ends rather than at
+        // a word count.
+        //
+        // Cutting at eleven words gave "a yellow sun low in a pale blue", which
+        // stops in the middle of a thing. Trailing joining words are dropped
+        // until the last word is one that can end a phrase, and a comma inside
+        // the budget is preferred to any of it: a description's first clause is
+        // almost always the subject of the picture.
+        static string trimToPhrase(string sSaid, int iWords)
+        {
+            string sCut = trimToWords(sSaid, iWords);
+            if (sCut == "") return "";
+            // A comma within the budget is a natural stop, if it leaves enough.
+            int iComma = sCut.IndexOf(',');
+            if (iComma > 0 && sCut.Substring(0, iComma).Split(' ').Length >= 6)
+                sCut = sCut.Substring(0, iComma);
+            return hangingTrimmed(sCut);
+        }
+
+        // A phrase with any trailing joining word taken off, so that it ends
+        // somewhere a phrase can end. "...triangular hills against a" becomes
+        // "...triangular hills".
+        static string hangingTrimmed(string sSaid)
+        {
+            string[] asHanging = ("a,an,the,of,in,on,at,to,for,from,by,with,and,or,but,as,into,onto,"
+                                + "over,under,near,beside,between,through,about,is,are,was,were,that,"
+                                + "which,who,while,its,their,his,her,against,behind,above,below,along").Split(',');
+            string sCut = sSaid;
+            bool bTrimmed = true;
+            while (bTrimmed)
+            {
+                bTrimmed = false;
+                string[] asWords = sCut.Split(' ');
+                if (asWords.Length < 3) break;
+                string sLast = asWords[asWords.Length - 1].Trim(',', ';', ':', '.').ToLower();
+                foreach (string sOne in asHanging)
+                {
+                    if (sLast != sOne) continue;
+                    sCut = string.Join(" ", asWords, 0, asWords.Length - 1);
+                    bTrimmed = true;
+                    break;
+                }
+            }
+            return sCut.TrimEnd(',', ';', ':', '.', ' ');
+        }
+
+        // The PROPER NOUNS in a piece of text: the people and places somebody
+        // typed, and nothing else.
+        //
+        // A run of two or more capitalised words is a name -- "Jamal Mazrui",
+        // "Lake Tahoe". So is a word in full capitals -- "ORCA", "NIRA". A
+        // single capitalised word on its own is not: "Smiling" and "Kenyan"
+        // begin sentences and describe things, and treating them as names
+        // produces nonsense.
+        static List<string> namesFrom(string sText)
+        {
+            List<string> lFound = new List<string>();
+            if (sText == null || sText == "") return lFound;
+            // At most three words to a name. Left greedy, "Alamin A Mazrui
+            // Kenya National Id" comes back as one long run and reads as
+            // nonsense in front of a description. Three covers a first name, a
+            // middle name and a surname, or a place like Lake Tahoe.
+            //
+            // This is a rule of thumb and it will sometimes take a word too
+            // many, because a file name is not grammar. The cost is a slightly
+            // clumsy name; what it puts there is always something a person
+            // actually typed, which is the part worth having.
+            foreach (Match oRun in Regex.Matches(sText,
+                     @"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2}|[A-Z]{2,})\b"))
+            {
+                string sOne = oRun.Groups[1].Value.Trim();
+                // Not a name, however it is capitalised.
+                if (Regex.IsMatch(sOne, @"^(JPG|JPEG|PNG|GIF|BMP|TIF|TIFF|WEBP|IMG|DSC|PXL|WA|PDF|ID)$",
+                                  RegexOptions.IgnoreCase)) continue;
+                bool bHaveIt = false;
+                foreach (string sHad in lFound)
+                {
+                    if (string.Compare(sHad, sOne, true) == 0) bHaveIt = true;
+                }
+                if (!bHaveIt) lFound.Add(sOne);
+            }
+            return lFound;
+        }
+
+        // A description with the names from the file name put back into it.
+        //
+        // He asked for exactly this and it is the right rule: the file name is
+        // worth mining for the PEOPLE AND PLACES somebody typed, not for its
+        // wording. Twenty of forty-nine names in his run were the file name
+        // handed back -- "Jamal_Mazrui_signature.jpg" became "Jamal Mazrui
+        // Signature", which is tidier and says nothing new.
+        //
+        // Keeping the whole short name instead gave "Jamal Mazrui Signature,
+        // handwritten signature on a white sheet of paper", which says
+        // signature twice. Only the names go in front now, and only those the
+        // description has not already used.
+        // sCalled is the FILE NAME, not the model's answer, and that matters.
+        // The model title-cases what it writes, so every word in "Jamal Mazrui
+        // Signature" looks like a name and the whole phrase gets taken as one.
+        // A file name keeps its natural casing -- "Jamal_Mazrui_signature" has
+        // the person capitalised and the noun not -- which is the signal that
+        // makes this work at all.
+        static string joinNames(string sCalled, string sFuller)
+        {
+            if (sFuller == "") return sCalled;
+            List<string> lWanted = new List<string>();
+            foreach (string sName in namesFrom(sCalled))
+            {
+                if (sFuller.IndexOf(sName, StringComparison.OrdinalIgnoreCase) < 0) lWanted.Add(sName);
+            }
+            if (lWanted.Count == 0) return sFuller;
+            // And the names must not crowd out the picture. Past about thirty
+            // characters the front of the name stops being a name and starts
+            // being the file name again, which is what all this was to avoid.
+            while (lWanted.Count > 1 && string.Join(" and ", lWanted.ToArray()).Length > 30)
+                lWanted.RemoveAt(lWanted.Count - 1);
+            if (string.Join(" and ", lWanted.ToArray()).Length > 40) return sFuller;
+            // The fuller phrase reads better without its opening article once
+            // something is put in front of it.
+            string sRest = Regex.Replace(sFuller, "^(a|an|the) ", "", RegexOptions.IgnoreCase);
+            if (sRest.Length > 0) sRest = char.ToLower(sRest[0]) + sRest.Substring(1);
+            return string.Join(" and ", lWanted.ToArray()) + ", " + sRest;
+        }
+
+        // An answer that names nothing. "Image", "Photo", "Untitled", or a run
+        // of digits. Rentitle refuses the same class of thing among document
+        // titles, for the same reason: a folder where every file is called
+        // Image is worse than one where none of them is called anything.
+        static bool looksLikeNoName(string sName)
+        {
+            string sBare = Regex.Replace(sName == null ? "" : sName, @"[^A-Za-z0-9 ]", " ").Trim().ToLower();
+            sBare = Regex.Replace(sBare, @"\s+", " ");
+            if (sBare == "") return true;
+            if (Regex.IsMatch(sBare, @"^[\d ]+$")) return true;
+            foreach (string sOne in sDefaultNoNames.Split(','))
+            {
+                if (sBare == sOne) return true;
+            }
+            // "Image 3", "Photo of something" is fine; "Image 3" alone is not.
+            return Regex.IsMatch(sBare, @"^(image|picture|photo|photograph|scan|screenshot|file|img)\s*\d*$");
+        }
+
+        // A name a person would be glad to see. Sentence case, spaces kept,
+        // and nothing in it that any of Windows, macOS or Linux objects to.
+        static string friendlyName(string sSaid)
+        {
+            string sName = sSaid == null ? "" : sSaid.Trim();
+            // The model likes to answer in quotes, or with a lead-in.
+            sName = Regex.Replace(sName, "^[\"\u201c\u2018']+|[\"\u201d\u2019']+$", "");
+            sName = Regex.Replace(sName, @"^\s*(the |a |an )?(image|picture|photo|photograph)\s+(shows|depicts|is of)\s+",
+                                  "", RegexOptions.IgnoreCase);
+            // An extension the model added itself. One answer came back as
+            // "BananaSmile.png", which would have been written out as
+            // BananaSmile.png.jpg.
+            sName = Regex.Replace(sName, @"\.(png|jpe?g|gif|webp|bmp|tiff?)$", "", RegexOptions.IgnoreCase);
+            sName = spacedOut(sName);
+            // SUBSTITUTE, do not delete. Rentitle's rule, and it is right:
+            // blanking an ampersand turns "Jeannie & Jim" into "Jeannie Jim"
+            // and loses the word. These carry their meaning across instead.
+            sName = sName.Replace(":", " - ").Replace(";", " - ").Replace("&", " and ");
+            sName = sName.Replace("[", "(").Replace("<", "(").Replace("]", ")").Replace(">", ")");
+            sName = sName.Replace("/", " and ").Replace("\\", " ");
+            // What is left that Windows, macOS or a zip would object to.
+            sName = Regex.Replace(sName, @"[""|?*]", " ");
+            sName = Regex.Replace(sName, @"[\x00-\x1f]", " ");
+            // And what none of them object to but other programs do.
+            foreach (char cBad in sDefaultBadLetters)
+            {
+                if (sName.IndexOf(cBad) >= 0) sName = sName.Replace(cBad, ' ');
+            }
+            // Anything outside plain text, which includes emoji, whose two-part
+            // encoding has broken every tool that assumed one letter per unit.
+            sName = Regex.Replace(sName, @"[^\u0020-\u007e]", " ");
+            // Runs of separators left behind by all of that.
+            while (sName.IndexOf("--") >= 0) sName = sName.Replace("--", " - ");
+            sName = Regex.Replace(sName, @"\s+", " ").Trim();
+            sName = Regex.Replace(sName, @"^[\s\-]+|[\s\-]+$", "");
+            // Wrapped in parentheses from end to end, they say nothing.
+            while (sName.Length > 2 && sName.StartsWith("(") && sName.EndsWith(")"))
+                sName = sName.Substring(1, sName.Length - 2).Trim();
+            // A leading dot hides the file; a trailing one confuses the
+            // extension that is about to be added.
+            while (sName.StartsWith(".")) sName = "Dot " + sName.Substring(1).Trim();
+            sName = sName.TrimEnd('.', ' ');
+            sName = Regex.Replace(sName, @"\s+", " ").Trim();
+            if (sName == "") return "Picture";
+            // Sentence case: the first letter up, the rest left as the model
+            // wrote it, since it holds the proper nouns.
+            sName = char.ToUpper(sName[0]) + (sName.Length > 1 ? sName.Substring(1) : "");
+            // Cut at a word, never mid-word.
+            int iLongest = integer("name-length");
+            if (iLongest < 12) iLongest = iDefaultNameLength;
+            if (sName.Length > iLongest)
+            {
+                string sCut = sName.Substring(0, iLongest);
+                int iSpace = sCut.LastIndexOf(' ');
+                if (iSpace > iLongest / 3) sCut = sCut.Substring(0, iSpace);
+                sName = sCut.TrimEnd('.', ',', ';', ':', ' ');
+                // And not on a word that cannot end a phrase. Cutting at the
+                // last space is not enough: it produced "...triangular hills
+                // against a", which stops in the middle of a thing. Wherever
+                // the cut lands, back off until the last word can stand there.
+                sName = hangingTrimmed(sName);
+            }
+            // Names Windows keeps for itself, whatever the extension.
+            foreach (string sTaken in new string[] { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3",
+                                                     "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+                                                     "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6",
+                                                     "LPT7", "LPT8", "LPT9" })
+            {
+                if (string.Compare(sName, sTaken, true) == 0) sName = sName + " picture";
+            }
+            return sName == "" ? "Picture" : sName;
+        }
+
+        // Number every member of a clashing group, not merely the later ones.
+        //
+        // Leaving the first bare puts it LAST, because "-" is character 45 and
+        // "." is 46, so "Sunset-002.jpg" sorts before "Sunset.jpg". Numbering
+        // the whole group keeps alpha order and archive order agreeing, which
+        // is the point of padding the number in the first place.
+        static bool numberClashes(List<string> lNames)
+        {
+            Dictionary<string, int> dHowMany = new Dictionary<string, int>();
+            foreach (string sName in lNames)
+            {
+                string sKey = sName.ToLower();
+                dHowMany[sKey] = (dHowMany.ContainsKey(sKey) ? dHowMany[sKey] : 0) + 1;
+            }
+            // As few leading zeros as will do. The width comes from the
+            // LARGEST clashing group in this archive: a pair gets -1 and -2, a
+            // dozen gets -01 to -12. Not from the number of pictures, because
+            // only names that clash ever sit beside each other and only a
+            // clashing group has to sort. Not from each group separately
+            // either, so that every numbered name in one folder has the same
+            // shape rather than -1..-3 sitting beside -01..-12.
+            int iBiggest = 0;
+            foreach (int iHowMany in dHowMany.Values)
+            {
+                if (iHowMany > 1 && iHowMany > iBiggest) iBiggest = iHowMany;
+            }
+            int iWidth = iBiggest.ToString().Length;
+            if (iWidth < 1) iWidth = 1;
+            Dictionary<string, int> dSoFar = new Dictionary<string, int>();
+            for (int iAt = 0; iAt < lNames.Count; iAt = iAt + 1)
+            {
+                string sKey = lNames[iAt].ToLower();
+                if (dHowMany[sKey] < 2) continue;
+                int iNext = (dSoFar.ContainsKey(sKey) ? dSoFar[sKey] : 0) + 1;
+                dSoFar[sKey] = iNext;
+                // Rentitle stops after a thousand rather than going on for
+                // ever. Past that the name is given up on and the original
+                // kept, which at least cannot collide with itself.
+                if (iNext > iDefaultMostClashes) continue;
+                lNames[iAt] = lNames[iAt] + "-" + iNext.ToString(new string('0', iWidth));
+            }
+            return true;
+        }
+
+        // One picture, one question. A still is not a moment in a film: there
+        // is nothing before it to avoid repeating and no listener waiting for
+        // the dialogue to resume, so it gets rules of its own rather than the
+        // film ones bent to fit.
+        static string[] describeStill(string sImagePath, string sNotes, string sCalled)
+        {
+            StringBuilder oRules = new StringBuilder();
+            oRules.Append("You are describing a single still picture for somebody who cannot see it.\n");
+            oRules.Append("Write only what is actually visible. Do not guess at what is outside the frame, ");
+            oRules.Append("at what happened before or after, or at what anyone is feeling.\n");
+            oRules.Append("Do not begin with \"This image shows\" or \"The picture depicts\". Describe the thing itself.\n");
+            oRules.Append("If there is readable text in the picture, quote it, because it is often the whole point.\n");
+            // One answer came back as "BezosWithFriends". There was no note in
+            // that archive, so the model had nothing to go on and named a
+            // living person from a face. The rule belongs here, where it
+            // applies whether or not a note was left.
+            oRules.Append("Do NOT guess at who anyone is. Unless you have been told below how to recognise a ");
+            oRules.Append("particular person, describe people by what you can see and give no names, however ");
+            oRules.Append("familiar a face looks.\n");
+            if (sCalled != "")
+            {
+                // A name written by a person is a statement; a face is only a
+                // resemblance. So this loosens nothing above: it adds a source
+                // that is allowed where a face is not.
+                oRules.Append("\nWhoever kept this picture called it: \"" + sCalled + "\"\n");
+                List<string> lWho = namesFrom(sCalled);
+                if (lWho.Count > 0)
+                    oRules.Append("The names in it are: " + string.Join(", ", lWho.ToArray())
+                                  + ". Use those in your caption where they fit what you can see.\n");
+                oRules.Append("They were there and you were not, so any people or places named there are right. ");
+                oRules.Append("Use them where what you can see fits — if it names two people and you can see two ");
+                oRules.Append("people, name them; if it names a lake and you can see water, say the lake. ");
+                oRules.Append("Where it does not fit what is in front of you, ignore it and say nothing about it.\n");
+            }
+            if (sNotes != "")
+            {
+                // The note is a way of RECOGNISING people, not a claim that any
+                // of them is here. Given a note saying who tends to appear, a
+                // model will use those names whether or not the people are in
+                // the frame, which is worse than no names at all: a reader
+                // cannot tell a real identification from a guess.
+                oRules.Append("\nSomebody who knows these pictures has left this note about them:\n");
+                oRules.Append(sNotes + "\n");
+                oRules.Append("Use the note ONLY to recognise what is actually in front of you. ");
+                oRules.Append("If somebody in this picture matches how the note describes them, use that name. ");
+                oRules.Append("If you cannot tell, say what you can see about them and do NOT guess at a name. ");
+                oRules.Append("The note says who MAY appear across a set of pictures; it does not say who is in THIS one.\n");
+            }
+            oRules.Append("\nAnswer with JSON and nothing else, in this exact shape:\n");
+            oRules.Append("{\"name\": \"...\", \"description\": \"...\"}\n\n");
+            int iRoom = integer("name-length");
+            if (iRoom < 12) iRoom = iDefaultNameLength;
+            // The shape is SHOWN, not merely described. Told to write something
+            // "fit to be a file name", the model heard "identifier" and
+            // answered OutdoorElderlyLady and Kenyan_ID_2024 -- not one of
+            // twenty-four answers held a space. Examples are what fix that.
+            oRules.Append("name: a short caption saying what this picture is, in ordinary words.\n");
+            oRules.Append("  * Write it as a PHRASE with SPACES between the words, like a caption.\n");
+            oRules.Append("  * Sentence case: a capital on the first word and on names, lower case elsewhere.\n");
+            oRules.Append("  * NOT runTogetherLikeThis. NOT with_underscores. No file extension on the end.\n");
+            // A NUMBER OF WORDS, not a ceiling in characters. Told it had 79
+            // characters to play with, the model used 21 to 25 of them: a
+            // ceiling is permission to stop, not a target. Asked for eight to
+            // fourteen words, it has something to aim at.
+            oRules.Append("  * EIGHT TO FOURTEEN WORDS. Three or four words is too short — it will not tell this ");
+            oRules.Append("picture apart from a similar one. Say who or what, and where or doing what.\n");
+            oRules.Append("  * At most " + iRoom.ToString() + " characters. No punctuation except commas and apostrophes.\n");
+            oRules.Append("  * Make it DISTINCTIVE: say what marks this picture out from a similar one, so that ");
+            oRules.Append("two pictures do not end up with the same name.\n");
+            oRules.Append("  * Do NOT simply give back the name the file already has. Take the PEOPLE AND PLACES ");
+            oRules.Append("it mentions and use those, but say what is VISIBLE around them. A file called ");
+            oRules.Append("\"Jamal_Mazrui_signature.jpg\" wants a name like \"Jamal Mazrui's signature in blue ink on ");
+            oRules.Append("a plain white sheet\", not \"Jamal Mazrui signature\".\n");
+            oRules.Append("  Good: \"Elderly woman in a blue floral dress beside a dry stone wall\"\n");
+            oRules.Append("  Good: \"Kenyan national identity card issued in Mombasa in 2024\"\n");
+            oRules.Append("  Good: \"Three children on bicycles on a seafront path at low tide\"\n");
+            oRules.Append("  Too short: \"Elderly woman outdoors\"   Too short: \"Kenyan ID card\"\n");
+            oRules.Append("  Bad: \"OutdoorElderlyLady\" (run together)   Bad: \"Kenyan_ID_2024\" (underscores)\n");
+            oRules.Append("description: two or three sentences describing the picture fully.");
+
+            Dictionary<string, object> dOptions = new Dictionary<string, object>();
+            dOptions["temperature"] = 0.4;
+            // Enough room to close its own braces. At 500 one answer stopped
+            // mid-word and the JSON could not be parsed.
+            dOptions["num_predict"] = 900;
+            dOptions["top_p"] = 0.9;
+            Dictionary<string, object> dPayload = new Dictionary<string, object>();
+            dPayload["model"] = text("model");
+            dPayload["prompt"] = oRules.ToString();
+            dPayload["images"] = new string[] { Convert.ToBase64String(File.ReadAllBytes(sImagePath)) };
+            dPayload["stream"] = false;
+            dPayload["keep_alive"] = "30m";
+            dPayload["format"] = "json";
+            dPayload["options"] = dOptions;
+            JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+            oSerializer.MaxJsonLength = int.MaxValue;
+            string sAnswer = postJsonPumping(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
+            if (sAnswer == "") return new string[] { "", "" };
+            string sSaid = "";
+            try
+            {
+                Dictionary<string, object> dReply = oSerializer.Deserialize<Dictionary<string, object>>(sAnswer);
+                if (dReply.ContainsKey("response")) sSaid = Convert.ToString(dReply["response"]).Trim();
+            }
+            catch (Exception oError)
+            {
+                logMessage("The model's answer could not be read: " + oError.Message, "ERROR");
+                return new string[] { "", "" };
+            }
+            if (sSaid == "") return new string[] { "", "" };
+            string sName = "";
+            string sAbout = "";
+            try
+            {
+                Dictionary<string, object> dSaid = oSerializer.Deserialize<Dictionary<string, object>>(sSaid);
+                if (dSaid.ContainsKey("name")) sName = Convert.ToString(dSaid["name"]).Trim();
+                if (dSaid.ContainsKey("description")) sAbout = Convert.ToString(dSaid["description"]).Trim();
+            }
+            catch (Exception)
+            {
+                // Usually not prose at all, but JSON that ran out of room and
+                // stopped mid-word, so it will not parse. One answer reached
+                // the report as the name
+                //   { name Winter Couple at a Snowy Forest , description A man
+                // which is the raw wreckage with its punctuation stripped. The
+                // two fields are pulled out by pattern instead.
+                Match oName = Regex.Match(sSaid, "\"name\"\\s*:\\s*\"([^\"]*)\"");
+                Match oAbout = Regex.Match(sSaid, "\"description\"\\s*:\\s*\"([^\"]*)");
+                if (oName.Success) sName = oName.Groups[1].Value.Trim();
+                if (oAbout.Success) sAbout = oAbout.Groups[1].Value.Trim();
+                if (sName == "" && sAbout == "")
+                {
+                    logMessage("  The model did not answer in the shape asked for; using what it said as the description.", "INFO", "");
+                    sAbout = sSaid;
+                }
+                else
+                {
+                    logMessage("  The model's answer was cut short; the name and description were recovered from it.", "INFO", "");
+                }
+            }
+            if (sAbout == "") sAbout = sSaid;
+            sAbout = tidyText(sAbout);
+            // A name carrying the shape of the answer rather than its content.
+            if (sName.IndexOf('{') >= 0 || sName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0
+                || sName.IndexOf("\"name\"", StringComparison.OrdinalIgnoreCase) >= 0) sName = "";
+            // Or naming nothing at all.
+            if (looksLikeNoName(sName)) sName = "";
+            // Or too short to tell one picture from another. The description is
+            // always specific and always long enough, so it is the better
+            // source when the model has been terse. Asked for eight to fourteen
+            // words it often gives four, and four words name a category rather
+            // than a picture.
+            if (sName != "" && sName.Split(' ').Length < 5)
+            {
+                string sFuller = trimToPhrase(sAbout, 12);
+                if (sFuller.Split(' ').Length > sName.Split(' ').Length && !looksLikeNoName(sFuller))
+                {
+                    logMessage("  The name it gave was only " + counted(sName.Split(' ').Length, "word", "words")
+                               + " (\"" + sName + "\"); adding what the picture shows.", "INFO", "");
+                    sName = joinNames(sCalled, sFuller);
+                }
+            }
+            if (sName == "") sName = trimToPhrase(sAbout, 12);
+            if (looksLikeNoName(sName)) sName = trimToPhrase(sAbout, 14);
+            return new string[] { friendlyName(sName), sAbout };
+        }
+
+        // What the file name says, once the camera's part is taken out.
+        //
+        // "Jeannie & Jim - Lake Tahoe.jpg" was named by somebody who was
+        // there, and that is better evidence than a model can get from the
+        // picture. "IMG-20230113-WA0000.jpg" says nothing, and offering it as
+        // context only invites the model to invent a meaning for it.
+        static string nameAsHint(string sBare)
+        {
+            string sSaid = Path.GetFileNameWithoutExtension(sBare);
+            // SEPARATORS FIRST, before any pattern looks at the name. "_" is a
+            // word character, so \b never falls either side of one: in
+            // "IMG_20240115_WA0042" the camera pattern could not match across
+            // the underscores and the whole thing was offered to the model as
+            // context, and in "signature_proper_orientation" the housekeeping
+            // words could not match either. Both were the same fault, found a
+            // week apart, because this line was in the wrong place twice.
+            sSaid = Regex.Replace(sSaid, @"[_\-]+", " ");
+            // What a camera, a phone or a chat program wrote.
+            sSaid = Regex.Replace(sSaid, @"\b(IMG|DSC|DSCN|DCIM|PXL|MVIMG|WA|SAM|PICT|PANO|Screenshot|photo)[\s_\-]?\d+\b",
+                                  " ", RegexOptions.IgnoreCase);
+            sSaid = Regex.Replace(sSaid, @"\b\d{6,}\b", " ");
+            sSaid = Regex.Replace(sSaid, @"\b(copy|final|edited|cropped|resized|small|large|orig|original|"
+                                        + @"proper|orientation|version|new|old)\b", " ", RegexOptions.IgnoreCase);
+            sSaid = Regex.Replace(sSaid, @"\(\s*\d+\s*\)", " ");
+            sSaid = Regex.Replace(sSaid, @"\s+", " ").Trim();
+            sSaid = sSaid.Trim(' ', '.', ',', '&', '-');
+            // A word or two of nothing is not context. Neither is a number.
+            if (sSaid.Length < 6) return "";
+            if (Regex.IsMatch(sSaid, @"^[\d\s]+$")) return "";
+            if (sSaid.Split(' ').Length < 2) return "";
+            return sSaid;
+        }
+
+        // A note left in the archive. Kept short on purpose: it goes into every
+        // request it applies to, and a long one crowds out the picture.
+        static string noteBeside(string sPath)
+        {
+            if (!File.Exists(sPath)) return "";
+            try
+            {
+                string sSaid = Regex.Replace(File.ReadAllText(sPath), @"\s+", " ").Trim();
+                // A heading marker is for a reader, not for the model.
+                sSaid = Regex.Replace(sSaid, @"(^|\s)#+\s*", " ").Trim();
+                if (sSaid.Length > 1500) sSaid = sSaid.Substring(0, 1500).TrimEnd() + " ...";
+                return sSaid;
+            }
+            catch (Exception oError)
+            {
+                logMessage("  The note " + Path.GetFileName(sPath) + " could not be read: " + oError.Message, "INFO", "");
+                return "";
+            }
+        }
+
+        // A version turned into something that sorts correctly.
+        //
+        // "13.11" is LATER than "13.8" -- ExifTool numbers its releases that
+        // way -- but as decimals 13.8 is the larger and the older copy would
+        // be chosen. Each part is a whole number, so the second is scaled
+        // rather than treated as a fraction.
+        static double versionRank(string sVersion)
+        {
+            Match oParts = Regex.Match(sVersion.Trim(), @"^(\d+)(?:\.(\d+))?");
+            if (!oParts.Success) return -1.0;
+            double nMajor = 0.0;
+            double nMinor = 0.0;
+            double.TryParse(oParts.Groups[1].Value, System.Globalization.NumberStyles.Integer,
+                            System.Globalization.CultureInfo.InvariantCulture, out nMajor);
+            if (oParts.Groups[2].Success)
+                double.TryParse(oParts.Groups[2].Value, System.Globalization.NumberStyles.Integer,
+                                System.Globalization.CultureInfo.InvariantCulture, out nMinor);
+            return nMajor * 1000.0 + nMinor;
+        }
+
+        // Every ExifTool on this machine, run, and the newest chosen.
+        //
+        // He installed one with winget while an older one sat in the build
+        // folder, and asked which would be used. Guessing at where winget puts
+        // things is how that question gets answered wrongly, so instead every
+        // likely place is tried, each candidate is RUN to learn its version,
+        // and all of them are logged with the choice and the reason. A log
+        // then answers the question without anybody going to look.
+        //
+        // The places cover winget's two habits -- a real install under Program
+        // Files or the user's Programs folder, and a shim under WinGet\Links --
+        // as well as the package folder it unpacks into, HomerScribe's own
+        // folder, and whatever is on the PATH.
+        static string exifToolProgram()
+        {
+            List<string> lWhere = new List<string>();
+            lWhere.Add(Path.Combine(exeFolder(), "exiftool.exe"));
+            lWhere.Add(Path.Combine(appDataFolder(), "exiftool", "exiftool.exe"));
+            lWhere.Add(@"C:\HomerScribe\exiftool.exe");
+            foreach (string sRoot in new string[] {
+                Environment.GetEnvironmentVariable("ProgramFiles"),
+                Environment.GetEnvironmentVariable("ProgramFiles(x86)"),
+                Environment.GetEnvironmentVariable("ProgramW6432") })
+            {
+                if (sRoot != null && sRoot != "") lWhere.Add(Path.Combine(sRoot, "ExifTool", "exiftool.exe"));
+            }
+            string sLocal = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+            if (sLocal != null && sLocal != "")
+            {
+                lWhere.Add(Path.Combine(sLocal, "Programs", "ExifTool", "exiftool.exe"));
+                // winget's shim folder, which is on the PATH of a shell opened
+                // after the install but not of one opened before it.
+                lWhere.Add(Path.Combine(sLocal, "Microsoft", "WinGet", "Links", "exiftool.exe"));
+                string sPackages = Path.Combine(sLocal, "Microsoft", "WinGet", "Packages");
+                try
+                {
+                    if (Directory.Exists(sPackages))
+                    {
+                        foreach (string sOne in Directory.GetDirectories(sPackages, "*ExifTool*"))
+                        {
+                            foreach (string sExe in Directory.GetFiles(sOne, "exiftool.exe", SearchOption.AllDirectories))
+                                lWhere.Add(sExe);
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+            string sOnPath = findTool("exiftool");
+            if (sOnPath != "") lWhere.Add(sOnPath);
+
+            string sBest = "";
+            string sBestVersion = "";
+            double nBest = -1.0;
+            List<string> lSeen = new List<string>();
+            foreach (string sOne in lWhere)
+            {
+                if (sOne == null || sOne == "" || !File.Exists(sOne)) continue;
+                bool bAlready = false;
+                foreach (string sHad in lSeen)
+                {
+                    if (string.Compare(sHad, sOne, true) == 0) bAlready = true;
+                }
+                if (bAlready) continue;
+                lSeen.Add(sOne);
+                // A single file, with nothing beside it. His requirement, and
+                // it disqualifies every current package: they are a small
+                // launcher plus an "exiftool_files" folder holding Perl. An
+                // older single-file copy loses nothing, because HomerScribe
+                // supplies the accessibility definitions itself.
+                string sBeside = Path.Combine(Path.GetDirectoryName(sOne), "exiftool_files");
+                if (Directory.Exists(sBeside))
+                {
+                    logMessage("  " + sOne + " -- passed over: it needs an exiftool_files folder beside it", "INFO", "");
+                    continue;
+                }
+                string sOut = "";
+                string sErr = "";
+                int iCode = runCommand(sOne, "-ver", out sOut, out sErr);
+                string sVersion = (sOut + sErr).Trim();
+                if (iCode != 0 || sVersion == "" || !Regex.IsMatch(sVersion, @"^\d+(\.\d+)?"))
+                {
+                    logMessage("  " + sOne + " -- will not run", "INFO", "");
+                    continue;
+                }
+                // NOT as a decimal. ExifTool released 13.11 after 13.8, so as
+                // numbers 13.8 looks the newer of the two and the older copy
+                // would win. Each part is compared as a whole number instead.
+                double nVersion = versionRank(sVersion);
+                logMessage("  " + sOne + " -- version " + sVersion, "INFO", "");
+                if (nVersion > nBest)
+                {
+                    nBest = nVersion;
+                    sBest = sOne;
+                    sBestVersion = sVersion;
+                }
+            }
+            if (lSeen.Count == 0)
+            {
+                logMessage("No single-file ExifTool was found, so the descriptions cannot be written into the "
+                           + "pictures. HomerScribe wants one binary with no exiftool_files folder beside it, and "
+                           + "nothing currently published is in that form. Put a self-contained exiftool.exe beside "
+                           + "HomerScribe.exe and it will be used. The pictures are still described and still "
+                           + "renamed either way.",
+                           "ERROR", "No single-file ExifTool found; the descriptions are not written into the pictures.");
+                return "";
+            }
+            logMessage("Chosen: " + sBest + ", version " + sBestVersion
+                       + (lSeen.Count > 1 ? ", the newest of " + lSeen.Count.ToString() + " found." : "."),
+                       "INFO", "");
+            return sBest;
+        }
+
+        // Where a description can live inside a picture, by format.
+        //
+        //   "full"    -- XMP, IPTC and EXIF all writable.
+        //   "comment" -- a plain comment block and nothing named. GIF.
+        //   "none"    -- nowhere at all. BMP has no metadata container.
+        //   "vector"  -- SVG: the model cannot see it, so there is nothing to
+        //                write. Its own <title> and <desc> would be the best
+        //                home of any format, which is worth coming back for.
+        static string metadataKindOf(string sName)
+        {
+            string sKind = Path.GetExtension(sName).ToLower();
+            if (sKind == ".svg" || sKind == ".svgz") return "vector";
+            if (kindIsIn(sDefaultMetadataKinds, sKind)) return "full";
+            if (kindIsIn(sDefaultPartMetadataKinds, sKind)) return "comment";
+            return "none";
+        }
+
+        // Teaching ExifTool the two accessibility properties.
+        //
+        // A copy older than October 2021 does not know them by name, and my
+        // first conclusion -- that it therefore could not write them -- was
+        // wrong. ExifTool has been able to write tags it does not know for far
+        // longer than these tags have existed, given their definition. Its own
+        // documentation says any namespace may be written by giving a family 1
+        // group name, "including namespaces which are not pre-defined by
+        // ExifTool".
+        //
+        // So this is that definition: the Iptc4xmpCore namespace, its URI as
+        // the IPTC publishes it, and the two properties as lang-alt, which is
+        // what the standard calls for and what a current ExifTool writes. The
+        // bytes that land in the file are the same either way.
+        static string writeAltConfig(string sWorkDir)
+        {
+            string sPath = Path.Combine(sWorkDir, "accessibility.config");
+            StringBuilder oSaid = new StringBuilder();
+            oSaid.Append("# Written by HomerScribe. Defines the two IPTC accessibility properties\n");
+            oSaid.Append("# for a copy of ExifTool from before October 2021, which does not carry\n");
+            oSaid.Append("# them. Delete freely: it is written afresh whenever it is needed.\n");
+            oSaid.Append("%Image::ExifTool::UserDefined = (\n");
+            oSaid.Append("    'Image::ExifTool::XMP::Main' => {\n");
+            oSaid.Append("        Iptc4xmpCore => {\n");
+            oSaid.Append("            SubDirectory => {\n");
+            oSaid.Append("                TagTable => 'Image::ExifTool::UserDefined::Iptc4xmpCore',\n");
+            oSaid.Append("            },\n");
+            oSaid.Append("        },\n");
+            oSaid.Append("    },\n");
+            oSaid.Append(");\n");
+            oSaid.Append("%Image::ExifTool::UserDefined::Iptc4xmpCore = (\n");
+            oSaid.Append("    GROUPS    => { 0 => 'XMP', 1 => 'XMP-iptcCore', 2 => 'Image' },\n");
+            oSaid.Append("    NAMESPACE => { 'Iptc4xmpCore' => 'http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/' },\n");
+            oSaid.Append("    WRITABLE  => 'string',\n");
+            oSaid.Append("    AltTextAccessibility  => { Writable => 'lang-alt' },\n");
+            oSaid.Append("    ExtDescrAccessibility => { Writable => 'lang-alt' },\n");
+            oSaid.Append(");\n");
+            oSaid.Append("1;  #end\n");
+            try
+            {
+                StreamWriter fConfig = new StreamWriter(sPath, false, new UTF8Encoding(false));
+                fConfig.Write(oSaid.ToString());
+                fConfig.Close();
+            }
+            catch (Exception oError)
+            {
+                logMessage("The accessibility definitions could not be written: " + oError.Message, "ERROR");
+                return "";
+            }
+            return sPath;
+        }
+
+        // The description, written into the picture itself.
+        //
+        // The same words go into several places on purpose, because different
+        // software looks in different ones and a description nobody finds is
+        // no use:
+        //
+        //   XMP-iptcCore:AltTextAccessibility  the short phrase. The IPTC
+        //     added this in 2021 for exactly this job; it is what a web page
+        //     should use as alt text, and it is capped at 250 characters.
+        //   XMP-iptcCore:ExtDescrAccessibility the full description, uncapped.
+        //     Its companion, for when alt text is not enough.
+        //   XMP-dc:Description, IPTC:Caption-Abstract   what most photo
+        //     software actually displays.
+        //   EXIF:XPTitle, EXIF:XPComment       what Windows Explorer shows and
+        //     what a screen reader reads out of the properties. For somebody
+        //     working at a Windows machine this is the one that matters.
+        //
+        // Arguments go in a file rather than on the command line: a
+        // description holds quotation marks, ampersands and accented letters,
+        // and every one of those is a way for a command line to go wrong.
+        static bool writeMetadata(string sExifTool, string sPath, string sShort, string sLong, string sKind)
+        {
+            if (sExifTool == "" || sKind == "none" || sKind == "vector") return false;
+            string sArgsPath = sPath + ".exifargs.txt";
+            List<string> lArgs = new List<string>();
+            lArgs.Add("-overwrite_original");
+            // Ignore minor errors. One PNG was refused for "IFD0 pointer
+            // references previous IFD0 directory" -- damage already in the
+            // file and nothing to do with what is being added. Without this,
+            // a picture that is slightly wrong gets no description at all.
+            lArgs.Add("-m");
+            lArgs.Add("-charset");
+            lArgs.Add("UTF8");
+            lArgs.Add("-charset");
+            lArgs.Add("filename=UTF8");
+            // The short one is capped by the standard, not by choice.
+            string sAlt = sShort.Length > 250 ? sShort.Substring(0, 250) : sShort;
+            if (sKind == "comment")
+            {
+                // All a GIF has.
+                lArgs.Add("-Comment=" + sLong);
+            }
+            else
+            {
+                lArgs.Add("-codedcharacterset=utf8");
+                // Written unless ExifTool neither knows them nor has been
+                // taught them.
+                if (!bNoAltTags || bTeachAltTags)
+                {
+                    lArgs.Add("-XMP-iptcCore:AltTextAccessibility=" + sAlt);
+                    lArgs.Add("-XMP-iptcCore:ExtDescrAccessibility=" + sLong);
+                }
+                lArgs.Add("-XMP-dc:Description=" + sLong);
+                lArgs.Add("-XMP-dc:Title=" + sAlt);
+                lArgs.Add("-IPTC:Caption-Abstract=" + sLong);
+                lArgs.Add("-IPTC:ObjectName=" + sAlt);
+                lArgs.Add("-EXIF:ImageDescription=" + sAlt);
+                lArgs.Add("-EXIF:XPTitle=" + sAlt);
+                lArgs.Add("-EXIF:XPComment=" + sLong);
+                lArgs.Add("-XMP:Software=HomerScribe");
+            }
+            lArgs.Add(sPath);
+            try
+            {
+                // No byte order mark: ExifTool reads an argument file as plain
+                // UTF-8 and three stray bytes would become part of the first
+                // argument.
+                StreamWriter fArgs = new StreamWriter(sArgsPath, false, new UTF8Encoding(false));
+                foreach (string sOne in lArgs) fArgs.WriteLine(sOne.Replace("\r", " ").Replace("\n", " "));
+                fArgs.Close();
+            }
+            catch (Exception oError)
+            {
+                logMessage("  The metadata could not be prepared: " + oError.Message, "ERROR");
+                return false;
+            }
+            string sOut = "";
+            string sErr = "";
+            // -config must come FIRST, before anything else on the line.
+            string sBefore = bTeachAltTags && sAltConfigPath != "" ? "-config " + quoted(sAltConfigPath) + " " : "";
+            int iCode = runCommand(sExifTool, sBefore + "-@ " + quoted(sArgsPath), out sOut, out sErr);
+            try
+            {
+                File.Delete(sArgsPath);
+            }
+            catch (Exception)
+            {
+            }
+            string sSaid = sOut + sErr;
+            // A warning does not set the exit code, so this is checked by
+            // name. The self test has normally settled it already.
+            if (sSaid.IndexOf("is not defined", StringComparison.OrdinalIgnoreCase) >= 0)
+                logMessage("  ExifTool did not recognise a field: " + tail(sSaid, 200), "INFO", "");
+            if (iCode != 0)
+            {
+                // "Writing of WEBP files is not yet supported" is not a fault
+                // and not a refusal: it is this copy of ExifTool saying that
+                // this format has nowhere to put a description, which is
+                // exactly what BMP says about itself. Which formats can be
+                // written varies by version -- WebP writing came long after
+                // 11.79 -- so the tool is asked rather than a list kept here.
+                Match oNoRoom = Regex.Match(sSaid, @"Writing of (\w+) files is not yet supported",
+                                            RegexOptions.IgnoreCase);
+                if (oNoRoom.Success)
+                {
+                    string sKindNow = Path.GetExtension(sPath).ToLower();
+                    if (!lNoRoomKinds.Contains(sKindNow)) lNoRoomKinds.Add(sKindNow);
+                    logMessage("  This ExifTool cannot write " + oNoRoom.Groups[1].Value.ToUpper()
+                               + " files, so " + Path.GetFileName(sPath) + " keeps its description in "
+                               + sDefaultPicturesName + " only. A newer ExifTool may be able to.", "INFO", "");
+                    return false;
+                }
+                logMessage("  ExifTool would not write to " + Path.GetFileName(sPath) + ": " + tail(sSaid, 200), "ERROR");
+                return false;
+            }
+            return true;
+        }
+
+        // A tag name with its punctuation taken out, for comparing one against
+        // another. "Caption-Abstract" and "CaptionAbstract" are the same tag.
+        static string plainName(string sName)
+        {
+            return Regex.Replace(sName == null ? "" : sName, "[^A-Za-z0-9]", "").ToLower();
+        }
+
+        // What ExifTool actually does with one picture, before doing it to
+        // all of them.
+        //
+        // Written because I kept asking him to check things by hand. A run
+        // should answer its own questions. This copies the first picture aside,
+        // writes every field into the copy, reads all of them back, and logs
+        // each one BY NAME as found or missing -- so one log says which
+        // ExifTool is in use, which fields land, which do not, and what was
+        // run to find out.
+        //
+        // It also decides how the rest of the run will write: plainly, or with
+        // the accessibility definitions supplied.
+        static bool selfTestMetadata(string sExifTool, string sPicture, string sWorkDir)
+        {
+            if (sExifTool == "") return false;
+            string sTry = Path.Combine(sWorkDir, "selftest" + Path.GetExtension(sPicture));
+            try
+            {
+                File.Copy(sPicture, sTry, true);
+            }
+            catch (Exception oError)
+            {
+                logMessage("The self test could not copy a picture: " + oError.Message, "INFO", "");
+                return false;
+            }
+            logMessage("Checking what this ExifTool will write, using a copy of "
+                       + Path.GetFileName(sPicture) + ".", "INFO", "");
+            string[] asFields = new string[] {
+                "XMP-iptcCore:AltTextAccessibility", "XMP-iptcCore:ExtDescrAccessibility",
+                "XMP-dc:Description", "XMP-dc:Title", "IPTC:Caption-Abstract", "IPTC:ObjectName",
+                "EXIF:ImageDescription", "EXIF:XPTitle", "EXIF:XPComment" };
+            for (int iGo = 0; iGo < 2; iGo = iGo + 1)
+            {
+                // First as it stands; then, if the accessibility fields did not
+                // land, again with the definitions supplied.
+                writeMetadata(sExifTool, sTry, "HomerScribe self test", "HomerScribe self test description.", "full");
+                string sOut = "";
+                string sErr = "";
+                StringBuilder oAsk = new StringBuilder();
+                foreach (string sField in asFields) oAsk.Append(" -" + sField);
+                string sBefore = bTeachAltTags && sAltConfigPath != "" ? "-config " + quoted(sAltConfigPath) + " " : "";
+                runCommand(sExifTool, sBefore + "-s -f -q -m -charset UTF8" + oAsk.ToString() + " " + quoted(sTry),
+                           out sOut, out sErr);
+                bool bAlt = false;
+                foreach (string sField in asFields)
+                {
+                    string sBare = sField.Substring(sField.IndexOf(':') + 1);
+                    // The tag name is matched with the punctuation taken out of
+                    // BOTH sides. ExifTool's -s prints the tag's own name, and
+                    // IPTC's is "Caption-Abstract" -- hyphen and all. The first
+                    // version of this stripped the hyphen from what it looked
+                    // for but not from what ExifTool printed, so that one field
+                    // was reported missing on every run while being written
+                    // perfectly well.
+                    string sValue = "";
+                    foreach (string sLine in sOut.Replace("\r\n", "\n").Split('\n'))
+                    {
+                        int iColon = sLine.IndexOf(':');
+                        if (iColon <= 0) continue;
+                        if (plainName(sLine.Substring(0, iColon)) != plainName(sBare)) continue;
+                        sValue = sLine.Substring(iColon + 1).Trim();
+                        break;
+                    }
+                    // "-f" makes ExifTool print a dash for a field it has not got.
+                    bool bThere = sValue != "" && sValue != "-";
+                    if (sBare.IndexOf("Accessibility", StringComparison.OrdinalIgnoreCase) >= 0 && bThere) bAlt = true;
+                    logMessage("    " + sField + ": " + (bThere ? "written" : "NOT written"), "INFO", "");
+                }
+                if (bAlt)
+                {
+                    logMessage("  The accessibility fields are being written"
+                               + (bTeachAltTags ? ", using the definitions HomerScribe supplies." : "."), "INFO", "");
+                    break;
+                }
+                if (iGo == 0)
+                {
+                    // Not a reason to give up. ExifTool can be told what they
+                    // are, and it has been able to for far longer than the
+                    // fields have existed.
+                    bNoAltTags = true;
+                    sAltConfigPath = writeAltConfig(sWorkDir);
+                    bTeachAltTags = sAltConfigPath != "";
+                    logMessage("  This ExifTool does not know the IPTC accessibility fields by name -- they were "
+                               + "added to the standard in October 2021. Supplying their definitions and trying "
+                               + "again.", "INFO", "");
+                    if (!bTeachAltTags) break;
+                }
+                else
+                {
+                    bTeachAltTags = false;
+                    logMessage("  The accessibility fields still will not write, even with their definitions "
+                               + "supplied. The description still goes into the caption, title and comment "
+                               + "fields, which is where Windows Explorer and most photo software look.",
+                               "ERROR", "");
+                }
+            }
+            try
+            {
+                File.Delete(sTry);
+            }
+            catch (Exception)
+            {
+            }
+            return true;
+        }
+
+        // A value from ExifTool's JSON, whatever shape it arrived in.
+        static string valueAsText(object oValue)
+        {
+            if (oValue == null) return "";
+            object[] aMany = oValue as object[];
+            if (aMany != null)
+            {
+                List<string> lEach = new List<string>();
+                foreach (object oOne in aMany)
+                {
+                    string sOne = valueAsText(oOne);
+                    if (sOne != "") lEach.Add(sOne);
+                }
+                return string.Join(", ", lEach.ToArray());
+            }
+            Dictionary<string, object> dOne = oValue as Dictionary<string, object>;
+            if (dOne != null)
+            {
+                List<string> lEach = new List<string>();
+                foreach (KeyValuePair<string, object> oPair in dOne)
+                {
+                    string sOne = valueAsText(oPair.Value);
+                    if (sOne != "") lEach.Add(oPair.Key + ": " + sOne);
+                }
+                return string.Join("; ", lEach.ToArray());
+            }
+            return Regex.Replace(Convert.ToString(oValue), @"\s+", " ").Trim();
+        }
+
+        // Everything each picture in a folder now says about itself.
+        //
+        // Read back out of the finished files rather than assembled from what
+        // was sent to them, for the same reason the counts are: what was sent
+        // is a hope, what reads back is the fact. Anything already in the file
+        // is listed too -- the camera, the date, somebody else's caption --
+        // because the question a reader has is what this file says about
+        // itself, not what this program did to it.
+        static bool writeDescribedPage(string sExifTool, string sFolder, string sPagePath,
+                                       string sTitle, string sIntro)
+        {
+            StreamWriter fDoc = null;
+            try
+            {
+                fDoc = new StreamWriter(sPagePath, false, new UTF8Encoding(true));
+                fDoc.WriteLine("# " + sTitle);
+                fDoc.WriteLine("");
+                fDoc.WriteLine(sIntro);
+                fDoc.WriteLine("");
+                if (sExifTool == "")
+                {
+                    fDoc.WriteLine("ExifTool was not available, so nothing could be read back out of these files.");
+                    fDoc.Close();
+                    return false;
+                }
+                string sOut = "";
+                string sErr = "";
+                // -G1 gives the group each field belongs to, which is what
+                // makes a bare name like "Description" tell you where it lives.
+                string sBefore = bTeachAltTags && sAltConfigPath != "" ? "-config " + quoted(sAltConfigPath) + " " : "";
+                runCommand(sExifTool, sBefore + "-j -G1 -m -charset UTF8 -charset filename=UTF8 " + quoted(sFolder),
+                           out sOut, out sErr);
+                if (sOut.Trim() == "")
+                {
+                    fDoc.WriteLine("Nothing could be read back out of these files.");
+                    logMessage("Nothing came back when reading the pictures for " + Path.GetFileName(sPagePath)
+                               + ": " + tail(sErr, 160), "ERROR");
+                    fDoc.Close();
+                    return false;
+                }
+                JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+                oSerializer.MaxJsonLength = int.MaxValue;
+                object[] aFiles = oSerializer.Deserialize<object[]>(sOut);
+                // In the order they read, which is the order they sit in the
+                // folder, so the document and a directory listing agree.
+                List<string> lNamesHere = new List<string>();
+                Dictionary<string, Dictionary<string, object>> dByName
+                    = new Dictionary<string, Dictionary<string, object>>();
+                foreach (object oItem in aFiles)
+                {
+                    Dictionary<string, object> dOne = toMap(oItem);
+                    string sWhich = dOne.ContainsKey("SourceFile") ? Convert.ToString(dOne["SourceFile"]) : "";
+                    sWhich = sWhich == "" ? "(unnamed)" : Path.GetFileName(sWhich.Replace('/', '\\'));
+                    // The document itself is in the folder by now; it is not a
+                    // picture and has nothing to say here.
+                    if (string.Compare(sWhich, Path.GetFileName(sPagePath), true) == 0) continue;
+                    if (!dByName.ContainsKey(sWhich))
+                    {
+                        lNamesHere.Add(sWhich);
+                        dByName[sWhich] = dOne;
+                    }
+                }
+                lNamesHere.Sort(delegate(string sLeft, string sRight)
+                { return string.Compare(sLeft, sRight, StringComparison.OrdinalIgnoreCase); });
+                foreach (string sWhich in lNamesHere)
+                {
+                    fDoc.WriteLine("## " + sWhich);
+                    fDoc.WriteLine("");
+                    // Sorted by field name, ignoring case, as he asked.
+                    List<string> lFields = new List<string>();
+                    foreach (KeyValuePair<string, object> oPair in dByName[sWhich])
+                    {
+                        if (oPair.Key == "SourceFile") continue;
+                        // The disk's business, not the picture's: dates,
+                        // permissions, the folder it happens to sit in. They
+                        // change every time the file is copied.
+                        if (oPair.Key.StartsWith("System:") || oPair.Key.StartsWith("ExifTool:")) continue;
+                        if (valueAsText(oPair.Value) == "") continue;
+                        lFields.Add(oPair.Key);
+                    }
+                    lFields.Sort(delegate(string sLeft, string sRight)
+                    {
+                        string sBareLeft = sLeft.Substring(sLeft.IndexOf(':') + 1);
+                        string sBareRight = sRight.Substring(sRight.IndexOf(':') + 1);
+                        int iSame = string.Compare(sBareLeft, sBareRight, StringComparison.OrdinalIgnoreCase);
+                        if (iSame != 0) return iSame;
+                        return string.Compare(sLeft, sRight, StringComparison.OrdinalIgnoreCase);
+                    });
+                    if (lFields.Count == 0) fDoc.WriteLine("- This file carries no metadata at all.");
+                    foreach (string sField in lFields)
+                    {
+                        string sBare = sField.Substring(sField.IndexOf(':') + 1);
+                        string sGroup = sField.IndexOf(':') > 0 ? sField.Substring(0, sField.IndexOf(':')) : "";
+                        fDoc.WriteLine("- **" + sBare + "**" + (sGroup == "" ? "" : " (" + sGroup + ")")
+                                       + ": " + valueAsText(dByName[sWhich][sField]));
+                    }
+                    fDoc.WriteLine("");
+                }
+                fDoc.Close();
+                logMessage("Written to " + sPagePath + ": what "
+                           + counted(lNamesHere.Count, "picture", "pictures") + " now says about itself.",
+                           "INFO", "");
+                return true;
+            }
+            catch (Exception oError)
+            {
+                logMessage("The field list could not be written to " + sPagePath + ": " + oError.Message, "ERROR");
+                try
+                {
+                    if (fDoc != null) fDoc.Close();
+                }
+                catch (Exception)
+                {
+                }
+                return false;
+            }
+        }
+
+        // What is ACTUALLY in the pictures now.
+        //
+        // One call over the whole folder, because an exit code says a program
+        // finished and not that the work was done. Everything reported to him
+        // as "carrying its description" is counted here, from the files
+        // themselves, after the fact.
+        static int countDescribedFiles(string sExifTool, string sFolder, out int iWithAltText)
+        {
+            iWithAltText = 0;
+            if (sExifTool == "") return 0;
+            string sOut = "";
+            string sErr = "";
+            // The same definitions are needed to READ the fields back on a
+            // copy that does not know them, or the check would report them
+            // missing after writing them perfectly well.
+            string sBefore = bTeachAltTags && sAltConfigPath != "" ? "-config " + quoted(sAltConfigPath) + " " : "";
+            int iCode = runCommand(sExifTool, sBefore + "-j -q -m -charset UTF8"
+                                            + " -XMP-dc:Description -EXIF:XPComment -Comment"
+                                            + " -XMP-iptcCore:AltTextAccessibility " + quoted(sFolder),
+                                   out sOut, out sErr);
+            if (sOut.Trim() == "") return 0;
+            int iHave = 0;
+            try
+            {
+                JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+                oSerializer.MaxJsonLength = int.MaxValue;
+                foreach (object oItem in oSerializer.Deserialize<object[]>(sOut))
+                {
+                    Dictionary<string, object> dOne = toMap(oItem);
+                    bool bAny = false;
+                    foreach (string sField in new string[] { "Description", "XPComment", "Comment" })
+                    {
+                        if (dOne.ContainsKey(sField) && Convert.ToString(dOne[sField]).Trim() != "") bAny = true;
+                    }
+                    if (bAny) iHave = iHave + 1;
+                    if (dOne.ContainsKey("AltTextAccessibility")
+                        && Convert.ToString(dOne["AltTextAccessibility"]).Trim() != "") iWithAltText = iWithAltText + 1;
+                }
+            }
+            catch (Exception oError)
+            {
+                logMessage("The check of what was written could not be read: " + oError.Message, "INFO", "");
+                return 0;
+            }
+            if (iCode != 0) logMessage("  ExifTool grumbled while checking: " + tail(sErr, 160), "INFO", "");
+            return iHave;
+        }
+
+        // EVERY picture, turned into a plain PNG of a modest size before the
+        // model is shown it.
+        //
+        // Not only the ones Ollama cannot read. On 21 August, twenty-five of
+        // forty-nine pictures in one archive were refused with
+        //   (400) Bad Request
+        // each within half a second -- too fast to be inference, so rejected on
+        // sight. Same archive, same prompt, same extension: image.jpg went
+        // through and Phil2.jpg did not, which points at something in the
+        // picture that the decoder would not take. Rather than find out which
+        // of progressive encoding, colour space, bit depth or sheer size it
+        // was, every picture now arrives in the one shape known to work.
+        //
+        // It also cuts what has to be encoded and sent. A photograph straight
+        // off a camera is several thousand pixels wide; the model is shown 512
+        // for a film frame, so a thousand for a still is already generous.
+        static string asPngFor(string sFfmpeg, string sPath, string sWorkDir)
+        {
+            int iWide = integer("picture-width");
+            if (iWide < 64) iWide = 1024;
+            string sPng = Path.Combine(sWorkDir, Path.GetFileNameWithoutExtension(sPath) + ".seen.png");
+            string sOut = "";
+            string sErr = "";
+            // Reduced only if it is bigger than the limit, never enlarged, and
+            // the shape is kept. -pix_fmt rgb24 settles the colour space, which
+            // is one of the things a decoder can refuse.
+            string sScale = "scale='if(gt(max(iw,ih)," + iWide.ToString() + "),if(gte(iw,ih)," + iWide.ToString()
+                          + ",-2),iw)':'if(gt(max(iw,ih)," + iWide.ToString() + "),if(gte(iw,ih),-2,"
+                          + iWide.ToString() + "),ih)'";
+            int iCode = runCommand(sFfmpeg, "-hide_banner -loglevel error -y -i " + quoted(sPath)
+                                          + " -frames:v 1 -vf " + quoted(sScale) + " -pix_fmt rgb24 " + quoted(sPng),
+                                   out sOut, out sErr);
+            if (iCode != 0 || !File.Exists(sPng))
+            {
+                logMessage("  ffmpeg could not read " + Path.GetFileName(sPath) + ": " + tail(sErr, 160), "INFO", "");
+                return "";
+            }
+            return sPng;
+        }
+
+        // One archive, from end to end.
+        static int describeArchive(string sZipPath)
+        {
+            string sFfmpeg = findTool("ffmpeg");
+            string sRoot = Path.GetFileNameWithoutExtension(sZipPath);
+            string sBase = text("output-dir");
+            if (sBase == "") sBase = Path.GetDirectoryName(Path.GetFullPath(sZipPath));
+            string sOutputDir = Path.Combine(sBase, sRoot);
+            string sWorkDir = Path.Combine(workFolderFor(sZipPath), "pictures");
+            if (oFileLog == null) oFileLog = new StringBuilder();
+            string sPagePath = Path.Combine(sOutputDir, sDefaultPicturesName);
+            if (File.Exists(sPagePath) && !flag("force"))
+            {
+                logMessage("Skipping " + sRoot + ": " + sDefaultPicturesName + " is already in " + sOutputDir + ".",
+                           "INFO", "Skipping " + sRoot + ", already done.");
+                sLastSkippedFolder = sOutputDir;
+                return iAlreadyDone;
+            }
+            List<string> lInside = new List<string>();
+            List<string> lPassedOver = new List<string>();
+            List<string> lNotesFound = new List<string>();
+            try
+            {
+                Directory.CreateDirectory(sOutputDir);
+                Directory.CreateDirectory(sWorkDir);
+                using (ZipArchive oZip = ZipFile.OpenRead(sZipPath))
+                {
+                    foreach (ZipArchiveEntry oEntry in oZip.Entries)
+                    {
+                        // A folder inside the archive, or a name that would
+                        // climb out of the folder it is being written into.
+                        if (oEntry.Name == "") continue;
+                        // A note rather than a picture. Kept, not counted as
+                        // something passed over, since it is going to be used.
+                        if (string.Compare(Path.GetExtension(oEntry.Name), ".md", true) == 0)
+                        {
+                            string sNotePath = Path.Combine(sWorkDir, Path.GetFileName(oEntry.Name));
+                            oEntry.ExtractToFile(sNotePath, true);
+                            lNotesFound.Add(Path.GetFileName(oEntry.Name));
+                            continue;
+                        }
+                        if (pictureKind(oEntry.Name) == "")
+                        {
+                            lPassedOver.Add(oEntry.FullName);
+                            continue;
+                        }
+                        string sHere = Path.Combine(sWorkDir, Path.GetFileName(oEntry.Name));
+                        oEntry.ExtractToFile(sHere, true);
+                        lInside.Add(sHere);
+                    }
+                }
+            }
+            catch (Exception oError)
+            {
+                logMessage("The archive could not be read: " + oError.Message, "ERROR");
+                lFailures.Add(sZipPath + Environment.NewLine + "    Could not be read: " + oError.Message
+                              + Environment.NewLine + "    A password-protected archive, or one using a compression"
+                              + " method Windows does not open, will fail here.");
+                return 1;
+            }
+            // The note that applies to every picture: one named after the
+            // archive itself, or failing that a plain context.md.
+            string sWholeNote = noteBeside(Path.Combine(sWorkDir, sRoot + ".md"));
+            if (sWholeNote == "") sWholeNote = noteBeside(Path.Combine(sWorkDir, "context.md"));
+            // And anything given on the command line, which is more general
+            // still and so comes first of all.
+            string sGivenNote = "";
+            if (text("context-file") != "" && File.Exists(text("context-file")))
+                sGivenNote = noteBeside(text("context-file"));
+            logMessage("The archive holds " + counted(lInside.Count, "picture", "pictures")
+                       + ", " + counted(lNotesFound.Count, "note", "notes")
+                       + " and " + counted(lPassedOver.Count, "other file", "other files") + ".",
+                       "INFO", sRoot + " holds " + counted(lInside.Count, "picture", "pictures") + ".");
+            foreach (string sNote in lNotesFound) logMessage("  Note found: " + sNote, "INFO", "");
+            if (sWholeNote != "")
+                logMessage("A note for the whole archive, " + counted(sWholeNote.Split(' ').Length, "word", "words")
+                           + ", will be sent with every picture.", "INFO", "");
+            foreach (string sOther in lPassedOver)
+            {
+                // A drawing rather than a picture. Worth naming separately,
+                // because it is not junk in the archive: it is something the
+                // model cannot be shown. SVG carries its own title and desc
+                // elements, which would be the best home for a description of
+                // any format here, and is worth coming back for.
+                if (metadataKindOf(sOther) == "vector")
+                    logMessage("  Passed over: " + sOther + " is a drawing rather than a picture, and nothing "
+                               + "here can turn it into something the model could look at.", "INFO", "");
+                else logMessage("  Passed over, not a picture: " + sOther, "INFO", "");
+            }
+            if (lInside.Count == 0)
+            {
+                logMessage("There is nothing to describe in " + sRoot + ".", "ERROR");
+                lFailures.Add(sZipPath + Environment.NewLine + "    No image files in it.");
+                return 1;
+            }
+            List<string> lNames = new List<string>();
+            List<string> lAbout = new List<string>();
+            List<string> lOriginal = new List<string>();
+            int iAt = 0;
+            foreach (string sPicture in lInside)
+            {
+                iAt = iAt + 1;
+                string sBare = Path.GetFileName(sPicture);
+                announce("Initializing", -1.0, 1.0, "Picture " + iAt.ToString() + " of "
+                         + lInside.Count.ToString() + ": " + sBare);
+                // What the original was, so that a pattern among refusals or
+                // failures is visible rather than guessed at.
+                try
+                {
+                    logMessage("  " + sBare + ": " + (new FileInfo(sPicture).Length / 1024).ToString() + " KB as it stands.",
+                               "INFO", "");
+                }
+                catch (Exception)
+                {
+                }
+                string sShow = asPngFor(sFfmpeg, sPicture, sWorkDir);
+                if (sShow == "")
+                {
+                    logMessage("  " + sBare + " could not be turned into something the model can read.", "ERROR");
+                    continue;
+                }
+                // Most general first, most particular last, so the nearest
+                // note has the last word.
+                StringBuilder oNotes = new StringBuilder();
+                if (sGivenNote != "") oNotes.Append(sGivenNote);
+                if (sWholeNote != "")
+                {
+                    if (oNotes.Length > 0) oNotes.Append(" ");
+                    oNotes.Append(sWholeNote);
+                }
+                string sOwnNote = noteBeside(Path.Combine(sWorkDir, Path.GetFileNameWithoutExtension(sBare) + ".md"));
+                if (sOwnNote != "")
+                {
+                    if (oNotes.Length > 0) oNotes.Append(" ");
+                    oNotes.Append(sOwnNote);
+                    logMessage("  " + sBare + " has a note of its own, "
+                               + counted(sOwnNote.Split(' ').Length, "word", "words") + ".", "INFO", "");
+                }
+                string sCalled = nameAsHint(sBare);
+                if (sCalled != "") logMessage("  Its name says: " + sCalled, "INFO", "");
+                waitingOn("looking at " + sBare);
+                string[] asSaid = describeStill(sShow, oNotes.ToString(), sCalled);
+                waitingOn("");
+                if (asSaid[1] == "")
+                {
+                    logMessage("  " + sBare + ": the model said nothing.", "ERROR");
+                    continue;
+                }
+                lOriginal.Add(sBare);
+                lNames.Add(asSaid[0]);
+                lAbout.Add(asSaid[1]);
+                logMessage("  " + sBare + " -> \"" + asSaid[0] + "\": " + asSaid[1], "INFO",
+                           asSaid[0]);
+            }
+            if (lOriginal.Count == 0)
+            {
+                logMessage("Nothing in " + sRoot + " could be described.", "ERROR");
+                lFailures.Add(sZipPath + Environment.NewLine + "    Nothing in it could be described.");
+                return 1;
+            }
+            numberClashes(lNames);
+
+            // ---- the pictures themselves ----
+            //
+            // Described once, metadata written once, then copied. The copy in
+            // the archive is byte for byte the one in the folder, differing
+            // only in its name, so there is no second pass to drift.
+            logMessage("Looking for ExifTool, which writes the descriptions into the pictures.", "INFO", "");
+            string sExifTool = exifToolProgram();
+            if (sExifTool == "")
+                logMessage("ExifTool was not found, so the descriptions cannot be written into the pictures. "
+                           + "They are still in " + sDefaultPicturesName + ". Run installExifTool.cmd, or reinstall "
+                           + "HomerScribe, to have them written into the files as well.",
+                           "ERROR", "The descriptions cannot be written into the pictures: ExifTool is missing.");
+            else
+            {
+                // The version was logged by the search above, with every other
+                // candidate beside it.
+                bNoAltTags = false;
+                bTeachAltTags = false;
+                sAltConfigPath = "";
+                // NOT simply the first picture. In test.zip the first is a BMP,
+                // and ExifTool refuses those outright -- "Writing of BMP files
+                // is not yet supported" -- so every field came back missing and
+                // the test concluded the accessibility definitions had failed,
+                // when on a JPEG the same definitions had worked an hour
+                // earlier. The test needs a picture that can actually hold the
+                // full set, or it is testing the picture and not ExifTool.
+                string sTestOn = "";
+                foreach (string sOne in lOriginal)
+                {
+                    if (metadataKindOf(sOne) == "full")
+                    {
+                        sTestOn = Path.Combine(sWorkDir, sOne);
+                        break;
+                    }
+                }
+                if (sTestOn != "") selfTestMetadata(sExifTool, sTestOn, sWorkDir);
+                else logMessage("No picture here can hold the full set of fields, so there is nothing to test "
+                                + "the writing on. Each picture is still written to as far as its format allows.",
+                                "INFO", "");
+            }
+            string sStageDir = Path.Combine(sWorkDir, "named");
+            try
+            {
+                if (Directory.Exists(sStageDir)) Directory.Delete(sStageDir, true);
+                Directory.CreateDirectory(sStageDir);
+            }
+            catch (Exception)
+            {
+            }
+            int iWritten = 0;
+            int iNoRoom = 0;
+            int iRefused = 0;
+            for (int iOne = 0; iOne < lOriginal.Count; iOne = iOne + 1)
+            {
+                string sFrom = Path.Combine(sWorkDir, lOriginal[iOne]);
+                string sHere = Path.Combine(sOutputDir, lOriginal[iOne]);
+                string sKind = metadataKindOf(lOriginal[iOne]);
+                try
+                {
+                    File.Copy(sFrom, sHere, true);
+                }
+                catch (Exception oError)
+                {
+                    logMessage("  " + lOriginal[iOne] + " could not be copied out: " + oError.Message, "ERROR");
+                    continue;
+                }
+                if (sKind == "none" || sKind == "vector"
+                    || lNoRoomKinds.Contains(Path.GetExtension(lOriginal[iOne]).ToLower())) iNoRoom = iNoRoom + 1;
+                else if (writeMetadata(sExifTool, sHere, lNames[iOne], lAbout[iOne], sKind)) iWritten = iWritten + 1;
+                // Counted as having nowhere to put one, not as a failure, if
+                // that is what ExifTool just told us.
+                else if (lNoRoomKinds.Contains(Path.GetExtension(lOriginal[iOne]).ToLower())) iNoRoom = iNoRoom + 1;
+                else iRefused = iRefused + 1;
+                // And the same file again under the name it earned.
+                try
+                {
+                    File.Copy(sHere, Path.Combine(sStageDir, lNames[iOne] + Path.GetExtension(lOriginal[iOne])), true);
+                }
+                catch (Exception oError)
+                {
+                    logMessage("  " + lNames[iOne] + " could not be put in the archive: " + oError.Message, "ERROR");
+                }
+            }
+            // ---- what each copy now says about itself ----
+            //
+            // One for the folder and one for the archive, and they are NOT
+            // copies of each other: the folder holds these pictures under
+            // their original names and the archive holds them under their new
+            // ones, so each lists its own by the names it actually carries.
+            // Written before the archive is made, so that the archive contains
+            // its own.
+            writeDescribedPage(sExifTool, sOutputDir, Path.Combine(sOutputDir, sDefaultPicturesName),
+                sRoot + ": what these pictures say about themselves",
+                "Every picture in this folder, under the name it has here, and every field that now has a "
+                + "value in it. Read back out of the files themselves, so what is listed is what is there — "
+                + "including anything that was already in the picture before HomerScribe saw it. The same "
+                + "pictures under their new names, with the same fields, are in **" + sRoot + ".zip**.");
+            writeDescribedPage(sExifTool, sStageDir, Path.Combine(sStageDir, sDefaultPicturesName),
+                sRoot + ": what these pictures say about themselves",
+                "Every picture in this archive, under its new name, and every field that now has a value in "
+                + "it. Read back out of the files themselves, so what is listed is what is there — including "
+                + "anything that was already in the picture before HomerScribe saw it. The same pictures "
+                + "under their original names are in the folder this archive came from.");
+
+            // ---- the archive of renamed copies ----
+            string sZipOut = Path.Combine(sOutputDir, sRoot + ".zip");
+            bool bZipped = false;
+            try
+            {
+                if (File.Exists(sZipOut)) File.Delete(sZipOut);
+                ZipFile.CreateFromDirectory(sStageDir, sZipOut, CompressionLevel.Optimal, false);
+                bZipped = true;
+            }
+            catch (Exception oError)
+            {
+                logMessage("The archive of renamed pictures could not be made: " + oError.Message, "ERROR");
+            }
+            // Counted from the files, not from the exit codes.
+            int iWithAltText = 0;
+            int iReallyThere = countDescribedFiles(sExifTool, sOutputDir, out iWithAltText);
+            if (sExifTool != "" && iReallyThere != iWritten)
+                logMessage("ExifTool reported " + iWritten.ToString() + " written, but reading the files back finds "
+                           + iReallyThere.ToString() + " carrying a description. The second figure is the true one.",
+                           "ERROR", "");
+            iWritten = iReallyThere;
+            logMessage("Descriptions found in " + counted(iWritten, "picture", "pictures")
+                       + " on reading them back"
+                       + (iWithAltText == 0 ? ", none of them in the IPTC accessibility fields"
+                                            : ", " + iWithAltText.ToString() + " of them in the IPTC accessibility fields")
+                       + "; " + iNoRoom.ToString() + " of a kind with nowhere to put one"
+                       + (iRefused == 0 ? "" : "; " + iRefused.ToString() + " refused by ExifTool")
+                       + (bZipped ? ". The renamed copies are in " + Path.GetFileName(sZipOut) + "." : "."),
+                       "INFO", "Descriptions written into " + counted(iWritten, "picture", "pictures") + ".");
+
+            // The old report -- what can be seen, the name given, whether the
+            // format could hold it -- has been replaced by writeDescribedPage
+            // above, which lists what each picture NOW SAYS ABOUT ITSELF. The
+            // descriptions are not lost: they are in the files, in
+            // ImageDescription and Caption-Abstract and the rest, which is
+            // where he wanted them and where the new document reads them from.
+            //
+            // What that document cannot show is the things that never became
+            // pictures, so they are named here instead.
+            if (lPassedOver.Count > 0 || lNotesFound.Count > 0)
+            {
+                try
+                {
+                    StreamWriter fMore = new StreamWriter(sPagePath, true, new UTF8Encoding(false));
+                    fMore.WriteLine("## Other files in the archive");
+                    fMore.WriteLine("");
+                    foreach (string sNote in lNotesFound)
+                        fMore.WriteLine("- **" + sNote + "**: a note, used as context for every picture it applies to.");
+                    foreach (string sOther in lPassedOver)
+                    {
+                        if (metadataKindOf(sOther) == "vector")
+                            fMore.WriteLine("- **" + sOther + "**: a drawing rather than a picture. Nothing here can "
+                                            + "turn it into something the model could look at.");
+                        else fMore.WriteLine("- **" + sOther + "**: not a picture, so it was passed over.");
+                    }
+                    fMore.WriteLine("");
+                    fMore.Close();
+                }
+                catch (Exception oError)
+                {
+                    logMessage("The list of other files could not be added: " + oError.Message, "INFO", "");
+                }
+            }
+            logMessage("Described " + counted(lOriginal.Count, "picture", "pictures") + ".",
+                       "INFO", "Described " + counted(lOriginal.Count, "picture", "pictures") + ".");
+            // iNoRoom, not iCannot. They counted different things and said so
+            // in the same breath: the results box read "2 of a kind that cannot
+            // hold one" while the log read "1 of a kind with nowhere to put
+            // one". A GIF is neither -- it holds a plain comment -- and only
+            // formats with nowhere at all belong in this figure.
+            lResults.Add(sRoot + ": " + counted(lOriginal.Count, "picture described", "pictures described")
+                         + ", " + counted(iWritten, "carrying its description inside it", "carrying their descriptions inside them")
+                         + (iNoRoom == 0 ? "" : ", " + iNoRoom.ToString() + " of a kind that cannot hold one")
+                         + Environment.NewLine + "    " + sOutputDir
+                         + (bZipped ? Environment.NewLine + "    " + sZipOut : ""));
+            sLastOutputFolder = sOutputDir;
+            writeFileLog(sOutputDir);
+            try
+            {
+                Directory.Delete(sWorkDir, true);
+            }
+            catch (Exception)
+            {
+            }
+            return 0;
         }
 
         static int run()
@@ -4736,6 +7709,11 @@ namespace Homer
                                  + "    That list was not found. It may have been moved or renamed, or saved somewhere else by the browser.";
                     logMessage(sGone.Replace(Environment.NewLine, " "), "ERROR");
                     lFailures.Add(sGone);
+                    continue;
+                }
+                if (looksLikeArchive(sGiven))
+                {
+                    foreach (string sOne in expandPattern(sGiven)) lSources.Add(sOne);
                     continue;
                 }
                 if (looksLikeList(sGiven) && File.Exists(sGiven))
@@ -4798,6 +7776,12 @@ namespace Homer
                 iSourceAt = iAt;
                 iSourceCount = lSources.Count;
                 announce("Initializing", -1.0, 1.0, processingSaid(sSource, iAt, lSources.Count));
+                // This film's own log begins here, before anything is fetched.
+                // It used to begin inside runOne, which left out how the film
+                // was obtained -- and on the captions-only route left out
+                // which caption track was chosen and why, which was most of
+                // what there was to say.
+                oFileLog = new StringBuilder();
                 string sPath = sSource;
                 if (sSource.StartsWith("http://") || sSource.StartsWith("https://"))
                 {
@@ -4811,6 +7795,15 @@ namespace Homer
                     {
                         announce("Skipped", -1.0, 1.0, "Already done: " + sSource);
                         iSkippedWhole = iSkippedWhole + 1;
+                        continue;
+                    }
+                    // The captions came and the film was left where it was.
+                    // There is no local file, so none of what follows applies.
+                    if (sPath == sCaptionsOnly)
+                    {
+                        int iWords = transcribeFromCaptions(sSource);
+                        if (iWords == 0) iDescribedWhole = iDescribedWhole + 1;
+                        else iWorst = iWords;
                         continue;
                     }
                     if (sPath == "")
@@ -4830,6 +7823,20 @@ namespace Homer
                 {
                     logMessage("That path cannot be used: " + sPath + " (" + oError.Message + ")", "ERROR");
                     iWorst = 1;
+                    continue;
+                }
+                // An archive of pictures. Nothing that follows applies: there
+                // is no duration, no sound, and nothing to place in time.
+                if (looksLikeArchive(sFull) && File.Exists(sFull))
+                {
+                    int iZip = describeArchive(sFull);
+                    if (iZip == iAlreadyDone)
+                    {
+                        announce("Skipped", -1.0, 1.0, "Already done: " + Path.GetFileName(sFull));
+                        iSkippedWhole = iSkippedWhole + 1;
+                    }
+                    else if (iZip == 0) iDescribedWhole = iDescribedWhole + 1;
+                    else iWorst = iZip;
                     continue;
                 }
                 if (!sSource.StartsWith("http") && !looksLikeMedia(sFull) && File.Exists(sFull))
@@ -4859,6 +7866,26 @@ namespace Homer
                     announce("Error", -1.0, 1.0, Path.GetFileName(sFull) + " could not be finished. The log says why.");
                     if (!bAlreadyNamed) lFailures.Add(sFull + Environment.NewLine
                         + "    Something went wrong while working on it. The log says what.");
+                }
+                // A plain full stop between one source and the next. Asked for,
+                // and worth having: after a long silent stretch of work the
+                // only signal was the next "Processing" line, which says a new
+                // thing has begun without ever saying the last one ended.
+                // Nothing is said where the source failed or was skipped --
+                // those have already spoken for themselves, and "Done" after
+                // "Error" would be a lie.
+                //
+                // The MESSAGE is what finished, not the word "Done" again. A
+                // screen reader reads the title and then reads the box, title
+                // and all, so passing "Done" as both the category and the
+                // message made it say the word twice -- which is the very
+                // thing flushAnnouncements was written to avoid, and I walked
+                // straight into it.
+                if (iOne == 0)
+                {
+                    string sFinished = sSource.StartsWith("http") && sVideoTitle != ""
+                                     ? sVideoTitle : Path.GetFileName(sFull);
+                    announce("Done", -1.0, 1.0, sFinished == "" ? "That one is finished." : sFinished);
                 }
             }
             // Every one already done. Not a failure, but not a result either,
@@ -4913,20 +7940,41 @@ namespace Homer
                 string sVerOut = "";
                 string sVerErr = "";
                 runCommand(sYtDlp, "--version", out sVerOut, out sVerErr);
-                logMessage("  yt-dlp version " + (sVerOut + sVerErr).Trim(), "INFO", "");
+                int iDays = daysOldTool(sVerOut + sVerErr);
+                // Recorded, not complained about. Keeping yt-dlp current is the
+                // build's job, and telling somebody at run time about a thing
+                // they cannot act on there and then is noise.
+                logMessage("  yt-dlp version " + (sVerOut + sVerErr).Trim()
+                           + (iDays < 0 ? "" : ", " + counted(iDays, "day", "days") + " old"), "INFO", "");
             }
 
             bool bReady = true;
-            if (flag("transcribe") || (flag("describe") && flag("speech")))
+            // An archive of pictures has no sound in it, so a run over
+            // archives alone needs nothing that listens.
+            bool bPicturesOnly = true;
+            foreach (string sGiven in splitPaths(text("source-paths")))
+            {
+                if (!looksLikeArchive(sGiven)) bPicturesOnly = false;
+            }
+            if (bPicturesOnly && flag("transcribe"))
+                logMessage("These sources are archives of pictures, which have no sound. Transcribe audio does not apply to them.",
+                           "INFO", "Archives of pictures have no sound, so there is nothing to transcribe.");
+            if (!bPicturesOnly && (flag("transcribe") || (flag("describe") && flag("speech"))))
             {
                 string sWhisper = whisperProgram();
                 string sModel = whisperModelPath();
                 if (sWhisper != "" && sModel != "") logMessage("Whisper is in place: " + sWhisper, "INFO", "");
                 if (sWhisper == "" || sModel == "")
                 {
-                    logMessage("Whisper was not found. Run installWhisper.cmd in the program folder.", flag("transcribe") ? "ERROR" : "INFO",
-                               flag("transcribe") ? null : "");
-                    if (flag("transcribe")) bReady = false;
+                    // Transcribing no longer needs Whisper if the film carries
+                    // its own captions, so a missing Whisper only stops the run
+                    // when captions are turned off. A film that turns out to
+                    // have none is refused later, by name, with the reason.
+                    bool bFatal = flag("transcribe") && !flag("captions");
+                    logMessage("Whisper was not found. Run installWhisper.cmd in the program folder."
+                               + (bFatal ? "" : " A film carrying its own English captions can still be transcribed from those."),
+                               bFatal ? "ERROR" : "INFO", bFatal ? null : "");
+                    if (bFatal) bReady = false;
                 }
             }
             if (flag("describe"))
@@ -5250,14 +8298,25 @@ namespace Homer
 
         // What the page says about itself. yt-dlp already fetched this to
         // download the video, so no search is involved and nothing is guessed.
-        static string webPageContext(string sAddress)
+        // What the page says the video is: its title, who published it, and
+        // what they wrote about it. Asked once and kept, because two things
+        // want it -- the context sent to the model, and the heading of every
+        // document written. It used to be fetched only for the model and then
+        // thrown away.
+        static bool webMetadata(string sAddress)
         {
+            if (sAddress == "") return false;
+            if (sVideoAddress == sAddress && sVideoTitle != "") return true;
             string sYtDlp = findTool("yt-dlp");
-            if (sYtDlp == "") return "";
+            if (sYtDlp == "") return false;
             string sOut = "";
             string sErr = "";
-            int iCode = runCommand(sYtDlp, "--skip-download --no-playlist --dump-single-json " + quoted(sAddress), out sOut, out sErr);
-            if (iCode != 0 || sOut.Trim() == "") return "";
+            int iCode = runCommand(sYtDlp, "--skip-download --no-playlist" + quietly() + " --dump-single-json " + quoted(sAddress), out sOut, out sErr);
+            if (iCode != 0 || sOut.Trim() == "")
+            {
+                logMessage("The page would not say what the video is. yt-dlp said: " + tail(sErr, 200), "INFO", "");
+                return false;
+            }
             JavaScriptSerializer oSerializer = new JavaScriptSerializer();
             oSerializer.MaxJsonLength = int.MaxValue;
             Dictionary<string, object> dPage = null;
@@ -5268,18 +8327,92 @@ namespace Homer
             catch (Exception oError)
             {
                 logMessage("The page's own description could not be read: " + oError.Message, "INFO", "");
-                return "";
+                return false;
             }
-            StringBuilder oSaid = new StringBuilder();
-            if (dPage.ContainsKey("title")) oSaid.Append("This video is called \"" + Convert.ToString(dPage["title"]) + "\". ");
-            if (dPage.ContainsKey("uploader")) oSaid.Append("It was published by " + Convert.ToString(dPage["uploader"]) + ". ");
-            if (dPage.ContainsKey("description"))
+            sVideoAddress = sAddress;
+            if (dPage.ContainsKey("title")) sVideoTitle = Convert.ToString(dPage["title"]).Trim();
+            if (dPage.ContainsKey("uploader")) sVideoBy = Convert.ToString(dPage["uploader"]).Trim();
+            nVideoSeconds = 0.0;
+            if (dPage.ContainsKey("duration"))
             {
-                string sAbout = Regex.Replace(Convert.ToString(dPage["description"]), @"\s+", " ").Trim();
+                try
+                {
+                    nVideoSeconds = Convert.ToDouble(dPage["duration"]);
+                }
+                catch (Exception)
+                {
+                    nVideoSeconds = 0.0;
+                }
+            }
+            if (dPage.ContainsKey("description")) sVideoAbout = Regex.Replace(Convert.ToString(dPage["description"]), @"\s+", " ").Trim();
+            // What captions the video has, asked here rather than guessed at
+            // download time. "subtitles" holds what a person uploaded;
+            // "automatic_captions" holds what the machine made AND every
+            // translation of it, which is where the trouble came from.
+            lTracksWritten = new List<string>();
+            lTracksAuto = new List<string>();
+            try
+            {
+                if (dPage.ContainsKey("subtitles")) lTracksWritten = englishAmong(toMap(dPage["subtitles"]));
+                if (dPage.ContainsKey("automatic_captions")) lTracksAuto = englishAmong(toMap(dPage["automatic_captions"]));
+            }
+            catch (Exception oTrouble)
+            {
+                logMessage("The list of caption tracks could not be read: " + oTrouble.Message, "INFO", "");
+            }
+            logMessage("English caption tracks on the page: "
+                       + (lTracksWritten.Count == 0 ? "none written by a person" : string.Join(", ", lTracksWritten.ToArray()) + " written by a person")
+                       + "; "
+                       + (lTracksAuto.Count == 0 ? "none made automatically" : string.Join(", ", lTracksAuto.ToArray()) + " made automatically")
+                       + ".", "INFO", "");
+            logMessage("The page calls it \"" + sVideoTitle + "\""
+                       + (sVideoBy == "" ? "" : ", published by " + sVideoBy)
+                       + ", with " + counted(sVideoAbout == "" ? 0 : sVideoAbout.Split(' ').Length, "word", "words") + " about it.", "INFO", "");
+            return true;
+        }
+
+        // The English among a set of caption tracks, best first. "en" plainly
+        // is the one to want; a regional spelling will do; anything else in the
+        // list is not English at all and is left out.
+        static List<string> englishAmong(Dictionary<string, object> dTracks)
+        {
+            List<string> lFound = new List<string>();
+            List<string> lRest = new List<string>();
+            if (dTracks == null) return lFound;
+            foreach (string sKey in dTracks.Keys)
+            {
+                if (!englishTag(sKey)) continue;
+                if (string.Compare(sKey, "en", true) == 0) lFound.Add(sKey);
+                else lRest.Add(sKey);
+            }
+            lRest.Sort();
+            foreach (string sOne in lRest) lFound.Add(sOne);
+            return lFound;
+        }
+
+        // The one track to ask for, and whether a person wrote it. An empty
+        // name means the page named no English track at all.
+        static string trackToFetch(out bool bByHand)
+        {
+            bByHand = lTracksWritten.Count > 0;
+            List<string> lUse = bByHand ? lTracksWritten : lTracksAuto;
+            if (lUse.Count == 0) return "";
+            return lUse[0];
+        }
+
+        static string webPageContext(string sAddress)
+        {
+            if (!webMetadata(sAddress)) return "";
+            StringBuilder oSaid = new StringBuilder();
+            if (sVideoTitle != "") oSaid.Append("This video is called \"" + sVideoTitle + "\". ");
+            if (sVideoBy != "") oSaid.Append("It was published by " + sVideoBy + ". ");
+            if (sVideoAbout != "")
+            {
                 // The tail of a description is usually links and appeals to
                 // subscribe, which say nothing about what is on screen.
+                string sAbout = sVideoAbout;
                 if (sAbout.Length > 1200) sAbout = sAbout.Substring(0, 1200);
-                if (sAbout != "") oSaid.Append("Its own description reads: " + sAbout + " ");
+                oSaid.Append("Its own description reads: " + sAbout + " ");
             }
             string sContext = oSaid.ToString().Trim();
             if (sContext != "") logMessage("Context taken from the page itself, " + sContext.Split(' ').Length.ToString() + " words.",
@@ -5310,6 +8443,22 @@ namespace Homer
         static int runOne(string sInput, string sWebAddress)
         {
             string sFfmpeg = findTool("ffmpeg");
+            // What a video says about itself belongs to that video, and a run
+            // may cover many. These are cleared unless they were fetched for
+            // THIS address a moment ago in fetchFromWeb. Without this, a local
+            // file following a downloaded one inherited its title, publisher
+            // and description, and said so at the head of its documents.
+            if (sWebAddress != sVideoAddress)
+            {
+                sVideoTitle = "";
+                sVideoBy = "";
+                sVideoAbout = "";
+                sVideoAddress = sWebAddress;
+                lTracksWritten = new List<string>();
+                lTracksAuto = new List<string>();
+                nVideoSeconds = 0.0;
+            }
+            sCouldNotDescribe = "";
             if (!File.Exists(sInput))
             {
                 logMessage("The file was not found: " + sInput, "ERROR");
@@ -5440,10 +8589,15 @@ namespace Homer
                                              "INFO", "Starting clean: what the earlier run left has been removed.");
                 logMessage("The moments and the transcript held in memory from that record are discarded too.", "INFO", "");
             }
-            oFileLog = new StringBuilder();
+            // Opened in run() before the fetch, so that how the film was
+            // obtained is in its own log. Only made here if this is a local
+            // file that never went through run()'s fetch.
+            if (oFileLog == null) oFileLog = new StringBuilder();
             logMessage("Working files are under " + sWorkDir, "INFO", "");
             sSpeechWorkDir = sWorkDir;
             lFilmSpeech = new List<Speech>();
+            lCaptions = new List<Speech>();
+            sTranscriptFrom = "";
             bSpeechReady = false;
             sEstablished = "";
             iEstablishedAt = 0;
@@ -5512,32 +8666,102 @@ namespace Homer
                 if (nDuration <= 0.0) return 1;
             }
             logMessage("Duration: " + num(nDuration) + " seconds", "INFO", "Film runs " + formatClock(nDuration) + ".");
+            // A file that was not downloaded still often knows its own title,
+            // carried as a tag inside it. That belongs in the heading too.
+            if (sVideoTitle == "")
+            {
+                string sOwnTitle = titleOf(sFfmpeg, sInput);
+                if (sOwnTitle != "") sVideoTitle = sOwnTitle;
+            }
 
             // The transcript is wanted by both jobs: by transcribing, obviously,
             // and by describing, to know where the speech is. So it is made
             // once, before either.
-            if (bWantTranscribe || (bWantDescribe && flag("speech")))
+            // The film's own captions come first, because a person wrote them.
+            // They are the WORDS. They are not the map of where the speech
+            // falls: a cue is shown early and taken away late so that a reader
+            // can finish it, which is a different thing from when the words are
+            // said. So a run that describes still listens to the film, and uses
+            // what it hears for placement only.
+            // What this film IS, said once, before either job starts.
+            //
+            // The opening added in 1.0.173 is spoken INSIDE described.mkv, so
+            // it is only heard when the finished film is played, and only when
+            // describing was asked for. He was listening for it during the run
+            // and there was nothing: the last thing said was "Downloading",
+            // then a long silence, then progress figures.
+            StringBuilder oWhatItIs = new StringBuilder();
+            if (sVideoTitle != "") oWhatItIs.Append(sVideoTitle + ". ");
+            if (sVideoBy != "") oWhatItIs.Append("Published by " + sVideoBy + ". ");
+            if (nDuration > 0.0)
             {
+                int iMinutes = (int)Math.Round(nDuration / 60.0);
+                if (iMinutes >= 60)
+                {
+                    int iHours = iMinutes / 60;
+                    int iRest = iMinutes % 60;
+                    oWhatItIs.Append(counted(iHours, "hour", "hours"));
+                    if (iRest > 0) oWhatItIs.Append(" and " + counted(iRest, "minute", "minutes"));
+                    oWhatItIs.Append(" long.");
+                }
+                else if (iMinutes > 0) oWhatItIs.Append(counted(iMinutes, "minute", "minutes") + " long.");
+            }
+            if (oWhatItIs.Length > 0)
+                announce("Initializing", -1.0, 1.0, oWhatItIs.ToString().Trim());
+
+            if (bWantTranscribe) lCaptions = captionsFor(sFfmpeg, sInput, sWorkDir, out sTranscriptFrom);
+            // A person's captions are trusted over Whisper, as he asked. A
+            // machine's are not, because the two are not comparable: a person
+            // writes down who is speaking and what can be heard that is not
+            // speech -- a door, music starting, laughter -- and no machine
+            // produces the last of those. Automatic captions are the words and
+            // nothing else, with punctuation only where the recogniser guessed,
+            // and Whisper is at least as good at the words and better at the
+            // sentences. So the richer transcript is the one that listens.
+            if (lCaptions.Count > 0 && bCaptionsAuto && !flag("auto-captions"))
+            {
+                logMessage("These captions were made by a machine, not written by a person, so they carry no speaker "
+                           + "names and none of the sounds that are not speech. The film is listened to instead, "
+                           + "which gives better sentences. Pass --auto-captions yes to use them anyway.",
+                           "INFO", "");
+                lCaptions.Clear();
+                sTranscriptFrom = "";
+            }
+            bool bMustListen = (bWantDescribe && flag("speech")) || (bWantTranscribe && lCaptions.Count == 0);
+            if (bMustListen)
+            {
+                if (bWantDescribe && lCaptions.Count > 0)
+                    logMessage("The captions are the transcript. The film is still listened to, because where the speech falls "
+                               + "decides where a description can go, and a caption's timing says when it is shown rather than "
+                               + "when it is said.", "INFO", "");
                 sSpeechWorkDir = sWorkDir;
                 lFilmSpeech = transcribe(sFfmpeg, sInput, sWorkDir, nDuration);
                 bSpeechReady = true;
             }
+            else if (bWantTranscribe)
+            {
+                logMessage("The film's own captions are the transcript, so it does not have to be listened to at all.",
+                           "INFO", "Using the film's own captions, so there is nothing to listen to.");
+            }
             if (bWantTranscribe)
             {
-                if (lFilmSpeech.Count == 0)
+                List<Speech> lWords = lCaptions.Count > 0 ? lCaptions : lFilmSpeech;
+                if (lWords.Count == 0)
                 {
-                    logMessage("Nothing could be transcribed, so no transcript is written.", "ERROR");
+                    logMessage("Nothing could be transcribed: the film carries no English captions, and nothing was heard in it.", "ERROR");
                     if (!bWantDescribe) return 1;
                 }
                 else
                 {
-                    writeTranscript(lFilmSpeech, sTranscriptPath, Path.GetFileName(sInput), nDuration);
+                    string sHow = lCaptions.Count > 0 ? "passage of captions" : "spoken stretch";
+                    string sHowMany = lCaptions.Count > 0 ? "passages of captions" : "spoken stretches";
+                    writeTranscript(lWords, sTranscriptPath, Path.GetFileName(sInput), nDuration);
                     bTranscribed = true;
                     writeCache(new List<Moment>(), sJsonPathEarly(sWorkDir), false, null, null);
                     logMessage("Transcript written to " + sTranscriptPath,
-                               "INFO", "Transcript written: " + lFilmSpeech.Count.ToString() + " spoken stretches.");
+                               "INFO", "Transcript written: " + counted(lWords.Count, sHow, sHowMany) + ".");
                     if (!bWantDescribe) writeFileLog(sOutputDir);
-                    lResults.Add(Path.GetFileName(sInput) + ": transcript of " + lFilmSpeech.Count.ToString() + " spoken stretches"
+                    lResults.Add(Path.GetFileName(sInput) + ": transcript of " + counted(lWords.Count, sHow, sHowMany)
                                  + Environment.NewLine + "    " + sTranscriptPath);
                     sLastOutputFolder = sOutputDir;
                 }
@@ -5565,6 +8789,27 @@ namespace Homer
             List<Moment> lDone = new List<Moment>();
             List<string> lRecent = new List<string>();
             List<string> lNames = new List<string>();
+            // Whoever the captions name as speaking. Not who is on screen --
+            // see namesFromCaptions -- but the set of names this film uses, so
+            // that a name reached for is one the film actually has.
+            // The roster is NOT put into lNames any more. lNames is headed
+            // "Names you have already used in this film" and asks the model to
+            // match somebody against how one of them was DESCRIBED -- true of
+            // names it coined itself, meaningless for names off a caption
+            // track, and that mismatch is why thirty-nine names went unused.
+            lSpeakerRoster = namesFromCaptions(lCaptions);
+            // Logged from the roster itself. When the roster moved out of
+            // lNames in 1.0.178 this line was left reading lNames, so it
+            // stopped firing -- and six runs later there was no way to tell
+            // from a log whether the cast list had reached the model at all.
+            // Moving a thing and leaving its evidence behind is the same
+            // mistake as trusting an exit code.
+            if (lSpeakerRoster.Count > 0)
+                logMessage("The captions name " + counted(lSpeakerRoster.Count, "speaker", "speakers") + ": "
+                           + string.Join(", ", lSpeakerRoster.ToArray())
+                           + ". This is the film's cast list, given to the model as that. It is not a claim about "
+                           + "who is on screen at any moment.",
+                           "INFO", "The captions name " + counted(lSpeakerRoster.Count, "speaker", "speakers") + ".");
             // The presenter is a name in use from the first description, so it
             // stays consistent rather than being arrived at twice.
             string sPresenter = presenterIn(sContext);
@@ -5596,12 +8841,39 @@ namespace Homer
 
             if (flag("announce"))
             {
-                Moment oOpening = new Moment();
-                oOpening.nStart = 0.0;
-                oOpening.sText = "Audio description is on.";
-                oOpening.binAudio = speakToPcm(oOpening.sText, integer("rate"));
-                oOpening.nSpoken = pcmSeconds(oOpening.binAudio);
-                if (oOpening.binAudio.Length > 0) lDone.Add(oOpening);
+                // It used to say only "Audio description is on." He noticed
+                // that the film's own closing credits named the programme while
+                // nothing at the start did. The documents have opened with the
+                // title, the publisher and the running time since 1.0.150; the
+                // spoken opening never did, and a listener who starts a
+                // described film should be told what they are listening to.
+                StringBuilder oOpening = new StringBuilder();
+                if (sVideoTitle != "") oOpening.Append(sVideoTitle + ". ");
+                if (sVideoBy != "") oOpening.Append("Published by " + sVideoBy + ". ");
+                if (nDuration > 0.0)
+                {
+                    // Spoken as words, not as a clock. "One hour and
+                    // fifty-three minutes" is what a listener wants; "1:53:04"
+                    // is what a screen reader would spell out digit by digit.
+                    int iMinutes = (int)Math.Round(nDuration / 60.0);
+                    if (iMinutes >= 60)
+                    {
+                        int iHours = iMinutes / 60;
+                        int iRest = iMinutes % 60;
+                        oOpening.Append(counted(iHours, "hour", "hours"));
+                        if (iRest > 0) oOpening.Append(" and " + counted(iRest, "minute", "minutes"));
+                        oOpening.Append(" long. ");
+                    }
+                    else if (iMinutes > 0) oOpening.Append(counted(iMinutes, "minute", "minutes") + " long. ");
+                }
+                oOpening.Append("Audio description is on.");
+                Moment oSaid = new Moment();
+                oSaid.nStart = 0.0;
+                oSaid.sText = oOpening.ToString().Trim();
+                oSaid.binAudio = speakToPcm(oSaid.sText, integer("rate"));
+                oSaid.nSpoken = pcmSeconds(oSaid.binAudio);
+                logMessage("The film opens by saying: " + oSaid.sText, "INFO", "");
+                if (oSaid.binAudio.Length > 0) lDone.Add(oSaid);
             }
 
             // Two montage files used alternately: the one being looked at is
@@ -5616,6 +8888,15 @@ namespace Homer
                 if (integer("max-words") > 0 && iMaxWords > integer("max-words")) iMaxWords = integer("max-words");
                 nWaitingAt = oGap.nStart;
                 string sJustSaid = spokenBefore(lFilmSpeech, oGap.nStart);
+                // The captions know who was talking; Whisper does not. This is
+                // handed to the prompt as its own thing rather than glued onto
+                // the end of the dialogue, where it read as part of what was
+                // said.
+                string sWhoAbout = spokeAround(lCaptions, oGap.nStart);
+                sSpeakerNear = sWhoAbout;
+                if (sWhoAbout != "")
+                    logMessage("  The captions have " + sWhoAbout + " speaking around " + formatClock(oGap.nStart) + ".",
+                               "INFO", "");
                 if (sJustSaid.Length > 600) sJustSaid = sJustSaid.Substring(sJustSaid.Length - 600);
                 string sText = "";
                 bool bNewScene = false;
@@ -6013,9 +9294,10 @@ namespace Homer
             writeCache(lDone, Path.Combine(sWorkDir, sDefaultJsonName), true, lLastGaps, dLastSignature);
             // Both jobs done, so the film can be given whole: what was said and
             // what was there to be seen, in one sequence.
-            if (flag("transcribe") && lFilmSpeech.Count > 0 && lDone.Count > 0)
+            List<Speech> lBothWords = lCaptions.Count > 0 ? lCaptions : lFilmSpeech;
+            if (flag("transcribe") && lBothWords.Count > 0 && lDone.Count > 0)
             {
-                writeScribed(lDone, lFilmSpeech, Path.Combine(sOutputDir, sDefaultBothName), Path.GetFileName(sInput), nDuration);
+                writeScribed(lDone, lBothWords, Path.Combine(sOutputDir, sDefaultBothName), Path.GetFileName(sInput), nDuration);
                 logMessage("Described and transcribed together in " + Path.Combine(sOutputDir, sDefaultBothName),
                            "INFO", "Wrote the interleaved account as well.");
             }

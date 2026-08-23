@@ -184,6 +184,67 @@ predecessors until one reached 32,587 characters, which a screen reader spends
 minutes reading and which made a working program look stopped. And nothing spoken
 may exceed 1,500 characters, whatever else goes wrong.
 
+## Captions, and the one thing they must not touch
+
+`lFilmSpeech` used to serve two jobs at once, and the two are not the same job.
+
+- **The words.** `writeTranscript` turns them into `transcribed.md`.
+- **The map of where the speech falls.** `gapsFromSpeech`, `quietestWithin`,
+  `overlapsSpeech` and `settleSpacing` all read it to decide where a description
+  can be heard.
+
+Captions can do the first and must never do the second. A cue goes up early and
+comes down late so that a reader can finish it, and `joinCaptions` merges close
+cues further still. Hand those timings to the placement rule and the measured
+quiet shrinks and shifts. Nothing would report it: the overlap figure would look
+the same, because it would be measured against the same wrong map. It would show
+up only as a listener losing dialogue.
+
+So there are two lists, deliberately:
+
+- `lCaptions` — the words, when the film has usable English captions.
+- `lFilmSpeech` — Whisper's stretches, always the map, never written out when
+  captions exist.
+
+`bMustListen` in `runOne` is the whole rule: listen when describing, or when
+transcribing without captions. Transcribing alone, with captions, skips Whisper
+entirely and the run is minutes shorter.
+
+### The route in
+
+`captionsFor` tries a subtitle track inside the film first
+(`captionsInFilm`, `ffprobe -select_streams s` for the languages, then
+`ffmpeg -map 0:s:N -c:s srt`), then a file beside it (`captionsBeside`). A
+bitmap track fails the srt conversion and falls through to Whisper, which is the
+right answer, since reading pictures of words is a different job.
+
+`readCaptions` handles SRT and WebVTT with one reader, since they differ only in
+the separator and some decoration. Note that it **keeps** a cue that is nothing
+but brackets, where `readTranscript` drops one: from Whisper `[Music]` is an
+artefact, and from a caption file it is a person writing down a sound on purpose.
+
+### Rolling, and the bug that is worth remembering
+
+A rolling track is recognised by `looksAutomatic`, which tests for the per-word
+timing tag YouTube puts in its automatic captions. That is a surer test than the
+file's name, which yt-dlp does not reliably distinguish.
+
+The first version of the merge compared each cue with the one before and asked
+whether the OLD contained the NEW. A rolling caption grows the other way round —
+cue two holds all of cue one and more — so nothing ever matched, and the
+fallback stuck the two together. Every line came out twice.
+
+It was found because the logic was ported to Python and run against a real
+automatic track before anybody believed it. It is exactly mistake 3 in
+`Review.md`, testing against your own belief, and the only thing that caught it
+was testing against something real instead.
+
+`joinRolling` replaced it, and asks a different question. Not "how do these two
+cues compare" but "which words have not been written down yet": it keeps a tail
+of what has already been emitted and adds only the part of each cue that is new.
+`overlapLength` finds the shared join, and refuses a short accidental match — a
+partial overlap must be twelve characters or more and must end where a word ends.
+
 ## Naming the presenter
 
 A vision model cannot recognise a face, so telling it that a film was "written
@@ -193,6 +254,103 @@ the one inference a documentary makes safe: whoever addresses the viewer is the
 presenter. The name is seeded into the names carried between descriptions so it
 holds from the first. Measured effect: 53 of 94 descriptions named him, against
 none before.
+
+## Keeping yt-dlp current
+
+`buildHomerScribe.cmd` runs `yt-dlp --update-to nightly` on every build, after
+the fetch-if-missing step. It is deliberately not allowed to fail the build:
+no network, or a copy under Program Files that cannot rewrite itself, and the
+build carries on with what is there.
+
+Nightly rather than stable because yt-dlp says so — it is the channel it
+recommends for regular users, and the one it asks people to be on before
+reporting a fault. YouTube breaks downloaders on its own schedule and the fixes
+land on nightly first.
+
+At run time HomerScribe says nothing about yt-dlp's age. It records the version
+and the age in the log and leaves it there. Every yt-dlp call carries
+`--no-update` so that yt-dlp's own ninety-day complaint stays off the console,
+which is carrying progress a listener is following. The only calls without it
+are the update itself and `--version`.
+
+## How many times YouTube is asked
+
+`fetchFromWeb` on the describe path issues exactly two yt-dlp commands before
+any media is touched -- `--print` for the title and filename, then the
+download. It briefly issued three, from 1.0.147 to 1.0.152, because
+`webMetadata` was called at the top of the function for the sake of the
+document heading. Every download since 1.0.147 has met a 403 on the media
+stream.
+
+Whether that is cause or coincidence is still unproven, and `ytCheck.py`'s
+first three trials exist to prove it either way. But the ordering is right on
+its own merits: ask for the page's details when the answer changes what happens
+next, which is when a transcript alone is wanted and the caption tracks decide
+whether the film is needed. Otherwise ask afterwards.
+
+**Do not move `webMetadata` back to the top of `fetchFromWeb`.**
+
+## What the video says about itself
+
+`webMetadata` asks yt-dlp once, with `--dump-single-json`, and keeps the title,
+the publisher and the page's own description in four statics. Two things want
+them, and only one was getting them: `webPageContext` builds the model's context
+from them, and `writeVideoHeading` now puts them at the head of every document.
+Before this they were fetched, used for the context and thrown away.
+
+It is called from `fetchFromWeb` whether or not `--web-context` was asked for,
+because a heading should say what the film is even when the model was told
+nothing. A local file falls back to its own title tag, through `titleOf`.
+
+The statics belong to one video and a run may cover many, so `runOne` clears
+them unless they were fetched for this same address a moment before. That was
+written here before it was written in the code, and the mistake survived a
+whole release: a local file following a downloaded one headed its documents
+with the downloaded one's title. Saying a thing is handled is not handling it.
+
+`webMetadata` also keeps the English caption track names, split as the page
+splits them -- `lTracksWritten` from "subtitles", `lTracksAuto` from
+"automatic_captions". `trackToFetch` picks ONE, preferring a person's, and that
+one name is what `--sub-langs` is given. It used to be given `en.*`, which
+yt-dlp reads as a regular expression, and which matches every translation out
+of English. That fetched sixty-six tracks from one video and earned a 429 that
+took the whole run down with it. The address is written as a Markdown link with the
+title as its text, never bare: a screen reader reads a bare address one
+character at a time.
+
+## Writing the three documents
+
+`writeMarkdown`, `writeTranscript` and `writeScribed` share `writeHead`,
+`sectionTitle`, `wantsSections`, `tidyDescription` and `saidAs`. The rules they
+follow are the W3C Web Accessibility Initiative's, at
+[Transcripts](https://www.w3.org/WAI/media/av/transcripts/), and the reasoning
+is in the History entry for 1.0.150 rather than repeated in the code.
+
+The two that are easy to get wrong again:
+
+- **`wantsSections` is two chapters, not one.** A film with a single section
+  heading has gained nothing and lost the plain start. Twenty minutes is the
+  floor.
+- **`endsSentence` governs where a passage may end**, in `joinCaptions` and
+  `joinRolling` both. `iDefaultParagraph` is where a passage WANTS to stop and
+  `iDefaultParagraphMost` is where it must. Between them it is waiting for a
+  full stop. Remove that and paragraphs break mid-clause, which was invisible
+  when every line carried a timestamp and is glaring in prose.
+
+`tidyDescription` drops any sentence carrying a web address, plus the usual
+appeals and permission notices, then trims back to the last full stop so the
+result never ends on somebody else's truncation. Under twelve words left and it
+returns nothing, which drops the whole section.
+
+Two traps in it, both hit on the first real run:
+
+- **The sentence splitter breaks at the stop inside "e.g."** and leaves a
+  fragment that passes every end-of-sentence test, because it does end with a
+  full stop. `endsAbbreviation` exists for this, and a piece broken that way is
+  joined back on to the one before it.
+- **The trim-back loop must search from BEFORE the last character.** Ending on
+  "e.g." the stop being complained about is the last character, so searching
+  from the end finds it again, sets the same length, and never terminates.
 
 ## Where things live
 

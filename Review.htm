@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>HomerScribe — What went wrong, and what stops it happening again</title>
+  <title>HomerScribe Review</title>
   <style>
     html {
       color: #1a1a1a;
@@ -163,21 +163,25 @@
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
-  <style>
-  body { font-family: Georgia, serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
-  code, pre { font-family: Consolas, monospace; }
-  pre { background: #f4f4f4; padding: 0.75em; overflow-x: auto; }
-  table { border-collapse: collapse; }
-  th, td { border: 1px solid #999; padding: 0.3em 0.6em; text-align: left; }
-  </style>
 </head>
 <body>
+<header id="title-block-header">
+<h1 class="title">HomerScribe Review</h1>
+</header>
 <nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#what-went-wrong-and-what-stops-it-happening-again"
 id="toc-what-went-wrong-and-what-stops-it-happening-again">What went
 wrong, and what stops it happening again</a>
 <ul>
+<li><a href="#what-the-runs-show-as-of-22-august-2026"
+id="toc-what-the-runs-show-as-of-22-august-2026">What the runs show, as
+of 22 August 2026</a>
+<ul>
+<li><a href="#a-logging-failure-worth-remembering"
+id="toc-a-logging-failure-worth-remembering">A logging failure worth
+remembering</a></li>
+</ul></li>
 <li><a href="#the-shape-of-the-problem"
 id="toc-the-shape-of-the-problem">The shape of the problem</a></li>
 <li><a
@@ -197,6 +201,9 @@ instead of the outcome</a></li>
 href="#confusing-what-the-program-knows-with-what-the-person-was-told"
 id="toc-confusing-what-the-program-knows-with-what-the-person-was-told">5.
 Confusing what the program knows with what the person was told</a></li>
+<li><a href="#the-test-that-was-actually-run-for-once"
+id="toc-the-test-that-was-actually-run-for-once">6. The test that was
+actually run, for once</a></li>
 <li><a href="#what-the-field-does-and-where-this-differed"
 id="toc-what-the-field-does-and-where-this-differed">What the field
 does, and where this differed</a></li>
@@ -211,6 +218,43 @@ wrong, and what stops it happening again</h1>
 changes that each looked correct and several of which were not. It is
 here rather than in a message because the next person to work on this,
 including me, needs it.</p>
+<h2 id="what-the-runs-show-as-of-22-august-2026">What the runs show, as
+of 22 August 2026</h2>
+<p>Measured from the logs rather than judged by eye.</p>
+<p><strong>Transcription is better where a person wrote the
+captions</strong>, and that is now the only case where captions are used
+at all. A person’s caption track carries the words, who is speaking, and
+the sounds that are not speech; a machine’s carries the words alone,
+punctuated where the recogniser guessed. Since 1.0.177 a machine-made
+track is passed over and the film is listened to instead, which gives
+better sentences. The transcript records which it was, every time.</p>
+<p><strong>Descriptions are not yet better for it, and that must not be
+claimed.</strong> Across every run to date, no speaker name from a
+caption track has appeared in any description. Two reasons, both found
+by reading logs rather than by reasoning about them:</p>
+<ul>
+<li>Until 1.0.178 the cast list was handed to the model inside a
+paragraph headed “Names you have already used in this film”, which is
+meaningless for a name the model had never used. It is now given as what
+it is.</li>
+<li>Until 1.0.179 the nearby-speaker hint included NARRATOR, and a
+narrator is never in shot. Nearly every hint carried one, turning the
+useful single-name case into a three-name guess. On the eleven real
+hints of 22 August, filtering narrators and other non-people takes the
+hints naming exactly one person from one in eleven to three in
+eleven.</li>
+</ul>
+<p>Whether that is enough to put a name into a description is open, and
+a run of a documentary with named speakers will answer it. <strong>Until
+a log shows it, the announcement does not say it.</strong></p>
+<h3 id="a-logging-failure-worth-remembering">A logging failure worth
+remembering</h3>
+<p>Moving the cast list out of <code>lNames</code> in 1.0.178 left its
+log line still reading <code>lNames</code>, so it stopped firing. Six
+runs later there was no way to tell from a log whether the cast list had
+reached the model at all. <strong>Moving a thing and leaving its
+evidence behind is the same mistake as trusting an exit code</strong>,
+and it cost a whole round of testing.</p>
 <h2 id="the-shape-of-the-problem">The shape of the problem</h2>
 <p>Between the merge into HomerScribe and version 1.0.113 there were
 roughly seventy changes. Most were sound. But a recognisable minority
@@ -282,6 +326,21 @@ needed it.</p>
 fixed set of announced outcomes — described, Skipped, Resuming, Error,
 Rejected — and anything that could not be used is named in the results
 with its reason. A silent ending is now a bug by definition.</p>
+<h2 id="the-test-that-was-actually-run-for-once">6. The test that was
+actually run, for once</h2>
+<p>The rolling-caption merge in 1.0.147 was wrong when it was written,
+and it was wrong in the way that would have been hardest to see
+afterwards: it produced plausible prose with every phrase in it twice.
+In a two-hour lecture nobody would have read far enough to notice, and
+the transcript would simply have been poor.</p>
+<p>What caught it was porting the logic to Python and running it against
+a real automatic caption track before claiming it worked, rather than
+reading it over and finding it convincing. It took a minute. The bug was
+in the first output.</p>
+<p>This is mistake 3 inverted. Mistake 3 was writing a test that carried
+the same wrong picture as the code, because both came from the same
+head. The defence is not more careful thinking; it is a sample that came
+from somewhere else.</p>
 <h2 id="what-the-field-does-and-where-this-differed">What the field
 does, and where this differed</h2>
 <p>Reviewing the published work was worth doing, and one finding

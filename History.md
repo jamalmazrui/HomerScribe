@@ -1,5 +1,1151 @@
 ﻿# HomerScribe History
 
+## 1.0.182, 22 August 2026
+
+- **`License.md` now names HomerScribe and its author**, which it did not. It
+  opened with a bare "# License" and the MIT text, and the only place the
+  program appeared was the copyright line.
+- It now opens by saying that **HomerScribe was written by Jamal Mazrui, its
+  author and developer**, and is released under the MIT License, followed by a
+  plain-English summary: use it, change it, sell it, keep the notice, no
+  warranty.
+- **The MIT text itself is untouched, word for word**, and the file says so and
+  says why: it is left exactly as it is written everywhere else so that a
+  person, a legal team, or a program that scans for licenses recognises it at
+  once. Rewriting a standard license to mention your own program is how a
+  standard license stops being one. A line above it explains that where the
+  text says "the Software" it means HomerScribe — the program, its source, and
+  the documents that come with it.
+- Checked before delivery by normalising the whitespace and comparing the body
+  against the canonical MIT wording: identical.
+
+## 1.0.181, 22 August 2026
+
+- **`Announce.md` rewritten to announce the CHANGES rather than the program.**
+  It had grown by having new sections added to an announcement of the whole
+  thing, so the two new features sat second and third of nine headings. For a
+  post telling people what is new, that is the wrong shape. It now opens with
+  the pictures, then the captions, then the honest limits, and it is 1,018
+  words rather than 1,700.
+- **Reading level measured rather than assumed.** Flesch-Kincaid across the
+  documentation set: `Announce.md` was already 7.6 and is now **6.0**;
+  `ReadMe.md` 8.5, `HomerScribe.md` 8.0, `Hotkeys.md` 2.9, `History.md` 8.2,
+  `Developer.md` 8.3. So nothing was above ninth grade to begin with; what
+  needed fixing was the framing, not the words.
+- The tone is deliberately humble: it says plainly that trying to improve
+  descriptions with caption speaker names **has not worked yet**, that
+  description is the weaker half, and that none of this replaces a described
+  version made by people who do it for a living.
+- Every claim in it was checked against the source before delivery — eleven of
+  them, each traced to the function that does the thing.
+
+## 1.0.180, 22 August 2026
+
+The documentation is now laid out the way Jamal wants every Homer Tools app
+documented, which he set down today as a standing preference rather than a
+one-off request.
+
+- **`ReadMe.md` is now the short way in**: what HomerScribe is, what you need,
+  how to install it, a Quick Start, and a list of where everything else lives.
+  It was 1,440 lines and is now under 200.
+- **`HomerScribe.md` is new — the complete guide.** Every setting, every
+  document it writes, what it does with captions and with pictures, and what to
+  do when something goes wrong. That is the 31 sections that used to make
+  `ReadMe.md` unreadable as an introduction.
+- **`Hotkeys.md` is new**, listing every key three ways: by what you want to
+  do, by where you are when you press it, and by the key itself. Built from the
+  actual bindings in the source rather than from memory — the twelve `Alt`
+  access keys in the dialog, and the editing, reading and navigation keys the
+  accessible dialog provides.
+- **Every `.md` now has a matching `.htm`**, made with Pandoc, with a table of
+  contents and a real page title. Nine of each.
+- The installer packages `HomerScribe.md`, `Hotkeys.md` and `video_formats.md`
+  along with their `.htm` companions.
+
+## 1.0.179, 22 August 2026
+
+Two faults his four new runs exposed, one of them mine from yesterday.
+
+- **The nearby-speaker hint fired for the first time — and carried NARRATOR.**
+  His logs read *"GPS and FORTIER and NARRATOR speaking around 22:02"*. A
+  narrator is never in shot, and GPS is not a person at all. `spokeAround` was
+  taking any speaker label, while the cast list applied a filter that rejects
+  exactly those. Nearly every hint carried a narrator, turning the useful
+  single-name case into a three-name guess. **The same filter now applies to
+  both.** On his eleven real hints that takes the ones naming exactly one
+  person from one in eleven to three in eleven.
+- **The cast list stopped being logged**, because when it moved out of `lNames`
+  in 1.0.178 its log line was left reading `lNames`. Six runs later there was
+  no way to tell from a log whether it had reached the model at all. Moving a
+  thing and leaving its evidence behind is the same mistake as trusting an exit
+  code. It now logs from the roster itself.
+- `Announce.md` gains the **Windows installer** and **Project on GitHub** links
+  at the top as well as at the foot, and says plainly that captions a person
+  wrote are used while captions a machine made are not.
+- `Review.md` gains a measured account of what the runs show: transcription is
+  better for the caption work, descriptions are not yet, and the announcement
+  says only the first.
+
+## 1.0.178, 22 August 2026
+
+He asked why speaker names from a person's captions were not adding value, and
+he was right to. My previous answer — that names without appearances cannot be
+attached to faces — was true as far as it went and beside the point. **The
+names were never offered to the model as names.**
+
+- The roster was poured into `lNames`, which the prompt renders as *"Names you
+  have already used in this film"*, followed by *"if somebody here matches how
+  one of those was DESCRIBED, use that name again"*.
+- That paragraph is for CONTINUITY: names the model coined itself, whose
+  appearance it knows from its own earlier sentences. For a name off a caption
+  track none of it holds — the model has never used it and there is no earlier
+  description to match against, so the instruction is unanswerable. Handed a
+  list labelled as its own prior work when it had done no such work, the model
+  did the only sensible thing: nothing.
+- **The roster now has its own paragraph**, saying what it is: the film's cast
+  list, spelled as its makers spell it, which does NOT say who is in this shot.
+  A name is to be used only where the model can actually tell — because it was
+  told what that person looks like, or because the picture itself says so, such
+  as an on-screen caption naming them. Never because a name is the only one
+  left.
+- **Whoever spoke near the moment is now its own paragraph too**, and last,
+  because a model weighs the end of a prompt most. It is the one piece of
+  caption evidence tied to this moment rather than to the film as a whole:
+  where exactly one person is named there and exactly one person is in shot,
+  saying who it is will usually be right.
+- **That was being looked for in the dialogue window**, twenty-five seconds,
+  which is sized for quoting the line just spoken so a description does not
+  repeat it. "Who is in this scene" is a scene-sized question, so it has its own
+  setting, `--speaker-window`, at two minutes either way. More than three names
+  in the window and nothing is said at all: a dozen is a cast list, and offering
+  one invites the guessing the prompt forbids.
+- Being straight about which of these is proven: **the mislabelling is a
+  definite bug with a definite fix**. The window is a reasoned adjustment whose
+  effect is not yet demonstrated — the five description moments in his NOVA
+  film had caption cues nearby at any window size, so what was missing was a
+  cue that named somebody, not a cue. The new log line — *the captions have X
+  speaking around 3:16* — makes the next run answer it.
+- New behaviours: `roster-named-as-a-cast-list`, `speaker-window-scene-sized`.
+
+## 1.0.177, 22 August 2026
+
+- **"Done" was spoken twice**, and the reason is in a comment I wrote myself in
+  `flushAnnouncements`: a screen reader reads a dialog's title, then reads the
+  dialog — title and all — when focus lands on it, so anything in the title is
+  heard twice. The title is the CATEGORY. I passed "Done" as the category AND
+  "Done" as the message, walking straight into the thing that comment exists to
+  prevent. **The message is now what finished** — "Done. Introduction to Web
+  Accessibility" — which is the useful half anyway.
+- **Nothing said what the film was before the work began.** The opening added
+  in 1.0.173 is spoken INSIDE `described.mkv`, so it is only heard when the
+  finished film is played, and only when describing was asked for at all. He
+  was listening for it during the run, where the last thing said was
+  "Downloading" and then a long silence. **The title, the publisher and the
+  running time are now announced once**, when the film is in hand and before
+  either job starts.
+- **Captions a person wrote are now trusted over Whisper; captions a machine
+  made are not.** He asked whether the two can be told apart. They can, and
+  HomerScribe always could — `looksAutomatic` decides from per-word timing tags
+  and from cues that roll up the screen repeating the line before, and his logs
+  have been saying "written by a person" or "made automatically" all along.
+  What it did not do was act on the difference: any captions at all displaced
+  Whisper.
+- The two are not comparable. **A person's captions carry the words, who says
+  them, and the sounds that are not speech** — a door, music starting,
+  laughter. No machine produces that last part, and it is the one a deafblind
+  reader cannot get any other way. **A machine's captions are the words and
+  nothing else**, with punctuation only where the recogniser guessed, and
+  Whisper is at least as good at the words and better at the sentences. So for
+  a machine-made track the richer transcript is the one that listens.
+- `--auto-captions` (default no) accepts them anyway. `--captions` is unchanged.
+- New behaviours: `film-announced-before-work`, `person-captions-only`.
+
+## 1.0.176, 22 August 2026
+
+- **`descriptions.md` is now `described.md`**, matching `described.mkv`. It was
+  the odd one out among the documents.
+- **There is one in the output folder and one inside the archive**, and they
+  are not copies of each other. The folder holds the pictures under their
+  original names and the archive holds them under their new ones, so each
+  document lists its own copies by the names they actually carry there.
+- **The content is now what is IN each picture, not what HomerScribe put
+  there.** A heading per file, then every field that has a value, sorted by
+  field name without regard to case, with the group each field belongs to in
+  brackets so a bare name like `Description` tells you where it lives.
+- Anything that was already in the file is listed beside what HomerScribe
+  wrote — the camera, the date, the lens, somebody else's caption — because the
+  question a reader has is what this file says about itself, not what this
+  program did to it.
+- **Read back out of the finished files with ExifTool**, not assembled from
+  what was sent to them. Same reason as the counts: what was sent is a hope,
+  what reads back is the fact. This is now true of every figure and every
+  field HomerScribe reports about a picture.
+- The `System` and `ExifTool` groups are left out: file dates, permissions and
+  the folder a file happens to sit in belong to the disk rather than the
+  picture, and they change every time it is copied.
+- The old report is gone, and with it `metadataStanding`, which existed only to
+  phrase a line in it. The descriptions themselves are not lost — they are in
+  the files, in `ImageDescription` and `Caption-Abstract` and the rest, which
+  is where they were wanted and where the new document reads them from. What
+  that document cannot show is the things that never became pictures, so the
+  notes and the passed-over files are named in a short closing section.
+- New behaviours: `described-md-in-both-places`, `fields-read-back-not-assumed`.
+
+## 1.0.175, 22 August 2026
+
+He asked whether captions improved the descriptions. The 08:20 run is the first
+that can answer it: 39 speakers in the roster, and five descriptions placed.
+
+- **The answer is no, and now it is measured rather than argued.** Not one of
+  the real names — Susana Martinez-Conde, Thalia Wheatley, Anil Seth and the
+  rest — appears in any of the five descriptions.
+- **The only roster entries that did appear were MAN and WOMAN**, which the
+  descriptions would have used anyway. That is a bug, not a result. Subtitles
+  for the deaf label an unidentified speaker by what they are: MAN, WOMAN,
+  MAN 2, SECOND WOMAN, REPORTER. Those were going into the roster as though
+  they were people's names, which tells the model that "MAN" is a name this
+  film uses and invites it to read a generic word as an identification. They
+  are now kept out, along with roles like HOST, DOCTOR and COMPUTER. On his own
+  NOVA roster that removes seven entries and keeps twelve.
+- **Why the real names went unused is the thing I predicted and can now show.**
+  A roster says who exists. It says nothing about what any of them looks like,
+  so the model has no way to attach a name to a face — and it correctly
+  declines to guess, because it is told not to. The captions supply the WHO;
+  only a context file supplies the WHAT THEY LOOK LIKE; a name gets used where
+  the two meet, and here only one of the two was present.
+- **The nearby-speaker hint fired zero times**, which is also explicable rather
+  than broken. NOVA is wall-to-wall narration: five descriptions in
+  fifty-four minutes, each placed in one of the rare silences. A labelled
+  caption cue was never close enough to one of those silences to fall inside
+  the dialogue window.
+- The new spoken opening worked: *"Your Brain: Who's in Control? | Full
+  Documentary | NOVA | PBS. Published by NOVA PBS Official. 54 minutes long.
+  Audio description is on."*
+
+## 1.0.174, 22 August 2026
+
+The format test ran properly this time, and the log answered two questions
+without anybody having to look.
+
+- **The accessibility fields work on his 2019 ExifTool.** The self test picked
+  the TIFF this time rather than the BMP, and the log shows both fields NOT
+  written when asked plainly, then both written with the definitions supplied.
+  `IPTC:Caption-Abstract` also reads as written, which confirms the punctuation
+  fix in 1.0.172.
+- **ExifTool 11.79 cannot write WebP at all**: *Writing of WEBP files is not
+  yet supported*. WebP writing came long after that version. So one of my
+  format lists was wrong for this copy — and the honest fix is not to correct a
+  list, because which formats can be written depends on the version in use.
+  **HomerScribe now learns it from ExifTool during the run**: a picture refused
+  that way is counted as a format with nowhere to put a description, exactly as
+  a BMP is, rather than reported as a failure. The log says so and adds that a
+  newer ExifTool may manage it.
+- **Names were still being cut mid-phrase.** "A bright yellow sun rises behind
+  two dark green triangular hills against a" stops in the middle of a thing.
+  Cutting at the last space before the limit is not enough — wherever the cut
+  lands, the last word has to be one that can end a phrase. The backing-off
+  that `trimToPhrase` already did is now shared with the length cut in
+  `friendlyName`, so no route to a name can leave a dangling article or
+  preposition. That one becomes "...two dark green triangular hills", and the
+  other two test names come out at 75 and 76 characters.
+- The rest of the format test passed as predicted: 4 pictures, 2 notes and 1
+  other file; the SVG named as a drawing; both notes found and used; the
+  camera-junk GIF name correctly yielding no context.
+
+## 1.0.173, 22 August 2026
+
+Six things his two runs turned up. Three of the four predictions for
+`test.zip` were right; the fourth was not, and the metadata result was a false
+alarm caused by my own test.
+
+- **The self test picked the wrong picture.** It used the first in the archive,
+  and in `test.zip` that is a BMP — a format ExifTool refuses outright:
+  *Writing of BMP files is not yet supported*. So every field came back NOT
+  written and it announced that the accessibility definitions had failed, when
+  the same definitions had worked perfectly on a JPEG an hour earlier. **It now
+  picks the first picture whose format can hold the full set**, and says so
+  where none can. Nothing was ever wrong with the writing.
+- **The camera-junk name got through**: `IMG_20240115_WA0042.gif` was offered to
+  the model as context. Same trap as the housekeeping words a day earlier, one
+  step earlier in the same function — the camera pattern ran while the
+  underscores were still there, and `_` is a word character, so
+  `\bIMG[\s_-]?\d+\b` cannot match across `IMG_20240115_`. **Separators are now
+  normalised before any pattern looks at the name**, which is where that line
+  should have been from the start. Five camera forms added to the checks.
+- **And twenty of the forty-nine names mostly repeated the file's existing
+  name**, which is the real answer to why so little looked renamed.
+  `Jamal_Mazrui_signature.jpg` became "Jamal Mazrui Signature" — tidier, and
+  saying nothing new. The cause is the file-name context added in 1.0.163: the
+  file name is handed to the model as authoritative, and the model hands it
+  straight back as the name.
+- Replacing such a name with the description would lose the names, and the
+  names are the one part no model could have worked out. So a short name is
+  now **kept and extended**: "Jamal Mazrui Signature, handwritten signature on
+  a white sheet of paper". The prompt also says outright not to give back the
+  name the file already has — use its people and places, but say what is
+  visible.
+- **The names were too short** — 21 to 25 characters against an allowance of 79,
+  and he was right to say so. Two changes. The prompt now asks for **eight to
+  fourteen words** rather than naming a character ceiling, because a ceiling is
+  permission to stop rather than something to aim at. And where an answer comes
+  back in fewer than five words, the name is taken from the description
+  instead, cut at a phrase rather than a word count — `trimToPhrase` prefers a
+  comma and backs off any trailing joining word, so a name no longer ends "in a
+  pale blue". On his four test pictures that turns 21–25 characters into 50–68.
+- **The spoken opening now names the film.** It has always said only "Audio
+  description is on." He noticed the film's own closing credits named NOVA
+  while nothing at the start did. The documents have opened with the title, the
+  publisher and the running time since 1.0.150; the spoken opening never did.
+  It now gives the title, who published it, and how long it runs — the running
+  time in words, since a clock reading would be spelt out digit by digit.
+- **"Done" between one source and the next.** After a long silent stretch the
+  only signal was the next "Processing" line, which says a new thing has begun
+  without ever saying the last one ended. Not said where a source failed or was
+  skipped: those have spoken for themselves, and "Done" after "Error" would be
+  a lie.
+- **The first field's text is selected when the dialog opens.** Windows
+  convention for a data entry field, and Microsoft's own guidance: highlighting
+  the value lets you type or paste over it, or press Tab to leave it alone.
+  WinForms does this when a box is reached by Tab but not when it is simply
+  made the active control before the form opens, which is how this one starts —
+  so it is done explicitly, on Shown, and only for an editable box with
+  something in it.
+- **Two counts of the same thing disagreed**: the results box said "2 of a kind
+  that cannot hold one" while the log said "1 of a kind with nowhere to put
+  one". A GIF is neither — it holds a plain comment — and only formats with
+  nowhere at all belong in that figure. Counted once now.
+- The rest of the format test passed: 4 pictures, 2 notes and 1 other file; the
+  SVG named as a drawing rather than passed over as junk; both notes found.
+- **And the caption speaker roster fired for the first time**, on the NOVA
+  films: *The captions name 38 speakers* on one and 26 on the other.
+- New behaviours: `opening-names-the-film`, `fuller-picture-names`,
+  `done-between-sources`, `source-box-selected`.
+
+## 1.0.172, 22 August 2026
+
+- **It works, and on his 2019 copy.** The self test settled the question it was
+  built for. ExifTool 11.79, asked plainly, refuses both accessibility fields:
+
+      XMP-iptcCore:AltTextAccessibility: NOT written
+      XMP-iptcCore:ExtDescrAccessibility: NOT written
+
+  Given HomerScribe's own definitions with `-config`, the same copy writes them:
+
+      XMP-iptcCore:AltTextAccessibility: written
+      XMP-iptcCore:ExtDescrAccessibility: written
+
+  And the run finished **49 pictures described, 49 carrying their descriptions,
+  49 of them in the IPTC accessibility fields**, counted by reading the files
+  back rather than by trusting an exit code. He was right that a current
+  ExifTool was not needed, and the version requirement is gone for good.
+- The single-file rule held too. The log shows the winget copy passed over by
+  name — *it needs an exiftool_files folder beside it* — and his own
+  single-file 11.79 chosen instead.
+- **One line of that self test was still wrong, and it was my parsing.**
+  `IPTC:Caption-Abstract` was reported "NOT written" on every pass while being
+  written perfectly well. ExifTool's `-s` prints the tag's own name, and IPTC's
+  is `Caption-Abstract`, hyphen and all; the check stripped the hyphen from what
+  it looked for but not from what ExifTool printed, so it never matched. Tag
+  names are now compared with the punctuation taken out of both sides.
+- That the report was the thing at fault rather than the work is the same shape
+  of error as counting exit codes, and it is worth noticing that the self test
+  is what exposed it.
+
+## 1.0.171, 21 August 2026
+
+- **One file, and only one file.** `exiftool.exe` must be a self-contained
+  binary with nothing beside it — no `exiftool_files` folder, no Perl DLLs.
+  His requirement, and it now governs the build, the installer and the
+  program.
+- **This rules out everything currently published, and it is worth recording
+  why so nobody quietly undoes it.** The exiftool.org download, the SourceForge
+  download and the winget package `OliverBetz.ExifTool` are all the same thing:
+  a small launcher plus an `exiftool_files` folder holding Perl. The
+  `Image-ExifTool` tarball is Perl source and needs Perl installed. **Nobody
+  publishes a current single-file build.** The one-file form is the older
+  exiftool.org format, a packed archive, and the launcher replaced it
+  deliberately — unpacking a packed archive on every invocation is slow, and
+  HomerScribe runs ExifTool once per picture.
+- A third-party single file does exist on GitHub. It is a personal archive with
+  no following whose own README points at somebody else's releases, and it is
+  not something to hang a build on.
+- **None of this costs anything**, which is the point. Since 1.0.168
+  HomerScribe carries the definitions of the two IPTC accessibility properties
+  itself and hands them to ExifTool with `-config`, so an older single-file copy
+  writes all nine fields. His existing 11.79 is a perfectly good answer.
+- So the build no longer fetches anything. It looks for a single-file copy — in
+  its own folder, `C:\HomerScribe`, and the installed program folders — says
+  which it found and how old it is, and **deletes any `exiftool_files` folder a
+  previous attempt left behind**. The installer packages the one file and not
+  the folder.
+- **The program passes over any ExifTool with an `exiftool_files` folder beside
+  it**, naming it in the log, so the rule is visible rather than silent.
+- `installExifTool.cmd` no longer pretends it can fetch one. It moves a
+  single-file copy into place if there is one, and otherwise says plainly what
+  is wanted and why nothing can be downloaded.
+- New behaviour: `single-file-exiftool-only`.
+
+## 1.0.170, 21 August 2026
+
+- **The build could not fetch ExifTool, and his log says exactly why.** Both
+  download attempts came back "Too small to be the archive". That message is
+  the one part of the attempt that worked: the size check caught that what
+  arrived was not a zip.
+- **SourceForge's `/download` address serves a web page, not the file** — one
+  reading "Your download will start shortly", with the real file behind a
+  redirect. What landed was a few tens of kilobytes of HTML. And exiftool.org
+  404s, because it now points its download links at SourceForge and says so on
+  its own front page.
+- **So the build asks winget first, and it should have all along.** `winget
+  install -e --id OliverBetz.ExifTool` is the supported way to install ExifTool
+  on Windows. winget knows the current version, knows where to get it, and
+  handles the mirrors. Scraping a download page knows none of those things.
+  After it runs, the build copies the result in from wherever winget put it.
+- A direct fetch remains as a last resort, and is now aimed correctly: Oliver
+  Betz's own installer first — which is what winget would have fetched anyway —
+  then `downloads.sourceforge.net`, which is the real download host rather than
+  the page that advertises it. The size check stays, since it is what caught
+  this.
+- `installExifTool.cmd` gets the same chain.
+- One note for whoever edits these scripts next, mine included: **anchor on the
+  line, not the substring.** Locating a block by `:exifToolDone` matches inside
+  `goto :exifToolDone` too, and that is how a duplicated block got into
+  `installExifTool.cmd` earlier today. Both edits here were line-anchored and
+  both were checked for undefined and duplicated labels afterwards.
+
+## 1.0.169, 21 August 2026
+
+- **No Windows ExifTool needs Perl installed.** Worth saying plainly, because
+  the worry would have kept a better copy out of use. Both Windows
+  distributions carry Perl inside them: the exiftool.org package keeps it in
+  the `exiftool_files` folder, and the self-contained build has the whole of
+  Perl packed into one executable. What *does* need Perl installed is the
+  `Image-ExifTool` source tarball, which is the Unix and Mac route, and that is
+  the part of the install page that mentions it.
+- **`winget install exiftool` resolves to `OliverBetz.ExifTool`** — an Inno
+  Setup installer of a self-contained package, currently 13.59, by the same
+  Oliver Betz whose launcher the official exiftool.org packages already use. It
+  is not more cumbersome than the 2019 copy; it is the same shape of thing,
+  four years newer, and it is the one to use.
+- **HomerScribe now finds every ExifTool on the machine, runs each one, logs
+  them all with their versions, and chooses the newest** — saying which and
+  why. The places searched cover winget's two habits, a real install under
+  Program Files or the user's Programs folder and a shim under `WinGet\Links`,
+  as well as the package folder it unpacks into, HomerScribe's own folder, and
+  the PATH. Guessing where winget puts things is how that question gets
+  answered wrongly; the log now answers it.
+- **A bug my own test caught before delivery.** Comparing versions as decimals
+  makes 13.8 look newer than 13.11 — but ExifTool released 13.11 *after* 13.8,
+  so the older copy would have been chosen. Each part is now compared as a
+  whole number.
+- `buildHomerScribe.cmd` and `installExifTool.cmd` look in the same places, and
+  the failure advice now offers the winget line and says that no Perl is needed.
+- New behaviour: `newest-exiftool-chosen`.
+
+## 1.0.168, 21 August 2026
+
+He asked three things, and was right about all three.
+
+- **"Are you using correct command-line syntax?"** Yes, and it should have been
+  written down. Writing is `exiftool -@ <argfile>` with `-overwrite_original`,
+  `-m` and `-charset UTF8`, one `-TAG=value` line per field — an argument file
+  rather than a command line, because a description holds quotation marks,
+  ampersands and accented letters. Reading is `exiftool -j -q -m -charset UTF8
+  -TAG -TAG ... <folder>`, parsed as JSON. **ExifTool does both halves**, and
+  the count reported comes from the reading half.
+- **"I am surprised the latest ExifTool is really needed."** He was right and I
+  was wrong. The two properties genuinely are new — the IPTC added them in
+  October 2021 and his copy is from October 2019 — but concluding that an older
+  ExifTool therefore *cannot write them* was a mistake. **ExifTool has been able
+  to write tags it does not know for far longer than these tags have existed**,
+  given their definition. Its own documentation says any namespace may be
+  written by giving a family 1 group name, "including namespaces which are not
+  pre-defined by ExifTool".
+- **So HomerScribe now carries the definition itself.** When a copy does not
+  recognise the fields, a small configuration file is written naming the
+  `Iptc4xmpCore` namespace, its URI as the IPTC publishes it, and the two
+  properties as `lang-alt`, and the write is repeated with `-config`. The same
+  bytes land in the same place a current ExifTool would have put them. **The
+  version requirement is gone**; a newer copy is merely preferred.
+- The definitions were checked before delivery: extracted from the compiled-in
+  text, passed through `perl -c`, and evaluated to confirm the namespace URI,
+  the group names and both properties as `lang-alt`.
+- **"Do not ask me to check things manually."** Fair, and it had happened more
+  than once. **HomerScribe now self-tests before the first picture**: it copies
+  that picture aside, writes every field into the copy, reads them all back, and
+  logs each one BY NAME as written or not written, with the version in use and
+  the commands run. Then it chooses how to write the rest and says which way it
+  chose and why. One log now answers every question I had been putting to him.
+- New behaviours: `metadata-self-test`, `accessibility-tags-taught`.
+
+## 1.0.167, 21 August 2026
+
+- **The read-back worked, and it caught the thing it was built for.** The 19:03
+  run reports 49 of 49 pictures carrying their descriptions, verified by
+  reading the files, and says plainly: *none of them in the IPTC accessibility
+  fields*. The version line explains why. ExifTool **11.79**, from 2019; the
+  fields were added at 12.41.
+- **And that is my fault from 1.0.165.** I made the build prefer a copy of
+  ExifTool already on the machine over downloading one. Right in principle, and
+  it is what the ffmpeg step does. But his copy was four years old, so
+  preferring it is precisely what kept the accessibility fields missing — the
+  optimisation defeated the fix it was sitting next to.
+- **The build now asks how old a copy is before preferring it.** Anything below
+  12.41 is passed over and a current one fetched. `installExifTool.cmd` does the
+  same. Versions are compared as version numbers, not as decimals, because 11.9
+  and 11.79 compare the wrong way round otherwise.
+- If the copy in use is still too old, the build log says so in as many words
+  rather than leaving it to be discovered in a run.
+- `Announce.md` now describes the picture feature as it actually is, the
+  paragraph saying metadata was not written yet having stopped being true.
+
+## 1.0.166, 21 August 2026
+
+- **It worked, and it reported more than it had done.** The 18:45 run wrote
+  descriptions into 48 of 49 pictures and made `images.zip` — but the figure
+  "48 carrying their descriptions inside them" was my code trusting an exit
+  code, and the log shows what that missed:
+
+      Warning: Tag 'XMP-iptcCore:AltTextAccessibility' is not defined
+      Warning: Tag 'XMP-iptcCore:ExtDescrAccessibility' is not defined
+
+- Those are WARNINGS. ExifTool still exits zero. So the two IPTC accessibility
+  fields — the whole reason for choosing ExifTool — were quietly dropped from
+  every one of the 48, and HomerScribe called each of them a success. It only
+  came to light because one file ALSO had a real error, so its output was
+  printed. The tag names are right; that copy of ExifTool simply predates them,
+  and **which copy was in use had never been logged**.
+- **The count is now read back out of the files.** After the writing, one
+  ExifTool call over the whole folder asks what is actually in those pictures,
+  and that is the number reported. Where it disagrees with the number of
+  successful writes, both are logged and the read-back one is used. An exit
+  code says a program finished; it does not say the work was done.
+- **ExifTool's version is logged**, once, at the start. Nothing above could
+  have been diagnosed without it.
+- **`-m`, ignore minor errors.** The one refusal was a PNG with `IFD0 pointer
+  references previous IFD0 directory` — damage already in the file and nothing
+  to do with the description being added. That picture now gets its description.
+- **Where the accessibility fields are not supported they are dropped, the
+  write is retried without them, and the log says so plainly** — that ExifTool
+  is too old, that the caption, title and comment fields are still written, and
+  that `installExifTool.cmd` will fetch a current copy. Better a smaller true
+  claim than a larger false one.
+- New behaviours: `metadata-read-back`, `exiftool-version-logged`,
+  `minor-errors-ignored`.
+
+## 1.0.165, 21 August 2026
+
+- **The ExifTool fetch was asking the wrong server**, and his build log caught
+  it: every attempt came back `Not Found`.
+- exiftool.org says so on its own front page, twice. The site is a *"temporary
+  stop-gap"* because its host disabled it, and *"the download links now point
+  to SourceForge"*. My script read the right FILE NAME off that page and then
+  built the wrong BASE address. The archive lives at
+  `sourceforge.net/projects/exiftool/files/`, and three places are now tried in
+  turn. The version number is taken from `exiftool.org/ver.txt`, which is
+  published for the purpose and steadier than a pattern over a page.
+- **There are two kinds of `exiftool.exe`, and the test was wrong for one of
+  them.** The packaged one is a small launcher needing an `exiftool_files`
+  folder beside it. Oliver Betz also publishes a self-contained build of about
+  eight megabytes that needs nothing beside it -- and that is the one Jamal
+  already had. Testing for the folder would have made every build fetch again
+  on a machine with a perfectly good copy. **The test is now that the program
+  RUNS**, which is the only thing that actually matters.
+- **A copy already on the machine is used before anything is downloaded**, the
+  same courtesy the ffmpeg step has always paid: the build folder, then
+  `C:\HomerScribe`, then the installed program folder. His copy would have been
+  found on the first try.
+- `installExifTool.cmd` carries all of the same corrections, and its message on
+  failure now tells the truth about where to go and says that a self-contained
+  build is equally welcome.
+
+## 1.0.164, 21 August 2026
+
+- **The picture feature is finished.** Phases two, three and four.
+- **The description is written into the picture**, with ExifTool, which the
+  build now fetches and the installer packages. The same words go into several
+  places on purpose, because different software looks in different ones:
+  `AltTextAccessibility` and `ExtDescrAccessibility`, the two fields the IPTC
+  added in 2021 for exactly this; `dc:Description` and `Caption-Abstract`,
+  which most photo software displays; and `XPTitle` and `XPComment`, which are
+  what Windows Explorer shows and a screen reader reads out of a file's
+  properties. That last pair is the one that matters at a Windows machine.
+- Arguments go to ExifTool in a file rather than on a command line. A
+  description holds quotation marks, ampersands and accented letters, and every
+  one of those is a way for a command line to go wrong.
+- **Two copies of every picture, both carrying the description.** The output
+  folder holds them under their original names; `<archive>.zip` holds them
+  under their new descriptive ones. Described once, metadata written once, then
+  copied, so the two are identical apart from the name and there is no second
+  pass to drift.
+- **Every format accounted for.** PNG, JPEG, WebP and TIFF take the full set of
+  fields. GIF takes a plain comment and nothing named. BMP has no metadata
+  container at all. SVG is a drawing the model cannot be shown, and is now
+  named as that in the log rather than passed over as though it were junk --
+  its own title and desc elements would be the best home of any format here,
+  and it is worth coming back for.
+- **ExifTool is bundled at his instruction**, so `License.md` names it and
+  points at its source. It is under the same terms as Perl -- the Artistic
+  License or the GPL, the redistributor's choice. HomerScribe's own MIT terms
+  are untouched: it runs ExifTool as a separate program and never links it.
+  `installExifTool.cmd` remains for a machine where the bundled copy is
+  missing.
+
+### What Rentitle taught
+
+He sent his own file-renaming program, which does this job from document
+metadata. Six of its rules were missing here, and every one is the kind of
+thing learnt from a file that broke something.
+
+- **Substitute, do not delete.** A colon becomes " - ", an ampersand " and ", a
+  bracket a parenthesis. Blanking them, as this was doing, turned "Jeannie &
+  Jim" into "Jeannie Jim" and lost the word.
+- **The illegal list is longer than Windows says.** Rentitle bans a long run of
+  smart quotes, box-drawing characters, bullets and accented letters, with a
+  comment recording that they stopped file-not-found errors in Python and in
+  FileDir. Every one is LEGAL in a Windows file name. They break other things
+  anyway.
+- **Some titles are not titles.** Rentitle refuses "untitled", "none", "Title",
+  "Presentation1". A vision model hands back "Image" and "Photo" just as
+  readily, and a folder where every picture is called Image is worse than one
+  full of IMG_4471. Such an answer is now refused and the name taken from the
+  description instead.
+- **A name of digits is not a name.**
+- **A leading dot hides the file**; it becomes "Dot".
+- **There is a limit to trying.** Rentitle stops after a thousand collisions.
+- One difference worth recording: Rentitle pads its suffix to three digits
+  always. He asked here for the fewest zeros that will do, so that is what this
+  does. The newer instruction wins, but the two are not the same rule.
+
+- New behaviours: `metadata-written`, `renamed-copies-archived`,
+  `placeholder-names-refused`, `wider-illegal-letters`.
+
+## 1.0.163, 21 August 2026
+
+- **The names came right.** Twenty-four of twenty-four now read as phrases with
+  spaces, none run together, none with underscores, the longest 76 characters
+  and the middle one 27. "Elderly woman in a blue floral dress by a stone wall"
+  where it used to say "OutdoorElderlyLady".
+- **As few leading zeros as will do**, as he asked. The width is taken from the
+  LARGEST clashing group in the archive: a pair gets `-1` and `-2` however many
+  pictures there are, and a group of twelve gets `-01` to `-12`. Not from the
+  number of pictures, since only names that clash ever sit together and only a
+  clashing group has to sort. Not from each group separately either, so every
+  numbered name in one folder has the same shape rather than `-1` sitting
+  beside `-01`.
+- **The original file name is now offered as context.** "Jeannie & Jim - Lake
+  Tahoe.jpg" was named by somebody who was there, and that is better evidence
+  than a model can take from the picture. What the camera wrote is stripped
+  first -- `IMG-20230113-WA0000` says nothing and offering it only invites the
+  model to invent a meaning for it.
+- This does not loosen the rule against guessing at identities, and the prompt
+  says why: a name written by a person is a statement, a face is only a
+  resemblance. Use the name the file gives IF what you see fits; never a name a
+  face suggests.
+- **A truncated answer became a name.** One picture was reported as
+  `{ name Winter Couple at a Snowy Forest , description A man and a woman
+  stand` -- the model's JSON ran past its token budget, stopped mid-word, would
+  not parse, and the fallback took the wreckage. The two fields are now pulled
+  out of partial JSON by pattern, a name still carrying JSON is refused, and
+  the budget is raised so an answer has room to close its own braces.
+- **Twenty-five of forty-nine pictures were refused by Ollama** with
+  `(400) Bad Request`, each within half a second -- too fast to be inference,
+  so rejected on sight. Same archive, same prompt, same extension: `image.jpg`
+  went through and `Phil2.jpg` did not, which points at something in the
+  picture the decoder would not take. **Every picture now goes through ffmpeg
+  into a plain PNG** of at most 1024 pixels on its longest side, in a settled
+  colour space, before the model is shown it. That removes the whole class of
+  problem and cuts what has to be encoded and sent. `--picture-width` changes
+  the size, and each original's size is logged so a pattern would be visible.
+- Two faults were found while testing rather than by reading. The file-name
+  strip removed housekeeping words BEFORE turning underscores into spaces, and
+  `_` is a word character, so `signature_proper_orientation` never matched
+  `\bproper\b`. And `captionTest.py` was asserting that a mixed list of names
+  sorts into the order it was made in, which is true only within one clashing
+  group.
+- `captionTest.py` is at nineteen checks.
+- New behaviours: `fewest-leading-zeros`, `file-name-as-context`,
+  `pictures-normalised`, `partial-answer-rescued`.
+
+## 1.0.162, 21 August 2026
+
+- **Picture names may now run to 79 characters**, after PEP 8's line length,
+  and `--name-length` sets it.
+- **But the length was never what was binding.** Measured on his own run of
+  twenty-four pictures against a cap of sixty: the longest name was
+  **twenty-four characters**, and **not one of the twenty-four held a space**.
+  The model returned identifiers -- `OutdoorElderlyLady`, `Kenyan_ID_2024`,
+  `Child_Bike_Ride_Sea_View`. Raising the cap alone would have changed nothing.
+- The cause was my prompt. It asked for a phrase "fit to be a file name", and
+  "file name" is what did it: the model heard "identifier" and answered in
+  code. **The prompt now shows the shape rather than describing it** -- spaces,
+  sentence case, no CamelCase, no underscores, no extension, the budget stated
+  in characters, and three worked examples, two good and two bad.
+- **And whatever comes back is repaired anyway.** `spacedOut` turns
+  `WomanInWhiteTee` into "Woman in White Tee" and `Kenyan_ID_2024` into
+  "Kenyan ID 2024". A word is lowered only when it is a small joining word and
+  is not already in capitals, so `JamalMazruiAmazonPoster` keeps both names and
+  `NIRA_Birth_Certificate` keeps its initials. The error it can make is leaving
+  a word capitalised; it cannot destroy a name.
+- **An extension the model invents is taken off.** One answer was
+  `BananaSmile.png`, which would have been written out as
+  `BananaSmile.png.jpg`.
+- **It is now told never to guess at who anyone is.** One picture came back as
+  `BezosWithFriends`. There was no note in that archive, so the model had
+  nothing to go on and named a living person from a face. The rule was in the
+  note branch only; it belongs in the prompt whether or not a note exists.
+- All twenty-four of his real names are now a permanent check in
+  `captionTest.py`, which is at sixteen checks.
+- New behaviours: `names-as-phrases`, `names-repaired`,
+  `no-guessed-identities`.
+
+## 1.0.161, 21 August 2026
+
+- **The license question settled and written down.** HomerScribe stays MIT.
+  It links nothing: every other program is run separately and spoken to through
+  a command line, a file, or a local web request, which the Free Software
+  Foundation's own guidance treats as how separate programs talk. Putting them
+  side by side in an installer is mere aggregation, which leaves each one's
+  license to itself.
+- `License.md` now says which program is packaged and which is fetched, what
+  each is under, and what would change the answer -- linking a GPL or LGPL
+  library into HomerScribe.exe, which it must never do.
+- The ffmpeg choice is now stated as the deliberate act it is: the build takes
+  BtbN's **LGPL** build, never a GPL one, because a GPL build would oblige
+  anyone redistributing HomerScribe to supply ffmpeg's source too. The three
+  LGPL duties -- name the license, say where the source is, allow the copy to
+  be replaced -- are each met, and `License.md` says how.
+- `ReadMe.md` gains a short License section near the end, with links rather
+  than bare addresses.
+
+## 1.0.160, 21 August 2026
+
+- **A missing semicolon failed his build**, at the end of the run of
+  concatenated strings added in 1.0.159:
+  `HomerScribe.cs(7502,111): error CS1002: ; expected`. Fixed.
+- **And `buildHomerScribe.cmd` had a byte order mark**, which it must not:
+  cmd.exe reads the first line literally, so three stray bytes in front of
+  `@echo off` are an error on line one. My own delivery put it there, by
+  writing every file with the same encoding as the C# source. Batch files are
+  now written without one.
+- **`csCheck.py` is new**, and exists because neither fault could be seen by
+  what I was checking. Braces, parentheses and brackets all balanced -- a
+  missing statement terminator changes none of them, so the check was measuring
+  the wrong thing. It takes no arguments, writes a log beside itself, and looks
+  for: a statement that never ends; unbalanced braces; a byte order mark on a
+  batch file; and a `rem` stranded inside a `^` continuation, which hands the
+  word "rem" to the compiler as a file name.
+- Writing it turned up the reason the fault slipped through. Blanking string
+  literals to check the braces left the offending line reading as a bare `+`,
+  which every check took for an unfinished continuation and skipped. A literal
+  now becomes a single `S`, so the line reads `+ S` and the missing terminator
+  is visible. **Tested both ways**: the check is silent on the corrected source
+  and names line 7502 on the broken one.
+
+## 1.0.159, 21 August 2026
+
+- **Who the captions say was speaking around a moment is now given to the
+  model**, with its limits stated in the same breath. He asked the obvious
+  question and he was right to: captions carry times, so a name at 12:03 must
+  say something about who is on screen at 12:03.
+- It partly does. In an interview, a talk, a piece to camera or much television
+  drama, the speaker is in shot a good deal of the time. My earlier answer, that
+  captions do not tell you who is on screen, was too absolute.
+- Three things weaken it, and the third belongs to this program alone.
+  Narration is never in shot. Dialogue cuts to the listener's face as often as
+  the speaker's, most of all on the line that matters. And **HomerScribe
+  describes in the gaps BETWEEN speech, by design** -- so at the moment a
+  description is made nobody is speaking at all, and the nearest speaker is on
+  one side of the silence or the other. The correlation is weakest exactly
+  where descriptions happen.
+- What survives all three is still worth having: whoever spoke either side of
+  the silence is almost certainly in the SCENE, if not in the frame. So it is
+  offered as exactly that, and the model is told to use the name only if
+  somebody in the picture matches how that person has been described to it.
+- New behaviour: `speaker-near-the-moment`.
+
+## 1.0.158, 21 August 2026
+
+- **An archive can carry notes about its own pictures.** A file named after the
+  archive -- `holidays.md` inside `holidays.zip` -- is sent with EVERY picture
+  in it. A file named after one picture -- `image07.md` beside `image07.jpg` --
+  is sent with that one only. Both, where both exist, and anything given by
+  `--context-file` before them: most general first, most particular last, so
+  the nearest note has the last word. A `.md` in the archive is counted as a
+  note, not as something passed over.
+- **The note is framed as a way of RECOGNISING people, not as a claim that they
+  are present.** This matters more than it looks. A note saying who tends to
+  appear and how to tell them apart is an invitation to write those names into
+  every picture, because a model uses a name it has been given. The instruction
+  is therefore explicit: use a name only where what is actually visible matches
+  what the note describes; where you cannot tell, say what you can see and do
+  not guess. That is the rule that took naming in film from a scatter of
+  half-named strangers to something a listener could follow.
+- **The captions' speakers are now gathered as a roster** and offered to the
+  describing model as names this film uses. What this is NOT is a claim about
+  who is on screen: a film cuts to the listener as often as the speaker, and a
+  narrator is never in shot. Handing the model "Penelope is speaking" would
+  produce a confident Penelope in frames she is not in.
+- What a roster IS good for is knowing which names the film uses and how its
+  makers spell them, so that a name reached for is a real one. It cannot attach
+  a name to a face by itself -- the context file is where appearances live. The
+  captions say who exists; the context file says what they look like; a name is
+  used where the two meet. Roles that name nobody visible -- NARRATOR,
+  AUDIENCE, ALL, CROWD, VOICEOVER -- are left out.
+- **Measured on his own four runs, this yields nothing**: nought, nought,
+  nought, and one, which was "Audience" and is filtered. Documentary and
+  conference captions rarely name speakers. A drama with proper subtitles for
+  the deaf and hard of hearing names them constantly, and that is where it will
+  earn its place.
+- New behaviours: `notes-inside-archives`, `caption-speaker-roster`.
+
+## 1.0.157, 21 August 2026
+
+- **A zip of pictures can now be a source**, on its own or by wildcard. Every
+  image in the archive is described, and `descriptions.md` is written to a
+  folder named after the archive. Nothing is renamed and no metadata is written
+  yet: this is the first of four steps, and it exists so the QUALITY of the
+  names can be judged before anything is built on them.
+- Read from the archive: `.png`, `.jpg`, `.jpeg`, `.webp` and `.gif` go to the
+  model as they are; `.bmp`, `.tif` and `.tiff` are turned into a PNG by ffmpeg
+  first. Anything else in the archive is passed over, counted and named in the
+  log, so nothing looks silently lost.
+- **Every picture is reported on for metadata standing**, as asked: whether the
+  format can carry the description, can carry only a plain comment, or has
+  nowhere to put one at all. GIF is the middle case and BMP the last -- that is
+  a fact about those formats, not something to be worked around.
+- **The clash rule, and why every member of a group is numbered.** His
+  convention is `-001`, so that alpha order is also the order the pictures came
+  in. Numbering only the second and later members breaks that, because "-" is
+  character 45 and "." is 46: `Sunset-002.jpg` sorts BEFORE `Sunset.jpg`, so the
+  plain one lands last. Tested, not assumed. So every member of a clashing group
+  is numbered from `-001`, and a name that occurs once is left plain. Three
+  digits as asked, widened past 999 so that being right outlasts sorting.
+- Alternatives weighed and not taken: a distinguishing detail instead of a
+  number, which needs a second question per picture and can still clash; and the
+  original file name in brackets, which traces back but is long where he asked
+  for succinct. `descriptions.md` lists everything in archive order, so the
+  mapping is kept without lengthening any name.
+- Names are cut at a word and never mid-word, stripped of anything Windows,
+  macOS or a zip objects to, and kept clear of the names Windows reserves.
+- Transcribe audio does not apply to an archive, and says so rather than
+  quietly doing nothing. A run over archives alone does not need Whisper.
+- `captionTest.py` is at fifteen checks, four of them on the naming rules.
+- New behaviours: `pictures-from-archives`, `clash-numbering-whole-group`,
+  `metadata-standing-reported`.
+
+## 1.0.156, 21 August 2026
+
+- **The chain of alternatives stopped after one, and that was my fault.** In the
+  14:46 run the usual way was refused with a 403, the web player was tried, and
+  yt-dlp answered "Requested format is not available". My own guard read that as
+  "the video is absent, asking differently will not help" and abandoned the
+  remaining four ways. It is not that at all: it means that player was handed an
+  empty menu, so nothing matched "best video plus best audio". It is a refusal
+  wearing a different coat, and it is now treated as one.
+- **The reason reported was the wrong one.** The results box said "Requested
+  format is not available" for all four videos when the actual trouble was the
+  403 that came first. The first failure is now what gets reported; a later
+  attempt's complaint describes that attempt, not the problem.
+- **The order is better.** The single combined stream is now tried second, being
+  the cheapest thing that often works. Then the television, iOS and mobile web
+  players, which ask for less and are commonly served; the web player last,
+  since it is the one most often given an empty menu. A seventh try asks for any
+  format at all, for the case where a player's menu holds something but not the
+  usual pairing.
+- **A browser's session is borrowed before giving up.** When every way is
+  refused and no cookies were offered, HomerScribe now tries again with Edge's
+  cookies, then Chrome's, then Firefox's. A signed-in session is often served
+  what an anonymous one is not. Whichever works is named, so it can be set with
+  `--browser-cookies` and the tries paid for once. `--browser-session no` turns
+  it off.
+- New behaviours: `browser-session-last-resort`, `first-reason-reported`.
+
+## 1.0.155, 21 August 2026
+
+- **The build keeps yt-dlp current, and the program stops mentioning it.**
+- `buildHomerScribe.cmd` now runs `yt-dlp --update-to nightly` on every build.
+  It is one quick call that says "up to date" and stops when there is nothing
+  to do, and it never fails the build: no network, or a copy that cannot write
+  to itself, and the build carries on with what is there. The version before
+  and after goes in the build log. The yt-dlp that ships in the installer is
+  therefore never older than the build.
+- **Nightly, not stable.** yt-dlp's own README calls nightly "the recommended
+  channel for regular users", and asks that anyone hitting a problem on stable
+  move to nightly before reporting it. YouTube changes what it serves, at times
+  deliberately to break downloaders, and the fix for something that broke this
+  week is on nightly this week. `--update-channel stable` or `master` if wanted.
+- **No warning at run time.** The version and its age are recorded in the log as
+  a plain fact and nothing is said about them. Keeping the tool current is the
+  build's job, and telling somebody at run time about a thing they cannot act on
+  there and then is noise.
+- **yt-dlp's own nagging is silenced too.** It prints a complaint on the console
+  when it is more than ninety days old, which is fair of it and the wrong place
+  here, where the console is carrying progress a listener is following. Every
+  call now passes `--no-update`, which is what that flag is documented for.
+- The update on refusal, added in 1.0.154, now goes to the same channel.
+- New behaviours: `build-updates-yt-dlp`, `no-update-nagging`.
+
+## 1.0.154, 21 August 2026
+
+- **The extra information call was not the cause, and I was wrong to suspect
+  it.** The 13:59, 14:02 and 14:05 runs each show exactly one yt-dlp command
+  before the download, as in 1.0.146, and the refusal is unchanged. The
+  reordering in 1.0.153 was right on its own merits and fixed nothing. At the
+  point of download HomerScribe now does what 1.0.146 did, character for
+  character, and gets a different answer, so the difference is not in the
+  program.
+- **A refused film is now asked for a different way, and then another.** The
+  usual request first, exactly as before; then the web player, the Safari web
+  player, the television player, the iOS player, and finally a single combined
+  stream instead of the best picture and best sound taken apart. It stops at
+  the first that is served and writes down which one that was.
+- **Only a refusal is retried.** A video that is private, deleted or
+  geo-blocked is just as absent from every player, so six tries would learn
+  nothing; the reason is read and the attempt abandoned.
+- **yt-dlp is updated when nothing else works**, once per session, and the
+  usual request tried again. Its age is now worked out from its version at
+  startup and said in the log, with a word of warning past thirty days. At
+  2026.07.04 the copy in use is seven weeks old against a service that changes
+  most weeks.
+- **`--player-client`** pins one once it is known -- web, web_safari, tv, ios or
+  mweb -- so the tries are paid for once rather than on every video.
+  **`--update-tools`** turns the automatic update off.
+- New behaviours: `other-ways-to-fetch`, `update-tools-on-refusal`,
+  `tool-age-reported`.
+
+## 1.0.153, 21 August 2026
+
+- **A third request was being made of YouTube before every download, and it was
+  not there before the caption work.** 1.0.147 added a `--dump-single-json`
+  call to learn the title and the caption tracks, and put it in front of
+  everything. So each video was extracted three times where 1.0.146 extracted
+  it twice, and only then downloaded.
+- The last version known to fetch a film successfully is 1.0.146, and it is
+  also the last version that did not make that call. That is a correlation, not
+  a demonstration, and I had been asserting the opposite: that the download
+  command was character for character unchanged and therefore nothing here
+  could be the cause. The command was unchanged. The COMMAND was not the only
+  thing that changed, and I should have looked at the sequence before saying so.
+- **The question is now asked only when the answer is needed.** Wanting a
+  transcript alone, it decides whether the film is needed at all, so it comes
+  first. Wanting the film, it comes after the film is safely down. On that path
+  the download is once again preceded by exactly one request, as in 1.0.146.
+- `ytCheck.py` now settles it rather than guessing. Its first three trials run
+  the SAME download after nothing, after one information call, and after two,
+  and it says in as many words which of those three it was.
+
+## 1.0.152, 21 August 2026
+
+- **Half is better than nothing.** When the film cannot be fetched but a
+  transcript was also asked for, the captions are now taken anyway and
+  `transcribed.md` is written. The results box says plainly that nothing was
+  described and why.
+- This matters because the two things come down different roads. Every
+  information call and every caption file has succeeded on this machine
+  throughout; only the signed media stream is being refused. A run that wanted
+  both used to report that nothing at all could be done, when half of it was
+  sitting there for the asking.
+- **The 13:44 run was not a regression.** Describe video was ticked as well as
+  Transcribe audio, so the film really was needed, and the fetch met the same
+  403 that has stood since 12:27. The log shows `Setting describe = yes` and
+  the caption tracks being read correctly for all four sources before the
+  download was even attempted.
+
+## 1.0.151, 21 August 2026
+
+- **"e.g." is no longer the end of a sentence.** The first run of 1.0.150 put
+  this at the top of the TED transcript: *"For more information on using TED
+  for commercial purposes (e.g."* The sentence splitter broke at the full stop
+  inside the abbreviation, and the fragment that was left passed every test
+  because it ended with a full stop. A piece broken that way is now joined back
+  on to the one before it, and a run of common abbreviations is recognised.
+- The trim-back that guarantees a blurb ends on a full stop **would have hung**
+  on exactly that input: the offending stop was the last character, so
+  searching from the end found it again and set the same length for ever. It
+  now searches from before the last character, so every pass is strictly
+  shorter. Found by porting the function to Python and running it against TED's
+  real description, which is also now a check in `captionTest.py`.
+- A blurb sentence with a bracket opened and never closed is dropped too.
+- **Each film's own log now begins at the fetch.** It began inside `runOne`,
+  which left out how the film was obtained -- and on the captions-only route
+  left out which caption track was chosen and why, which was most of what there
+  was to say. The per-film logs from the 13:14 run were four lines long.
+- `captionTest.py` is at eleven checks, two of them on the publisher's blurb.
+
+## 1.0.150, 21 August 2026
+
+- **The three documents are rewritten to be read.** A log is for a machine.
+  `described.md`, `transcribed.md` and `scribed.md` are for a person, and a
+  person listening rather than skimming, which is a harder audience than
+  either. The rules below are the W3C Web Accessibility Initiative's, from its
+  guidance on transcripts.
+- **No times in the body.** The Initiative puts it plainly: timestamps are
+  usually unnecessary clutter, need not be as granular as the captions, and
+  need no end times. So a time now appears only in a section heading, where a
+  screen reader can move between them, and only on a film over twenty minutes.
+  Below that there is no time anywhere. A section heading reads "From 10
+  minutes" rather than "0:10:00 to 0:20:00", because that is a place in the
+  film rather than four numbers.
+- **Paragraphs, not bullets.** A hundred and thirty list items is a hundred and
+  thirty announcements of the word "bullet" before anything is said. And a
+  passage now ends where a SENTENCE ends: it may run on half as long again
+  while it waits for a full stop, because a paragraph broken mid-clause reads
+  as though the speaker was cut off. In a timed list that was invisible.
+- **`scribed.md` is a descriptive transcript**, and says so. That is the term
+  of art, and the Initiative names this document as the one a reader who is
+  both Deaf and blind needs -- adding that where you have one, you do not need
+  a separate basic transcript. It was being written as though it were an extra.
+- **Only what was added is labelled.** A description carries a bold
+  "Description." at the front. Nothing else does, so an unlabelled paragraph is
+  the film's own words. The Initiative asks only that added material be
+  distinguishable, and labelling both sides would double the reading to say the
+  same thing.
+- **The heading is four or five lines** and no more, since every word of it is
+  read before the reader reaches a single word of the film. On the one-minute
+  video the old heading was 61 percent of the whole document. Measured on the
+  four-minute W3C introduction: 1,788 bytes of heading became 678, and the
+  document as a whole 4,913 bytes became 3,737.
+- **A note only where there is something to explain.** Telling a reader what a
+  speaker's name looks like, in a film where nobody is named, is a sentence
+  spent on nothing.
+- **The publisher's blurb is tidied or dropped.** Sentences carrying a web
+  address go, and so do appeals to subscribe and permission notices; a screen
+  reader reads an address one character at a time. What is left never ends on a
+  fragment. Too little left and the whole section is dropped.
+- **A speaker named in brackets is now recognised.** TED writes "(Audience)
+  Good." with no colon, and it was being run into the sentence before. What
+  keeps this apart from a sound is what follows: a speaker is followed by a
+  sentence starting with a capital, where "(Music) plays softly" carries on in
+  lower case.
+- New behaviours: `documents-as-prose`, `times-only-in-headings`,
+  `descriptions-labelled`, `publisher-blurb-tidied`.
+
+## 1.0.149, 21 August 2026
+
+- **A transcript no longer downloads the film.** When only Transcribe audio is
+  ticked and the video carries its own English captions, the captions are
+  fetched with `--skip-download` and the film is never touched. There is
+  nothing in a transcript that needs it: the captions say what is said, and
+  nothing is being described.
+- This is the right thing to do on its own merits -- about thirty kilobytes
+  instead of a hundred megabytes, and seconds instead of minutes -- and it also
+  steps straight past what has been failing. In the 12:17 run every caption
+  file came down whole while every media request was refused with a 403.
+  Captions are reachable on that machine; the media stream is not.
+- Taken from Jamal's own youtube-dl scripts, which have been doing exactly this
+  for years: `--write-sub --write-auto-sub --skip-download`. Two more of their
+  settings came across as well.
+  - **`--convert-subs vtt`.** YouTube also serves srv3 and ttml, which the
+    caption reader cannot parse, and asking for "vtt/srt/best" would fall back
+    to one of those quite happily. Now whatever arrives is turned into VTT.
+  - **`--sleep-requests 1`**, a pause between requests, which is what a service
+    that counts them is asking for.
+- With Describe video ticked the film is still fetched, because there is
+  something to look at. And a video with no English captions is still fetched
+  and listened to. The fallback is automatic and the log says which happened.
+- The running time in the heading now comes from the page rather than from the
+  file, since on this route there is no file to ask.
+- New behaviours: `captions-without-the-film`, `captions-converted-to-vtt`,
+  `sleep-between-requests`.
+
+## 1.0.148, 21 August 2026
+
+- **Fixes the caption fetch, which failed every source in the first run of
+  1.0.147.** Nothing was downloaded and all four videos were refused.
+- The cause was one flag. `--sub-langs "en.*"` is a REGULAR EXPRESSION in
+  yt-dlp, not a language, and it matched every machine translation OUT of
+  English. On the Ken Robinson talk that was sixty-six tracks -- Albanian,
+  Arabic, Armenian, Azerbaijani and on through Vietnamese -- each a separate
+  request. YouTube answered 429 Too Many Requests part way through the second
+  video, and the two after it were refused with 403 before their video data
+  could be fetched.
+- **The language rule is now an exact list.** Anything beginning "en-" used to
+  count as English, which is precisely how a translation is named. "en-ca" and
+  "en-in" are deliberately left out although they read like Canadian and Indian
+  English: YouTube uses them for Catalan and Indonesian. "-hi" is no longer
+  trimmed as a hearing-impaired marker either, because "en-hi" is Hindi.
+- **The track is now chosen, not guessed.** The `--dump-single-json` call
+  already made for the title also returns "subtitles", the tracks a person
+  uploaded, and "automatic_captions", the machine ones and every translation.
+  The English tracks are picked out of that by name and **exactly one** is
+  asked for, preferring a person's over a machine's on YouTube's own say-so.
+  Replayed against the four real track lists from the failed run: 23, 3, 66 and
+  3 tracks listed, 2, 3, 3 and 3 of them English, one request each.
+- **A caption failure can no longer kill the film.** The subtitle flags used to
+  ride on the download command, so yt-dlp giving up on a subtitle abandoned the
+  video too. Captions are now fetched by a second command after the film is
+  safely down. If it fails, that is logged and Whisper writes the transcript,
+  which is what happened before captions existed and is a perfectly good answer.
+- **A video's details no longer leak into the next one's documents.** The
+  title, publisher and description were never cleared between sources, so a
+  local file following a downloaded one would head its documents with the
+  downloaded one's title. `Developer.md` said this was handled. It said so
+  wrongly, and was only found by going to check.
+- New behaviours in the fingerprint: `captions-one-track`,
+  `captions-track-from-page`, `captions-fetched-apart`.
+
+## 1.0.147, 21 August 2026
+
+- **A film's own captions are now the transcript.** Somebody wrote them, so the
+  words are right. They say who is speaking. And they write down what can be
+  heard but not spoken -- a door slamming, music starting -- which no transcript
+  of speech has ever held. Whisper cannot do any of those three things.
+- They are taken from a subtitle track inside the film, or from a caption file
+  sitting beside it, whichever is there. English only: every track is asked its
+  language, and anything else is left to Whisper. A film with one track that does
+  not say what language it is in is taken as English, and the document says so.
+- **A downloaded video now brings its captions with it.** yt-dlp is asked for
+  them whenever a transcript is wanted.
+- **One transcript, not two.** `transcribed.md` is still the only transcript,
+  with a line at the top saying where the words came from. Two files of nearly
+  the same words would only make the reader choose between them.
+- **Captions decide the words, never where a description goes.** This is the part
+  that matters most and is easiest to get wrong. A caption is put on screen early
+  and taken away late, so that a reader can finish it. That is not when the words
+  are said. Using those timings to place descriptions would shrink and shift the
+  quiet the placement rule measures, and the damage would not show in any count
+  -- only in a listener losing dialogue. So a run that describes still listens to
+  the film with Whisper, and uses what it hears for placement alone.
+- `scribed.md`, the document for a reader who can neither see nor hear, gains
+  what it was always missing: a **Sound** entry for something heard but not
+  spoken, and a speaker's name against the words. That was the whole reason for
+  wanting captions.
+- **The rolling repeat, got wrong and then got right.** YouTube's automatic
+  captions scroll up the screen, and each cue holds the one before it with more
+  added. The first version compared each cue with the one before and asked
+  whether the OLD held the NEW. A rolling caption grows the other way, so nothing
+  matched and every line was written down twice. Tested before it was believed,
+  found within the minute, and replaced: the words already written down are
+  remembered, and only what has not been seen yet is added.
+- **A sound stays its own entry.** Found the same way, before any film was run:
+  a talk writes "(Laughter)" and "(Applause)" as cues of their own, a second or
+  two after the line before, and both merge rules swallowed them into the
+  surrounding prose. `scribed.md` would then have labelled the whole passage
+  Spoken. A cue that is nothing but a sound is now never merged, in either
+  direction.
+- **Whisper is no longer required in order to transcribe**, so long as captions
+  are left on. A film that turns out to have none is refused by name, with the
+  reason.
+- Every document -- `described.md`, `transcribed.md` and `scribed.md` -- now
+  opens with what the video says about itself: its title, who published it,
+  where it came from, and what the publisher wrote about it. yt-dlp was already
+  being asked for all of that; it was being used for the model's context and then
+  thrown away. The web address is written as a link with the title as its text,
+  never bare, because a screen reader reads a bare address one character at a
+  time.
+- New setting `--captions`, on by default. Turn it off to make Whisper do the
+  work in every case, which is how to compare the two.
+- New behaviours in the build fingerprint: `captions-preferred`,
+  `captions-english-only`, `captions-keep-sound`, `captions-never-place`,
+  `video-heading`. **Check the `This build does:` line before analysing any log
+  about captions.**
+
+## 1.0.146, 17 August 2026
+
+- Built without a History entry. Recorded here so that a version in a log can be
+  looked up.
+
 ## 1.0.145, 17 August 2026
 
 - The build now asks the repository which versions are already released, and
