@@ -174,6 +174,45 @@ just its name:
 Stop it at any time. Run the same command again and it carries on from where it
 left off, reusing both the descriptions and the speech already made.
 
+## Reading a scanned document
+
+HomerScribe reads printed pages as well as describing pictures, and it is the
+same tick box. Give it a zip of page images and it works out, for each one,
+whether it is looking at a photograph or at a page of print. A photograph gets
+described. A page gets read, and set out as Markdown with its headings and
+tables intact.
+
+Any picture on the page — a photograph, a drawing, a chart, a map — is
+described as well, and the description goes at the top of that page in square
+brackets. That is the part an ordinary scanner cannot do, and it is why this
+lives here.
+
+It is asked as a separate question from reading the words, because a model asked
+for both gives you the words and walks past the pictures. That costs a second or
+two a page, and a little longer on the pages that actually have one.
+`--page-pictures no` turns it off.
+
+**Give it a zip of page pictures.** HomerScribe reads pictures, and a PDF is
+not one until its pages are turned into images. Turning a PDF into images is a
+solved problem with many free tools; describing what is on those pages is not,
+and that is the part HomerScribe is for.
+
+So: turn the PDF into images, name them `page001`, `page002` and so on so they
+sort in order, put them in a `.zip` named after the document, and give
+HomerScribe that path with **Describe video** ticked. You get
+
+    <output directory>\journal\described.md
+
+the document put back together in order, with every picture on the pages
+described in place.
+
+HomerScribe does not unpack PDFs itself. Doing it properly means carrying a PDF
+library — page order lives in a tree, page dictionaries are compressed inside
+other objects, and a half-right reader silently shuffles the pages of an
+archive rather than failing. Nor does it pull out a PDF's existing text layer:
+plenty of tools already do that, and it would cost the single-file build for
+something already solved.
+
 ## The rest of the documentation
 
 This file is the short way in. Everything else lives in its own document, and

@@ -151,6 +151,13 @@ Source: "installExifTool.cmd"; DestDir: "{app}"; Flags: ignoreversion skipifsour
 
 Source: "installOllama.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installModels.cmd"; DestDir: "{app}"; Flags: ignoreversion
+; Reads a page of print rather than describing a photograph. Optional.
+Source: "installDocumentModel.cmd"; DestDir: "{app}"; Flags: ignoreversion
+; Reads a transcript to find advertisements. Only needed for Remove ads.
+Source: "installTextModel.cmd"; DestDir: "{app}"; Flags: ignoreversion
+; No Python is shipped and none is needed. HomerScribe reads a zip of page
+; pictures; turning a PDF into those is a solved problem with many free tools,
+; and carrying a PDF library to redo it would cost the single-file build.
 Source: "installWhisper.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "context\*.md"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 Source: "context\*.htm"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
@@ -193,6 +200,18 @@ FileName: "{cmd}"; \
   WorkingDir: "{app}"; \
   Description: "Install the vision model only, for describing video (about 5.5 GB; tick this if Ollama is already installed)"; \
   Flags: postinstall skipifsilent runascurrentuser
+
+FileName: "{cmd}"; \
+  Parameters: "/c """"{app}\installDocumentModel.cmd"""""; \
+  WorkingDir: "{app}"; \
+  Description: "Install a SMALLER model for reading scanned pages (about 2.4 GB; only for a computer short of memory - the ordinary vision model already reads pages very well)"; \
+  Flags: postinstall skipifsilent runascurrentuser unchecked
+
+FileName: "{cmd}"; \
+  Parameters: "/c """"{app}\installTextModel.cmd"""""; \
+  WorkingDir: "{app}"; \
+  Description: "Install the reading model, for REMOVING ADS from podcasts (about 4.7 GB; only needed for that, and it finds five times as many ads as the picture model)"; \
+  Flags: postinstall skipifsilent runascurrentuser unchecked
 
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installWhisper.cmd"""""; \

@@ -25,8 +25,11 @@ not in a note beside it, but in the picture, where it travels with the file
 wherever you send it. Select one in Windows Explorer, open Properties, and the
 description is simply there for a screen reader to read.
 
-You also get the same pictures under new names. `IMG_4471.JPG` becomes
+You also get **described.zip**: the same pictures under new names.
+`IMG_4471.JPG` becomes
 `Elderly woman in a blue floral dress beside a dry stone wall.jpg`.
+
+Photographs from an iPhone work too, in the `.heic` format it saves them as.
 
 It uses what you can tell it. A picture called `Jeannie & Jim - Lake Tahoe.jpg`
 gets those names, because somebody who was there typed them. You can drop a

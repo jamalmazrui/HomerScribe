@@ -749,7 +749,7 @@ In a folder named after the archive:
   same pictures under their new names.
 - **Every picture, under its original name**, with the description written
   inside the file.
-- **`<archive>.zip`** — the same pictures again, under their new descriptive
+- **`described.zip`** — the same pictures again, under their new descriptive
   names, carrying the same descriptions.
 
 The two copies are identical apart from the name. The description is written
@@ -822,7 +822,13 @@ anybody else's caption stay where they are.
 Not every format can hold a description, and the ones that can do not all hold
 the same set.
 
-**PNG, JPEG and TIFF** take **all ten fields** above.
+**PNG, JPEG and TIFF** take **all ten fields** above. A PNG also gets its own
+text chunks, because a PNG has no EXIF and would otherwise show nothing in the
+Windows Comments column.
+
+**HEIC and HEIF** — the formats an iPhone has produced since iOS 11 — are
+converted to PNG before the model sees them, and take whatever fields your copy
+of ExifTool can write to them.
 
 **WebP** takes all ten as well, **but only with a recent ExifTool**. Older
 copies answer "Writing of WEBP files is not yet supported", and HomerScribe
@@ -840,7 +846,7 @@ still described and still renamed, and the description is in `described.md`.
 nothing here can turn it into something the model could look at. It is named in
 the log so you know it was seen and passed over.
 
-Whatever the format, **the copy in `<archive>.zip` is renamed** to the short
+Whatever the format, **the copy in `described.zip` is renamed** to the short
 name — `Elderly woman in a blue floral dress beside a dry stone wall.jpg` — and
 the copy in the folder keeps its original name. A file name is the one piece of
 description that every program on earth can read, including those that ignore

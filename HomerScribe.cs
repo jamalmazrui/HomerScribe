@@ -207,11 +207,37 @@ namespace Homer
         // Named to match described.mkv. It was descriptions.md, which was the
         // odd one out among the documents.
         const string sDefaultPicturesName = "described.md";
+        // The archive of renamed copies. Named for what it holds rather than
+        // for what it came from, and matching described.mkv and described.md.
+        const string sDefaultDescribedZip = "described.zip";
+        // The copy with the advertisements taken out, and the account of what
+        // was taken. Named for what happened to it, like described.mkv.
+        const string sDefaultStrippedName = "stripped";
+        // What a sponsor read always contains. These are not used to decide
+        // anything on their own -- the model decides -- but a passage carrying
+        // three of them and a passage carrying none are not equally likely to
+        // be an advertisement, and that difference is worth having as a second
+        // opinion that costs nothing.
+        const string sDefaultAdMarkers = "brought to you by|sponsored by|our sponsor|this episode is sponsored"
+                                       + "|promo code|coupon code|use code|discount code|offer code"
+                                       + "|dot com slash|\\.com/|visit .{0,30}\\.com|go to .{0,30}\\.com"
+                                       + "|percent off|free trial|free shipping|money back guarantee"
+                                       + "|support for this (show|podcast|program|programme) comes from"
+                                       + "|terms and conditions apply|see site for details"
+                                       + "|start your free|sign up today|limited time offer"
+                                       + "|we.ll be right back|back after (this|these)|after the break";
         // What the model can be shown. Ollama reads these; anything else is
         // turned into a PNG first, and anything that cannot be is passed over.
         const string sDefaultSeenKinds = ".png,.jpg,.jpeg,.webp,.gif";
         // What it can be shown once ffmpeg has turned it into a PNG.
-        const string sDefaultConvertKinds = ".bmp,.tif,.tiff";
+        // Converted to a plain PNG before the model sees them.
+        //
+        // .heic and .heif are the formats an iPhone has produced since iOS 11,
+        // which makes them the formats most photographs now arrive in --
+        // and until now HomerScribe passed them over without a word. ffmpeg
+        // decodes them where the build carries the right decoder; where it does
+        // not, asPngFor says so and the picture is reported rather than lost.
+        const string sDefaultConvertKinds = ".bmp,.tif,.tiff,.heic,.heif";
         // Where a description can be stored inside the picture itself. GIF has
         // only a comment block and BMP has nowhere at all, which is a fact
         // about those formats and not something to be worked around.
@@ -345,6 +371,14 @@ namespace Homer
             addParam("player-client", "", "string", "", "Which YouTube player to ask for the video: web, web_safari, tv, ios or mweb. Empty tries the usual one and then the others when it is refused");
             addParam("name-length", "", "integer", "79", "Longest a picture's new name may be, before its extension. Cut at a word, never in the middle of one");
             addParam("picture-width", "", "integer", "1024", "Longest side, in pixels, a picture is reduced to before the model is shown it");
+            addParam("document-model", "", "string", "", "A different model for a picture that is mostly print — a scanned page, a sign, a screenshot. EMPTY BY DEFAULT, which uses the ordinary picture model, because that model is already one of the best in the world at reading documents. Set this only if you have something better, or something smaller for a machine short of memory");
+            addParam("text-model", "", "string", "", "A model for questions with no picture in them — finding advertisements in a transcript, and summarising. Empty uses the ordinary vision model, which can do it. qwen2.5:7b is the same family without the vision half and is a better fit if you have it");
+            addParam("remove-ads", "r", "flag", "no", "Write a copy of the file with the advertisements taken out. Needs the words, so the film is transcribed whether or not Transcribe audio is ticked");
+            addParam("ad-confidence", "", "integer", "95", "How sure the model must be, out of a hundred, before an advertisement is cut. Below this it is left in and the reason is recorded. Lower this and you will lose parts of programmes");
+            addParam("ad-pad", "", "number", "0.35", "Seconds of quiet left either side of a cut, so a join does not clip a breath");
+            addParam("ad-reencode", "", "flag", "no", "Re-encode when cutting video, which makes the cuts exact. Without it a video cut lands on the nearest keyframe, which is quicker and lossless but can be a second or two out. Sound is always exact");
+            addParam("page-pictures", "", "flag", "yes", "Also describe any photograph, drawing, chart or map found on a page of print. Asked as a separate question, because a model asked for the words and the pictures together gives the words and ignores the pictures");
+            addParam("read-pages", "", "flag", "yes", "Read the words on a picture that is mostly print, and set them out as Markdown, rather than describing it as a picture");
             addParam("update-tools", "", "flag", "yes", "Update yt-dlp and try once more when a video is refused every other way");
             addParam("update-channel", "", "string", "nightly", "Which yt-dlp release to update to: nightly, stable or master. Nightly is what yt-dlp recommends and carries this week's fixes");
             addParam("browser-session", "", "flag", "yes", "When a video is refused every other way, try again borrowing a browser's signed-in session, from Edge then Chrome then Firefox");
@@ -950,7 +984,12 @@ namespace Homer
             "metadata-self-test", "accessibility-tags-taught", "newest-exiftool-chosen",
             "single-file-exiftool-only", "opening-names-the-film", "fuller-picture-names",
             "done-between-sources", "source-box-selected", "described-md-in-both-places",
-            "fields-read-back-not-assumed", "film-announced-before-work", "person-captions-only"
+            "fields-read-back-not-assumed", "film-announced-before-work", "person-captions-only",
+            "pages-of-print-are-read", "scanned-document-rebuilt",
+            "iphone-pictures-read", "camera-date-as-context", "png-keeps-its-own-text",
+            "pdf-is-a-source-path", "page-pictures-asked-separately", "pdf-text-taken-directly",
+            "ads-removed", "ads-gated-at-confidence", "ad-cuts-land-in-silence",
+            "pseudo-playlists", "ads-remembered-between-episodes", "playlist-names-the-folder", "advertising-wording-pointed-out", "whole-break-not-the-giveaway-line", "split-breaks-rejoined", "finalizing-says-so", "web-pages-are-playlists", "host-read-ads-not-penalised"
         };
 
         static void logEnvironment()
@@ -1085,7 +1124,9 @@ namespace Homer
                 attachStatusLine(oForm);
                 oForm.Text = "HomerScribe, working";
                 bAnnouncing = flag("announce-progress");
-                announce("Initializing", -1.0, 1.0, "Starting.");
+                // "Starting." was dropped: he heard it well after things had
+                // started, and every other message already shows that
+                // something is under way.
                 oForm.Show();
                 oForm.Refresh();
             }
@@ -1671,12 +1712,60 @@ namespace Homer
                 logMessage("Could not start " + sProgram + ": " + oError.Message, "ERROR");
                 return -1;
             }
-            sOut = oProcess.StandardOutput.ReadToEnd();
-            sErr = oProcess.StandardError.ReadToEnd();
-            oProcess.WaitForExit();
+            // READ ASYNCHRONOUSLY AND PUMP WHILE WAITING.
+            //
+            // This used to be ReadToEnd twice and then WaitForExit, which
+            // blocks this thread until the program finishes. The work runs on
+            // the same thread as the window, so a command taking minutes left
+            // Windows with a window it could not activate: HomerScribe showed
+            // in Alt+Tab, and letting go of Alt put the focus nowhere. Jamal
+            // worked that out from the symptom and he was right.
+            //
+            // The reads are asynchronous because the old order -- read, then
+            // wait -- exists to avoid a deadlock when a program fills its
+            // output buffer, and simply moving WaitForExit first would
+            // reintroduce it. Events avoid both problems.
+            StringBuilder oGot = new StringBuilder();
+            StringBuilder oTrouble = new StringBuilder();
+            oProcess.OutputDataReceived += delegate(object oSender, DataReceivedEventArgs oEvent)
+            {
+                if (oEvent.Data != null) oGot.AppendLine(oEvent.Data);
+            };
+            oProcess.ErrorDataReceived += delegate(object oSender, DataReceivedEventArgs oEvent)
+            {
+                if (oEvent.Data != null) oTrouble.AppendLine(oEvent.Data);
+            };
+            try
+            {
+                oProcess.BeginOutputReadLine();
+                oProcess.BeginErrorReadLine();
+                while (!oProcess.WaitForExit(120))
+                {
+                    pumpDialog();
+                }
+                // WaitForExit() with no timeout after the loop, which is what
+                // flushes the last of the asynchronous reads.
+                oProcess.WaitForExit();
+            }
+            catch (Exception oError)
+            {
+                logMessage("Waiting for " + sProgram + " went wrong: " + oError.Message, "ERROR");
+            }
+            sOut = oGot.ToString();
+            sErr = oTrouble.ToString();
             double nTook = DateTime.Now.Subtract(dtBegan).TotalSeconds;
             logMessage("Exit code " + oProcess.ExitCode.ToString() + " after " + num(nTook) + " seconds", "CMD");
-            if (oProcess.ExitCode != 0 && sErr.Trim() != "") logMessage("Error output: " + tail(sErr, 1500), "ERROR", "");
+            // A non-zero exit is not always a fault. "ffmpeg -i file" with no
+            // output ALWAYS exits 1 -- that is how ffmpeg says "you gave me
+            // nothing to write" -- and HomerScribe uses exactly that form six
+            // times to read a file's header. Every ERROR line in his 9 and 10
+            // September runs was that probe, carrying a harmless ffmpeg notice
+            // about estimating duration or skipping junk bytes.
+            //
+            // A log where every error line is a false one is a log nobody reads.
+            if (oProcess.ExitCode != 0 && sErr.Trim() != "")
+                logMessage((bExpectFailure ? "Output: " : "Error output: ") + tail(sErr, 1500),
+                           bExpectFailure ? "INFO" : "ERROR", "");
             return oProcess.ExitCode;
         }
 
@@ -1919,7 +2008,7 @@ namespace Homer
         {
             string sOut = "";
             string sErr = "";
-            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sPath), out sOut, out sErr);
+            runProbe(sFfmpeg, "-hide_banner -i " + quoted(sPath), out sOut, out sErr);
             Match oMatch = Regex.Match(sErr, @"Duration:\s*(\d+):(\d\d):(\d\d(?:\.\d+)?)");
             if (!oMatch.Success)
             {
@@ -1935,7 +2024,7 @@ namespace Homer
         {
             string sOut = "";
             string sErr = "";
-            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sPath), out sOut, out sErr);
+            runProbe(sFfmpeg, "-hide_banner -i " + quoted(sPath), out sOut, out sErr);
             Match oMatch = Regex.Match(sErr, @"Audio:.*?,\s*\d+\s*Hz,\s*([^,]+),");
             if (!oMatch.Success) return 0;
             string sLayout = oMatch.Groups[1].Value.Trim().ToLower();
@@ -2074,7 +2163,7 @@ namespace Homer
         {
             string sOut = "";
             string sErr = "";
-            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
+            runProbe(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
             string sBoth = sOut + sErr;
             foreach (Match oOne in Regex.Matches(sBoth, @"Stream #\d+:\d+.*?: Video:"))
             {
@@ -2092,7 +2181,7 @@ namespace Homer
         {
             string sOut = "";
             string sErr = "";
-            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
+            runProbe(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
             return Regex.Matches(sOut + sErr, @"Stream #\d+:\d+.*: Audio:").Count;
         }
 
@@ -2484,7 +2573,7 @@ namespace Homer
             // and the language in brackets is missing when nobody set it.
             // Their order in that listing is their order in the file, so the
             // third subtitle stream found is 0:s:2.
-            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
+            runProbe(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
             List<string> lTags = new List<string>();
             foreach (Match oOne in Regex.Matches(sOut + sErr, @"Stream #\d+:\d+(?:\(([^)]*)\))?[^\r\n]*?: Subtitle:"))
             {
@@ -4651,6 +4740,20 @@ namespace Homer
         // lCaptions and the rest already travel.
         static List<string> lSpeakerRoster = new List<string>();
         static string sSpeakerNear = "";
+        // What the playlist called each address.
+        //
+        // A podcast link redirects to a content network, so yt-dlp names the
+        // download after the file it lands on -- which for Spreaker is a GUID.
+        // His Sword and Scale run produced folders called
+        // "0d174bea-e1da-5292-9768-04821720a3a1", and he could not find his
+        // own transcripts in them, which is fair enough.
+        //
+        // The playlist knew all along: the link text says "Episode 5". Kept
+        // here when the playlist is read, and used to name the folder.
+        static Dictionary<string, string> dPlaylistTitles = new Dictionary<string, string>();
+        // Set around a command whose non-zero exit is the expected answer, so
+        // that its output is recorded rather than reported as a fault.
+        static bool bExpectFailure = false;
         static bool bCaptionsAuto = false;
         static bool bNoAltTags = false;
         // Set when the definitions below are being supplied to make up for it.
@@ -4996,6 +5099,7 @@ namespace Homer
                 bool bUseConfig = flag("use-configuration");
                 bool bAudioOnly = flag("audio-only");
                 bool bDescribe = flag("describe");
+                bool bRemoveAds = flag("remove-ads");
                 bool bTranscribe = flag("transcribe");
                 bool bViewOutput = flag("view-output");
                 bool bWebContext = flag("web-context");
@@ -5022,6 +5126,16 @@ namespace Homer
                     CheckBox oAudioBox = oDialog.addCheckBox("&Audio only", bAudioOnly,
                         "Produce sound only: one mp3 holding the film's own audio with the descriptions mixed into it, and no video. " +
                         "Far smaller than the film, quicker to make, and enough when the picture is of no use to the listener.");
+                    // Alt+R. S and A were both taken -- Source paths and Audio
+                    // only -- so "strip ads" had no letter of its own and
+                    // "Remove ads" does.
+                    CheckBox oAdsBox = oDialog.addCheckBox("&Remove ads", bRemoveAds,
+                        "Write a copy of the file with the advertisements taken out, as stripped.mp3 or "
+                      + "stripped.mp4, alongside stripped.md saying what was removed and how sure it was. "
+                      + "The file has to be transcribed for this, whether or not Transcribe audio is ticked. "
+                      + "Nothing is cut unless the model is at least 95 out of 100 sure it is an "
+                      + "advertisement: missing one costs you half a minute, and cutting the programme by "
+                      + "mistake cannot be undone.");
                     CheckBox oWebBox = oDialog.addCheckBox("&Web context", bWebContext,
                         "Learn what the video is before describing it. For a web address, the page's own title and description are used. " +
                         "For a file, if it carries a title, Wikipedia is asked about that title and the answer is used only if it clearly matches.");
@@ -5097,6 +5211,7 @@ namespace Homer
                     bUseConfig = oConfigBox.Checked;
                     bAudioOnly = oAudioBox.Checked;
                     bDescribe = oDescribeBox.Checked;
+                    bRemoveAds = oAdsBox.Checked;
                     bTranscribe = oTranscribeBox.Checked;
                     bViewOutput = oViewBox.Checked;
                     bWebContext = oWebBox.Checked;
@@ -5133,6 +5248,11 @@ namespace Homer
                 dParams["use-configuration"].sValue = bUseConfig ? "yes" : "no";
                 dParams["audio-only"].sValue = bAudioOnly ? "yes" : "no";
                 dParams["describe"].sValue = bDescribe ? "yes" : "no";
+                // Read from the box on line 5150 and then thrown away, which is
+                // why his 9 and 10 September runs both logged
+                // "Setting remove-ads = no" after he had ticked it. The tick
+                // reached a local variable and stopped there.
+                dParams["remove-ads"].sValue = bRemoveAds ? "yes" : "no";
                 dParams["transcribe"].sValue = bTranscribe ? "yes" : "no";
                 dParams["view-output"].sValue = bViewOutput ? "yes" : "no";
                 dParams["web-context"].sValue = bWebContext ? "yes" : "no";
@@ -5216,7 +5336,7 @@ namespace Homer
         // build goes on handing back its idea of a setting long after the
         // default has changed, with nothing on screen to say so.
         static readonly string[] asRemembered = new string[] {
-            "source-paths", "output-dir", "describe", "transcribe", "force", "log-session", "use-configuration", "view-output", "audio-only", "web-context"
+            "source-paths", "output-dir", "describe", "transcribe", "force", "log-session", "use-configuration", "view-output", "audio-only", "web-context", "remove-ads"
         };
 
         static bool isRemembered(string sName)
@@ -5510,7 +5630,15 @@ namespace Homer
         // A plain text file naming one source per line. Handing HomerScribe a
         // list is easier than typing sixteen paths, and a list is what people
         // already keep.
-        static readonly string[] asListKinds = new string[] { ".txt", ".md", ".lst", ".list", ".markdown" };
+        // What may hold a list of sources, or media links to mine out of it.
+        //
+        // .htm and .html were missing, which is why his ABC2020.htm was not
+        // recognised while the .md beside it was: the file never reached the
+        // link-mining at all, because it was not considered a list in the first
+        // place. A directory saved as a web page is exactly the shape this
+        // feature is for, and the anchor-reading code was already written.
+        static readonly string[] asListKinds = new string[] { ".txt", ".md", ".lst", ".list", ".markdown",
+                                                              ".htm", ".html", ".m3u", ".m3u8" };
 
         static bool looksLikeList(string sPath)
         {
@@ -5522,9 +5650,93 @@ namespace Homer
             return false;
         }
 
+        // Anything that plays, by the end of its address.
+        const string sDefaultMediaLinkKinds = "mp3|m4a|m4b|mp4|m4v|wav|aac|ogg|oga|opus|flac|wma"
+                                            + "|mkv|webm|mov|avi|flv|m3u8|ts";
+
+        // The media links inside a document.
+        //
+        // A PSEUDO PLAYLIST: not a list of sources but a piece of writing that
+        // happens to contain them. His Sword and Scale directory is a whole
+        // document -- headings, summaries, dates, two links per episode -- and
+        // one of those two links is the audio and the other is a web page.
+        //
+        // Read as a plain list it would be nonsense: every line of prose taken
+        // for a path. Mined for links, it is a playlist of 114 episodes.
+        //
+        // The link TEXT is kept as well, because "Episode 232" is what he will
+        // want to see in a log rather than a hundred characters of redirect.
+        static List<string[]> mediaLinksIn(string sText)
+        {
+            List<string[]> lFound = new List<string[]>();
+            List<string> lSeen = new List<string>();
+            if (sText == null || sText == "") return lFound;
+            string sIsMedia = @"\.(" + sDefaultMediaLinkKinds + @")(\?[^)\s""']*)?$";
+
+            // Markdown links first: [Episode 232](https://...mp3)
+            foreach (Match oOne in Regex.Matches(sText, @"\[([^\]]*)\]\(\s*<?(https?://[^)\s>]+)>?\s*\)"))
+            {
+                string sUrl = oOne.Groups[2].Value.Trim();
+                if (!Regex.IsMatch(sUrl, sIsMedia, RegexOptions.IgnoreCase)) continue;
+                if (lSeen.Contains(sUrl)) continue;
+                lSeen.Add(sUrl);
+                lFound.Add(new string[] { tidyText(oOne.Groups[1].Value).Trim(), sUrl });
+            }
+            // Then anchors, for a directory saved as a web page.
+            foreach (Match oOne in Regex.Matches(sText,
+                     @"<a[^>]+href\s*=\s*[""']([^""']+)[""'][^>]*>(.*?)</a>",
+                     RegexOptions.IgnoreCase | RegexOptions.Singleline))
+            {
+                string sUrl = oOne.Groups[1].Value.Trim();
+                if (!Regex.IsMatch(sUrl, sIsMedia, RegexOptions.IgnoreCase)) continue;
+                if (lSeen.Contains(sUrl)) continue;
+                lSeen.Add(sUrl);
+                lFound.Add(new string[] { tidyText(Regex.Replace(oOne.Groups[2].Value, "<[^>]+>", " ")).Trim(), sUrl });
+            }
+            // Then bare addresses, for a plain list or an .m3u.
+            foreach (Match oOne in Regex.Matches(sText, @"(?<![\(""'>])\bhttps?://[^\s)""'<>]+"))
+            {
+                string sUrl = oOne.Value.Trim().TrimEnd('.', ',', ';');
+                if (!Regex.IsMatch(sUrl, sIsMedia, RegexOptions.IgnoreCase)) continue;
+                if (lSeen.Contains(sUrl)) continue;
+                lSeen.Add(sUrl);
+                lFound.Add(new string[] { "", sUrl });
+            }
+            return lFound;
+        }
+
         static List<string> readListFile(string sPath)
         {
             List<string> lFound = new List<string>();
+            // A document with media links in it is a playlist, whatever else it
+            // holds. Tried first, because reading his podcast directory as a
+            // plain list would take every line of prose for a path.
+            try
+            {
+                List<string[]> lLinks = mediaLinksIn(File.ReadAllText(sPath));
+                if (lLinks.Count > 0)
+                {
+                    logMessage("The list " + sPath + " is a document with "
+                               + counted(lLinks.Count, "media link", "media links") + " in it, so those are "
+                               + "the sources, in the order they appear.",
+                               "INFO", Path.GetFileName(sPath) + " holds "
+                               + counted(lLinks.Count, "media link", "media links") + ".");
+                    int iAt = 0;
+                    foreach (string[] asOne in lLinks)
+                    {
+                        iAt = iAt + 1;
+                        logMessage("  " + iAt.ToString() + ". "
+                                   + (asOne[0] == "" ? "" : asOne[0] + " — ") + asOne[1], "INFO", "");
+                        lFound.Add(asOne[1]);
+                        if (asOne[0] != "") dPlaylistTitles[asOne[1]] = asOne[0];
+                    }
+                    return lFound;
+                }
+            }
+            catch (Exception oError)
+            {
+                logMessage("The list " + sPath + " could not be read for links: " + oError.Message, "INFO", "");
+            }
             try
             {
                 foreach (string sLine in File.ReadAllLines(sPath))
@@ -6096,9 +6308,105 @@ namespace Homer
 
         // ---------- pictures in an archive ----------
 
+        // The playlist's name for a source, made safe to be a folder name.
+        //
+        // Matched on the ADDRESS it was downloaded from, and also on the file
+        // it became, because by the time the folder is named the source is a
+        // path on disk rather than the link it came from.
+        static string playlistTitleFor(string sInput)
+        {
+            if (dPlaylistTitles.Count == 0) return "";
+            string sStem = Path.GetFileNameWithoutExtension(sInput);
+            foreach (KeyValuePair<string, string> oPair in dPlaylistTitles)
+            {
+                if (string.Compare(oPair.Key, sInput, true) == 0
+                    || (sStem != "" && oPair.Key.IndexOf(sStem, StringComparison.OrdinalIgnoreCase) >= 0))
+                    return friendlyName(oPair.Value);
+            }
+            return "";
+        }
+
+        // A command asked only for what it prints, where failing is how it
+        // answers. Used for "ffmpeg -i file", which reads a header and then
+        // exits 1 because no output was named.
+        static int runProbe(string sProgram, string sArgs, out string sOut, out string sErr)
+        {
+            bExpectFailure = true;
+            try
+            {
+                return runCommand(sProgram, sArgs, out sOut, out sErr);
+            }
+            finally
+            {
+                bExpectFailure = false;
+            }
+        }
+
         static bool looksLikeArchive(string sPath)
         {
-            return string.Compare(Path.GetExtension(sPath), ".zip", true) == 0;
+            return string.Compare(Path.GetExtension(sPath), ".zip", true) == 0
+                || looksLikePdf(sPath);
+        }
+
+        static bool looksLikePdf(string sPath)
+        {
+            return string.Compare(Path.GetExtension(sPath), ".pdf", true) == 0;
+        }
+
+        // A PDF turned into a zip of page pictures, by the helper script.
+        //
+        // He asked whether a PDF should be a source path in its own right, or
+        // whether it should be dropped into a zip alongside pictures. A source
+        // path in its own right, and the rest of HomerScribe already settled
+        // it: a film makes a folder named after the film, an archive makes a
+        // folder named after the archive. A document should make a folder
+        // named after the document. Putting it inside a zip would mean
+        // packaging a file before HomerScribe could read it, and would leave
+        // no sensible answer to "what if the zip holds three PDFs and twenty
+        // photographs".
+        //
+        // The unpacking is not done here at all -- see zipFromPdf for why.
+        static string zipFromPdf(string sPdfPath, string sWorkDir)
+        {
+            // NOTHING IS RUN HERE, AND THAT IS THE POINT.
+            //
+            // This used to launch a Python script. HomerScribe was never
+            // supposed to need Python on the machine, and it does not now:
+            // every other thing it uses ships beside it as an executable.
+            //
+            // Taking the pages out of a PDF in C# was tried and abandoned, and
+            // it is worth writing down why so nobody starts again lightly. It
+            // is not one problem, it is four:
+            //
+            //   1. /Length is often an indirect reference, so the end of a
+            //      stream has to be found by scanning rather than read.
+            //   2. Page dictionaries live inside /ObjStm object streams, which
+            //      are deflated and carry their own offset table.
+            //   3. Page ORDER is the /Kids tree, not object number order.
+            //      Object order put the wrong page first on a real journal.
+            //   4. /Resources and /XObject are themselves usually indirect,
+            //      and reaching for the image reference without a proper
+            //      resolver picks up /Contents instead.
+            //
+            // Each is solvable; together they are a tokeniser and an object
+            // resolver, which is a library. A half-right one does not fail
+            // loudly -- it silently shuffles the pages of somebody's archive,
+            // which is worse than not doing it at all.
+            //
+            // So HomerScribe reads a ZIP OF PAGE PICTURES, which it does well
+            // and with no dependency at all, and says plainly how to make one.
+            // Turning a PDF into images is a solved problem with many free
+            // tools; describing what is on those pages is not, and that is the
+            // part worth being good at.
+            logMessage("HomerScribe reads pictures, and a PDF is not one until its pages are turned into "
+                       + "images. It does not do that itself, because doing it properly means carrying a PDF "
+                       + "library, and doing it improperly means silently shuffling somebody's pages.",
+                       "ERROR", "A PDF has to be turned into page pictures first.");
+            logMessage("Turn the PDF into images with any free tool that does it — many do — then put them in "
+                       + "a .zip named after the document, with page001, page002 and so on so they sort in "
+                       + "order, and give HomerScribe that. It will read every page and describe every picture "
+                       + "on them. HomerScribe.md has a section on this.", "INFO", "");
+            return "";
         }
 
         static bool kindIsIn(string sList, string sKind)
@@ -6590,6 +6898,1048 @@ namespace Homer
             return new string[] { friendlyName(sName), sAbout };
         }
 
+        // Which model answers a question with no picture in it.
+        //
+        // The vision model can, and does today. But qwen2.5:7b is the same
+        // family without the vision half, and where somebody has it installed
+        // -- for EdSharp, say -- it is the better fit for reading a transcript.
+        // Empty means use the one already in hand, which is the safe default:
+        // nothing new to download and nothing changes for anybody.
+        static string textModel()
+        {
+            string sWanted = text("text-model").Trim();
+            if (sWanted != "") return sWanted;
+            // Nothing chosen, so take the best text-only model that is already
+            // installed rather than making the vision model read an hour of
+            // transcript. Finding advertisements is reading and reasoning about
+            // words; there is no picture in it anywhere.
+            //
+            // Only models ALREADY PRESENT are considered -- naming one that is
+            // not installed answers 404 and loses the work, which happened once
+            // with granite3.2-vision. Best first.
+            foreach (string sTry in new string[] { "qwen2.5:7b", "qwen2.5:14b", "llama3.1:8b", "llama3.2:latest" })
+            {
+                if (!modelIsInstalled(sTry)) continue;
+                if (!bSaidWhichTextModel)
+                {
+                    bSaidWhichTextModel = true;
+                    logMessage("Using " + sTry + " for the reading, since it is installed and is a text model. "
+                               + "The picture model " + text("model") + " can do this too, but reading an hour "
+                               + "of transcript is not what it is best at. Pass --text-model to choose "
+                               + "another, or --text-model " + text("model") + " to go back to the old way.",
+                               "INFO", "");
+                }
+                return sTry;
+            }
+            return text("model");
+        }
+
+        static bool bSaidWhichTextModel = false;
+
+        // Is a model already in Ollama? Asked once and remembered.
+        static List<string> lModelsHeld = null;
+        static bool modelIsInstalled(string sName)
+        {
+            if (lModelsHeld == null)
+            {
+                lModelsHeld = new List<string>();
+                try
+                {
+                    // The same call checkOllama makes, and the same client.
+                    WebClient oClient = new WebClient();
+                    string sSaid = oClient.DownloadString(text("url") + "/api/tags");
+                    foreach (Match oOne in Regex.Matches(sSaid == null ? "" : sSaid, "\"name\"\\s*:\\s*\"([^\"]+)\""))
+                        lModelsHeld.Add(oOne.Groups[1].Value);
+                }
+                catch (Exception oError)
+                {
+                    logMessage("Ollama's model list could not be read, so the picture model is used for the "
+                               + "reading: " + oError.Message, "INFO", "");
+                }
+            }
+            foreach (string sHeld in lModelsHeld)
+            {
+                if (string.Compare(sHeld, sName, true) == 0) return true;
+                // "qwen2.5:7b" should match a held "qwen2.5:7b" however it is
+                // tagged, and a bare name should match its latest.
+                if (sName.IndexOf(':') < 0 && sHeld.StartsWith(sName + ":", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        // A question with no picture, and the model's answer.
+        //
+        // The same shape as askAboutImage, which this is deliberately close to,
+        // minus the image. Factored out because ad-finding is the third caller
+        // that needs it and rememberFilm and summarise had a copy each.
+        static string askTheModel(string sModel, string sPrompt,
+                                  Dictionary<string, object> dOptions, string sFormat)
+        {
+            try
+            {
+                Dictionary<string, object> dPayload = new Dictionary<string, object>();
+                dPayload["model"] = sModel == "" ? text("model") : sModel;
+                dPayload["prompt"] = sPrompt;
+                dPayload["stream"] = false;
+                dPayload["keep_alive"] = "30m";
+                if (sFormat != "") dPayload["format"] = sFormat;
+                dPayload["options"] = dOptions;
+                JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+                oSerializer.MaxJsonLength = int.MaxValue;
+                string sAnswer = postJsonPumping(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
+                if (sAnswer == "") return "";
+                Dictionary<string, object> dReply = oSerializer.Deserialize<Dictionary<string, object>>(sAnswer);
+                if (dReply.ContainsKey("response")) return Convert.ToString(dReply["response"]).Trim();
+                return "";
+            }
+            catch (Exception oError)
+            {
+                logMessage("  The model could not be asked: " + oError.Message, "ERROR");
+                return "";
+            }
+        }
+
+        // One advertisement, as found in the transcript.
+        class AdBreak
+        {
+            public double nStart;
+            public double nEnd;
+            public int iSure;              // out of a hundred, as the model gave it
+            public int iMarkers;           // sponsor phrases counted in the words
+            public int iRepeats;           // sentences heard in an earlier episode, or twice in this one
+            public int iEndorse;           // marks of a host recommending something in their own voice
+            public string sWords = "";     // what was actually said, for the learning
+            public string sWhy = "";       // the model's own reason, for the report
+            public string sOpening = "";   // the first words, so he can find it
+            public bool bCut;
+            public string sVerdict = "";
+        }
+
+        // Sentences already known to belong to advertisements, remembered
+        // between episodes of the same show.
+        //
+        // HIS IDEA, AND IT IS THE ONE THE FIELD IS BUILT ON. A 2010 paper in
+        // the Journal on Audio, Speech and Music Processing puts it plainly:
+        // advertisements are "inserted into and repeated, at different
+        // locations". A commercial detector fingerprints audio and matches it
+        // against a database of known advertisements. A patent for podcast
+        // repetitive-content detection combines text matching, audio feature
+        // matching and fingerprinting, and treats agreement between any two of
+        // the three as confidence. Somebody on Hacker News built a working
+        // podcast ad blocker by finding repeated segments and cutting them.
+        //
+        // The audio half of that needs a fingerprinting library, which is a
+        // dependency HomerScribe is not going to carry. The TEXT half needs
+        // nothing: Whisper has already written the words down, and a sponsor
+        // read is the same words every time.
+        //
+        // So: the sentences of every advertisement actually cut are kept, per
+        // show, and a passage repeating one of them is corroborated by that.
+        // The second episode is better than the first, and the tenth better
+        // than the second.
+        static string adMemoryPath(string sSource)
+        {
+            string sShow = "show";
+            try
+            {
+                string sFolder = Path.GetDirectoryName(sSource);
+                if (sFolder != null && sFolder != "") sShow = Path.GetFileName(sFolder);
+                if (sShow == "" || sShow == null) sShow = "show";
+            }
+            catch (Exception)
+            {
+            }
+            sShow = Regex.Replace(sShow, @"[^A-Za-z0-9]+", "-").Trim('-').ToLower();
+            if (sShow == "") sShow = "show";
+            return Path.Combine(appDataFolder(), "ads-" + sShow + ".txt");
+        }
+
+        // A sentence reduced to the part that stays the same when it is read
+        // again: lower case, no punctuation, no numbers, spaces collapsed.
+        static string adKeyOf(string sSaid)
+        {
+            string sBare = Regex.Replace(sSaid == null ? "" : sSaid.ToLower(), @"[^a-z ]", " ");
+            sBare = Regex.Replace(sBare, @"\s+", " ").Trim();
+            return sBare;
+        }
+
+        // The sentences of an advertisement, long enough to be distinctive.
+        //
+        // Short ones are thrown away: "thanks for listening" appears in every
+        // episode and belongs to the programme, not to a sponsor. Ten words is
+        // long enough that a match is a real repeat rather than a turn of
+        // phrase two people both used.
+        static List<string> adSentencesOf(string sText)
+        {
+            List<string> lOut = new List<string>();
+            foreach (string sOne in Regex.Split(tidyText(sText), @"(?<=[.!?])\s+"))
+            {
+                string sKey = adKeyOf(sOne);
+                if (sKey.Split(' ').Length < 10) continue;
+                if (!lOut.Contains(sKey)) lOut.Add(sKey);
+            }
+            return lOut;
+        }
+
+        static List<string> adMemory(string sPath)
+        {
+            List<string> lKnown = new List<string>();
+            try
+            {
+                if (File.Exists(sPath))
+                {
+                    foreach (string sLine in File.ReadAllLines(sPath))
+                    {
+                        string sOne = sLine.Trim();
+                        if (sOne != "" && !lKnown.Contains(sOne)) lKnown.Add(sOne);
+                    }
+                }
+            }
+            catch (Exception oError)
+            {
+                logMessage("  What is known about this show's advertisements could not be read: "
+                           + oError.Message, "INFO", "");
+            }
+            return lKnown;
+        }
+
+        static bool rememberAdSentences(string sPath, List<string> lKnown, List<string> lNew)
+        {
+            List<string> lAdd = new List<string>();
+            foreach (string sOne in lNew)
+            {
+                if (!lKnown.Contains(sOne) && !lAdd.Contains(sOne)) lAdd.Add(sOne);
+            }
+            if (lAdd.Count == 0) return true;
+            try
+            {
+                if (!Directory.Exists(Path.GetDirectoryName(sPath)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(sPath));
+                // Capped, so a long-running show does not grow a file without
+                // end. The oldest go, since a sponsor that has not been heard
+                // in five hundred sentences has probably stopped advertising.
+                List<string> lAll = new List<string>();
+                lAll.AddRange(lKnown);
+                lAll.AddRange(lAdd);
+                while (lAll.Count > 2000) lAll.RemoveAt(0);
+                StreamWriter fOut = new StreamWriter(sPath, false, new UTF8Encoding(false));
+                foreach (string sOne in lAll) fOut.WriteLine(sOne);
+                fOut.Close();
+                logMessage("  " + counted(lAdd.Count, "new advertisement sentence", "new advertisement sentences")
+                           + " remembered for this show; " + lAll.Count.ToString() + " known in all. "
+                           + "The next episode is better for it.", "INFO", "");
+                return true;
+            }
+            catch (Exception oError)
+            {
+                logMessage("  What was learnt could not be written to " + sPath + ": " + oError.Message,
+                           "INFO", "");
+                return false;
+            }
+        }
+
+        // How much of a passage is made of sentences already known to be
+        // advertising, and how many times a sentence in it repeats WITHIN this
+        // same episode. Both are repetition; the second needs no memory at all.
+        static int adRepeatsIn(string sText, List<string> lKnown, List<string> lThisEpisode)
+        {
+            int iHits = 0;
+            foreach (string sKey in adSentencesOf(sText))
+            {
+                if (lKnown.Contains(sKey)) iHits = iHits + 1;
+                else
+                {
+                    int iSeen = 0;
+                    foreach (string sOne in lThisEpisode)
+                    {
+                        if (sOne == sKey) iSeen = iSeen + 1;
+                    }
+                    if (iSeen > 1) iHits = iHits + 1;
+                }
+            }
+            return iHits;
+        }
+
+        // The marks of a HOST-READ ad, where the host speaks for the sponsor in
+        // their own voice.
+        //
+        // His observation, and it is right: a host reading a PERSONAL
+        // ENDORSEMENT avoids "brought to you by" on purpose, because naming
+        // the sponsor undercuts the recommendation. The FTC distinguishes
+        // these: where the language suggests the host is expressing their own
+        // views, it is a personal endorsement rather than plainly a commercial.
+        // Industry guidance goes further -- where a sponsor asks for no
+        // disclosure during the read, the show is advised to put it at the
+        // beginning or end of the episode instead.
+        //
+        // So the sponsor-phrase list was not merely missing these: it was
+        // PENALISING them. A passage with no disclosure wording lost four
+        // points, which is exactly backwards for the kind of advertisement
+        // that omits disclosure wording deliberately.
+        //
+        // What a personal endorsement cannot omit is the CALL TO ACTION. The
+        // whole trade runs on conversions measured by a vanity address or a
+        // code, and the advice to advertisers is to state it clearly and
+        // repeat it. A host may decline to say "our sponsor"; they will not
+        // decline to say where to go.
+        const string sDefaultEndorseMarkers =
+              @"\bi (use|used|love|switched|started using|swear by|keep|got|ordered|tried)\b"
+            + @"|\bi.?ve been (using|drinking|wearing|taking)\b"
+            + @"|\bmy (go.to|favourite|favorite|wife|husband|family|kids|team) (and i |)?(use|uses|love|loves)\b"
+            + @"|\bwe (use|love|swear by|have been using)\b"
+            + @"|\bhonestly,? (i|it)\b|\bi genuinely\b|\bi actually\b"
+            + @"|\b(check|checking) (them|it|these) out\b|\bhead (over|on over) to\b"
+            + @"|\blink in the (show notes|description|episode notes)\b"
+            + @"|\bshow notes\b|\bslash [a-z]+\b|\bforward slash\b"
+            + @"|\bgo to [a-z0-9.\- ]{2,30}(dot com|\.com)\b"
+            + @"|\btell them (i|we) sent you\b|\bmention (this|my|our) (podcast|show)\b"
+            + @"|\bthat.s [a-z0-9.\- ]{2,30}(dot com|\.com)\b";
+
+        static int adEndorsementIn(string sText)
+        {
+            if (sText == null || sText == "") return 0;
+            int iFound = 0;
+            foreach (Match oOne in Regex.Matches(sText, sDefaultEndorseMarkers, RegexOptions.IgnoreCase))
+            {
+                if (oOne.Success) iFound = iFound + 1;
+            }
+            return iFound;
+        }
+
+        // The sponsor phrases in a passage.
+        //
+        // Counted separately from anything the model says, so that the two are
+        // independent. A passage the model calls an advertisement AND which
+        // says "promo code" twice is a different proposition from one the model
+        // calls an advertisement on its own.
+        static int adMarkersIn(string sText)
+        {
+            if (sText == null || sText == "") return 0;
+            int iFound = 0;
+            foreach (Match oOne in Regex.Matches(sText, sDefaultAdMarkers, RegexOptions.IgnoreCase))
+            {
+                if (oOne.Success) iFound = iFound + 1;
+            }
+            return iFound;
+        }
+
+        // The transcript, in overlapping chunks, with the times kept.
+        //
+        // Overlapping because an advertisement that straddles a chunk boundary
+        // would otherwise be seen as two halves, and half an advertisement
+        // scores badly and gets kept.
+        static List<Speech> chunkOf(List<Speech> lSpeech, int iFrom, int iHowMany)
+        {
+            List<Speech> lOut = new List<Speech>();
+            for (int iAt = iFrom; iAt < lSpeech.Count && iAt < iFrom + iHowMany; iAt = iAt + 1)
+                lOut.Add(lSpeech[iAt]);
+            return lOut;
+        }
+
+        // Every advertisement the model can find, with how sure it is.
+        static List<AdBreak> findAdBreaks(List<Speech> lSpeech)
+        {
+            List<AdBreak> lFound = new List<AdBreak>();
+            if (lSpeech == null || lSpeech.Count == 0) return lFound;
+            int iChunk = 120;              // passages per ask
+            int iStep = 100;               // so twenty overlap
+            int iAsked = 0;
+            for (int iFrom = 0; iFrom < lSpeech.Count; iFrom = iFrom + iStep)
+            {
+                List<Speech> lPart = chunkOf(lSpeech, iFrom, iChunk);
+                if (lPart.Count == 0) break;
+                StringBuilder oLines = new StringBuilder();
+                foreach (Speech oOne in lPart)
+                {
+                    if (oOne.sText == null || oOne.sText.Trim() == "") continue;
+                    oLines.Append("[" + formatClock(oOne.nStart) + "] " + oOne.sText.Trim() + "\n");
+                }
+                if (oLines.Length == 0) continue;
+                iAsked = iAsked + 1;
+                waitingOn("looking for advertisements, part " + iAsked.ToString());
+                StringBuilder oAsk = new StringBuilder();
+                oAsk.Append("Below is part of a transcript, one line per passage, each stamped with the time it "
+                          + "begins.\n\n");
+                oAsk.Append("Find every ADVERTISEMENT in it. An advertisement is a passage promoting a product or "
+                          + "service that is not what this recording is about: a sponsor read, a promotion for "
+                          + "another show, an appeal to buy something, a discount code.\n\n");
+                oAsk.Append("It is NOT an advertisement when the speakers merely mention or discuss a product as "
+                          + "part of the subject. Somebody saying what car they drive is not an advertisement. A "
+                          + "review is not an advertisement. Only a passage that is SELLING counts.\n\n");
+                oAsk.Append("Answer as JSON and nothing else:\n");
+                oAsk.Append("{\"ads\":[{\"from\":\"0:12:30\",\"to\":\"0:13:45\",\"sure\":95,"
+                          + "\"why\":\"host reads a sponsor message with a discount code\"}]}\n\n");
+                oAsk.Append("\"sure\" is how certain you are, out of a hundred. Be honest and be strict: below "
+                          + "95 the passage will be LEFT IN, which is what should happen when you are not "
+                          + "certain. Cutting a piece of the programme by mistake cannot be undone.\n");
+                oAsk.Append("\"from\" and \"to\" must be times taken from the lines below.\n");
+                // THE WHOLE BREAK, NOT THE GIVEAWAY LINE. On 10 September it
+                // returned spans of five, twelve and nineteen seconds -- the
+                // one line carrying the sponsor phrase -- and removed 21
+                // seconds from an hour where the real load is minutes. A
+                // sponsor read opens before the brand is named and closes with
+                // an address repeated twice.
+                oAsk.Append("Give the WHOLE advertisement, not the line that gives it away. A sponsor read "
+                          + "runs for many passages: it begins before the brand is first named, often with "
+                          + "a change of subject or a phrase like \"we will be right back\", and it ends "
+                          + "after the address or offer has been repeated. \"from\" should be the FIRST "
+                          + "passage of the break and \"to\" the LAST. A span of a few seconds is almost "
+                          + "always wrong.\n");
+                oAsk.Append("If there are none, answer {\"ads\":[]}\n\n");
+                // POINT AT THEM. The sponsor phrases were being counted only
+                // AFTER the model answered, to adjust confidence -- which is
+                // no help at all when the model never mentions the passage.
+                //
+                // His 62-minute episode holds at least four advertisements:
+                // Dupixent, Shopify ("head on over to Shopify.com/swordinscale
+                // and start your free trial today", said three times over),
+                // Hotels.com, and Rustigo. Twelve of thirteen chunks answered
+                // {"ads":[]} and only Rustigo was found. The words "start your
+                // free trial" were in the transcript the model was reading.
+                //
+                // So the phrases are now shown to it, with the times they
+                // occur, before it answers. Finding them costs nothing -- they
+                // were already being counted -- and they are offered as places
+                // to look rather than as conclusions, since a passage can
+                // mention a product without selling it.
+                StringBuilder oHints = new StringBuilder();
+                int iHints = 0;
+                foreach (Speech oOne in lPart)
+                {
+                    if (oOne.sText == null || oOne.sText.Trim() == "") continue;
+                    if (adMarkersIn(oOne.sText) == 0) continue;
+                    iHints = iHints + 1;
+                    if (iHints > 12) break;
+                    oHints.Append("  [" + formatClock(oOne.nStart) + "] " + trimToWords(oOne.sText.Trim(), 14) + "\n");
+                }
+                if (iHints > 0)
+                {
+                    oAsk.Append("These lines use wording common in advertisements. Look at them and at what "
+                              + "surrounds them especially closely — an advertisement usually runs for many "
+                              + "passages before and after such a line. They are places to look, not "
+                              + "conclusions: somebody may simply be talking about a product.\n");
+                    oAsk.Append(oHints.ToString());
+                    oAsk.Append("\n");
+                    logMessage("  " + counted(iHints, "line", "lines") + " with advertising wording pointed out "
+                               + "to the model in this part.", "INFO", "");
+                }
+                oAsk.Append(oLines.ToString());
+
+                Dictionary<string, object> dOptions = new Dictionary<string, object>();
+                dOptions["temperature"] = 0.0;
+                dOptions["num_predict"] = 800;
+                string sSaid = askTheModel(textModel(), oAsk.ToString(), dOptions, "json");
+                logMessage("  Asked about passages " + (iFrom + 1).ToString() + " to "
+                           + (iFrom + lPart.Count).ToString() + " of " + lSpeech.Count.ToString()
+                           + "; the model said: " + tail(sSaid == "" ? "(nothing)" : sSaid, 300), "INFO", "");
+                if (sSaid == "") continue;
+                try
+                {
+                    JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+                    oSerializer.MaxJsonLength = int.MaxValue;
+                    Dictionary<string, object> dReply = oSerializer.Deserialize<Dictionary<string, object>>(sSaid);
+                    if (!dReply.ContainsKey("ads")) continue;
+                    object[] aAds = dReply["ads"] as object[];
+                    if (aAds == null)
+                    {
+                        // JavaScriptSerializer hands a JSON array back as
+                        // object[] here and as ArrayList elsewhere depending on
+                        // how it was reached. Taking only one of those is how
+                        // an answer disappears without a word.
+                        System.Collections.ArrayList oList = dReply["ads"] as System.Collections.ArrayList;
+                        if (oList != null) aAds = oList.ToArray();
+                    }
+                    if (aAds == null)
+                    {
+                        logMessage("    The \"ads\" value was a " + dReply["ads"].GetType().Name
+                                   + ", which was not understood.", "ERROR");
+                        continue;
+                    }
+                    logMessage("    " + counted(aAds.Length, "advertisement", "advertisements")
+                               + " in that answer.", "INFO", "");
+                    foreach (object oItem in aAds)
+                    {
+                        Dictionary<string, object> dOne = toMap(oItem);
+                        string sFrom = Convert.ToString(dOne.ContainsKey("from") ? dOne["from"] : "");
+                        string sTo = Convert.ToString(dOne.ContainsKey("to") ? dOne["to"] : "");
+                        double nFrom = secondsOfStamp(sFrom);
+                        double nTo = secondsOfStamp(sTo);
+                        // On 10 September the model answered
+                        //   {"ads":[{"from":"52:03","to":"52:21","sure":95,...}]}
+                        // and the run finished "0 advertisements cut of 0
+                        // found". Something between that answer and the list
+                        // dropped it, and nothing in the log said what -- so
+                        // every step of taking an answer apart now says what it
+                        // got. A silent drop is the one thing a log must never
+                        // allow, and this is the third time that lesson has
+                        // arrived in a new place.
+                        logMessage("    read: from \"" + sFrom + "\" = " + num(nFrom)
+                                   + "s, to \"" + sTo + "\" = " + num(nTo) + "s", "INFO", "");
+                        if (nTo <= nFrom)
+                        {
+                            logMessage("    DROPPED: the end is not after the start.", "INFO", "");
+                            continue;
+                        }
+                        AdBreak oBreak = new AdBreak();
+                        oBreak.nStart = nFrom;
+                        oBreak.nEnd = nTo;
+                        try
+                        {
+                            oBreak.iSure = dOne.ContainsKey("sure") ? Convert.ToInt32(dOne["sure"]) : 0;
+                        }
+                        catch (Exception)
+                        {
+                            oBreak.iSure = 0;
+                        }
+                        oBreak.sWhy = dOne.ContainsKey("why") ? tidyText(Convert.ToString(dOne["why"])) : "";
+                        lFound.Add(oBreak);
+                    }
+                }
+                catch (Exception oError)
+                {
+                    logMessage("  That answer could not be read as JSON: " + oError.Message, "INFO", "");
+                }
+                if (lPart.Count < iChunk) break;
+            }
+            waitingOn("");
+            return lFound;
+        }
+
+        // Every silence in a file, so a cut can land in one.
+        //
+        // ffmpeg is already here and already used for this on the description
+        // side. A join made in silence is inaudible; a join made mid-syllable
+        // is the first thing anybody notices.
+        static List<double[]> silencesIn(string sFfmpeg, string sPath, double nWholeDuration)
+        {
+            List<double[]> lQuiet = new List<double[]>();
+            // This reads the WHOLE file looking for quiet, which on an
+            // 85-minute podcast is minutes of work with nothing said. His
+            // 13:04 run looked hung here and was not: the last line in the log
+            // is this command starting. Anything that takes minutes has to say
+            // it is doing something.
+            // runScan, not runCommand, and the difference matters more than it
+            // looks. runCommand calls ReadToEnd and then WaitForExit, which
+            // BLOCKS this thread -- and the work runs on the same thread the
+            // window does, so for the minutes this takes on an 85-minute
+            // podcast nothing pumps the message queue. Windows then has a
+            // window it cannot activate: he could see HomerScribe in Alt+Tab,
+            // and letting go of Alt left the focus nowhere. His diagnosis was
+            // right.
+            //
+            // runScan was written for exactly this shape of job: it reads
+            // ffmpeg's progress as it arrives, pumps the dialog while it
+            // waits, and says how far along it is. The silence scan is the
+            // longest thing HomerScribe does and it was the one long pass not
+            // using it.
+            announce("Finalizing", -1.0, 1.0, "Listening for the quiet places to cut at");
+            string sSaid = runScan(sFfmpeg, "-hide_banner -i " + quoted(sPath)
+                                          + " -af silencedetect=noise=-32dB:d=0.3 -f null -",
+                                   nWholeDuration, "Listening for quiet");
+            waitingOn("");
+            double nFrom = -1.0;
+            foreach (Match oOne in Regex.Matches(sSaid, @"silence_(start|end):\s*(-?[\d.]+)"))
+            {
+                double nAt = 0.0;
+                double.TryParse(oOne.Groups[2].Value, System.Globalization.NumberStyles.Any,
+                                System.Globalization.CultureInfo.InvariantCulture, out nAt);
+                if (oOne.Groups[1].Value == "start") nFrom = nAt;
+                else if (nFrom >= 0.0) { lQuiet.Add(new double[] { nFrom, nAt }); nFrom = -1.0; }
+            }
+            return lQuiet;
+        }
+
+        // The nearest moment of quiet to a time, within a window.
+        //
+        // bStart says which edge is wanted: the beginning of an advertisement
+        // moves EARLIER into the silence before it, the end moves LATER into
+        // the silence after, so the whole break comes out and the join closes
+        // on two quiet edges.
+        static double nearestQuiet(List<double[]> lQuiet, double nAt, bool bStart, double nReach)
+        {
+            double nBest = nAt;
+            double nGap = nReach;
+            foreach (double[] aOne in lQuiet)
+            {
+                double nEdge = bStart ? aOne[1] : aOne[0];   // end of the quiet before, start of the quiet after
+                double nAway = Math.Abs(nEdge - nAt);
+                if (nAway > nGap) continue;
+                nGap = nAway;
+                nBest = nEdge;
+            }
+            return nBest;
+        }
+
+        // Overlapping or touching breaks joined into one.
+        //
+        // The transcript is read in overlapping chunks so that an advertisement
+        // straddling a boundary is not seen as two halves, which means the same
+        // break is often found twice. Two findings of the same break is also
+        // the strongest evidence there is, so the higher confidence is kept.
+        static List<AdBreak> mergedBreaks(List<AdBreak> lFound)
+        {
+            List<AdBreak> lOut = new List<AdBreak>();
+            lFound.Sort(delegate(AdBreak oLeft, AdBreak oRight)
+            { return oLeft.nStart.CompareTo(oRight.nStart); });
+            foreach (AdBreak oOne in lFound)
+            {
+                bool bJoined = false;
+                foreach (AdBreak oHave in lOut)
+                {
+                    if (oOne.nStart > oHave.nEnd + 2.0 || oOne.nEnd < oHave.nStart - 2.0) continue;
+                    oHave.nStart = Math.Min(oHave.nStart, oOne.nStart);
+                    oHave.nEnd = Math.Max(oHave.nEnd, oOne.nEnd);
+                    if (oOne.iSure > oHave.iSure)
+                    {
+                        oHave.iSure = oOne.iSure;
+                        oHave.sWhy = oOne.sWhy;
+                    }
+                    bJoined = true;
+                    break;
+                }
+                if (!bJoined) lOut.Add(oOne);
+            }
+            return lOut;
+        }
+
+        // The file, written again without the advertisements.
+        //
+        // Everything that is NOT an advertisement is cut out and the pieces
+        // joined. Sound is copied rather than re-encoded, so nothing is lost
+        // and the cuts are exact. Video copied lands on the nearest keyframe,
+        // which is quick and lossless but can be a second or two out; --ad-
+        // reencode makes it exact at the cost of time and a generation.
+        static bool writeWithoutAds(string sFfmpeg, string sFrom, string sTo,
+                                    List<AdBreak> lCut, double nDuration, bool bVideo)
+        {
+            List<double[]> lKeep = new List<double[]>();
+            double nAt = 0.0;
+            foreach (AdBreak oOne in lCut)
+            {
+                if (!oOne.bCut) continue;
+                if (oOne.nStart - nAt > 0.5) lKeep.Add(new double[] { nAt, oOne.nStart });
+                nAt = Math.Max(nAt, oOne.nEnd);
+            }
+            if (nDuration - nAt > 0.5) lKeep.Add(new double[] { nAt, nDuration });
+            if (lKeep.Count == 0)
+            {
+                logMessage("Everything in this file was taken for an advertisement, which cannot be right. "
+                           + "Nothing was written.", "ERROR");
+                return false;
+            }
+            string sWork = Path.GetDirectoryName(sTo);
+            List<string> lParts = new List<string>();
+            string sCopy = bVideo && flag("ad-reencode")
+                         ? "-c:v libx264 -preset veryfast -crf 20 -c:a aac"
+                         : "-c copy";
+            announce("Finalizing", -1.0, 1.0, "Writing the copy without advertisements, in "
+                     + counted(lKeep.Count, "piece", "pieces"));
+            for (int iAt = 0; iAt < lKeep.Count; iAt = iAt + 1)
+            {
+                // The same shape as everything else that takes a while: what it
+                // is doing, then how far along.
+                announce("Finalizing", -1.0, 1.0, "Piece " + (iAt + 1).ToString() + ", "
+                         + ((int)((iAt + 1) * 100.0 / Math.Max(lKeep.Count, 1))).ToString() + "%");
+                waitingOn("writing piece " + (iAt + 1).ToString() + " of " + lKeep.Count.ToString());
+                string sPart = Path.Combine(sWork, "keep" + iAt.ToString("000") + Path.GetExtension(sTo));
+                string sOut = "";
+                string sErr = "";
+                int iCode = runCommand(sFfmpeg, "-hide_banner -loglevel error -y -ss "
+                                              + lKeep[iAt][0].ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)
+                                              + " -to "
+                                              + lKeep[iAt][1].ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)
+                                              + " -i " + quoted(sFrom) + " " + sCopy + " " + quoted(sPart),
+                                       out sOut, out sErr);
+                if (iCode != 0 || !File.Exists(sPart))
+                {
+                    logMessage("  The piece from " + formatClock(lKeep[iAt][0]) + " to "
+                               + formatClock(lKeep[iAt][1]) + " could not be cut: " + tail(sErr, 160), "ERROR");
+                    continue;
+                }
+                lParts.Add(sPart);
+            }
+            if (lParts.Count == 0) return false;
+            // One piece is the whole file: no advertisement survived the gate.
+            if (lParts.Count == 1)
+            {
+                try
+                {
+                    File.Copy(lParts[0], sTo, true);
+                    File.Delete(lParts[0]);
+                    return true;
+                }
+                catch (Exception oError)
+                {
+                    logMessage("  The one piece could not be put in place: " + oError.Message, "ERROR");
+                    return false;
+                }
+            }
+            string sList = Path.Combine(sWork, "pieces.txt");
+            try
+            {
+                StreamWriter fList = new StreamWriter(sList, false, new UTF8Encoding(false));
+                foreach (string sOne in lParts) fList.WriteLine("file '" + sOne.Replace("\\", "/").Replace("'", "'\\''") + "'");
+                fList.Close();
+            }
+            catch (Exception oError)
+            {
+                logMessage("  The list of pieces could not be written: " + oError.Message, "ERROR");
+                return false;
+            }
+            announce("Finalizing", -1.0, 1.0, "Joining " + counted(lParts.Count, "piece", "pieces") + " together");
+            waitingOn("joining the pieces");
+            string sJoinOut = "";
+            string sJoinErr = "";
+            int iJoin = runCommand(sFfmpeg, "-hide_banner -loglevel error -y -f concat -safe 0 -i "
+                                          + quoted(sList) + " -c copy " + quoted(sTo), out sJoinOut, out sJoinErr);
+            foreach (string sOne in lParts)
+            {
+                try
+                {
+                    File.Delete(sOne);
+                }
+                catch (Exception)
+                {
+                }
+            }
+            try
+            {
+                File.Delete(sList);
+            }
+            catch (Exception)
+            {
+            }
+            waitingOn("");
+            if (iJoin != 0 || !File.Exists(sTo))
+            {
+                logMessage("  The pieces could not be joined: " + tail(sJoinErr, 200), "ERROR");
+                return false;
+            }
+            return true;
+        }
+
+        // Remove ads: the whole of it, in order.
+        static int removeAds(string sFfmpeg, string sInput, string sOutputDir,
+                             List<Speech> lSpeech, double nDuration)
+        {
+            string sKind = Path.GetExtension(sInput).ToLower();
+            bool bVideo = !kindIsIn(".mp3,.m4a,.wav,.flac,.ogg,.opus,.aac,.wma", sKind);
+            string sTo = Path.Combine(sOutputDir, sDefaultStrippedName + sKind);
+            string sPage = Path.Combine(sOutputDir, sDefaultStrippedName + ".md");
+            int iGate = integer("ad-confidence");
+            if (iGate < 1 || iGate > 100) iGate = 95;
+            double nPad = number("ad-pad");
+            if (nPad < 0.0) nPad = 0.0;
+
+            if (lSpeech == null || lSpeech.Count == 0)
+            {
+                logMessage("Nothing was heard in this file, so there is no transcript to look for "
+                           + "advertisements in.", "ERROR", "Nothing was heard, so no advertisements were sought.");
+                return 1;
+            }
+            logMessage("Looking for advertisements in " + counted(lSpeech.Count, "passage", "passages")
+                       + " with " + textModel() + ". Nothing is cut below " + iGate.ToString()
+                       + " out of a hundred.", "INFO",
+                       "Looking for advertisements.");
+            List<AdBreak> lFound = mergedBreaks(findAdBreaks(lSpeech));
+            logMessage(counted(lFound.Count, "possible advertisement", "possible advertisements") + " found.",
+                       "INFO", "");
+
+            // The sponsor phrases, counted independently of anything the model
+            // said, and the words themselves kept for the report.
+            foreach (AdBreak oOne in lFound)
+            {
+                StringBuilder oWords = new StringBuilder();
+                foreach (Speech oSaid in lSpeech)
+                {
+                    if (oSaid.nEnd < oOne.nStart || oSaid.nStart > oOne.nEnd) continue;
+                    if (oSaid.sText != null) oWords.Append(oSaid.sText + " ");
+                }
+                oOne.iMarkers = adMarkersIn(oWords.ToString());
+                oOne.iEndorse = adEndorsementIn(oWords.ToString());
+                oOne.sOpening = trimToWords(tidyText(oWords.ToString()), 16);
+                oOne.sWords = oWords.ToString();
+            }
+
+            // The gate. A marker is corroboration and lifts a borderline case;
+            // no marker at all on a passage the model is only just sure about
+            // lowers it, because a sponsor read without one of those phrases is
+            // unusual and a false positive is not.
+            // What this show's advertisements have said before, and every
+            // sentence of this episode, so a repeat within it counts too.
+            string sMemory = adMemoryPath(sInput);
+            List<string> lKnown = adMemory(sMemory);
+            List<string> lAllSentences = new List<string>();
+            foreach (Speech oSaid in lSpeech) lAllSentences.AddRange(adSentencesOf(oSaid.sText == null ? "" : oSaid.sText));
+            if (lKnown.Count > 0)
+                logMessage(counted(lKnown.Count, "sentence", "sentences") + " already known to belong to this "
+                           + "show's advertisements.", "INFO", "");
+            List<double[]> lQuiet = new List<double[]>();
+            int iCut = 0;
+            foreach (AdBreak oOne in lFound)
+            {
+                int iScore = oOne.iSure;
+                string sWhyScore = "the model was " + oOne.iSure.ToString() + " sure";
+                // Repetition, which is what the whole field leans on. A
+                // sentence heard in an earlier episode of this show, or twice
+                // in this one, is the strongest single sign there is: a
+                // programme does not say the same sentence twice, and a
+                // sponsor read says it every time.
+                oOne.iRepeats = adRepeatsIn(oOne.sWords, lKnown, lAllSentences);
+                if (oOne.iRepeats > 0 && iScore < 100)
+                {
+                    iScore = Math.Min(100, iScore + Math.Min(6, 2 + oOne.iRepeats));
+                    sWhyScore = sWhyScore + ", raised because "
+                              + counted(oOne.iRepeats, "sentence in it has been heard before",
+                                        "sentences in it have been heard before");
+                }
+                if (oOne.iMarkers >= 2 && iScore < 100)
+                {
+                    iScore = Math.Min(100, iScore + 3);
+                    sWhyScore = sWhyScore + ", raised for " + counted(oOne.iMarkers, "sponsor phrase", "sponsor phrases");
+                }
+                else if (oOne.iMarkers == 0 && iScore < 100)
+                {
+                    // Unless it reads like a host speaking for a sponsor in
+                    // their own voice, which is the case the penalty would
+                    // otherwise punish for being well made.
+                    if (oOne.iEndorse >= 2)
+                    {
+                        iScore = Math.Min(100, iScore + 2);
+                        sWhyScore = sWhyScore + ", and it reads as the host recommending something personally ("
+                                  + counted(oOne.iEndorse, "sign", "signs") + "), which is how a host-read "
+                                  + "advertisement avoids sounding like one";
+                    }
+                    else
+                    {
+                        iScore = iScore - 4;
+                        sWhyScore = sWhyScore + ", lowered because it carries no sponsor phrase at all";
+                    }
+                }
+                oOne.bCut = iScore >= iGate;
+                oOne.sVerdict = sWhyScore + ", so " + (oOne.bCut ? "it was cut" : "IT WAS LEFT IN");
+                if (!oOne.bCut) continue;
+                // And widen it over the passages beside it that also carry
+                // advertising wording, since the model hands back the line it
+                // noticed rather than the break it belongs to. Only outward,
+                // only while the wording continues, and only over a gap of a
+                // few seconds -- so a break is joined up but the programme
+                // either side is not swallowed.
+                double nWidenStart = oOne.nStart;
+                double nWidenEnd = oOne.nEnd;
+                foreach (Speech oSaid in lSpeech)
+                {
+                    if (oSaid.sText == null || adMarkersIn(oSaid.sText) == 0) continue;
+                    if (oSaid.nEnd < oOne.nStart - 45.0 || oSaid.nStart > oOne.nEnd + 45.0) continue;
+                    if (oSaid.nStart < nWidenStart) nWidenStart = oSaid.nStart;
+                    if (oSaid.nEnd > nWidenEnd) nWidenEnd = oSaid.nEnd;
+                }
+                if (nWidenStart < oOne.nStart - 0.05 || nWidenEnd > oOne.nEnd + 0.05)
+                {
+                    logMessage("  " + formatClock(oOne.nStart) + "-" + formatClock(oOne.nEnd)
+                               + " widened to " + formatClock(nWidenStart) + "-" + formatClock(nWidenEnd)
+                               + ", because the advertising wording carries on either side of it.", "INFO", "");
+                    oOne.nStart = nWidenStart;
+                    oOne.nEnd = nWidenEnd;
+                }
+                if (lQuiet.Count == 0) lQuiet = silencesIn(sFfmpeg, sInput, nDuration);
+                double nWas = oOne.nStart;
+                double nWasEnd = oOne.nEnd;
+                oOne.nStart = Math.Max(0.0, nearestQuiet(lQuiet, oOne.nStart, true, 3.0) - nPad);
+                oOne.nEnd = Math.Min(nDuration, nearestQuiet(lQuiet, oOne.nEnd, false, 3.0) + nPad);
+                if (Math.Abs(nWas - oOne.nStart) > 0.05 || Math.Abs(nWasEnd - oOne.nEnd) > 0.05)
+                    logMessage("  " + formatClock(nWas) + "-" + formatClock(nWasEnd) + " moved to "
+                               + formatClock(oOne.nStart) + "-" + formatClock(oOne.nEnd)
+                               + " so the cut lands in silence.", "INFO", "");
+                iCut = iCut + 1;
+            }
+
+            // A break split into pieces, put back together.
+            //
+            // His 12:29 run found three spans in a row: 50:08-51:23 cut,
+            // then 51:25-51:55 kept, then 52:02-52:18 kept. Two seconds and
+            // seven seconds apart. That is one advertising break of about two
+            // minutes chopped into three, and the middle piece was kept only
+            // because the sponsor phrases happened to fall in the first piece.
+            //
+            // So a span the model was sure of ON ITS OWN, sitting within
+            // twenty seconds of one being cut, is taken as more of the same
+            // break. The model's raw figure is used, not the adjusted one: the
+            // no-phrase penalty exists to catch a lone passage with nothing to
+            // corroborate it, and a neighbour already being cut IS
+            // corroboration. In his run that takes the 95 at 51:25 and leaves
+            // the 85 at 52:02, which is the right answer both times.
+            bool bJoinedAny = true;
+            while (bJoinedAny)
+            {
+                bJoinedAny = false;
+                foreach (AdBreak oOne in lFound)
+                {
+                    if (oOne.bCut || oOne.iSure < iGate) continue;
+                    foreach (AdBreak oCut in lFound)
+                    {
+                        if (!oCut.bCut) continue;
+                        if (oOne.nStart > oCut.nEnd + 20.0 || oOne.nEnd < oCut.nStart - 20.0) continue;
+                        oOne.bCut = true;
+                        oOne.sVerdict = "the model was " + oOne.iSure.ToString() + " sure, and it sits beside "
+                                      + "another advertisement being cut, so it was taken as more of the same break";
+                        logMessage("  " + formatClock(oOne.nStart) + "-" + formatClock(oOne.nEnd)
+                                   + " joined to the break at " + formatClock(oCut.nStart) + ".", "INFO", "");
+                        if (lQuiet.Count == 0) lQuiet = silencesIn(sFfmpeg, sInput, nDuration);
+                        oOne.nStart = Math.Max(0.0, nearestQuiet(lQuiet, oOne.nStart, true, 3.0) - nPad);
+                        oOne.nEnd = Math.Min(nDuration, nearestQuiet(lQuiet, oOne.nEnd, false, 3.0) + nPad);
+                        iCut = iCut + 1;
+                        bJoinedAny = true;
+                        break;
+                    }
+                    if (bJoinedAny) break;
+                }
+            }
+
+            double nGone = 0.0;
+            foreach (AdBreak oOne in lFound)
+            {
+                if (oOne.bCut) nGone = nGone + (oOne.nEnd - oOne.nStart);
+            }
+            foreach (AdBreak oOne in lFound)
+            {
+                logMessage("  " + formatClock(oOne.nStart) + " to " + formatClock(oOne.nEnd) + ": "
+                           + oOne.sVerdict + ". " + (oOne.sWhy == "" ? "" : oOne.sWhy + ". ")
+                           + "\"" + oOne.sOpening + "\"", "INFO", "");
+            }
+            logMessage(counted(iCut, "advertisement", "advertisements") + " cut of "
+                       + counted(lFound.Count, "found", "found") + ", "
+                       + formatClock(nGone) + " removed from " + formatClock(nDuration) + ".",
+                       "INFO", counted(iCut, "advertisement", "advertisements") + " removed.");
+
+            // Learn from what was cut, so the next episode of this show starts
+            // knowing what its advertisements sound like.
+            List<string> lLearnt = new List<string>();
+            foreach (AdBreak oOne in lFound)
+            {
+                if (oOne.bCut) lLearnt.AddRange(adSentencesOf(oOne.sWords));
+            }
+            if (lLearnt.Count > 0) rememberAdSentences(sMemory, lKnown, lLearnt);
+
+            bool bWritten = false;
+            if (iCut > 0)
+            {
+                waitingOn("writing the copy without advertisements");
+                bWritten = writeWithoutAds(sFfmpeg, sInput, sTo, lFound, nDuration, bVideo);
+                waitingOn("");
+                if (bWritten && bVideo && !flag("ad-reencode"))
+                    logMessage("Video was cut without re-encoding, so nothing was lost but each cut landed on "
+                               + "the nearest keyframe and may be a second or two out. Pass --ad-reencode yes "
+                               + "for exact cuts, which takes longer and costs a generation of quality.",
+                               "INFO", "");
+            }
+            else logMessage("Nothing reached " + iGate.ToString() + " out of a hundred, so no copy was written. "
+                            + sDefaultStrippedName + ".md says what was found and why each was left in.",
+                            "INFO", "");
+
+            // The account of it, which is how he can tell whether it worked.
+            try
+            {
+                StreamWriter fDoc = new StreamWriter(sPage, false, new UTF8Encoding(true));
+                fDoc.WriteLine("# Advertisements in " + Path.GetFileName(sInput));
+                fDoc.WriteLine("");
+                fDoc.WriteLine("Found by reading the transcript, not by listening for loud passages. "
+                             + "Nothing was cut below **" + iGate.ToString() + " out of a hundred**.");
+                fDoc.WriteLine("");
+                if (iCut > 0 && bWritten)
+                    fDoc.WriteLine("**" + counted(iCut, "advertisement", "advertisements") + " removed**, "
+                                 + formatClock(nGone) + " of " + formatClock(nDuration) + ", written as **"
+                                 + Path.GetFileName(sTo) + "**. The original is untouched.");
+                else if (iCut > 0)
+                    fDoc.WriteLine("**Nothing was written**: the copy could not be made. The log says why.");
+                else
+                    fDoc.WriteLine("**Nothing was removed.** Either there are no advertisements here, or none "
+                                 + "was certain enough to cut.");
+                fDoc.WriteLine("");
+                fDoc.WriteLine("The ones LEFT IN are worth reading too. A passage kept at " + (iGate - 1).ToString()
+                             + " is where the caution is doing its work, and if the same real advertisement keeps "
+                             + "being kept, the number is set too high for this material.");
+                fDoc.WriteLine("");
+                if (lFound.Count == 0) fDoc.WriteLine("Nothing that looked like an advertisement was found.");
+                foreach (AdBreak oOne in lFound)
+                {
+                    fDoc.WriteLine("## " + formatClock(oOne.nStart) + " to " + formatClock(oOne.nEnd)
+                                 + (oOne.bCut ? " — removed" : " — kept"));
+                    fDoc.WriteLine("");
+                    fDoc.WriteLine("- **How sure:** " + oOne.iSure.ToString() + " out of a hundred");
+                    fDoc.WriteLine("- **Sponsor phrases in it:** " + oOne.iMarkers.ToString());
+                    fDoc.WriteLine("- **Sentences heard before:** " + oOne.iRepeats.ToString());
+                    fDoc.WriteLine("- **Signs of a personal recommendation:** " + oOne.iEndorse.ToString());
+                    fDoc.WriteLine("- **Decision:** " + oOne.sVerdict);
+                    if (oOne.sWhy != "") fDoc.WriteLine("- **The model's reason:** " + oOne.sWhy);
+                    if (oOne.sOpening != "") fDoc.WriteLine("- **It begins:** " + oOne.sOpening);
+                    fDoc.WriteLine("");
+                }
+                fDoc.Close();
+                logMessage("Written to " + sPage + ".", "INFO", "");
+            }
+            catch (Exception oError)
+            {
+                logMessage("The account could not be written to " + sPage + ": " + oError.Message, "ERROR");
+            }
+            if (bWritten)
+                lResults.Add(Path.GetFileName(sInput) + ": " + counted(iCut, "advertisement removed", "advertisements removed")
+                             + ", " + formatClock(nGone) + " of " + formatClock(nDuration)
+                             + Environment.NewLine + "    " + sTo
+                             + Environment.NewLine + "    " + sPage);
+            else
+                lResults.Add(Path.GetFileName(sInput) + ": no advertisement was certain enough to remove"
+                             + Environment.NewLine + "    " + sPage);
+            return 0;
+        }
+
+        // What the camera itself recorded: when, and with what.
+        //
+        // The idea is borrowed from Kelly Ford's Image Description Toolkit,
+        // which reverse-geocodes the GPS in a photograph and puts "Paris,
+        // France" in front of the prompt. That is a good idea and this is the
+        // half of it that costs nothing: the date and the camera are already
+        // in the file, and reading them sends nothing anywhere.
+        //
+        // The place is deliberately NOT looked up. Turning coordinates into a
+        // place name means asking somebody else's server where a photograph
+        // was taken, and HomerScribe has never sent anything off the machine.
+        // That is worth more than the context would be.
+        static string cameraSaid(string sExifTool, string sPath)
+        {
+            if (sExifTool == "") return "";
+            string sOut = "";
+            string sErr = "";
+            int iCode = runCommand(sExifTool, "-s3 -f -q -m -charset UTF8 -d \"%e %B %Y\""
+                                            + " -DateTimeOriginal -Make -Model " + quoted(sPath),
+                                   out sOut, out sErr);
+            if (iCode != 0 && sOut.Trim() == "") return "";
+            List<string> lLines = new List<string>();
+            foreach (string sLine in sOut.Replace("\r\n", "\n").Split('\n'))
+            {
+                string sOne = sLine.Trim();
+                lLines.Add(sOne == "-" ? "" : sOne);
+            }
+            while (lLines.Count < 3) lLines.Add("");
+            string sWhen = lLines[0];
+            string sMake = lLines[1];
+            string sModel = lLines[2];
+            // "Canon Canon EOS R5" is how these two fields usually read
+            // together, so the maker is dropped when the model already says it.
+            string sWith = sModel;
+            if (sMake != "" && sModel.IndexOf(sMake, StringComparison.OrdinalIgnoreCase) < 0)
+                sWith = (sMake + " " + sModel).Trim();
+            StringBuilder oSaid = new StringBuilder();
+            if (sWhen != "") oSaid.Append("taken on " + sWhen);
+            if (sWith != "")
+            {
+                if (oSaid.Length > 0) oSaid.Append(" ");
+                oSaid.Append("with a " + sWith);
+            }
+            return oSaid.ToString().Trim();
+        }
+
         // What the file name says, once the camera's part is taken out.
         //
         // "Jeannie & Jim - Lake Tahoe.jpg" was named by somebody who was
@@ -6846,6 +8196,208 @@ namespace Homer
             return sPath;
         }
 
+        // One question about one picture, and the model's answer.
+        //
+        // Factored out of describeStill, which had this inline. Two more
+        // callers now need it -- the one that asks whether a picture is a page
+        // of print, and the one that reads such a page -- and three copies of
+        // the same twenty lines is how they drift apart.
+        static string askAboutImage(string sModel, string sPrompt, string sImagePath,
+                                    Dictionary<string, object> dOptions, string sFormat)
+        {
+            try
+            {
+                Dictionary<string, object> dPayload = new Dictionary<string, object>();
+                dPayload["model"] = sModel == "" ? text("model") : sModel;
+                dPayload["prompt"] = sPrompt;
+                dPayload["images"] = new string[] { Convert.ToBase64String(File.ReadAllBytes(sImagePath)) };
+                dPayload["stream"] = false;
+                dPayload["keep_alive"] = "30m";
+                if (sFormat != "") dPayload["format"] = sFormat;
+                dPayload["options"] = dOptions;
+                JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+                oSerializer.MaxJsonLength = int.MaxValue;
+                string sAnswer = postJsonPumping(text("url") + "/api/generate", oSerializer.Serialize(dPayload));
+                if (sAnswer == "") return "";
+                Dictionary<string, object> dReply = oSerializer.Deserialize<Dictionary<string, object>>(sAnswer);
+                if (dReply.ContainsKey("response")) return Convert.ToString(dReply["response"]).Trim();
+                return "";
+            }
+            catch (Exception oError)
+            {
+                logMessage("  The model could not be asked about " + Path.GetFileName(sImagePath)
+                           + ": " + oError.Message, "ERROR");
+                return "";
+            }
+        }
+
+        // The work folder, emptied. Called on every way out of describeArchive,
+        // including the early ones.
+        static bool tidyWorkFolder(string sWorkDir)
+        {
+            try
+            {
+                if (Directory.Exists(sWorkDir)) Directory.Delete(sWorkDir, true);
+                return true;
+            }
+            catch (Exception oError)
+            {
+                logMessage("The working folder could not be cleared: " + oError.Message, "INFO", "");
+                return false;
+            }
+        }
+
+        // Is this picture mostly print?
+        //
+        // A page of a scanned journal, a sign, a screenshot of a form. The
+        // answer decides which model looks at it and what it is asked for, and
+        // it is asked of the MODEL rather than guessed from the file name,
+        // because the file name of page047.jpg says nothing.
+        //
+        // One short question, answered in one word, so it costs a second
+        // rather than a description.
+        static bool mostlyPrint(string sImagePath)
+        {
+            if (!flag("read-pages")) return false;
+            string sAsk = "Look at this picture and answer with ONE word.\n"
+                        + "If it is mostly PRINTED OR WRITTEN WORDS -- a page of a book or magazine, "
+                        + "a document, a form, a sign, a screenshot of text -- answer: page\n"
+                        + "If it is mostly a PHOTOGRAPH, a drawing or a scene, answer: picture\n"
+                        + "A page with an illustration on it is still a page. Answer with one word only.";
+            Dictionary<string, object> dOptions = new Dictionary<string, object>();
+            dOptions["temperature"] = 0.0;
+            dOptions["num_predict"] = 8;
+            string sSaid = askAboutImage(text("model"), sAsk, sImagePath, dOptions, "");
+            bool bPage = sSaid != null && sSaid.ToLower().IndexOf("page") >= 0;
+            logMessage("  It is " + (bPage ? "mostly print, so it is read rather than described."
+                                           : "a picture rather than a page."), "INFO", "");
+            return bPage;
+        }
+
+        // Does this page carry a picture at all?
+        //
+        // One word, and it exists because asking for the words and the pictures
+        // in the SAME request does not work. On 112 pages of his scanned
+        // journal the illustration rule produced nothing when it was one bullet
+        // among six, and nothing again when it was moved to the front of the
+        // prompt with a worked example and a closing reminder. Twice is enough:
+        // a model told to transcribe a page transcribes it, and no amount of
+        // rearranging the instruction changes that.
+        //
+        // So the picture is a separate question, asked separately. Cheap enough
+        // to ask of every page -- a second or two -- and the expensive
+        // describing only happens where the answer is yes.
+        static bool pictureOnPage(string sImagePath)
+        {
+            string sAsk = "Does this page contain a PICTURE — a photograph, a drawing, a diagram, a chart, "
+                        + "a map or a cartoon?\n"
+                        + "Printed words, headings, rules and tables are NOT pictures. A page of nothing but "
+                        + "type and tables contains no picture.\n"
+                        + "Answer with one word: yes or no.";
+            Dictionary<string, object> dOptions = new Dictionary<string, object>();
+            dOptions["temperature"] = 0.0;
+            dOptions["num_predict"] = 8;
+            string sSaid = askAboutImage(text("model"), sAsk, sImagePath, dOptions, "");
+            return sSaid != null && Regex.IsMatch(sSaid.Trim(), @"^\W*yes", RegexOptions.IgnoreCase);
+        }
+
+        // What the picture on a page shows.
+        //
+        // Asked on its own, of the ordinary picture model, which is what that
+        // model is good at. The page's words are somebody else's job.
+        static string pictureOnPageSaid(string sImagePath)
+        {
+            string sAsk = "This is a page of a printed document, and it has a picture on it — a photograph, "
+                        + "a drawing, a diagram, a chart, a map or a cartoon.\n\n"
+                        + "Describe THE PICTURE, in one or two sentences, for somebody who cannot see it. Say "
+                        + "what is in it. Ignore the printed words around it except where they are a caption "
+                        + "or a credit for the picture, which you should quote.\n\n"
+                        + "If it is a chart or a graph, say what it plots and what it shows.\n"
+                        + "Do not describe the page, the layout, or the text. Only the picture.\n"
+                        + "Answer with the description and nothing else.";
+            Dictionary<string, object> dOptions = new Dictionary<string, object>();
+            dOptions["temperature"] = 0.3;
+            dOptions["num_predict"] = 300;
+            string sSaid = askAboutImage(text("model"), sAsk, sImagePath, dOptions, "");
+            if (sSaid == null) return "";
+            sSaid = Regex.Replace(sSaid.Trim(), @"\s+", " ");
+            sSaid = Regex.Replace(sSaid, @"^(the picture|this picture|the image|this image)\s+(shows|depicts|is of)\s+",
+                                  "", RegexOptions.IgnoreCase);
+            if (sSaid.Length > 0) sSaid = char.ToUpper(sSaid[0]) + sSaid.Substring(1);
+            return sSaid;
+        }
+
+        // A page of print, set out as Markdown.
+        //
+        // Not a description. A reader of a scanned journal wants the words,
+        // with the headings as headings, in the order a person would read
+        // them -- which on a three-column page means down each column in turn,
+        // and is exactly where ordinary OCR scrambles a magazine.
+        //
+        // The instruction against invention is the important one and it is
+        // repeated. A vision model that cannot quite read a number will supply
+        // a plausible one, and unlike ordinary OCR the result looks right. On
+        // a page of counts that is worse than a gap, because a gap can be
+        // seen and a wrong number cannot.
+        static string[] readPage(string sImagePath, string sNotes, string sCalled)
+        {
+            StringBuilder oRules = new StringBuilder();
+            oRules.Append("This is a page of a printed document. Set out everything on it as Markdown.\n\n");
+            // FIRST, and on its own, because it is the whole reason this is
+            // HomerScribe and not an OCR program -- and because when it was one
+            // bullet among six it fired NOT ONCE in 112 pages of his scanned
+            // journal, a journal with a full-page drawing of an osprey in it.
+            // A model told to transcribe a page transcribes the page and walks
+            // past the pictures.
+            // The pictures are NOT asked for here. Two attempts proved that a
+            // model asked for both gives the words and ignores the pictures,
+            // so they are a separate question now -- see pictureOnPage.
+            oRules.Append("- Read the words exactly as they appear. Do not summarise, correct or improve them.\n");
+            oRules.Append("- Where the page has COLUMNS, read DOWN each column in turn, not across the page.\n");
+            oRules.Append("- Make a heading on the page a Markdown heading, at a level that matches how it looks.\n");
+            oRules.Append("- Set a table out as a Markdown table, with the columns lined up as they are on the page.\n");
+            oRules.Append("- Keep the page number if there is one.\n\n");
+            oRules.Append("DO NOT INVENT ANYTHING. Where print is too faint, too small or too blurred to read, ");
+            oRules.Append("write [unclear] in its place. That applies most of all to NUMBERS, names and dates: a ");
+            oRules.Append("number you are unsure of must be written [unclear] and never guessed, because a wrong ");
+            oRules.Append("number reads as convincingly as a right one and nobody can tell them apart afterwards.\n");
+            if (sNotes != "")
+            {
+                oRules.Append("\nSomebody who knows this document has left this note about it:\n");
+                oRules.Append(sNotes + "\n");
+            }
+            if (sCalled != "") oRules.Append("\nThis page is filed as: \"" + sCalled + "\"\n");
+            oRules.Append("Answer with the Markdown and nothing else. No preamble, no explanation.");
+
+            Dictionary<string, object> dOptions = new Dictionary<string, object>();
+            dOptions["temperature"] = 0.0;
+            dOptions["num_predict"] = integer("page-words") > 0 ? integer("page-words") * 2 : 3000;
+            // The ordinary picture model unless told otherwise, and that is
+            // the right default rather than a lazy one.
+            //
+            // I first set this to IBM's granite3.2-vision because it is built
+            // for documents. Then I checked the benchmarks instead of trusting
+            // the description, and the picture model already in use --
+            // Qwen2.5-VL at 7B -- sits SECOND of twenty-six on the DocVQA
+            // leaderboard at 95.7%, behind only its own 72B sibling, and
+            // scores 883 on OCRBench. granite3.2-vision is a 2B model that is
+            // strong for its size. Strong for its size is not the same as
+            // better, and swapping a 7B leader for a 2B contender would have
+            // made every page worse while looking like an upgrade.
+            //
+            // A smaller model is still worth having on a machine short of
+            // memory, which is what the setting is for.
+            string sModel = text("document-model").Trim();
+            if (sModel == "") sModel = text("model");
+            string sSaid = askAboutImage(sModel, oRules.ToString(), sImagePath, dOptions, "");
+            if (sSaid == null) sSaid = "";
+            sSaid = sSaid.Trim();
+            // A model that will not answer at all leaves the page blank rather
+            // than leaving it wrong.
+            if (sSaid == "") logMessage("  The model read nothing from this page.", "ERROR");
+            return new string[] { "", sSaid };
+        }
+
         // The description, written into the picture itself.
         //
         // The same words go into several places on purpose, because different
@@ -6906,6 +8458,16 @@ namespace Homer
                 lArgs.Add("-EXIF:XPTitle=" + sAlt);
                 lArgs.Add("-EXIF:XPComment=" + sLong);
                 lArgs.Add("-XMP:Software=HomerScribe");
+                // A PNG has no EXIF at all, so XPTitle and XPComment above have
+                // nowhere to live in one and Windows shows an empty Comments
+                // column. PNG keeps its text in its own chunks instead, which
+                // is where other tools look for it.
+                if (string.Compare(Path.GetExtension(sPath), ".png", true) == 0)
+                {
+                    lArgs.Add("-PNG:Description=" + sLong);
+                    lArgs.Add("-PNG:Title=" + sAlt);
+                    lArgs.Add("-PNG:Comment=" + sLong);
+                }
             }
             lArgs.Add(sPath);
             try
@@ -7317,6 +8879,12 @@ namespace Homer
         {
             string sFfmpeg = findTool("ffmpeg");
             string sRoot = Path.GetFileNameWithoutExtension(sZipPath);
+            // A PDF is unpacked into a zip of page pictures first, so that
+            // everything below sees the one kind of thing it already handles.
+            // The FOLDER is still named after the PDF, which is the point: a
+            // film makes a folder named after the film, an archive after the
+            // archive, a document after the document.
+            bool bFromPdf = looksLikePdf(sZipPath);
             string sBase = text("output-dir");
             if (sBase == "") sBase = Path.GetDirectoryName(Path.GetFullPath(sZipPath));
             string sOutputDir = Path.Combine(sBase, sRoot);
@@ -7330,9 +8898,52 @@ namespace Homer
                 sLastSkippedFolder = sOutputDir;
                 return iAlreadyDone;
             }
+            if (bFromPdf)
+            {
+                string sPdfWork = Path.Combine(workFolderFor(sZipPath), "pdf");
+                string sMade = zipFromPdf(sZipPath, sPdfWork);
+                if (sMade == "") return 1;
+                // Kept for a converter that hands back a document rather than
+                // pictures. Extracting a PDF's own text layer is not a
+                // HomerScribe job -- plenty of tools do it, and doing it here
+                // would mean carrying a PDF library for something already
+                // solved. Recognising the words in a PICTURE of a page is the
+                // part worth being good at.
+                if (string.Compare(Path.GetExtension(sMade), ".md", true) == 0)
+                {
+                    try
+                    {
+                        if (!Directory.Exists(sOutputDir)) Directory.CreateDirectory(sOutputDir);
+                        File.Copy(sMade, sPagePath, true);
+                    }
+                    catch (Exception oError)
+                    {
+                        logMessage("The text could not be written to " + sPagePath + ": " + oError.Message, "ERROR");
+                        return 1;
+                    }
+                    logMessage("This PDF carries its own text, so it was taken straight from the file — no "
+                               + "model, no guessing, and nothing read off a picture. That is better than "
+                               + "anything reading the pages could have produced.",
+                               "INFO", "It carries its own text, so it was taken straight from the file.");
+                    lResults.Add(sRoot + ": text taken from the file itself"
+                                 + Environment.NewLine + "    " + sPagePath);
+                    sLastOutputFolder = sOutputDir;
+                    writeFileLog(sOutputDir);
+                    tidyWorkFolder(Path.Combine(workFolderFor(sZipPath), "pdf"));
+                    return 0;
+                }
+                sZipPath = sMade;
+            }
             List<string> lInside = new List<string>();
             List<string> lPassedOver = new List<string>();
             List<string> lNotesFound = new List<string>();
+            // Which of them turned out to be pages of print rather than
+            // pictures. They go into a document of their own, in order.
+            List<string> lPagesRead = new List<string>();
+            // Found once. Calling exifToolProgram() inside the loop would run
+            // the whole candidate search -- every path, every -ver -- for every
+            // picture in the archive.
+            string sExifToolHere = exifToolProgram();
             try
             {
                 Directory.CreateDirectory(sOutputDir);
@@ -7410,13 +9021,29 @@ namespace Homer
             List<string> lNames = new List<string>();
             List<string> lAbout = new List<string>();
             List<string> lOriginal = new List<string>();
+            // "Page" for a document, "Picture" for an archive of photographs.
+            // His word, and the right one: it is shorter, it is one syllable,
+            // and page 47 of a journal is not a picture in the sense the rest
+            // of HomerScribe means.
+            string sUnit = bFromPdf ? "Page" : "Picture";
             int iAt = 0;
             foreach (string sPicture in lInside)
             {
                 iAt = iAt + 1;
                 string sBare = Path.GetFileName(sPicture);
-                announce("Initializing", -1.0, 1.0, "Picture " + iAt.ToString() + " of "
-                         + lInside.Count.ToString() + ": " + sBare);
+                // The first one names the file so it is clear what was given.
+                // After that it is the running figure and a percentage, the
+                // same shape the video side has always used -- "Page 3, 2%" --
+                // because through a hundred and twelve pages the file name is
+                // noise and the position is the only thing worth hearing.
+                if (iAt == 1)
+                    announce("Preparing", -1.0, 1.0, "Processing " + sUnit.ToLower() + " 1 of "
+                             + lInside.Count.ToString() + (bFromPdf ? "" : ": " + sBare));
+                else
+                    announce("Describing", -1.0, 1.0, sUnit + " " + iAt.ToString() + ", "
+                             + ((int)(iAt * 100.0 / Math.Max(lInside.Count, 1))).ToString() + "%");
+                if (iAt > 1) logMessage(sUnit + " " + iAt.ToString() + " of " + lInside.Count.ToString()
+                                        + ": " + sBare, "INFO", "");
                 // What the original was, so that a pattern among refusals or
                 // failures is visible rather than guessed at.
                 try
@@ -7452,8 +9079,53 @@ namespace Homer
                 }
                 string sCalled = nameAsHint(sBare);
                 if (sCalled != "") logMessage("  Its name says: " + sCalled, "INFO", "");
+                // And what the camera wrote into it. Read from the ORIGINAL,
+                // not the reduced copy, since ffmpeg does not carry EXIF over.
+                string sCamera = cameraSaid(sExifToolHere, Path.Combine(sWorkDir, sBare));
+                if (sCamera != "")
+                {
+                    logMessage("  The camera says: " + sCamera, "INFO", "");
+                    if (oNotes.Length > 0) oNotes.Append(" ");
+                    oNotes.Append("This photograph was " + sCamera + ".");
+                }
+                // A page of print and a photograph want opposite things. He
+                // decided this belongs inside describing rather than beside it,
+                // and he is right: a page of a journal IS a picture, and the
+                // program is the thing that can look at it. So there is no
+                // extra box to tick -- HomerScribe asks the model which it has
+                // and follows the answer.
                 waitingOn("looking at " + sBare);
-                string[] asSaid = describeStill(sShow, oNotes.ToString(), sCalled);
+                bool bPage = mostlyPrint(sShow);
+                string[] asSaid = bPage
+                    ? readPage(sShow, oNotes.ToString(), sCalled)
+                    : describeStill(sShow, oNotes.ToString(), sCalled);
+                if (bPage)
+                {
+                    lPagesRead.Add(sBare);
+                    // And the picture on it, if there is one, asked for on its
+                    // own. Costing a second on the pages that have none, and a
+                    // description on the pages that do.
+                    if (flag("page-pictures") && pictureOnPage(sShow))
+                    {
+                        string sShown = pictureOnPageSaid(sShow);
+                        if (sShown != "")
+                        {
+                            // The OPENING of the description, not the end.
+                            // tail() takes the last characters, so every
+                            // preview in his log began mid-word -- "ob, Lehigh
+                            // Furnace" for a map of Lehigh Furnace.
+                            logMessage("  It also carries a picture: "
+                                       + (sShown.Length > 140 ? sShown.Substring(0, 140) + "..." : sShown),
+                                       "INFO", "");
+                            // At the top, because a reader should be told what
+                            // is on the page before being read the page. Where
+                            // on the page it sits is not something the model
+                            // can be relied on to place.
+                            asSaid[1] = "[Illustration: " + sShown.TrimEnd('.') + "]\n\n" + asSaid[1];
+                        }
+                        else logMessage("  It carries a picture, but nothing could be said about it.", "INFO", "");
+                    }
+                }
                 waitingOn("");
                 if (asSaid[1] == "")
                 {
@@ -7479,13 +9151,33 @@ namespace Homer
             // Described once, metadata written once, then copied. The copy in
             // the archive is byte for byte the one in the folder, differing
             // only in its name, so there is no second pass to drift.
-            logMessage("Looking for ExifTool, which writes the descriptions into the pictures.", "INFO", "");
-            string sExifTool = exifToolProgram();
+            // Already found, before the pictures were looked at.
+            string sExifTool = sExifToolHere;
+            // For a document, the deliverable is the document. Writing "page 47
+            // of a journal" into a JPEG's metadata, and handing back the pages
+            // under new names, helps nobody -- so a PDF gets described.md and
+            // nothing else.
+            if (bFromPdf)
+            {
+                logMessage("This came from a PDF, so the pages are put back together as "
+                           + sDefaultPicturesName + " and left at that: no copies are renamed and "
+                           + "nothing is written into the page images themselves.", "INFO", "");
+                sExifTool = "";
+            }
             if (sExifTool == "")
-                logMessage("ExifTool was not found, so the descriptions cannot be written into the pictures. "
+            {
+                // Not a fault when it was cleared on purpose. A document has
+                // nothing written into its page images by design, and saying
+                // ExifTool is missing made that read as a failure in his log.
+                if (bFromPdf)
+                    logMessage("Nothing is written into the page images of a document, so ExifTool is not "
+                               + "needed here.", "INFO", "");
+                else
+                    logMessage("ExifTool was not found, so the descriptions cannot be written into the pictures. "
                            + "They are still in " + sDefaultPicturesName + ". Run installExifTool.cmd, or reinstall "
                            + "HomerScribe, to have them written into the files as well.",
                            "ERROR", "The descriptions cannot be written into the pictures: ExifTool is missing.");
+            }
             else
             {
                 // The version was logged by the search above, with every other
@@ -7528,6 +9220,11 @@ namespace Homer
             int iRefused = 0;
             for (int iOne = 0; iOne < lOriginal.Count; iOne = iOne + 1)
             {
+                // A document keeps none of its pages. They came out of the
+                // PDF, which he still has, and a hundred and twelve page
+                // scans left in the output folder are the input dressed up as
+                // a result. The document is the deliverable.
+                if (bFromPdf) continue;
                 string sFrom = Path.Combine(sWorkDir, lOriginal[iOne]);
                 string sHere = Path.Combine(sOutputDir, lOriginal[iOne]);
                 string sKind = metadataKindOf(lOriginal[iOne]);
@@ -7557,6 +9254,72 @@ namespace Homer
                     logMessage("  " + lNames[iOne] + " could not be put in the archive: " + oError.Message, "ERROR");
                 }
             }
+            // ---- the pages, as one document ----
+            //
+            // Where the archive turned out to hold pages of print rather than
+            // photographs, the point is not metadata inside each picture. The
+            // point is the document that was scanned, put back together in
+            // order, which is the thing nobody has been able to read.
+            if (lPagesRead.Count > 0)
+            {
+                // described.md, not <name>.md. He asked what a PDF source
+                // would put in the folder and answered his own question:
+                // described.md. There is no second document for a PDF, so this
+                // is it.
+                string sBookPath = Path.Combine(sOutputDir, sDefaultPicturesName);
+                try
+                {
+                    StreamWriter fBook = new StreamWriter(sBookPath, false, new UTF8Encoding(true));
+                    fBook.WriteLine("# " + sRoot);
+                    fBook.WriteLine("");
+                    fBook.WriteLine("Read from " + counted(lPagesRead.Count, "scanned page", "scanned pages")
+                                  + " by " + (text("document-model").Trim() == "" ? text("model") : text("document-model"))
+                                  + ", in the order they appear.");
+                    fBook.WriteLine("");
+                    fBook.WriteLine("**Check it before you rely on it.** A model reads a faint or crowded page by "
+                                  + "guessing at it, and a wrong number reads as convincingly as a right one. "
+                                  + "Anything it could not make out is marked `[unclear]`. Numbers, names and dates "
+                                  + "are where to look first.");
+                    fBook.WriteLine("");
+                    for (int iOne = 0; iOne < lOriginal.Count; iOne = iOne + 1)
+                    {
+                        if (!lPagesRead.Contains(lOriginal[iOne])) continue;
+                        fBook.WriteLine("---");
+                        fBook.WriteLine("");
+                        fBook.WriteLine("<!-- " + lOriginal[iOne] + " -->");
+                        fBook.WriteLine("");
+                        fBook.WriteLine(lAbout[iOne].Trim() == "" ? "*Nothing could be read from this page.*"
+                                                                 : lAbout[iOne].Trim());
+                        fBook.WriteLine("");
+                    }
+                    fBook.Close();
+                    int iIllustrated = 0;
+                    int iUnclear = 0;
+                    foreach (string sOne in lAbout)
+                    {
+                        if (sOne == null) continue;
+                        iIllustrated = iIllustrated + Regex.Matches(sOne, @"\[Illustration:", RegexOptions.IgnoreCase).Count;
+                        iUnclear = iUnclear + Regex.Matches(sOne, @"\[unclear\]", RegexOptions.IgnoreCase).Count;
+                    }
+                    // Counted because the first run of this read 112 pages and
+                    // described no pictures at all, and nothing in the log said
+                    // so. A figure of zero here is the thing to notice.
+                    logMessage("Across those pages: " + counted(iIllustrated, "picture described", "pictures described")
+                               + " and " + counted(iUnclear, "passage marked unclear", "passages marked unclear") + "."
+                               + (iIllustrated > 0 ? ""
+                                  : " Nought on a document that plainly has pictures means the model is "
+                                  + "transcribing and walking past them."), "INFO", "");
+                    logMessage("The pages were put back together in " + sBookPath + ".",
+                               "INFO", counted(lPagesRead.Count, "page", "pages") + " read.");
+                    lResults.Add(sRoot + ": " + counted(lPagesRead.Count, "page read", "pages read")
+                                 + Environment.NewLine + "    " + sBookPath);
+                }
+                catch (Exception oError)
+                {
+                    logMessage("The pages could not be written to " + sBookPath + ": " + oError.Message, "ERROR");
+                }
+            }
+
             // ---- what each copy now says about itself ----
             //
             // One for the folder and one for the archive, and they are NOT
@@ -7565,12 +9328,28 @@ namespace Homer
             // ones, so each lists its own by the names it actually carries.
             // Written before the archive is made, so that the archive contains
             // its own.
+            // Every way out of here has to clean up after itself. The early
+            // return for a document was skipping the tidy-up at the bottom,
+            // which would have left 112 page scans in the work folder under
+            // AppData after every run -- growing quietly, since nothing ever
+            // looks there.
+            if (bFromPdf)
+            {
+                // And everything else the bottom of this function does: the
+                // folder "View output" opens, and the per-source log. An early
+                // return that skips the housekeeping is how a feature works
+                // and still feels broken.
+                sLastOutputFolder = sOutputDir;
+                writeFileLog(sOutputDir);
+                tidyWorkFolder(sWorkDir);
+                return 0;
+            }
             writeDescribedPage(sExifTool, sOutputDir, Path.Combine(sOutputDir, sDefaultPicturesName),
                 sRoot + ": what these pictures say about themselves",
                 "Every picture in this folder, under the name it has here, and every field that now has a "
                 + "value in it. Read back out of the files themselves, so what is listed is what is there — "
                 + "including anything that was already in the picture before HomerScribe saw it. The same "
-                + "pictures under their new names, with the same fields, are in **" + sRoot + ".zip**.");
+                + "pictures under their new names, with the same fields, are in **" + sDefaultDescribedZip + "**.");
             writeDescribedPage(sExifTool, sStageDir, Path.Combine(sStageDir, sDefaultPicturesName),
                 sRoot + ": what these pictures say about themselves",
                 "Every picture in this archive, under its new name, and every field that now has a value in "
@@ -7579,13 +9358,27 @@ namespace Homer
                 + "under their original names are in the folder this archive came from.");
 
             // ---- the archive of renamed copies ----
-            string sZipOut = Path.Combine(sOutputDir, sRoot + ".zip");
+            // described.zip, not <archive>.zip. His decision, and it is the
+            // better name: it says what is in it, it matches described.mkv and
+            // described.md, and it cannot be mistaken for the archive that
+            // went in.
+            string sZipOut = Path.Combine(sOutputDir, sDefaultDescribedZip);
             bool bZipped = false;
+            // Not for a document. "Page 47 of a journal" renamed to a sentence
+            // about what is on it is worse than page047.jpg, and a second copy
+            // of 112 scans is a hundred megabytes nobody asked for.
+            if (bFromPdf) logMessage("No " + sDefaultDescribedZip + " is made for a document: renaming "
+                                     + "its pages would lose their order and gain nothing.", "INFO", "");
             try
             {
+                if (bFromPdf) throw new OperationCanceledException();
                 if (File.Exists(sZipOut)) File.Delete(sZipOut);
                 ZipFile.CreateFromDirectory(sStageDir, sZipOut, CompressionLevel.Optimal, false);
                 bZipped = true;
+            }
+            catch (OperationCanceledException)
+            {
+                // A document. Nothing went wrong; there is simply nothing to zip.
             }
             catch (Exception oError)
             {
@@ -7648,6 +9441,10 @@ namespace Homer
             // hold one" while the log read "1 of a kind with nowhere to put
             // one". A GIF is neither -- it holds a plain comment -- and only
             // formats with nowhere at all belong in this figure.
+            // A document has already reported its pages above; saying
+            // "112 pictures described" underneath would be the same work
+            // counted twice under the wrong noun.
+            if (bFromPdf) return 0;
             lResults.Add(sRoot + ": " + counted(lOriginal.Count, "picture described", "pictures described")
                          + ", " + counted(iWritten, "carrying its description inside it", "carrying their descriptions inside them")
                          + (iNoRoom == 0 ? "" : ", " + iNoRoom.ToString() + " of a kind that cannot hold one")
@@ -8139,7 +9936,7 @@ namespace Homer
         {
             string sOut = "";
             string sErr = "";
-            runCommand(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
+            runProbe(sFfmpeg, "-hide_banner -i " + quoted(sInput), out sOut, out sErr);
             Match oMatch = Regex.Match(sOut + sErr, @"^\s*title\s*:\s*(.+)$", RegexOptions.Multiline);
             if (oMatch.Success) return oMatch.Groups[1].Value.Trim();
             return "";
@@ -8470,6 +10267,16 @@ namespace Homer
             // run over several videos keeps their results apart. Without an
             // output directory the folder sits beside the video itself.
             string sRoot = Path.GetFileNameWithoutExtension(sInput);
+            // If the playlist gave this one a name, use that instead of
+            // whatever the download happened to be called. "Episode 5" is
+            // findable; a content network's file GUID is not.
+            string sCalledInList = playlistTitleFor(sInput);
+            if (sCalledInList != "")
+            {
+                logMessage("The playlist calls this \"" + sCalledInList + "\", so its results go in a folder of "
+                           + "that name rather than \"" + sRoot + "\".", "INFO", "");
+                sRoot = sCalledInList;
+            }
             string sBase = text("output-dir");
             if (sBase == "") sBase = Path.GetDirectoryName(sInput);
             string sOutputDir = Path.Combine(sBase, sRoot);
@@ -8502,12 +10309,16 @@ namespace Homer
             bool bWantTranscribe = flag("transcribe") && !(bTranscribeDone && !flag("force"));
             if (bWantDescribe && !hasPicture(sFfmpeg, sInput))
             {
-                string sNoPicture = Path.GetFileName(sInput) + " is a recording with no picture in it, so there is nothing to describe.";
+                string sNoPicture = Path.GetFileName(sInput) + " has no picture in it, so there is nothing to describe.";
                 bWantDescribe = false;
                 if (bWantTranscribe)
                 {
-                    logMessage(sNoPicture + " It will be transcribed instead.", "INFO", "");
-                    announce("Initializing", -1.0, 1.0, sNoPicture + " Transcribing it instead.");
+                    // NOT "instead". Transcribing and describing are not
+                    // alternatives -- both boxes can be ticked and both do
+                    // substantial work. Describing is simply not possible
+                    // here, and transcribing was asked for and goes ahead.
+                    logMessage(sNoPicture + " Transcribing goes ahead as asked.", "INFO", "");
+                    announce("Initializing", -1.0, 1.0, sNoPicture + " Transcribing goes ahead.");
                 }
                 else
                 {
@@ -8727,7 +10538,12 @@ namespace Homer
                 lCaptions.Clear();
                 sTranscriptFrom = "";
             }
-            bool bMustListen = (bWantDescribe && flag("speech")) || (bWantTranscribe && lCaptions.Count == 0);
+            // Removing advertisements needs the words AND their times, so the
+            // film is listened to whether or not a transcript was asked for.
+            // Captions would give words and times too, but a podcast has none
+            // and Whisper's timings are the ones the cutting depends on.
+            bool bMustListen = (bWantDescribe && flag("speech")) || (bWantTranscribe && lCaptions.Count == 0)
+                             || flag("remove-ads");
             if (bMustListen)
             {
                 if (bWantDescribe && lCaptions.Count > 0)
@@ -8742,6 +10558,12 @@ namespace Homer
             {
                 logMessage("The film's own captions are the transcript, so it does not have to be listened to at all.",
                            "INFO", "Using the film's own captions, so there is nothing to listen to.");
+            }
+            // Advertisements, before the transcript is written, so that a run
+            // asking only for this does not have to do anything else first.
+            if (flag("remove-ads"))
+            {
+                removeAds(sFfmpeg, sInput, sOutputDir, lFilmSpeech, nDuration);
             }
             if (bWantTranscribe)
             {
@@ -9231,7 +11053,7 @@ namespace Homer
                         Console.WriteLine("");
                         Console.WriteLine(sSlow);
                         Console.WriteLine("");
-                        announce("Initializing", oGap.nStart, nDuration, sSlow);
+                        announce("Describing", oGap.nStart, nDuration, sSlow);
                     }
                 }
                 if (iIndex % integer("checkpoint") == 0)

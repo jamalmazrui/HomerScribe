@@ -1039,8 +1039,8 @@ There is a second copy inside the archive, listing the same pictures
 under their new names.</li>
 <li><strong>Every picture, under its original name</strong>, with the
 description written inside the file.</li>
-<li><strong><code>&lt;archive&gt;.zip</code></strong> — the same
-pictures again, under their new descriptive names, carrying the same
+<li><strong><code>described.zip</code></strong> — the same pictures
+again, under their new descriptive names, carrying the same
 descriptions.</li>
 </ul>
 <p>The two copies are identical apart from the name. The description is
@@ -1121,7 +1121,12 @@ take</h3>
 <p>Not every format can hold a description, and the ones that can do not
 all hold the same set.</p>
 <p><strong>PNG, JPEG and TIFF</strong> take <strong>all ten
-fields</strong> above.</p>
+fields</strong> above. A PNG also gets its own text chunks, because a
+PNG has no EXIF and would otherwise show nothing in the Windows Comments
+column.</p>
+<p><strong>HEIC and HEIF</strong> — the formats an iPhone has produced
+since iOS 11 — are converted to PNG before the model sees them, and take
+whatever fields your copy of ExifTool can write to them.</p>
 <p><strong>WebP</strong> takes all ten as well, <strong>but only with a
 recent ExifTool</strong>. Older copies answer “Writing of WEBP files is
 not yet supported”, and HomerScribe then treats WebP as a format with
@@ -1138,8 +1143,8 @@ and the description is in <code>described.md</code>.</p>
 than a picture, and nothing here can turn it into something the model
 could look at. It is named in the log so you know it was seen and passed
 over.</p>
-<p>Whatever the format, <strong>the copy in
-<code>&lt;archive&gt;.zip</code> is renamed</strong> to the short name —
+<p>Whatever the format, <strong>the copy in <code>described.zip</code>
+is renamed</strong> to the short name —
 <code>Elderly woman in a blue floral dress beside a dry stone wall.jpg</code>
 — and the copy in the folder keeps its original name. A file name is the
 one piece of description that every program on earth can read, including

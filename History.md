@@ -1,5 +1,1070 @@
 ﻿# HomerScribe History
 
+## 1.0.208, 10 September 2026
+
+### The runs
+
+Four episodes of a new show, and the best figures yet:
+
+    7 cut of 7    5:35 removed from 44:39     twelve and a half per cent
+    7 cut of 8    3:06 removed from 41:04
+    5 cut of 5    6:03 removed from 40:36     fifteen per cent
+    3 cut of 5    1:38 removed from 47:16
+
+Zero errors across all of them. Two of the four had nothing rejected at all,
+and the two that did rejected one and two — the gate working rather than
+blocking.
+
+### "Instead" was the wrong word
+
+He is right that it implies the two are alternatives. They are not: both boxes
+can be ticked and both do substantial work. Describing was simply not possible
+on a recording with no picture, and transcribing had been asked for anyway.
+
+    was:  ... so there is nothing to describe. It will be transcribed instead.
+    now:  ... has no picture in it, so there is nothing to describe.
+          Transcribing goes ahead.
+
+### "Initializing" was labelling the whole run
+
+This is the confusion he describes, and the log shows it plainly: of 112 spoken
+messages in one run, **98 were labelled Initializing** — including every
+"2 min, 4%". "Transcribing" appeared not once as a phase.
+
+The phase word is the dialog's title, which a screen reader reads first, so it
+should say which job is running. Progress during describing now says
+**Describing**; progress during transcribing already said **Transcribing** and
+will now be heard, since it is no longer drowned by a generic label. Setting up
+a batch says **Preparing**. `Initializing` is left only for the handful of
+moments that really are setting up.
+
+No extra words: the same messages, under a truthful heading.
+
+### "Starting." is gone
+
+He heard it well after things had started, and every other message already
+shows that something is under way.
+
+## 1.0.207, 10 September 2026
+
+**A host-read advertisement was being punished for being well made.** He spotted
+it, and he was right.
+
+The term is a **host-read ad**; where the host speaks in their own voice it is a
+**personal endorsement**, and the FTC distinguishes the two — where the language
+suggests the host is expressing their own views, they must actually hold them.
+Industry guidance goes further: where a sponsor asks for no disclosure during
+the read, the show is advised to put it at the beginning or end of the episode
+instead.
+
+So his reasoning was exactly right. Naming the sponsor undercuts the
+recommendation, so the best reads avoid it — and HomerScribe's sponsor-phrase
+list did not merely miss those. **It subtracted four points from them**, which
+is backwards for the kind of advertisement that omits disclosure wording on
+purpose.
+
+### What a personal endorsement cannot omit
+
+The call to action. The whole trade runs on conversions measured by a vanity
+address or a code, and the advice to advertisers is to state it clearly and
+repeat it. A host may decline to say "our sponsor"; they will not decline to
+say where to go.
+
+So a second and softer set of marks is now counted: first-person use of a
+product — *I've been using*, *my go-to*, *we swear by*, *honestly, I* — and the
+call to action a read cannot do without: *head over to*, *link in the show
+notes*, *slash*, *that's something dot com*, *tell them I sent you*.
+
+**Two or more of those cancel the no-disclosure penalty** and add two instead.
+They do not on their own make an advertisement, which is why they are worth
+less than a disclosure phrase and why the model still has to be sure first.
+
+Worked through:
+
+    a stealthy host read, no disclosure, six signs     95 -> 95   cut
+    a classic disclosed read                           95 -> 98   cut
+    a host asking for ratings and subscriptions        95 -> 91   kept
+    a case detail mentioning a Honda Civic             88 -> 84   kept
+
+The third is the one to watch: that is the real false positive the gate caught
+on Black Box Down, and it stays caught, because asking for ratings has neither
+a disclosure phrase nor a call to action for somebody else's product.
+
+`stripped.md` now reports the count as **Signs of a personal recommendation**,
+so the working of it is visible rather than buried.
+
+## 1.0.206, 10 September 2026
+
+He asked whether I had looked at the rest of the log. I had not — I fixed the
+window problem and stopped. Three things in it, two good and one overdue.
+
+### The advertisement memory is working
+
+This is the change that came from his own idea, and the log shows it earning
+its place on the second episode of the show:
+
+    25:20 to 26:14    99 sure, raised because 7 sentences in it have been heard before
+    51:41 to 51:57    95 sure, raised because 1 sentence in it has been heard before
+    1:13:34 to 1:13:52  95 sure, raised because 2 sentences in it have been heard before
+
+**All three**. The first episode taught it what this show's sponsors say, and
+the second recognised them. That is the thing that gets better by being used,
+doing exactly that.
+
+### The playlist names the folder
+
+`The Barefoot Witness`, `The After Show - The Barefoot Witness`. The change
+made in 1.0.198 did not fire on the run after it and I noted it as outstanding;
+it fires now. Folders are readable.
+
+### And the false errors are gone at last
+
+Every one of the eight `ERROR` lines was the same thing: `Skipping 626 bytes of
+junk at 37856`, an ordinary ffmpeg notice, reported as a fault because
+`ffmpeg -i file` with no output **always exits 1** — that is how ffmpeg says
+"you gave me nothing to write". HomerScribe uses that form six times to read a
+file's header.
+
+I drafted this fix two turns ago, the patch failed on its anchor, and I said I
+would finish it next build and did not. **It is applied now**: a `runProbe`
+wrapper marks a command whose non-zero exit is the expected answer, and its
+output is recorded rather than reported as a fault.
+
+That makes the second time a log of his has been 100 per cent false alarms, and
+the second different cause. A log where every error line is a false one is a
+log nobody reads.
+
+## 1.0.205, 10 September 2026
+
+**He worked out the cause from the symptom, and he was right.**
+
+After the finalizing began he could see HomerScribe in Alt+Tab, but letting go
+of Alt left the focus nowhere. He guessed the window needed a message pump for
+Windows to think it could be activated. That is exactly it, and a comment
+already in the source says the first half of it:
+
+    // The work runs on this thread, so the window only redraws when it is
+    // given the chance.
+
+`runCommand` was not giving it the chance. It called `ReadToEnd` twice and then
+`WaitForExit`, which blocks this thread until the program finishes — and on an
+85-minute podcast the silence scan takes minutes. For all that time nothing
+pumped the message queue, so Windows had a window it could not activate.
+
+- **`runCommand` now reads asynchronously and pumps while it waits**, every
+  120 milliseconds. The reads had to become event-driven rather than simply
+  moving `WaitForExit` first: read-then-wait exists to avoid a deadlock when a
+  program fills its output buffer, and reordering would have brought that back.
+  **Every external command in HomerScribe benefits**, not only this one.
+- **The silence scan now uses `runScan`**, which was written for exactly this
+  shape of job: it reads ffmpeg's progress as it arrives, pumps the dialog, and
+  says how far along it is. It is the longest single thing HomerScribe does and
+  it was the one long pass not using it. That is also why he heard the message
+  once and then nothing — there was one announcement before a blocking call,
+  and no way for anything to speak during it.
+
+## 1.0.204, 10 September 2026
+
+Three things from his 20/20 run, and all three are fixed.
+
+### A web page was not recognised as a playlist
+
+`ABC2020.htm` held sixty episode links and was ignored, while the `.md` beside
+it worked. The link-mining was never the problem — **the file never reached
+it**, because `.htm` was not in the list of kinds that count as a source list
+at all. Only `.txt`, `.md`, `.lst`, `.list` and `.markdown` were.
+
+`.htm`, `.html`, `.m3u` and `.m3u8` are now included. The anchor-reading code
+was already written and finds all sixty of his links; it had simply never been
+given the file.
+
+### It was not hanging
+
+The last line in his log is an ffmpeg command starting. That is the **silence
+scan**, which reads the whole file looking for quiet places to cut at, and on
+an 85-minute podcast it takes minutes — with nothing said, because nothing
+announced it.
+
+He asked for "Finalizing" messages and percentages, and he is right. Three
+stages now say what they are doing:
+
+    Listening for the quiet places to cut at
+    Writing the copy without advertisements, in 4 pieces
+    Piece 1, 25%
+    Piece 2, 50%
+    Joining 4 pieces together
+
+The same shape as everything else that takes a while. **Anything that runs for
+minutes has to say it is doing something**, and this was the last place in
+HomerScribe that did not.
+
+### The advertisements
+
+Three found, three cut, **1:27 removed from 1:24:54** — and everything found
+was confident enough to cut, so nothing was left behind by the gate:
+
+    25:20 to 26:14    99 sure, two sponsor phrases   a sponsor read with a discount code
+    51:41 to 51:57    95 sure                        Shane Company, a jeweller
+    1:13:34 to 1:13:52  95 sure                      the Snap Judgment podcast on Spotify
+
+The middle two are short, at sixteen and eighteen seconds. On a network podcast
+those are plausibly whole spots. Whether more breaks were missed is a question
+his `stripped.md` and the transcript can answer better than I can from the log
+alone.
+
+- New behaviours: `finalizing-says-so`, `web-pages-are-playlists`.
+
+## 1.0.203, 10 September 2026
+
+He asked two good questions and the answers were "no" and "yes".
+
+### The installer did not offer the reading model
+
+`qwen2.5:7b` was on his machine only because EdSharp put it there. Anybody
+installing HomerScribe fresh would have had the picture model reading their
+transcripts and would have got the poor result — **one advertisement and 23
+seconds** rather than five and 2:19 — with nothing to tell them why.
+
+**`installTextModel.cmd` is new**, offered on the installer's last page as an
+optional tick and clearly labelled: about 4.7 GB, only needed for Remove ads,
+and it finds five times as many. It checks whether the model is already there
+before downloading, like every other component.
+
+### Describing and transcribing cannot be affected
+
+Traced every model call in the program rather than assuming:
+
+    findAdBreaks        textModel()      <- the only one
+    mostlyPrint         text("model")
+    pictureOnPage       text("model")
+    pictureOnPageSaid   text("model")
+    describeImage       text("model")
+    describeStill       text("model")
+    readPage            document model, or text("model")
+
+**`textModel()` is reached from exactly one place: finding advertisements.**
+Everything that looks at a picture asks for the picture model by name, and
+transcribing does not touch Ollama at all — that is whisper.cpp with its own
+model files.
+
+So the reading model can be changed, missing, or wrong, and describing and
+transcribing carry on exactly as before. That was the intent when
+`--text-model` was added, and it is now checked rather than believed.
+
+The one place worth keeping an eye on is `readPage`, which uses the DOCUMENT
+model setting and falls back to the picture model — never to the reading one. A
+scanned page is a picture and must stay with the model that can see.
+
+## 1.0.202, 10 September 2026
+
+**The text model was the answer.** On a 58-minute episode, with
+`qwen2.5:7b` doing the reading instead of the vision model:
+
+|                     | vision model | text model |
+| ------------------- | ------------ | ---------- |
+| advertisements found | 1           | **5**      |
+| cut                  | 1           | **3**      |
+| removed              | 0:23        | **2:19**   |
+
+Six times as much advertising gone, and 2:19 out of 58:27 is a believable load
+for a podcast rather than a rounding error.
+
+The spans are real breaks now, not slivers:
+
+    0:25 to 1:25      sixty seconds
+    50:08 to 51:23    seventy-five seconds
+    57:06 to 57:11    five seconds
+
+against the five- and twelve-second fragments of the run before. The three
+changes compounded: the wording hints found them, the whole-break instruction
+sized them, the widening joined them, and the text model actually read the
+transcript.
+
+Three prompt rewrites moved recall barely at all. Changing which model did the
+reading moved it fivefold. **The model was the problem the whole time**, and I
+spent three builds rewording instructions before testing that.
+
+### Split breaks are rejoined
+
+The same log showed one more pattern. Three spans in a row: **50:08-51:23 cut,
+51:25-51:55 kept, 52:02-52:18 kept** — two seconds and seven seconds apart.
+That is one break of about two minutes chopped into three, and the middle piece
+was kept only because the sponsor phrases happened to fall in the first.
+
+So a span the model was sure of **on its own**, sitting within twenty seconds
+of one being cut, is now taken as more of the same break. The raw figure is
+used rather than the adjusted one, deliberately: the no-phrase penalty exists
+to catch a lone passage with nothing to corroborate it, and **a neighbour
+already being cut is corroboration**.
+
+On his three that joins the 95 at 51:25 and leaves the 85 at 52:02 — the right
+answer both times.
+
+- New behaviour: `split-breaks-rejoined`.
+
+## 1.0.201, 10 September 2026
+
+**The reading is now done by a text model, if one is installed.**
+
+His Ollama holds five: `qwen2.5vl:7b`, `qwen2.5:7b`, `qwen2.5-coder:7b`,
+`llama3.2:latest` and `llama3.2:3b`. The last four arrived with EdSharp. Until
+now, finding advertisements in a transcript — reading and reasoning about
+words, with no picture in it anywhere — was being done by the **vision** model,
+because that is the only one HomerScribe knew about.
+
+`--text-model` has existed since 1.0.194 but defaulted to empty, meaning "use
+the vision model". Empty now means **take the best text-only model that is
+already installed**: `qwen2.5:7b`, then `qwen2.5:14b`, then `llama3.1:8b`, then
+`llama3.2`. Only models actually present are considered, which matters: naming
+one that is not installed answers 404 and loses the work, as
+`granite3.2-vision` did in August.
+
+It says which it picked and why, and how to go back:
+
+    Using qwen2.5:7b for the reading, since it is installed and is a text
+    model. The picture model qwen2.5vl:7b can do this too, but reading an
+    hour of transcript is not what it is best at. Pass --text-model to
+    choose another, or --text-model qwen2.5vl:7b to go back to the old way.
+
+Nothing is downloaded and nothing changes for anybody who has only the vision
+model.
+
+### Why this rather than more prompt wording
+
+Three prompt changes have now been aimed at recall, and the last run said
+plainly what they are worth: of three chunks where the advertising wording was
+pointed out, **one came back with an advertisement**. The model looks away from
+what it is shown, two times in three.
+
+That is not a wording problem any more. Either a text model reads an hour of
+transcript better than a vision model does — which is the experiment — or a 7B
+model loses track across 1,290 passages in thirteen chunks, and the answer is
+smaller chunks rather than better words. One setting settles which.
+
+### And a caution about comparing runs
+
+These podcast addresses carry `media_type=dynamic`. **The advertisements are
+inserted when the file is fetched**, so two downloads of the same episode can
+carry different ones at different times. That is why one run found an
+advertisement at 53:05 and another at 51:41 in "the same" episode. Comparisons
+across runs are not like for like, and neither of us should read too much into
+a single number.
+
+## 1.0.200, 10 September 2026
+
+**Pointing at the wording worked.** Two episodes, against one advertisement
+found in the whole of the previous run:
+
+- first episode: **3 found, 3 cut**
+- second: **5 found, 2 cut**, three kept for carrying no sponsor phrase at all
+
+That is detection working and the gate working, in the same run. And the memory
+took its first three sentences, so the next episode starts knowing something.
+
+### But the spans are slivers
+
+    1:23 to 1:28     five seconds
+    58:44 to 58:49   five seconds
+    51:41 to 51:53   twelve seconds
+
+**21 seconds removed from an hour**, and 26 from sixty-eight minutes, where the
+real advertising load in that show is minutes. The model is handing back the
+LINE that gave the advertisement away rather than the break it belongs to.
+
+Two changes, because either alone would be half a fix.
+
+- **The prompt now asks for the whole break**, and says why a short answer is
+  wrong: a sponsor read begins before the brand is first named, often with a
+  change of subject or "we will be right back", and ends after the address has
+  been repeated. A span of a few seconds is almost always wrong.
+- **And a span is widened over the passages beside it that also carry
+  advertising wording** — outward only, only while the wording continues, and
+  only across a gap of forty-five seconds. So the Shopify read, which says its
+  own address three times over, is joined into one break rather than clipped to
+  whichever line the model happened to notice.
+
+- New behaviour: `whole-break-not-the-giveaway-line`.
+
+## 1.0.199, 10 September 2026
+
+**It works, and it finds about a quarter of what is there.**
+
+`stripped.md` from his 62-minute episode: one advertisement found at 95, cut,
+32 seconds removed, `stripped.mp3` written. The whole chain runs. The earlier
+"0 found" was him looking in the folder of the episode still being processed,
+not a fault.
+
+But the transcript of that same episode holds **at least four**:
+
+- **Dupixent** — "I'm sponsored by Regeneron"
+- **Shopify** — "head on over to Shopify.com/swordinscale and start your free
+  trial today. That's right. Start your free trial at Shopify.com/swordinscale.
+  That's Shopify.com/swordinscale."
+- **Hotels.com**
+- **Rustigo** — the one it found
+
+Twelve of thirteen chunks answered `{"ads":[]}`. The Shopify read says "start
+your free trial" twice and its own address three times, and the model walked
+past it.
+
+### The phrases were being counted at the wrong moment
+
+They were used only AFTER an answer came back, to adjust confidence — which is
+no help whatever when the model never mentions the passage. The words were in
+the transcript it was reading and nothing drew its eye to them.
+
+**They are now shown to it before it answers**, with their times, framed as
+places to look rather than conclusions, since somebody can mention a product
+without selling it. It costs nothing: they were already being counted.
+
+Checked against his four: **Dupixent, Shopify and Rustigo would all now be
+pointed at**, Shopify with five phrases beside it. Hotels.com would not — it is
+a bare name-drop with no selling language near it, and catching that one needs
+the repetition memory rather than the phrase list.
+
+## 1.0.198, 10 September 2026
+
+**The playlist names the folder.** His Sword and Scale run wrote everything
+into folders called `0d174bea-e1da-5292-9768-04821720a3a1`, and he could not
+find his own transcripts. Fair enough.
+
+Those GUIDs are not HomerScribe's doing: a podcast link redirects to a content
+network, so yt-dlp names the download after the file it lands on, and the
+output folder was named after the download. But the playlist knew all along —
+the link text says **"Episode 5"**. That name is now kept when the playlist is
+read and used for the folder, so the results land in `Episode 5\` and are
+findable.
+
+### On the missing documents
+
+He was right to ask, and the answer is that they were there.
+`transcribed.md` **was** written, in the same folder as `stripped.md` — both in
+`0d174bea…`. The four GUID folders I first took for scattering are two
+episodes, each with an output folder and a work folder. Nothing was lost; it
+was unfindable, which for a screen reader user amounts to the same thing.
+
+`described.md` was correctly absent: the source is an mp3 with no video stream,
+so describing turned itself off.
+
+`scribed.md` was also correctly absent, and for the same reason — it exists to
+give what was said and what was there to be seen **in one sequence**, and needs
+descriptions to interleave. An audio podcast has none.
+
+That said, there is a real gap behind his question. For a podcast the
+equivalent whole would be the transcript **with the advertisements marked in
+place** — what was said, and which of it was somebody selling. `stripped.md`
+lists the breaks and `transcribed.md` holds the words, and nothing yet puts
+them together. Worth building once the finder is reliable enough to be worth
+reading that way.
+
+## 1.0.197, 10 September 2026
+
+**It ran.** 1,290 passages, thirteen asks, a one-hour episode. And two faults.
+
+### An answer was found and silently dropped
+
+Twelve chunks answered `{"ads":[]}`. One answered:
+
+    {"ads":[{"from":"52:03","to":"52:21","sure":95,
+             "why":"promotion for Rustigo, a treatment for GMG"}]}
+
+Valid, complete, and at exactly the threshold. **The run still finished "0
+advertisements cut of 0 found."** Something between that answer and the list
+threw it away, and nothing in the log said what — which is the one thing a log
+must never allow.
+
+`secondsOfStamp` reads "52:03" correctly and no parse error was logged, so I
+have not identified the cause with certainty. The likeliest is
+`JavaScriptSerializer` handing the array back as an `ArrayList` rather than an
+`object[]` in this path, which the code skipped without a word. **Both types are
+now accepted**, and more importantly every step of taking an answer apart says
+what it got: how many advertisements were in the answer, what each stamp read
+as in seconds, and — if one is dropped — why. The next run names the culprit
+whatever it is.
+
+This is the third time in this project that a silent drop has cost a round of
+testing. The lesson keeps arriving in a new place.
+
+### Recall is a separate problem
+
+The transcript says **"this episode is brought to you by Rustigo" at 30
+seconds**, and "brought to you by" appears four times in the hour. The chunk
+covering the opening answered `{"ads":[]}`. So the model is missing
+advertisements it has been handed in plain words — which the sentence memory
+added in 1.0.196 will help with over several episodes, but which is worth
+attacking directly too.
+
+### The output folder is a GUID
+
+`C:\Users\Jamal\Videos\fa775617-e192-5924-b429-fb3d83cf4098\` — which is why
+he found no `.md`: it is there, in a folder nobody would look in. A podcast mp3
+address carries no title, so the folder is named from a hash of it. The episode
+title is sitting in the pseudo-playlist as the link text — "Episode 232" — and
+that is what the folder should be called. **Still to fix.**
+
+## 1.0.196, 10 September 2026
+
+### The checkbox never reached the settings
+
+He ticked Remove ads twice and both logs said `Setting remove-ads = no`. Mine.
+The tick was read out of the box into a local variable and **stopped there**:
+it was never written back into the settings, and it was not in the list of
+things remembered between runs. Both fixed. That is why the feature has never
+executed once.
+
+### Advertisements are remembered between episodes
+
+His idea, and the research says it is *the* idea. The field is built on
+repetition:
+
+- A 2010 paper in the *Journal on Audio, Speech and Music Processing* describes
+  podcast advertisements as **"inserted into and repeated, at different
+  locations"**, five to thirty seconds each.
+- A commercial detector fingerprints each segment and matches it against a
+  database of known advertisements, scoring partial matches by similarity and
+  clustering repeats.
+- A patent for podcast repetitive-content detection combines **text matching,
+  audio feature matching and fingerprint matching**, and treats agreement
+  between any two of the three as confidence.
+- Somebody built a working podcast ad blocker by fingerprinting, finding
+  repeated segments, and cutting them with ffmpeg.
+
+The audio half of that needs a fingerprinting library, which HomerScribe is not
+going to carry. **The text half needs nothing** — Whisper has already written
+the words down, and a sponsor read is the same words every time.
+
+So the sentences of every advertisement actually cut are kept, per show, in
+`ads-<show>.txt` under the application data. A passage repeating one of them is
+corroborated by it, and so is a sentence said twice within one episode. A
+programme does not repeat a sentence; a sponsor read repeats it every time.
+
+Ten words minimum, so "thanks for listening" is not mistaken for a sponsor.
+Capped at two thousand sentences, oldest dropped, since a sponsor unheard for
+that long has stopped advertising.
+
+**The second episode is better than the first and the tenth better than the
+second**, which is the first thing in HomerScribe that improves by being used.
+
+Worked through: a passage the model is only 93 sure of, carrying one sponsor
+phrase and two sentences heard in an earlier episode, reaches 97 and is cut —
+where before it would have been kept at 92. A passage at 96 with no phrase, no
+repeat and nothing else to corroborate it still keeps, at 92, which is the
+caution working as intended.
+
+- New behaviour: `ads-remembered-between-episodes`.
+
+## 1.0.195, 24 August 2026
+
+**A document with media links in it is now a playlist.** Give HomerScribe his
+Sword and Scale directory and it processes the 114 episodes in it, in the order
+they appear.
+
+The idea is FileDir's Play List command, Control+Shift+L, which gathers tagged
+items into an `.m3u`. This is the same thought from the other end: rather than
+building a list of what to play, find the list already inside something written
+for people to read.
+
+- `.md` was already accepted as a list of sources, but read as a plain list his
+  directory would have been nonsense — every line of prose taken for a path. It
+  is now **mined for links first**, and only falls back to the plain reading
+  when there are none.
+- Markdown links, HTML anchors and bare addresses are all read, and only those
+  ending in something that plays are kept. On his directory that is **114 audio
+  links found and 114 web-page links correctly ignored** — every episode has
+  one of each, and only the title link is the audio.
+- The link's TEXT is kept and logged beside it, so the log reads
+  `3. Episode 232 — https://...` rather than a hundred characters of redirect.
+- Order is document order, which for that directory is oldest first.
+
+### Traced against his test
+
+Ticking **Remove ads** and giving it `SwordAndScale.md`:
+
+1. The file is read as a list, mined, and 114 sources come out.
+2. Each is fetched by yt-dlp in turn.
+3. Whisper listens to it — forced, because removing advertisements needs the
+   words and their times, whether or not Transcribe audio is ticked.
+4. The transcript is read in overlapping chunks; anything reaching 95 is cut,
+   its edges moved into silence.
+5. `stripped.mp3` and `stripped.md` are written for that episode, then the next
+   one begins.
+
+**Describing turns itself off**, since `hasPicture` finds no video stream in an
+mp3, so a stray tick costs nothing.
+
+At about 54 minutes an episode, expect roughly 20 minutes of listening and 3 of
+advertisement-hunting per episode. Stopping after a few is the right way to try
+it: every episode is finished and written before the next starts, so whatever
+has completed is intact.
+
+## 1.0.194, 24 August 2026
+
+**Remove ads** — the first thing HomerScribe does that takes something away.
+Alt+R, because S and A were both taken and "strip ads" had no letter of its
+own.
+
+### Four ways it could have been done
+
+- **The transcript alone.** A model reads the words and says which passages are
+  advertisements. Catches host reads, which are formulaic. But the flaw is not
+  detection, it is EDGES: a break runs *content, sting, ad, sting, content*, and
+  the sting has no words and therefore no times. Cut on the words and you leave
+  half a jingle at each join, which is the artefact anybody notices.
+- **The sound alone.** Loudness jumps and silences. Rejected outright: it cannot
+  tell an advertisement from a loud passage, and the error it makes is the
+  dangerous one.
+- **Both, the sound used only for edges.** The transcript decides WHICH break,
+  the silence decides WHERE to cut it. This is the first with its one real flaw
+  repaired, and the repair is cheap.
+- **Two models voting.** Sound, but it doubles the time on every file. The same
+  confidence is had more cheaply by asking the model for a number and counting
+  the sponsor phrases separately — agreement between those two is a second
+  opinion that costs nothing.
+
+**The third was built, with the fourth's caution expressed as a gate.**
+
+### How it decides
+
+The transcript is read in overlapping chunks — overlapping so that a break
+straddling a boundary is not seen as two halves, each scoring badly and each
+being kept. The model returns every advertisement with a confidence out of a
+hundred. The passage is then scanned separately for the phrases a sponsor read
+always carries: *brought to you by*, *promo code*, *dot com slash*, and thirty
+more.
+
+Two or more of those phrases raises the score by three. **None at all lowers it
+by four**, because a sponsor read without one of them is unusual and a false
+positive is not.
+
+**Nothing is cut below 95.** His number, and the right one: missing an
+advertisement costs half a minute of annoyance, and cutting the programme costs
+a piece of it for good. Tested against six written-out passages — a classic host
+read cuts at 99, a genuine product mention keeps at 84, and a passage the model
+was 96 sure of but which carries no sponsor phrase at all is kept at 92, which
+is the gate doing exactly its job.
+
+Every surviving break is then moved outward to the nearest silence, so the join
+closes on two quiet edges rather than mid-syllable.
+
+### What it writes
+
+`stripped.mp3` from an mp3, `stripped.mp4` from an mp4 — the same kind of file
+that went in. There is no advantage to Matroska here: that container is in
+HomerScribe because a described film needs an EXTRA audio track, and this adds
+no track, it removes time.
+
+Sound is cut without re-encoding, so nothing is lost and the cuts are exact.
+Video cut without re-encoding lands on the nearest keyframe and can be a second
+or two out; the log says so, and `--ad-reencode yes` makes it exact at the cost
+of time and a generation of quality.
+
+And `stripped.md`, which is how he can judge it: every break found, cut or kept,
+its confidence, its sponsor-phrase count, the model's own reason, and the words
+it begins with. **The ones left in are the interesting ones** — a break kept at
+94 is where the caution is working, and the same real advertisement being kept
+repeatedly means the number is too high for that material.
+
+### Other notes
+
+- The file is listened to whether or not Transcribe audio is ticked, since this
+  needs the words and their times.
+- `--text-model` is new, and empty by default: a question with no picture in it
+  can go to a text-only model such as `qwen2.5:7b` where somebody has one. It
+  changes nothing for anybody who does not.
+- New behaviours: `ads-removed`, `ads-gated-at-confidence`,
+  `ad-cuts-land-in-silence`.
+
+## ROLLBACK POINT
+
+**1.0.193 is the last version before ad removal.** Everything from 1.0.194
+onward belongs to that feature, which cuts media rather than adding to it and
+is the first thing HomerScribe has ever done that destroys anything. If it
+proves unwise, roll back to the 1.0.193 tag and nothing else is lost: no
+earlier behaviour was changed to make room for it, and the whole of it sits
+behind one unticked box.
+
+## 1.0.193, 24 August 2026
+
+**The dependency on Python is gone.** HomerScribe was never meant to need it,
+and it does not: everything else it uses ships beside it as an executable. No
+process is launched for a PDF, and `pdfPages` is no longer installed.
+
+I tried to replace it with C# and stopped, which is worth recording so nobody
+starts again lightly. **Taking the pages out of a PDF is not one problem, it is
+four**, and I hit all four in an afternoon:
+
+1. **`/Length` is often an indirect reference**, so the end of a stream has to
+   be found by scanning rather than read.
+2. **Page dictionaries live inside `/ObjStm` object streams**, deflated, with
+   their own offset table. On his journal, 562 of 903 objects were in there.
+3. **Page order is the `/Kids` tree, not object number order.** Ordering by
+   object number put the wrong page first — page one is a JPEG2000 and the
+   lowest-numbered image is a JPEG.
+4. **`/Resources` and `/XObject` are themselves usually indirect**, and
+   reaching for the image without a proper resolver picks up `/Contents`
+   instead. That is the bug I ended on: page 1 resolved to a 34-byte content
+   stream rather than the scan.
+
+Each is solvable. Together they are a tokeniser and an object resolver, which
+is a library — and a half-right one does not fail loudly. It silently shuffles
+the pages of somebody's archive, which is worse than not doing it at all.
+
+**So HomerScribe reads a zip of page pictures, and says so plainly.** Given a
+PDF it explains what to do rather than half-working: turn it into images with
+any of the many free tools, name them `page001` upward so they sort, zip them,
+and hand it that. Every page gets read and every picture on them described,
+which is the part nothing else does.
+
+Extracting a PDF's own text layer is likewise not a HomerScribe job. Plenty of
+tools do it, and carrying a PDF library to redo it would cost the single-file
+build for something already solved.
+
+## 1.0.192, 24 August 2026
+
+**A PDF that already carries its words now gives them to you, instead of being
+refused.**
+
+He gave it `MLK.pdf` — the Letter from Birmingham Jail — and got back
+*"Nothing was done."* HomerScribe was **right about the file**: all nine pages
+carry a text layer, forty thousand characters of it, and there is not one image
+in the whole document. There were no pages to read because there are no page
+pictures.
+
+It was right and useless. The words were sitting there.
+
+- **The text is now taken straight from the file.** No model, no reading off a
+  picture, nothing guessed — the document's own words, which is not merely
+  faster than OCR but *perfect*, in a way no reading of a scan can be.
+- It comes out as `described.md` in a folder named after the PDF, the same
+  shape a scanned document produces. His nine-page letter took **a second**
+  rather than the ten minutes reading it would have cost.
+- The lines are joined back into paragraphs, since a PDF breaks its lines where
+  the page did rather than where the sentences do, and each page keeps a
+  marker.
+- **A scanned PDF is unaffected.** If there are page pictures, they are read as
+  before; the text route is taken only when there is text and no pictures.
+- Where a PDF has neither — no pictures and no text — it says that plainly
+  rather than assuming it was a word-processor file.
+
+The lesson is one this project keeps handing me: **a correct answer that leaves
+somebody with nothing is still a failure.** The check for page images was
+right. Stopping there was not.
+
+## 1.0.191, 23 August 2026
+
+**A document now leaves only the document.** The output folder was filling with
+the page images taken out of the PDF — a hundred and twelve scans of somebody's
+journal, sitting beside the thing that was actually wanted. They were the
+input, not a result, and he still has the PDF.
+
+- The pages are no longer copied out at all.
+- **The reassembled document is now `described.md`**, which is what he said a
+  PDF source should produce when he asked the question. It had been
+  `<name>.md`, with a nearly empty `described.md` beside it listing metadata
+  for files that no longer exist.
+- No `described.zip`, and no field listing, since there are no files left to
+  list.
+
+So a PDF now produces exactly one thing: `<output>\<name>\described.md`.
+
+Two faults found while making that change, both from the early return:
+
+- **It skipped the tidy-up**, which would have left 112 page scans in the work
+  folder under AppData after every run — growing quietly, since nothing ever
+  looks there. There is a `tidyWorkFolder` now, called on that way out too.
+- **It skipped the housekeeping**: the folder "View output" opens, and the
+  per-source log. An early return that skips the housekeeping is how a feature
+  works and still feels broken.
+
+## 1.0.190, 23 August 2026
+
+**Asking separately worked.** His 23:44 run, on the same 112-page journal:
+
+    Across those pages: 25 pictures described and 497 passages marked unclear.
+
+Twenty-five, from nought. And it cost nothing: the run took **1:25:25 against
+1:27:05** for the pass that described no pictures at all — slightly faster,
+because the reading prompt lost the paragraph of instruction it had been
+ignoring.
+
+The descriptions are the thing the whole feature was for. Not just "a drawing
+of a bird":
+
+- the osprey on page 21, found at last, wings extended and talons visible;
+- a **map** with its lookouts named — Lehigh Furnace, Velox Rocks, Lehigh Gap,
+  Little Gap, Wind Gap — and its distances noted;
+- a **graph**, described by what it plots: the age distribution of Bald and
+  Golden Eagles across August to November;
+- an illustrator's signature read off the corner of a drawing, "Zemaitis-99".
+
+No OCR program produces any of that.
+
+**Passages marked unclear fell again**, 1,455 to 806 to 497 across the three
+runs of the same document, as the reading prompt got shorter and more single
+minded.
+
+Two faults in the log itself, both fixed:
+
+- **Every picture preview began mid-word** — "ob, Lehigh Furnace" for a map of
+  Lehigh Furnace, "wing of a red-tailed hawk", "and alert expression". The
+  preview was built with `tail`, which takes the LAST characters. It takes the
+  opening now.
+- **The advisory about nought pictures printed even when there were 25.** It
+  only appears when the figure is actually nought.
+
+## 1.0.189, 23 August 2026
+
+**The picture on a page is now a separate question, because rearranging the
+instruction twice did not work.**
+
+His 18:32 run says it plainly, and says it because 1.0.187 added the line that
+counts:
+
+    Across those pages: 0 pictures described and 806 passages marked unclear.
+
+Zero again. In 1.0.183 the illustration rule was one bullet among six. In
+1.0.187 it was moved to the very front of the prompt, given a worked example,
+and repeated as a closing check. Both produced nothing across 112 pages of a
+journal with a full-page drawing of an osprey in it.
+
+Twice is enough to stop blaming the prompt. **A model told to transcribe a page
+transcribes the page**, and no amount of rearranging changes that.
+
+- **The picture is now asked about on its own.** First a one-word question —
+  does this page carry a photograph, drawing, diagram, chart or map? — which
+  costs a second or two. Only where the answer is yes is a description asked
+  for, and it is asked of the ordinary picture model, which is what that model
+  is good at.
+- The reading pass no longer pretends it can do both. Its instruction about
+  illustrations is gone.
+- The description goes at the top of the page as an `[Illustration: ...]` line,
+  because a reader should be told what is on the page before being read the
+  page, and where on the page it sits is not something a model can be relied on
+  to place.
+- **`--page-pictures no`** turns it off. The cost on his journal is about eight
+  minutes if a tenth of the pages carry pictures, seventeen if a third do — on
+  top of the eighty-seven the reading takes.
+
+### What that run also confirmed
+
+- **Not one false error.** Zero `ERROR` lines, against 26 of 68 across the
+  previous six runs. The ffmpeg banner and the document/ExifTool message were
+  the whole of it.
+- **The percentage counting reads as intended** — `Page 2, 1%`, `Page 3, 2%`.
+- **806 passages unclear**, down from 1,455 on the same document. Some of that
+  is the prompt losing a paragraph of instruction it was ignoring anyway.
+
+## 1.0.188, 23 August 2026
+
+- **Reading a document now counts itself aloud the way the video side does.**
+  It said "Picture 47 of 112: page047.png" every time, which through a hundred
+  and twelve pages is a great deal of file name and very little information.
+  Now the first one names what it is working on and the rest give the position:
+
+      Processing page 1 of 112
+      Page 2, 1%
+      Page 3, 2%
+      Page 56, 50%
+
+  The same shape as `2 min, 53%` on a film, and for the same reason: after the
+  first announcement the only thing worth hearing is how far along it is.
+- **"Page" rather than "Picture" for a document.** His word and the right one —
+  shorter, one syllable, and page 47 of a journal is not a picture in the sense
+  the rest of HomerScribe means. An archive of photographs still says
+  "Picture", because there it is true.
+- The file name of each page still goes in the log, so nothing is lost; it is
+  only taken out of what is spoken.
+- **A document no longer reports its work twice.** The results box was adding
+  "112 pictures described" under the line that already said "112 pages read" —
+  the same work counted twice under the wrong noun.
+
+## 1.0.187, 23 August 2026
+
+Six runs of his, read one at a time and then together. The PDF work succeeded
+and one thing about it failed silently.
+
+### The scanned journal came out
+
+112 pages of the Hawk Mountain journal, every one read, none blank, in an hour
+and a half. **3,518 lines of Markdown table** — the dense count pages came
+through as tables. **1,455 passages marked `[unclear]`**, about thirteen a
+page, which at 144 dpi is the honest answer rather than a failure.
+
+### But not one picture was described
+
+**Zero `[Illustration: ...]` lines across all 112 pages** — in a journal with a
+full-page drawing of an osprey in it. Describing the pictures on a page was the
+whole reason for putting this in HomerScribe rather than using an OCR program,
+and it never fired once.
+
+The cause is plain in hindsight: the rule was **one bullet among six**, near
+the end of a prompt whose first instruction was to transcribe the page. A model
+told to transcribe a page transcribes the page and walks past the pictures.
+
+- **The pictures are now asked for FIRST**, on their own, before any mention of
+  the words, with a worked example of the line wanted — and asked for again at
+  the end as a check.
+- **And they are counted.** The log now reports how many pictures were
+  described and how many passages were unclear, with a line saying that nought
+  on a document that plainly has pictures means the model is transcribing and
+  walking past them. That figure is what would have caught this on the first
+  run instead of the second.
+
+### Thirty-eight per cent of the error lines were not errors
+
+Across the six runs, **26 of 68 `ERROR` lines were false alarms**, which is how
+a log stops being read.
+
+- **ffmpeg writes its banner to stderr on every successful run** — `Input #0,
+  matroska,webm, from ...` — and that was being logged as an error. Five a run.
+- **A document reported a missing ExifTool.** That one is mine, from
+  yesterday: a PDF clears ExifTool deliberately, because nothing is written
+  into page images, and then the "not found" message fired on it. It now says
+  what is actually happening.
+
+### A named model that is not installed no longer loses the work
+
+One run asked for `granite3.2-vision`, which was not installed, got **404 from
+Ollama twelve times, and left twelve pages blank**. The default stopped naming
+it in 1.0.185, but the failure deserved handling rather than avoiding: the
+first empty answer from a named model is now taken as "not installed", said
+once with the `ollama pull` line to fix it, and the rest of the pages are read
+with the ordinary model.
+
+## 1.0.186, 23 August 2026
+
+**A PDF is now a source path in its own right.** No unpacking it first.
+
+He asked whether a PDF should be a source path of its own, or whether it should
+be dropped into a zip alongside pictures. A source path of its own, and the
+rest of HomerScribe had already settled it: **a film makes a folder named after
+the film, an archive makes a folder named after the archive, so a document
+should make a folder named after the document.**
+
+- Give it `HMS_Vol_15_No_1.pdf` and it writes `HMS_Vol_15_No_1\described.md`
+  under the output directory — exactly the shape everything else produces.
+- Putting a PDF inside a zip would mean packaging a file before HomerScribe
+  could read it, and leaves no sensible answer to "what if the zip holds three
+  PDFs and twenty photographs".
+- HomerScribe unpacks it by running `pdfPages.py` itself, in its own work
+  folder, so nothing is left beside the original. If Python is missing it says
+  so plainly and names the alternative; everything else in HomerScribe works
+  without it.
+- **The already-done check happens before the unpacking**, so a second run on a
+  finished document costs nothing rather than re-extracting 112 pages first.
+- **A document gets `described.md` and nothing else.** No renamed copies, no
+  metadata written into the page images: "page 47 of a journal" renamed to a
+  sentence about its contents is worse than `page047.jpg`, and a second copy of
+  112 scans is a hundred megabytes nobody asked for. The log says so rather
+  than leaving it to be noticed.
+- New behaviour: `pdf-is-a-source-path`.
+
+## 1.0.185, 23 August 2026
+
+**I was wrong about the document model, and checking the benchmarks put it
+right.** He asked whether IBM's model would noticeably outperform what
+HomerScribe already installs. It would not.
+
+- The picture model HomerScribe installs is **Qwen2.5-VL at 7B**, and it is
+  already among the best document readers there is: **second of twenty-six
+  models on the DocVQA leaderboard at 95.7 percent**, behind only its own 72B
+  sibling, and **883 on OCRBench**.
+- **`granite3.2-vision` is a 2B model.** IBM's own claim is that it is strong
+  *for its size*, which is not the same as better. Swapping a 7B leader for a
+  2B contender would have made every page worse while looking like an upgrade.
+- I recommended it because it is *described* as being for documents, without
+  checking whether it beats the model already in the box. That is the same
+  mistake as trusting an exit code, in a different costume.
+- **So `--document-model` now defaults to empty**, meaning the ordinary picture
+  model reads pages too. Nothing extra to install, and better results.
+- The setting stays, because a smaller model is genuinely useful on a computer
+  short of memory — 2.4 GB against 5.5. The installer tick now says that
+  instead of implying a quality gain, and `installDocumentModel.cmd` opens by
+  saying most people should skip it.
+- **And it now checks before it downloads.** It was calling `ollama pull`
+  unconditionally; a pull on a model already present still contacts the server
+  and checks every layer. It asks `ollama list` first, matches the bare name as
+  well as a tagged one, and exits early when the model is there. Every other
+  component was checked this way and this one was not.
+
+## 1.0.184, 23 August 2026
+
+Three of these come from reading the user guide of Kelly Ford's Image
+Description Toolkit, which does an overlapping job well and had got some things
+right that HomerScribe had not.
+
+- **HEIC and HEIF are now read.** They are what an iPhone has produced since
+  iOS 11, which makes them the formats most photographs now arrive in — and
+  HomerScribe passed them over without a word. They are converted to PNG the
+  way BMP and TIFF already were. Where a build of ffmpeg cannot decode one, the
+  log says so and the picture is reported rather than silently lost.
+- **A PNG now keeps its description in its own text chunks.** A PNG has no EXIF
+  at all, so `XPTitle` and `XPComment` had nowhere to live in one and the
+  Windows Comments column stayed empty. `PNG:Description`, `PNG:Title` and
+  `PNG:Comment` are written as well, which is where other tools look.
+- **What the camera recorded is now given to the model as context** — "This
+  photograph was taken on 10 June 2024 with a Canon EOS R5." It was already in
+  the file and already being ignored. A date in particular helps place a
+  photograph in an era.
+- The Toolkit goes further and turns the GPS into a place name by asking
+  OpenStreetMap. **HomerScribe deliberately does not.** That would be the first
+  thing it ever sent off the machine, and asking somebody else's server where a
+  photograph was taken is worth more than the context would be. The date and
+  the camera cost nothing and leak nothing.
+- **The archive of renamed copies is now `described.zip`**, not
+  `<archive>.zip`. It says what is in it, it matches `described.mkv` and
+  `described.md`, and it cannot be mistaken for the archive that went in.
+- One fault caught before delivery: the camera lookup was calling
+  `exifToolProgram()` inside the loop, which would have re-run the whole
+  candidate search — every path, every `-ver` — once per picture. It is found
+  once per archive now.
+
+## 1.0.183, 23 August 2026
+
+**Recognising print is now part of describing**, which is where he decided it
+belongs, and he was right: a page of a journal is a picture, and HomerScribe is
+the thing that can look at it. There is no new checkbox.
+
+- **Every picture is now asked one question first**: is this mostly print, or
+  mostly a photograph? One word, at temperature zero, costing about a second.
+  A photograph is described as before. A page of print is **read**, and set out
+  as Markdown.
+- Asked of the MODEL rather than guessed from the file name, because the file
+  name of `page047.jpg` says nothing.
+- **A page is read into Markdown**, with headings as headings and tables as
+  tables, read DOWN each column in turn rather than across the page — which is
+  where ordinary OCR scrambles a magazine. An illustration on the page is not
+  skipped: it gets a short description in square brackets, in its place, so a
+  reader who cannot see it still knows what was there. **Nothing else does
+  that**, and it is the reason this belongs in HomerScribe rather than in an
+  OCR tool.
+- **The instruction against invention is repeated, and aimed at numbers.** A
+  vision model that cannot quite read a figure supplies a plausible one, and
+  unlike ordinary OCR the result looks right. Anything unreadable must come
+  back as `[unclear]`. The rebuilt document carries a warning saying so and
+  telling the reader to check numbers, names and dates first.
+- **The pages are put back together in order** as `<name>.md` — the scanned
+  document, readable at last.
+- **`--document-model`** chooses the model for pages, defaulting to IBM's
+  `granite3.2-vision`, which is built for documents, tables and charts and is
+  about 2.4 GB against the picture model's 5.5. Empty uses the ordinary model
+  for everything. **`--read-pages no`** turns the whole thing off.
+- **`installDocumentModel.cmd`** fetches it, and the installer offers it as an
+  optional tick on the last page.
+- **`pdfPages.cmd` and `pdfPages.py`** turn a scanned PDF into a zip of page
+  pictures, which HomerScribe already accepts. Tested on a 112-page scanned
+  journal: all 112 pages out, in reading order, with a note in the archive
+  telling the model what it is looking at.
+- Why a separate script and not C#: that journal stores its pages as
+  `/Filter [/FlateDecode /DCTDecode]` — a JPEG, deflated, inside an object
+  whose length lives in a cross-reference table. Handling that in every case
+  means object streams, several filters and encryption, which is a library's
+  worth of work that pypdf already does correctly. Reusing what exists beats
+  inventing it.
+- `askAboutImage` factored out of `describeStill`, since three callers now need
+  it and three copies of the same twenty lines is how they drift apart.
+- New behaviours: `pages-of-print-are-read`, `scanned-document-rebuilt`.
+
 ## 1.0.182, 22 August 2026
 
 - **`License.md` now names HomerScribe and its author**, which it did not. It
