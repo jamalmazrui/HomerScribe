@@ -84,6 +84,93 @@ the full detail: environment, every effective setting, every command with its
 exit code, and any error. The console shows only what was actually put into the
 film, each description prefixed by its position, as `2:14` or `1:37:52`.
 
+## Taking the advertisements out
+
+**Remove ads** (Alt+R) writes a second copy of the file with the sponsor breaks
+cut out. The original is never touched.
+
+### How it decides
+
+The file is transcribed first — whether or not Transcribe audio is ticked,
+because this needs the words and the time each was said. The transcript is then
+read in overlapping chunks, overlapping so that a break falling across a
+boundary is not seen as two halves.
+
+Each advertisement the model finds comes back with a confidence out of a
+hundred, and that figure is then weighed against three other things, each
+counted separately:
+
+- **The phrases sponsors use** — *brought to you by*, *promo code*, *dot com
+  slash*, and about thirty more. Two or more raise it.
+- **What this show's advertisements have said before.** Every sentence of every
+  advertisement removed is remembered for that show, so the second episode
+  recognises what the first taught it. A sentence heard before, or said twice
+  in the same episode, raises it.
+- **Whether it reads as a personal recommendation.** A host reading for a
+  sponsor in their own voice avoids saying "brought to you by", because naming
+  the sponsor undercuts the recommendation. What such a read cannot leave out
+  is where to go — *head over to*, *link in the show notes*, *that's something
+  dot com*. Two or more of those, with no sponsor phrase, are taken as a
+  host-read advertisement rather than counted against it.
+
+**Nothing is cut below 95 out of a hundred.** Missing an advertisement costs
+half a minute of annoyance; cutting part of the programme cannot be undone.
+
+### How the cut is made
+
+A span the model returns is usually the line that gave the advertisement away
+rather than the whole break, so it is widened over the passages beside it that
+also carry advertising wording. Where two breaks sit within twenty seconds of
+each other and the model was sure of both, they are treated as one.
+
+Each edge is then moved to the nearest silence, within three seconds, so the
+join closes on quiet rather than mid-word.
+
+Sound is cut without re-encoding: exact, and nothing is lost. Video cut without
+re-encoding lands on the nearest keyframe and can be a second or two out;
+`--ad-reencode yes` makes it exact at the cost of time and a generation of
+quality.
+
+### What you get
+
+- **`stripped.mp3`** — or whatever kind went in. The same format.
+- **`stripped.md`** — every advertisement found, cut or kept, with its
+  confidence, its sponsor-phrase count, how many of its sentences had been
+  heard before, the signs of a personal recommendation, the model's own reason,
+  and the words it begins with.
+
+**Read the kept ones first.** A break kept at 94 is where the caution is doing
+its work. If the same real advertisement is kept again and again, 95 is too
+high for that show and `--ad-confidence` can be lowered knowingly.
+
+### The reading model
+
+This is the one part of HomerScribe that wants a model of its own. Finding
+advertisements is reading and reasoning about words, with no picture in it
+anywhere, and the picture model is poor at it: on one episode it found one
+advertisement where a text model found five.
+
+`installTextModel.cmd` fetches `qwen2.5:7b`, or tick it on the last page of the
+installer. If a text model is installed, HomerScribe uses it for this and
+nothing else; describing and transcribing are unaffected either way.
+
+### Settings
+
+- `--remove-ads` — off unless ticked.
+- `--ad-confidence` — 95 by default. Lower it and you will lose parts of
+  programmes.
+- `--ad-pad` — seconds of quiet left either side of a cut. 0.35 by default.
+- `--ad-reencode` — exact video cuts, slower.
+- `--text-model` — empty means use the best text model installed.
+
+### What it will not do
+
+It will not catch every advertisement, and it is not meant to. Across four
+shows it has removed between one and a half and fifteen per cent of an episode,
+tracking what each actually carried. Where a host mentions a product in passing,
+or asks you to rate the show, it leaves it alone — those are the programme, and
+a copy with the programme cut out would be worse than no copy at all.
+
 ## Where it looks and where it writes
 
 Two logs are kept. The **session log** holds everything from one run of

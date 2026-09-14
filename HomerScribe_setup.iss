@@ -155,6 +155,24 @@ Source: "installModels.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "installDocumentModel.cmd"; DestDir: "{app}"; Flags: ignoreversion
 ; Reads a transcript to find advertisements. Only needed for Remove ads.
 Source: "installTextModel.cmd"; DestDir: "{app}"; Flags: ignoreversion
+; Tesseract reads the words on a scanned page, fast and without inventing any.
+Source: "installTesseract.cmd"; DestDir: "{app}"; Flags: ignoreversion
+; Pandoc writes the Word version. No Microsoft Office is involved.
+Source: "installPandoc.cmd"; DestDir: "{app}"; Flags: ignoreversion
+; The page-break filter, without which a Word version shows "\pagebreak" as
+; text instead of breaking the page. Pandoc has none of its own.
+Source: "pagebreak.lua"; DestDir: "{app}"; Flags: ignoreversion
+; PdfPig, which reads PDF files. Referenced rather than embedded, so it has to
+; be installed beside the executable.
+; PdfPig's seven assemblies.
+Source: "*PdfPig*.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+; AND WHATEVER THEY DEPEND ON. Naming six by hand missed a seventh
+; (Microsoft.Bcl.HashCode) and HomerScribe threw on the first PDF. The build
+; copies whatever the packages declare, so the installer takes what is there
+; rather than what somebody remembered.
+Source: "System.*.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Microsoft.*.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "HomerScribe.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 ; No Python is shipped and none is needed. HomerScribe reads a zip of page
 ; pictures; turning a PDF into those is a solved problem with many free tools,
 ; and carrying a PDF library to redo it would cost the single-file build.
@@ -192,19 +210,13 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installOllama.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install Ollama and the vision model, for DESCRIBING video (about 6.5 GB; not needed for transcribing)"; \
+  Description: "Install Ollama and the vision model, for DESCRIBING video and the pictures in a PDF (about 6.5 GB; not needed for transcribing or for reading scanned text)"; \
   Flags: postinstall skipifsilent runascurrentuser
 
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installModels.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install the vision model only, for describing video (about 5.5 GB; tick this if Ollama is already installed)"; \
-  Flags: postinstall skipifsilent runascurrentuser
-
-FileName: "{cmd}"; \
-  Parameters: "/c """"{app}\installDocumentModel.cmd"""""; \
-  WorkingDir: "{app}"; \
-  Description: "Install a SMALLER model for reading scanned pages (about 2.4 GB; only for a computer short of memory - the ordinary vision model already reads pages very well)"; \
+  Description: "Install the vision model only, for describing video and the pictures in a PDF (about 5.5 GB; tick this if Ollama is already installed)"; \
   Flags: postinstall skipifsilent runascurrentuser unchecked
 
 FileName: "{cmd}"; \
@@ -212,6 +224,24 @@ FileName: "{cmd}"; \
   WorkingDir: "{app}"; \
   Description: "Install the reading model, for REMOVING ADS from podcasts (about 4.7 GB; only needed for that, and it finds five times as many ads as the picture model)"; \
   Flags: postinstall skipifsilent runascurrentuser unchecked
+
+FileName: "{cmd}"; \
+  Parameters: "/c """"{app}\installExifTool.cmd"""""; \
+  WorkingDir: "{app}"; \
+  Description: "Install ExifTool, to write DESCRIPTIONS INTO PHOTOGRAPHS (about 12 MB; only needed for describing a folder of pictures)"; \
+  Flags: postinstall skipifsilent runascurrentuser
+
+FileName: "{cmd}"; \
+  Parameters: "/c """"{app}\installPandoc.cmd"""""; \
+  WorkingDir: "{app}"; \
+  Description: "Install Pandoc, to write the WORD version of a PDF (about 30 MB; free and open source, and no Microsoft Office is needed)"; \
+  Flags: postinstall skipifsilent runascurrentuser
+
+FileName: "{cmd}"; \
+  Parameters: "/c """"{app}\installTesseract.cmd"""""; \
+  WorkingDir: "{app}"; \
+  Description: "Install Tesseract, for READING SCANNED PDFs quickly (about 60 MB; twenty-five times faster than the picture model and it cannot invent a word)"; \
+  Flags: postinstall skipifsilent runascurrentuser
 
 FileName: "{cmd}"; \
   Parameters: "/c """"{app}\installWhisper.cmd"""""; \

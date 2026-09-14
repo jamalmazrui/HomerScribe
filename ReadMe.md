@@ -174,6 +174,46 @@ just its name:
 Stop it at any time. Run the same command again and it carries on from where it
 left off, reusing both the descriptions and the speech already made.
 
+## Turning a PDF into a Word document
+
+Give HomerScribe a PDF — one, or a whole folder with `*.pdf` — and it writes
+two files beside each other: `described.md` to read, and a Word version named
+after the document.
+
+**The page numbers match the original.** Page 14 of the Word file is page 14 of
+the PDF, so you and a sighted colleague are talking about the same page.
+
+### It reads the PDF whichever way it can
+
+- **A tagged PDF** carries its own structure: real headings, real lists, and
+  the picture descriptions its author wrote. Those are used as they stand.
+- **A PDF with ordinary text** has its headings worked out from type size, and
+  its lists from the bullets and numbers.
+- **A scanned PDF** is read by Tesseract, about a second a page. Where Tesseract
+  cannot manage a page, the picture model reads it instead — slower, and only
+  where it is needed.
+
+The log says which way each document went and why. Where a PDF's text is
+present but unusable — no spaces between words, or a font with no translation
+table — HomerScribe says so and reads the pages as pictures instead.
+
+### What it tells you about the original
+
+If the PDF has no headings, or a picture with no description, that is a fault
+in the document somebody sent you. HomerScribe reports it rather than passing
+it on quietly.
+
+### What it does not do yet
+
+Tables come through as text rather than as tables. Nested lists in untagged
+PDFs are sometimes flattened. Both are real gaps.
+
+### What you need
+
+`installTesseract.cmd` for scanned PDFs and `installPandoc.cmd` for the Word
+version — both free, both fetched for you, and both offered by the installer.
+Without them you still get the Markdown.
+
 ## Reading a scanned document
 
 HomerScribe reads printed pages as well as describing pictures, and it is the
@@ -212,6 +252,51 @@ other objects, and a half-right reader silently shuffles the pages of an
 archive rather than failing. Nor does it pull out a PDF's existing text layer:
 plenty of tools already do that, and it would cost the single-file build for
 something already solved.
+
+## Taking the advertisements out
+
+Tick **Remove ads** (Alt+R) and HomerScribe writes a second copy of the file
+with the sponsor breaks cut out, next to the original, which is never touched.
+
+It works by reading, not listening. The file is transcribed — whether or not
+you ticked Transcribe audio, since this needs the words and their times — and
+the transcript is searched for advertisements. Anything found is checked
+against the wording sponsors use, against what this show's advertisements have
+said in earlier episodes, and against whether it reads as the host personally
+recommending something. The cut is then moved to the nearest silence so the
+join does not clip a word.
+
+**Nothing is cut unless it is at least 95 out of 100 certain.** Missing an
+advertisement costs you half a minute; cutting part of the programme cannot be
+undone. When it is unsure, it keeps.
+
+You get two files:
+
+- **`stripped.mp3`**, or whatever kind went in — the same format, cut without
+  re-encoding, so nothing is lost.
+- **`stripped.md`** — every advertisement it found, whether it was removed or
+  kept, how sure it was, and why. **Read the kept ones first.** They are where
+  the caution is doing its work, and if a real advertisement keeps being kept,
+  you will see it there.
+
+It gets better as it goes. The sentences of every advertisement it removes are
+remembered for that show, so the second episode recognises what the first one
+taught it.
+
+### It needs the reading model
+
+This is the one part of HomerScribe that wants a model of its own:
+`qwen2.5:7b`, fetched by **installTextModel.cmd** or ticked on the last page of
+the installer. Without it the picture model does the reading, and it is much
+worse at it — on one episode that was one advertisement found instead of five.
+
+### What it will not do
+
+It will not catch everything, and it is not meant to. On four different shows
+it has removed between one and a half and fifteen per cent of an episode, which
+tracked how much advertising each actually carried. Where a host simply
+mentions a product, or asks you to rate the show, it leaves it alone — those
+are the programme.
 
 ## The rest of the documentation
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>HomerScribe ReadMe</title>
+  <title>ReadMe</title>
   <style>
     html {
       color: #1a1a1a;
@@ -165,9 +165,6 @@
   </style>
 </head>
 <body>
-<header id="title-block-header">
-<h1 class="title">HomerScribe ReadMe</h1>
-</header>
 <nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#homerscribe" id="toc-homerscribe">HomerScribe</a>
@@ -175,8 +172,31 @@
 <li><a href="#quick-start" id="toc-quick-start">Quick start</a></li>
 <li><a href="#what-you-need" id="toc-what-you-need">What you
 need</a></li>
+<li><a href="#turning-a-pdf-into-a-word-document"
+id="toc-turning-a-pdf-into-a-word-document">Turning a PDF into a Word
+document</a>
+<ul>
+<li><a href="#it-reads-the-pdf-whichever-way-it-can"
+id="toc-it-reads-the-pdf-whichever-way-it-can">It reads the PDF
+whichever way it can</a></li>
+<li><a href="#what-it-tells-you-about-the-original"
+id="toc-what-it-tells-you-about-the-original">What it tells you about
+the original</a></li>
+<li><a href="#what-it-does-not-do-yet"
+id="toc-what-it-does-not-do-yet">What it does not do yet</a></li>
+<li><a href="#what-you-need-1" id="toc-what-you-need-1">What you
+need</a></li>
+</ul></li>
 <li><a href="#reading-a-scanned-document"
 id="toc-reading-a-scanned-document">Reading a scanned document</a></li>
+<li><a href="#taking-the-advertisements-out"
+id="toc-taking-the-advertisements-out">Taking the advertisements out</a>
+<ul>
+<li><a href="#it-needs-the-reading-model"
+id="toc-it-needs-the-reading-model">It needs the reading model</a></li>
+<li><a href="#what-it-will-not-do" id="toc-what-it-will-not-do">What it
+will not do</a></li>
+</ul></li>
 <li><a href="#the-rest-of-the-documentation"
 id="toc-the-rest-of-the-documentation">The rest of the
 documentation</a></li>
@@ -341,6 +361,44 @@ Any argument without <code>--gui</code> means a command line run.</p>
 <p>Stop it at any time. Run the same command again and it carries on
 from where it left off, reusing both the descriptions and the speech
 already made.</p>
+<h2 id="turning-a-pdf-into-a-word-document">Turning a PDF into a Word
+document</h2>
+<p>Give HomerScribe a PDF — one, or a whole folder with
+<code>*.pdf</code> — and it writes two files beside each other:
+<code>described.md</code> to read, and a Word version named after the
+document.</p>
+<p><strong>The page numbers match the original.</strong> Page 14 of the
+Word file is page 14 of the PDF, so you and a sighted colleague are
+talking about the same page.</p>
+<h3 id="it-reads-the-pdf-whichever-way-it-can">It reads the PDF
+whichever way it can</h3>
+<ul>
+<li><strong>A tagged PDF</strong> carries its own structure: real
+headings, real lists, and the picture descriptions its author wrote.
+Those are used as they stand.</li>
+<li><strong>A PDF with ordinary text</strong> has its headings worked
+out from type size, and its lists from the bullets and numbers.</li>
+<li><strong>A scanned PDF</strong> is read by Tesseract, about a second
+a page. Where Tesseract cannot manage a page, the picture model reads it
+instead — slower, and only where it is needed.</li>
+</ul>
+<p>The log says which way each document went and why. Where a PDF’s text
+is present but unusable — no spaces between words, or a font with no
+translation table — HomerScribe says so and reads the pages as pictures
+instead.</p>
+<h3 id="what-it-tells-you-about-the-original">What it tells you about
+the original</h3>
+<p>If the PDF has no headings, or a picture with no description, that is
+a fault in the document somebody sent you. HomerScribe reports it rather
+than passing it on quietly.</p>
+<h3 id="what-it-does-not-do-yet">What it does not do yet</h3>
+<p>Tables come through as text rather than as tables. Nested lists in
+untagged PDFs are sometimes flattened. Both are real gaps.</p>
+<h3 id="what-you-need-1">What you need</h3>
+<p><code>installTesseract.cmd</code> for scanned PDFs and
+<code>installPandoc.cmd</code> for the Word version — both free, both
+fetched for you, and both offered by the installer. Without them you
+still get the Markdown.</p>
 <h2 id="reading-a-scanned-document">Reading a scanned document</h2>
 <p>HomerScribe reads printed pages as well as describing pictures, and
 it is the same tick box. Give it a zip of page images and it works out,
@@ -373,6 +431,48 @@ are compressed inside other objects, and a half-right reader silently
 shuffles the pages of an archive rather than failing. Nor does it pull
 out a PDF’s existing text layer: plenty of tools already do that, and it
 would cost the single-file build for something already solved.</p>
+<h2 id="taking-the-advertisements-out">Taking the advertisements
+out</h2>
+<p>Tick <strong>Remove ads</strong> (Alt+R) and HomerScribe writes a
+second copy of the file with the sponsor breaks cut out, next to the
+original, which is never touched.</p>
+<p>It works by reading, not listening. The file is transcribed — whether
+or not you ticked Transcribe audio, since this needs the words and their
+times — and the transcript is searched for advertisements. Anything
+found is checked against the wording sponsors use, against what this
+show’s advertisements have said in earlier episodes, and against whether
+it reads as the host personally recommending something. The cut is then
+moved to the nearest silence so the join does not clip a word.</p>
+<p><strong>Nothing is cut unless it is at least 95 out of 100
+certain.</strong> Missing an advertisement costs you half a minute;
+cutting part of the programme cannot be undone. When it is unsure, it
+keeps.</p>
+<p>You get two files:</p>
+<ul>
+<li><strong><code>stripped.mp3</code></strong>, or whatever kind went in
+— the same format, cut without re-encoding, so nothing is lost.</li>
+<li><strong><code>stripped.md</code></strong> — every advertisement it
+found, whether it was removed or kept, how sure it was, and why.
+<strong>Read the kept ones first.</strong> They are where the caution is
+doing its work, and if a real advertisement keeps being kept, you will
+see it there.</li>
+</ul>
+<p>It gets better as it goes. The sentences of every advertisement it
+removes are remembered for that show, so the second episode recognises
+what the first one taught it.</p>
+<h3 id="it-needs-the-reading-model">It needs the reading model</h3>
+<p>This is the one part of HomerScribe that wants a model of its own:
+<code>qwen2.5:7b</code>, fetched by
+<strong>installTextModel.cmd</strong> or ticked on the last page of the
+installer. Without it the picture model does the reading, and it is much
+worse at it — on one episode that was one advertisement found instead of
+five.</p>
+<h3 id="what-it-will-not-do">What it will not do</h3>
+<p>It will not catch everything, and it is not meant to. On four
+different shows it has removed between one and a half and fifteen per
+cent of an episode, which tracked how much advertising each actually
+carried. Where a host simply mentions a product, or asks you to rate the
+show, it leaves it alone — those are the programme.</p>
 <h2 id="the-rest-of-the-documentation">The rest of the
 documentation</h2>
 <p>This file is the short way in. Everything else lives in its own

@@ -179,6 +179,20 @@
 id="toc-naming-what-to-work-on">Naming what to work on</a></li>
 <li><a href="#what-it-writes" id="toc-what-it-writes">What it
 writes</a></li>
+<li><a href="#taking-the-advertisements-out"
+id="toc-taking-the-advertisements-out">Taking the advertisements out</a>
+<ul>
+<li><a href="#how-it-decides" id="toc-how-it-decides">How it
+decides</a></li>
+<li><a href="#how-the-cut-is-made" id="toc-how-the-cut-is-made">How the
+cut is made</a></li>
+<li><a href="#what-you-get" id="toc-what-you-get">What you get</a></li>
+<li><a href="#the-reading-model" id="toc-the-reading-model">The reading
+model</a></li>
+<li><a href="#settings" id="toc-settings">Settings</a></li>
+<li><a href="#what-it-will-not-do" id="toc-what-it-will-not-do">What it
+will not do</a></li>
+</ul></li>
 <li><a href="#where-it-looks-and-where-it-writes"
 id="toc-where-it-looks-and-where-it-writes">Where it looks and where it
 writes</a></li>
@@ -203,7 +217,7 @@ themselves</a></li>
 </ul></li>
 <li><a href="#configuration"
 id="toc-configuration">Configuration</a></li>
-<li><a href="#settings" id="toc-settings">Settings</a></li>
+<li><a href="#settings-1" id="toc-settings-1">Settings</a></li>
 <li><a href="#hearing-the-film" id="toc-hearing-the-film">Hearing the
 film</a>
 <ul>
@@ -253,7 +267,8 @@ zip</a>
 <li><a href="#telling-it-who-is-in-the-pictures"
 id="toc-telling-it-who-is-in-the-pictures">Telling it who is in the
 pictures</a></li>
-<li><a href="#what-you-get" id="toc-what-you-get">What you get</a></li>
+<li><a href="#what-you-get-1" id="toc-what-you-get-1">What you
+get</a></li>
 <li><a href="#what-homerscribe-writes-into-a-picture"
 id="toc-what-homerscribe-writes-into-a-picture">What HomerScribe writes
 into a picture</a></li>
@@ -383,6 +398,91 @@ setting, every command with its exit code, and any error. The console
 shows only what was actually put into the film, each description
 prefixed by its position, as <code>2:14</code> or
 <code>1:37:52</code>.</p>
+<h2 id="taking-the-advertisements-out">Taking the advertisements
+out</h2>
+<p><strong>Remove ads</strong> (Alt+R) writes a second copy of the file
+with the sponsor breaks cut out. The original is never touched.</p>
+<h3 id="how-it-decides">How it decides</h3>
+<p>The file is transcribed first — whether or not Transcribe audio is
+ticked, because this needs the words and the time each was said. The
+transcript is then read in overlapping chunks, overlapping so that a
+break falling across a boundary is not seen as two halves.</p>
+<p>Each advertisement the model finds comes back with a confidence out
+of a hundred, and that figure is then weighed against three other
+things, each counted separately:</p>
+<ul>
+<li><strong>The phrases sponsors use</strong> — <em>brought to you
+by</em>, <em>promo code</em>, <em>dot com slash</em>, and about thirty
+more. Two or more raise it.</li>
+<li><strong>What this show’s advertisements have said before.</strong>
+Every sentence of every advertisement removed is remembered for that
+show, so the second episode recognises what the first taught it. A
+sentence heard before, or said twice in the same episode, raises
+it.</li>
+<li><strong>Whether it reads as a personal recommendation.</strong> A
+host reading for a sponsor in their own voice avoids saying “brought to
+you by”, because naming the sponsor undercuts the recommendation. What
+such a read cannot leave out is where to go — <em>head over to</em>,
+<em>link in the show notes</em>, <em>that’s something dot com</em>. Two
+or more of those, with no sponsor phrase, are taken as a host-read
+advertisement rather than counted against it.</li>
+</ul>
+<p><strong>Nothing is cut below 95 out of a hundred.</strong> Missing an
+advertisement costs half a minute of annoyance; cutting part of the
+programme cannot be undone.</p>
+<h3 id="how-the-cut-is-made">How the cut is made</h3>
+<p>A span the model returns is usually the line that gave the
+advertisement away rather than the whole break, so it is widened over
+the passages beside it that also carry advertising wording. Where two
+breaks sit within twenty seconds of each other and the model was sure of
+both, they are treated as one.</p>
+<p>Each edge is then moved to the nearest silence, within three seconds,
+so the join closes on quiet rather than mid-word.</p>
+<p>Sound is cut without re-encoding: exact, and nothing is lost. Video
+cut without re-encoding lands on the nearest keyframe and can be a
+second or two out; <code>--ad-reencode yes</code> makes it exact at the
+cost of time and a generation of quality.</p>
+<h3 id="what-you-get">What you get</h3>
+<ul>
+<li><strong><code>stripped.mp3</code></strong> — or whatever kind went
+in. The same format.</li>
+<li><strong><code>stripped.md</code></strong> — every advertisement
+found, cut or kept, with its confidence, its sponsor-phrase count, how
+many of its sentences had been heard before, the signs of a personal
+recommendation, the model’s own reason, and the words it begins
+with.</li>
+</ul>
+<p><strong>Read the kept ones first.</strong> A break kept at 94 is
+where the caution is doing its work. If the same real advertisement is
+kept again and again, 95 is too high for that show and
+<code>--ad-confidence</code> can be lowered knowingly.</p>
+<h3 id="the-reading-model">The reading model</h3>
+<p>This is the one part of HomerScribe that wants a model of its own.
+Finding advertisements is reading and reasoning about words, with no
+picture in it anywhere, and the picture model is poor at it: on one
+episode it found one advertisement where a text model found five.</p>
+<p><code>installTextModel.cmd</code> fetches <code>qwen2.5:7b</code>, or
+tick it on the last page of the installer. If a text model is installed,
+HomerScribe uses it for this and nothing else; describing and
+transcribing are unaffected either way.</p>
+<h3 id="settings">Settings</h3>
+<ul>
+<li><code>--remove-ads</code> — off unless ticked.</li>
+<li><code>--ad-confidence</code> — 95 by default. Lower it and you will
+lose parts of programmes.</li>
+<li><code>--ad-pad</code> — seconds of quiet left either side of a cut.
+0.35 by default.</li>
+<li><code>--ad-reencode</code> — exact video cuts, slower.</li>
+<li><code>--text-model</code> — empty means use the best text model
+installed.</li>
+</ul>
+<h3 id="what-it-will-not-do">What it will not do</h3>
+<p>It will not catch every advertisement, and it is not meant to. Across
+four shows it has removed between one and a half and fifteen per cent of
+an episode, tracking what each actually carried. Where a host mentions a
+product in passing, or asks you to rate the show, it leaves it alone —
+those are the programme, and a copy with the programme cut out would be
+worse than no copy at all.</p>
 <h2 id="where-it-looks-and-where-it-writes">Where it looks and where it
 writes</h2>
 <p>Two logs are kept. The <strong>session log</strong> holds everything
@@ -664,7 +764,7 @@ automatically when it exists, so the dialog opens showing last time’s
 answers. Anything given on the command line wins over the file. The file
 is written by <code>Inix.cs</code>, the shared Homer ini codec, so hand
 edits and comments survive a round trip.</p>
-<h2 id="settings">Settings</h2>
+<h2 id="settings-1">Settings</h2>
 <p>Every setting has a long form and a short form. The long form is the
 command line parameter and, in the dialog, the label. The short form is
 the command line letter and, in the dialog, the trigger letter. Run
@@ -1028,7 +1128,7 @@ what it can see without a name where it cannot tell. Without that
 instruction a model will happily write in every name it has been given,
 whether or not the person is in the frame — which is worse than no names
 at all, because you cannot tell a real identification from a guess.</p>
-<h3 id="what-you-get">What you get</h3>
+<h3 id="what-you-get-1">What you get</h3>
 <p>In a folder named after the archive:</p>
 <ul>
 <li><strong><code>described.md</code></strong> — every picture, with

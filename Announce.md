@@ -1,71 +1,55 @@
-﻿---
-title: What's New in HomerScribe
-subtitle: It now describes photographs, and reads a film's own captions
-author: Jamal Mazrui
----
+﻿## HomerScribe Now Batch Converts PDF to DOCX
 
-# What's New in HomerScribe
+Blind lawyers, students and researchers are constantly sent PDF documents that
+were never made accessible. A scanned brief, a policy paper, a textbook — the
+screen reader finds nothing, or finds the words in the wrong order with no
+headings to navigate by.
 
-### It now describes photographs, and reads a film's own captions
+HomerScribe now converts such documents in batch, on your own computer, using
+only free and open source components.
 
-[Windows installer](https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe)
- · [Project on GitHub](https://github.com/JamalMazrui/HomerScribe)
+### It examines three layers of every page
 
-HomerScribe describes video and transcribes speech on your own computer,
-without sending anything anywhere. It is free and open source. Two things have
-been added since I last wrote about it.
+A PDF may carry as many as three descriptions of the same page, and their
+quality varies enormously:
 
-## It describes a folder of photographs
+- **The image layer** — the page as a picture, which is all a scan has.
+- **The text layer** — the words themselves, which may be exact, or may be
+  unusable when the spaces were never written or a font lacks a translation
+  table.
+- **The tagged layer** — the structure its author declared: genuine headings,
+  lists, and descriptions of pictures.
 
-Point it at a zip file of pictures instead of a video, and it looks at each one
-and writes down what it sees.
+HomerScribe reads whichever of these a document has, then **measures them
+against one another** and converts from whichever holds up best. Tags that
+hold only a fraction of a document's words are refused in favour of the text.
+A text layer whose words run together is abandoned for the picture, which
+Tesseract reads at roughly a second a page. The log records which layer was
+used, and why the others were not.
 
-You get each picture back **with the description written inside the file** —
-not in a note beside it, but in the picture, where it travels with the file
-wherever you send it. Select one in Windows Explorer, open Properties, and the
-description is simply there for a screen reader to read.
+### Page numbers survive the conversion
 
-You also get **described.zip**: the same pictures under new names.
-`IMG_4471.JPG` becomes
-`Elderly woman in a blue floral dress beside a dry stone wall.jpg`.
+Page 14 of the Word document is page 14 of the PDF. When a colleague refers to
+a passage on page 14, both of you are looking at the same page — which is the
+difference between a conversion you can read and one you can argue from.
 
-Photographs from an iPhone work too, in the `.heic` format it saves them as.
+### It reports what the original got wrong
 
-It uses what you can tell it. A picture called `Jeannie & Jim - Lake Tahoe.jpg`
-gets those names, because somebody who was there typed them. You can drop a
-note into the zip saying who tends to appear and how to tell them apart. It
-will not name anyone it cannot match to what is in front of it.
+Where a PDF declares no headings, or holds a picture with no description,
+HomerScribe says so. That is a fault in the document you were sent, and worth
+knowing about.
 
-Forty-nine photographs took under three minutes.
+### Current limitations
 
-## It reads a film's own captions
+Tables are converted as text rather than as tables. Nested lists in untagged
+PDFs are sometimes flattened.
 
-Many films already carry their words. Where a **person** wrote those captions,
-HomerScribe now uses them instead of listening to the film.
+### Getting HomerScribe
 
-A person's captions are better than anything a machine makes, and not only at
-the words. They say who is speaking. They write down what can be heard but not
-spoken — a door slamming, music starting, laughter. For someone who can neither
-see nor hear a film, that is the part nothing else provides.
+For more information about the open source HomerScribe project, visit
 
-If you only want the words, it no longer downloads the film at all. Four
-videos, transcribed, in under a minute.
+<https://github.com/JamalMazrui/HomerScribe>
 
-Captions a machine made are another matter, and HomerScribe can tell the
-difference. YouTube's automatic ones have no speaker and no sounds, so it
-listens to the film instead and writes better sentences.
+To download the HomerScribe Installer for Windows, visit
 
-## Try it
-
-- [Windows installer](https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe)
-- [Project on GitHub](https://github.com/JamalMazrui/HomerScribe)
-
-Accept the defaults and let the installer fetch the models. That is the long
-part, and it happens once. There is a sample video in the box, so you can press
-OK and watch it work straight away.
-
-Transcription is the stronger half; description is harder, and I would rather
-you saw that for yourself than took my word for it. Tell me where it goes
-wrong.
-
-Jamal Mazrui
+<https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe>

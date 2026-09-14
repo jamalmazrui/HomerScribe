@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
+  <meta name="generator" content="pandoc 3.11" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <meta name="author" content="Jamal Mazrui" />
-  <title>What’s New in HomerScribe</title>
+  <title>Announce</title>
   <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
     html {
       color: #1a1a1a;
       background-color: #fdfdfd;
@@ -39,7 +41,6 @@
       body {
         background-color: transparent;
         color: black;
-        font-size: 12pt;
       }
       p, h2, h3 {
         orphans: 3;
@@ -59,6 +60,10 @@
       color: #1a1a1a;
     }
     img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
       max-width: 100%;
     }
     h1, h2, h3, h4, h5, h6 {
@@ -85,6 +90,7 @@
       color: #606060;
     }
     code {
+      white-space: pre-wrap;
       font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
       font-size: 85%;
       margin: 0;
@@ -104,8 +110,8 @@
      overflow: visible;
     }
     hr {
-      background-color: #1a1a1a;
       border: none;
+      border-top: 1px solid #1a1a1a;
       height: 1px;
       margin: 1em 0;
     }
@@ -148,10 +154,13 @@
     #TOC a:not(:hover) {
       text-decoration: none;
     }
-    code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
-    div.columns{display: flex; gap: min(4vw, 1.5em);}
-    div.column{flex: auto; overflow-x: auto;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
     div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
     /* The extra [class] is a hack that increases specificity enough to
        override a similar rule in reveal.js */
@@ -162,95 +171,59 @@
       margin: 0 0.8em 0.2em -1.6em;
       vertical-align: middle;
     }
-    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
 </head>
 <body>
-<header id="title-block-header">
-<h1 class="title">What’s New in HomerScribe</h1>
-<p class="subtitle">It now describes photographs, and reads a film’s own
-captions</p>
-<p class="author">Jamal Mazrui</p>
-</header>
-<nav id="TOC" role="doc-toc">
+<h2 id="homerscribe-now-batch-converts-pdf-to-docx">HomerScribe Now
+Batch Converts PDF to DOCX</h2>
+<p>Blind lawyers, students and researchers are constantly sent PDF
+documents that were never made accessible. A scanned brief, a policy
+paper, a textbook — the screen reader finds nothing, or finds the words
+in the wrong order with no headings to navigate by.</p>
+<p>HomerScribe now converts such documents in batch, on your own
+computer, using only free and open source components.</p>
+<h3 id="it-examines-three-layers-of-every-page">It examines three layers
+of every page</h3>
+<p>A PDF may carry as many as three descriptions of the same page, and
+their quality varies enormously:</p>
 <ul>
-<li><a href="#whats-new-in-homerscribe"
-id="toc-whats-new-in-homerscribe">What’s New in HomerScribe</a>
-<ul>
-<li><a
-href="#it-now-describes-photographs-and-reads-a-films-own-captions"
-id="toc-it-now-describes-photographs-and-reads-a-films-own-captions">It
-now describes photographs, and reads a film’s own captions</a></li>
-<li><a href="#it-describes-a-folder-of-photographs"
-id="toc-it-describes-a-folder-of-photographs">It describes a folder of
-photographs</a></li>
-<li><a href="#it-reads-a-films-own-captions"
-id="toc-it-reads-a-films-own-captions">It reads a film’s own
-captions</a></li>
-<li><a href="#try-it" id="toc-try-it">Try it</a></li>
-</ul></li>
+<li><strong>The image layer</strong> — the page as a picture, which is
+all a scan has.</li>
+<li><strong>The text layer</strong> — the words themselves, which may be
+exact, or may be unusable when the spaces were never written or a font
+lacks a translation table.</li>
+<li><strong>The tagged layer</strong> — the structure its author
+declared: genuine headings, lists, and descriptions of pictures.</li>
 </ul>
-</nav>
-<h1 id="whats-new-in-homerscribe">What’s New in HomerScribe</h1>
-<h3 id="it-now-describes-photographs-and-reads-a-films-own-captions">It
-now describes photographs, and reads a film’s own captions</h3>
+<p>HomerScribe reads whichever of these a document has, then
+<strong>measures them against one another</strong> and converts from
+whichever holds up best. Tags that hold only a fraction of a document’s
+words are refused in favour of the text. A text layer whose words run
+together is abandoned for the picture, which Tesseract reads at roughly
+a second a page. The log records which layer was used, and why the
+others were not.</p>
+<h3 id="page-numbers-survive-the-conversion">Page numbers survive the
+conversion</h3>
+<p>Page 14 of the Word document is page 14 of the PDF. When a colleague
+refers to a passage on page 14, both of you are looking at the same page
+— which is the difference between a conversion you can read and one you
+can argue from.</p>
+<h3 id="it-reports-what-the-original-got-wrong">It reports what the
+original got wrong</h3>
+<p>Where a PDF declares no headings, or holds a picture with no
+description, HomerScribe says so. That is a fault in the document you
+were sent, and worth knowing about.</p>
+<h3 id="current-limitations">Current limitations</h3>
+<p>Tables are converted as text rather than as tables. Nested lists in
+untagged PDFs are sometimes flattened.</p>
+<h3 id="getting-homerscribe">Getting HomerScribe</h3>
+<p>For more information about the open source HomerScribe project,
+visit</p>
+<p><a href="https://github.com/JamalMazrui/HomerScribe"
+class="uri">https://github.com/JamalMazrui/HomerScribe</a></p>
+<p>To download the HomerScribe Installer for Windows, visit</p>
 <p><a
-href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Windows
-installer</a> · <a
-href="https://github.com/JamalMazrui/HomerScribe">Project on
-GitHub</a></p>
-<p>HomerScribe describes video and transcribes speech on your own
-computer, without sending anything anywhere. It is free and open source.
-Two things have been added since I last wrote about it.</p>
-<h2 id="it-describes-a-folder-of-photographs">It describes a folder of
-photographs</h2>
-<p>Point it at a zip file of pictures instead of a video, and it looks
-at each one and writes down what it sees.</p>
-<p>You get each picture back <strong>with the description written inside
-the file</strong> — not in a note beside it, but in the picture, where
-it travels with the file wherever you send it. Select one in Windows
-Explorer, open Properties, and the description is simply there for a
-screen reader to read.</p>
-<p>You also get <strong>described.zip</strong>: the same pictures under
-new names. <code>IMG_4471.JPG</code> becomes
-<code>Elderly woman in a blue floral dress beside a dry stone wall.jpg</code>.</p>
-<p>Photographs from an iPhone work too, in the <code>.heic</code> format
-it saves them as.</p>
-<p>It uses what you can tell it. A picture called
-<code>Jeannie &amp; Jim - Lake Tahoe.jpg</code> gets those names,
-because somebody who was there typed them. You can drop a note into the
-zip saying who tends to appear and how to tell them apart. It will not
-name anyone it cannot match to what is in front of it.</p>
-<p>Forty-nine photographs took under three minutes.</p>
-<h2 id="it-reads-a-films-own-captions">It reads a film’s own
-captions</h2>
-<p>Many films already carry their words. Where a <strong>person</strong>
-wrote those captions, HomerScribe now uses them instead of listening to
-the film.</p>
-<p>A person’s captions are better than anything a machine makes, and not
-only at the words. They say who is speaking. They write down what can be
-heard but not spoken — a door slamming, music starting, laughter. For
-someone who can neither see nor hear a film, that is the part nothing
-else provides.</p>
-<p>If you only want the words, it no longer downloads the film at all.
-Four videos, transcribed, in under a minute.</p>
-<p>Captions a machine made are another matter, and HomerScribe can tell
-the difference. YouTube’s automatic ones have no speaker and no sounds,
-so it listens to the film instead and writes better sentences.</p>
-<h2 id="try-it">Try it</h2>
-<ul>
-<li><a
-href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe">Windows
-installer</a></li>
-<li><a href="https://github.com/JamalMazrui/HomerScribe">Project on
-GitHub</a></li>
-</ul>
-<p>Accept the defaults and let the installer fetch the models. That is
-the long part, and it happens once. There is a sample video in the box,
-so you can press OK and watch it work straight away.</p>
-<p>Transcription is the stronger half; description is harder, and I
-would rather you saw that for yourself than took my word for it. Tell me
-where it goes wrong.</p>
-<p>Jamal Mazrui</p>
+href="https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe"
+class="uri">https://github.com/JamalMazrui/HomerScribe/releases/latest/download/HomerScribe_setup.exe</a></p>
 </body>
 </html>

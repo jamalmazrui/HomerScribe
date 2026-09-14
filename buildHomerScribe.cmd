@@ -200,8 +200,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
 if errorlevel 1 (
   echo WARNING: ffmpeg could not be downloaded; see %log%.
   echo WARNING: ffmpeg could not be downloaded.>> "%log%"
-  echo To fix by hand, download a win64 build from https://ffmpeg.org/download.html
-  echo and copy ffmpeg.exe and ffprobe.exe into this folder.
+  echo   trying winget>> "%log%"
+  winget install --id Gyan.FFmpeg --accept-source-agreements --accept-package-agreements --silent >> "%log%" 2>&1
+  for /f "delims=" %%F in ('where ffmpeg.exe 2^>nul') do (
+    if not exist "ffmpeg.exe" copy /y "%%F" "ffmpeg.exe" >nul 2>&1
+  )
+  for /f "delims=" %%F in ('where ffprobe.exe 2^>nul') do (
+    if not exist "ffprobe.exe" copy /y "%%F" "ffprobe.exe" >nul 2>&1
+  )
+  if not exist "ffmpeg.exe" echo WARNING: ffmpeg is still absent; the log says what was tried.
 )
 :haveFfmpeg
 if exist "ffmpeg.exe" echo ffmpeg.exe is present>> "%log%"
@@ -218,9 +225,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
 if errorlevel 1 (
   echo WARNING: yt-dlp could not be downloaded; see %log%.
   echo WARNING: yt-dlp could not be downloaded.>> "%log%"
-  echo To fix by hand, download yt-dlp.exe from
-  echo   https://github.com/yt-dlp/yt-dlp/releases/latest
-  echo and copy it into this folder.
+  echo   trying winget>> "%log%"
+  winget install --id yt-dlp.yt-dlp --accept-source-agreements --accept-package-agreements --silent >> "%log%" 2>&1
+  for /f "delims=" %%F in ('where yt-dlp.exe 2^>nul') do (
+    if not exist "yt-dlp.exe" copy /y "%%F" "yt-dlp.exe" >nul 2>&1
+  )
+  if not exist "yt-dlp.exe" echo WARNING: yt-dlp is still absent; the log says what was tried.
 )
 :haveYtDlp
 if exist "yt-dlp.exe" echo yt-dlp.exe is present>> "%log%"
@@ -341,6 +351,76 @@ rem The .htm files are built alongside the .md files and shipped with them, so
 rem there is nothing to generate here. no converter is consulted: the one that used to be
 rem reported its own absence on every build and did nothing when present.
 
+rem ---- PdfPig, found or fetched ---------------------------------------
+rem HomerScribe reads PDFs and PdfPig (Apache 2.0) is what lets it.
+rem
+rem THE WORK IS IN getPdfPig.ps1, A FILE SHIPPED BESIDE THIS ONE, and that is
+rem the point. Earlier versions carried the PowerShell inline -- first with
+rem caret continuations, then written line by line with echo, then base64'd
+rem into -EncodedCommand -- and every one of those was edited afterwards by
+rem string replacement with no way to check the result. One such edit left
+rem   $pkg = Join-Path $PWD 'packages''
+rem with a trailing quote, and the whole fetch died on it.
+rem
+rem A plain .ps1 can be read, diffed and checked before it ships. Nothing is
+rem encoded and nothing is patched.
+
+echo Fetching PdfPig if needed>> "%log%"
+where nuget >nul 2>&1
+if not errorlevel 1 (
+  echo   asking nuget for PdfPig and its dependencies>> "%log%"
+  nuget install PdfPig -OutputDirectory packages -ExcludeVersion -NonInteractive -DependencyVersion Highest >> "%log%" 2>&1
+)
+
+if exist "getPdfPig.ps1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "getPdfPig.ps1" >> "%log%" 2>&1
+) else (
+  echo ERROR: getPdfPig.ps1 is missing from this folder.>> "%log%"
+)
+
+set "pdfDll="
+if exist "pdfpig.name" set /p pdfDll=<pdfpig.name
+if not defined pdfDll (
+  echo(
+  echo ERROR: PdfPig could not be found or fetched. The log says what was tried:
+  echo %log%
+  echo PdfPig could not be found or fetched>> "%log%"
+  goto :failed
+)
+if not exist "%pdfDll%" (
+  echo(
+  echo ERROR: %pdfDll% was named but is not here. The log says what happened:
+  echo %log%
+  echo %pdfDll% was named but is absent>> "%log%"
+  goto :failed
+)
+
+rem Every assembly the package brought, plus the ones its .NET Framework build
+rem needs for Span and ReadOnlyMemory.
+set "pdfRefs="
+for %%F in (*PdfPig*.dll) do set pdfRefs=!pdfRefs! /reference:"%%~fF"
+for %%F in (System.Memory.dll System.Buffers.dll System.Runtime.CompilerServices.Unsafe.dll System.Numerics.Vectors.dll System.Threading.Tasks.Extensions.dll System.ValueTuple.dll) do if exist "%%F" set pdfRefs=!pdfRefs! /reference:"%CD%\%%F"
+rem The runtime needs the binding redirects too, not just the compiler's
+rem assumption. Without HomerScribe.exe.config beside the executable, PdfPig
+rem asks for System.Memory 4.0.2.0, finds 4.0.5.0, and throws on the first PDF.
+rem The config must not merely exist: it must name the version of System.Memory
+rem that is actually here. A config left by an earlier build redirected to
+rem 4.0.2.0 while 4.0.5.0 sat beside it, and HomerScribe threw on the first
+rem PDF. Checking presence alone let that through twice.
+if not exist "HomerScribe.exe.config" (
+  echo ERROR: HomerScribe.exe.config was not written. PDFs would fail at run time.
+  echo HomerScribe.exe.config is missing>> "%log%"
+  goto :failed
+)
+if exist "checkConfig.ps1" powershell -NoProfile -ExecutionPolicy Bypass -File "checkConfig.ps1" >> "%log%" 2>&1
+if errorlevel 1 (
+  echo ERROR: the binding redirects do not match the assemblies present.
+  echo See %log%.
+  goto :failed
+)
+echo PdfPig ready: %pdfDll%>> "%log%"
+echo References: !pdfRefs!>> "%log%"
+
 rem ---- optional icon ------------------------------------------------
 set "icon="
 if exist "%app%.ico" set "icon=/win32icon:%app%.ico"
@@ -434,8 +514,9 @@ echo(>> "%log%"
   /reference:"!uiaProv!" ^
   /reference:"!uiaTypes!" ^
   !icon! ^
+  !pdfRefs! ^
   /out:%app%.exe ^
-  Version.cs %app%.cs Lbc.cs Say.cs Inix.cs Util.cs Web.cs >> "%log%" 2>&1
+  Version.cs %app%.cs Lbc.cs Say.cs Inix.cs Util.cs Web.cs PdfRead.cs >> "%log%" 2>&1
 
 set iBuildResult=%ERRORLEVEL%
 type "%log%"
@@ -443,6 +524,14 @@ if not "%iBuildResult%"=="0" (
   echo(
   echo ERROR: the build failed. Details above and in %log%.
   goto :failed
+)
+rem PdfPig.dll goes beside the executable, because it is referenced rather
+rem than embedded. HomerScribe was never going to be one self-contained file
+rem anyway -- it leans on Ollama, Whisper, ffmpeg and ExifTool -- so a DLL on
+rem disk is the simpler and more reliable arrangement: the runtime loads it by
+rem path, with its identity and version intact, instead of from a byte array.
+if exist "%pdfDll%" (
+  echo %pdfDll% is beside the executable.>> "%log%"
 )
 echo Built %app%.exe version !ver!>> "%log%"
 echo(

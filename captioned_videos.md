@@ -1,4 +1,4 @@
-# captioned_videos.md -- a playlist for testing the caption feature
+﻿# captioned_videos.md -- a playlist for testing the caption feature
 #
 # Pass this file as the source path. HomerScribe reads .md as a list, takes one
 # address per line, and ignores any line beginning with # or ;.

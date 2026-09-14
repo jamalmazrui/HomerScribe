@@ -154,7 +154,10 @@ namespace Homer
         }
     }
 
-    public class HomerScribe
+    // partial, so PdfRead.cs can add the PdfPig half without this file
+    // depending on the package. The build leaves that file out when PdfPig is
+    // not present, and everything here still compiles.
+    public partial class HomerScribe
     {
         const int iNothingToDo = 2;
         const int iAlreadyDone = 3;
@@ -210,6 +213,14 @@ namespace Homer
         // The archive of renamed copies. Named for what it holds rather than
         // for what it came from, and matching described.mkv and described.md.
         const string sDefaultDescribedZip = "described.zip";
+        // .inix, not .ini.
+        //
+        // Homer Tools define their own configuration format, which supersedes
+        // the common .ini: a settings file with multiline verbatim values, and
+        // at the same time a table of records a screen reader can move through.
+        // It deserves its own extension rather than borrowing one whose rules
+        // it does not follow.
+        const string sDefaultSettingsName = "HomerScribe.inix";
         // The copy with the advertisements taken out, and the account of what
         // was taken. Named for what happened to it, like described.mkv.
         const string sDefaultStrippedName = "stripped";
@@ -377,6 +388,10 @@ namespace Homer
             addParam("ad-confidence", "", "integer", "95", "How sure the model must be, out of a hundred, before an advertisement is cut. Below this it is left in and the reason is recorded. Lower this and you will lose parts of programmes");
             addParam("ad-pad", "", "number", "0.35", "Seconds of quiet left either side of a cut, so a join does not clip a breath");
             addParam("ad-reencode", "", "flag", "no", "Re-encode when cutting video, which makes the cuts exact. Without it a video cut lands on the nearest keyframe, which is quicker and lossless but can be a second or two out. Sound is always exact");
+            addParam("heading-size", "", "number", "1.4", "How much taller than the body text a line must be before it counts as a heading. A measured line height is noisy — capitals and ascenders reach higher than lowercase — so a heading has to be noticeably larger, not a little larger. Where the PDF carries its own tags, they are used instead");
+            addParam("ocr", "", "flag", "yes", "Read a scanned page with Tesseract where it is installed. It is about twenty-five times faster than the picture model and cannot invent a word — where it cannot read, it says so. The model still describes the pictures and is used where Tesseract is unsure");
+            addParam("ocr-floor", "", "integer", "70", "How sure Tesseract must be, out of a hundred, before its reading of a page is taken. Below this the page goes to the picture model instead");
+            addParam("page-picture-limit", "", "integer", "60", "How many pictures in one document will be described. A book of plates can hold two on every page — one of his ran to 1,286, which at twenty-five seconds each is nine hours — so the largest are taken and the rest are listed without a description. 0 means no limit");
             addParam("page-pictures", "", "flag", "yes", "Also describe any photograph, drawing, chart or map found on a page of print. Asked as a separate question, because a model asked for the words and the pictures together gives the words and ignores the pictures");
             addParam("read-pages", "", "flag", "yes", "Read the words on a picture that is mostly print, and set them out as Markdown, rather than describing it as a picture");
             addParam("update-tools", "", "flag", "yes", "Update yt-dlp and try once more when a video is refused every other way");
@@ -657,6 +672,73 @@ namespace Homer
 
         // One video's working files. The name alone would collide across
         // folders, so the full path is folded into a short tag.
+        // Work folders left behind by runs that did not finish.
+        //
+        // He found 260 of them holding 1,226 files, one with 344 page images
+        // in it from the PDF run that crashed. A run that ends badly cannot
+        // tidy up after itself, so the NEXT run does it: anything under the
+        // work folder untouched for a day belongs to a run that is over,
+        // however it ended.
+        //
+        // Only folders, only under work, nothing else touched.
+        static bool sweepOldWork()
+        {
+            string sWork = Path.Combine(appDataFolder(), "work");
+            if (!Directory.Exists(sWork)) return true;
+            int iGone = 0;
+            long iFreed = 0;
+            try
+            {
+                foreach (string sOne in Directory.GetDirectories(sWork))
+                {
+                    try
+                    {
+                        DirectoryInfo oDir = new DirectoryInfo(sOne);
+                        if (DateTime.Now.Subtract(oDir.LastWriteTime).TotalHours < 24.0) continue;
+                        // A FOLDER IN USE IS NOT AN ABANDONED ONE.
+                        //
+                        // Age alone is not enough. A batch of video can run for
+                        // more than a day, and a second HomerScribe started
+                        // while the first is working would have swept the
+                        // first's folder out from under it. The folder's OWN
+                        // timestamp can be old while files inside it are being
+                        // written this minute, because Windows does not always
+                        // touch the parent.
+                        //
+                        // So the newest file anywhere inside decides.
+                        DateTime dNewest = oDir.LastWriteTime;
+                        foreach (FileInfo oInside in oDir.GetFiles("*", SearchOption.AllDirectories))
+                        {
+                            if (oInside.LastWriteTime > dNewest) dNewest = oInside.LastWriteTime;
+                        }
+                        if (DateTime.Now.Subtract(dNewest).TotalHours < 24.0)
+                        {
+                            logMessage("  " + oDir.Name + " is older than a day but something in it was "
+                                       + "written recently, so it is left alone.", "INFO", "");
+                            continue;
+                        }
+                        foreach (FileInfo oFile in oDir.GetFiles("*", SearchOption.AllDirectories))
+                            iFreed = iFreed + oFile.Length;
+                        Directory.Delete(sOne, true);
+                        iGone = iGone + 1;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+            }
+            catch (Exception oError)
+            {
+                logMessage("The old working folders could not be looked at: " + oError.Message, "INFO", "");
+                return false;
+            }
+            if (iGone > 0)
+                logMessage(counted(iGone, "working folder left by an earlier run was cleared",
+                                   "working folders left by earlier runs were cleared")
+                           + ", freeing " + (iFreed / 1048576).ToString() + " MB.", "INFO", "");
+            return true;
+        }
+
         static string workFolderFor(string sInput)
         {
             uint iHash = 2166136261;
@@ -763,6 +845,9 @@ namespace Homer
             if (string.Compare(sLogPath, sPath, true) == 0) return;
             openLogAt(sPath);
             logMessage("Log file: " + sLogPath, "INFO", "Log: " + sLogPath);
+            // What earlier runs left behind, before this one adds to it.
+            sweepOldWork();
+
             return;
         }
 
@@ -794,11 +879,13 @@ namespace Homer
                 StreamWriter fOne = new StreamWriter(sWhere, false, new UTF8Encoding(true));
                 fOne.Write(oFileLog.ToString());
                 fOne.Close();
-                logMessage("A log of this film alone is in " + sWhere, "INFO", "");
+                // "This film" was right when a film was all there was. It is
+                // now also a podcast, an archive of photographs, or a PDF.
+                logMessage("A log of this one alone is in " + sWhere, "INFO", "");
             }
             catch (Exception oError)
             {
-                logMessage("The per-film log could not be written: " + oError.Message, "ERROR");
+                logMessage("The log for this one could not be written: " + oError.Message, "ERROR");
             }
             oFileLog = null;
         }
@@ -874,6 +961,11 @@ namespace Homer
         {
             if (fLog == null) return;
             logMessage("Log closed", "INFO", "");
+            // The runtime log stays with the OUTPUT, which is where this kind
+            // of Homer Tool puts it -- one that writes its results to a folder
+            // the user chose. HomerScribe\logs is for an installation log. I
+            // copied the run log there as well, which was the wrong reading of
+            // the convention.
             fLog.Flush();
             try
             {
@@ -988,6 +1080,7 @@ namespace Homer
             "pages-of-print-are-read", "scanned-document-rebuilt",
             "iphone-pictures-read", "camera-date-as-context", "png-keeps-its-own-text",
             "pdf-is-a-source-path", "page-pictures-asked-separately", "pdf-text-taken-directly",
+            "pdf-pages-match-the-original", "docx-beside-the-markdown",
             "ads-removed", "ads-gated-at-confidence", "ad-cuts-land-in-silence",
             "pseudo-playlists", "ads-remembered-between-episodes", "playlist-names-the-folder", "advertising-wording-pointed-out", "whole-break-not-the-giveaway-line", "split-breaks-rejoined", "finalizing-says-so", "web-pages-are-playlists", "host-read-ads-not-penalised"
         };
@@ -1701,6 +1794,15 @@ namespace Homer
             oProcess.StartInfo.Arguments = sArguments;
             oProcess.StartInfo.UseShellExecute = false;
             oProcess.StartInfo.RedirectStandardOutput = true;
+            // Set BEFORE the process starts, or it is ignored. Tesseract writes
+            // UTF-8; read with the console's code page a curly quote arrives as
+            // three mangled characters and stays mangled through the Markdown
+            // and into the Word file.
+            if (bWantUtf8Output)
+            {
+                oProcess.StartInfo.StandardOutputEncoding = new UTF8Encoding(false);
+                oProcess.StartInfo.StandardErrorEncoding = new UTF8Encoding(false);
+            }
             oProcess.StartInfo.RedirectStandardError = true;
             oProcess.StartInfo.CreateNoWindow = true;
             try
@@ -5293,7 +5395,7 @@ namespace Homer
 
         static string configPath()
         {
-            return Path.Combine(appDataFolder(), "HomerScribe.ini");
+            return Path.Combine(appDataFolder(), sDefaultSettingsName);
         }
 
         // A settings file left beside the program by an older build, or put
@@ -5301,7 +5403,15 @@ namespace Homer
         static string configPathToRead()
         {
             if (File.Exists(configPath())) return configPath();
-            string sBeside = Path.Combine(exeFolder(), "HomerScribe.ini");
+            string sBeside = Path.Combine(exeFolder(), sDefaultSettingsName);
+            // An older HomerScribe.ini is still read where one exists, so
+            // nobody loses settings they have already chosen. Anything written
+            // goes to the .inix.
+            if (!File.Exists(sBeside))
+            {
+                string sOld = Path.Combine(exeFolder(), "HomerScribe.ini");
+                if (File.Exists(sOld)) sBeside = sOld;
+            }
             if (File.Exists(sBeside)) return sBeside;
             return configPath();
         }
@@ -5561,19 +5671,34 @@ namespace Homer
                 return lFound;
             }
             Array.Sort(asFiles);
+            // A wildcard may name anything HomerScribe can work on, not only
+            // video and sound.
+            //
+            // His "c:\pdf2txt\pdf\*.pdf" matched every file and then threw
+            // them all away, because this asked only whether each was a video
+            // or a recording. Archives of pictures have been a source since
+            // August and PDFs since this month; the test was never widened.
+            //
+            // A source path typed by hand is accepted whatever its kind, and a
+            // wildcard should hold to the same rule.
             int iNotMedia = 0;
             foreach (string sFile in asFiles)
             {
-                if (!looksLikeMedia(sFile))
+                if (!looksLikeMedia(sFile) && !looksLikeArchive(sFile) && !looksLikeList(sFile))
                 {
                     iNotMedia = iNotMedia + 1;
-                    logMessage("  Passing over " + Path.GetFileName(sFile) + ": not a video or a recording.", "INFO", "");
+                    logMessage("  Passing over " + Path.GetFileName(sFile)
+                               + ": not a video, a recording, a PDF, an archive of pictures or a list.",
+                               "INFO", "");
                     continue;
                 }
                 lFound.Add(sFile);
             }
-            if (iNotMedia > 0) logMessage(iNotMedia.ToString() + " file(s) matching the pattern are not video or audio and were passed over.",
-                                          "INFO", iNotMedia.ToString() + " matching file(s) are not video or audio and were passed over.");
+            if (iNotMedia > 0)
+                logMessage(counted(iNotMedia, "file matching the pattern is not something HomerScribe reads",
+                                   "files matching the pattern are not something HomerScribe reads") + ".",
+                           "INFO", counted(iNotMedia, "matching file is", "matching files are")
+                           + " not something HomerScribe reads.");
             logMessage(sSource + " matches " + lFound.Count.ToString() + " files",
                        "INFO", sSource + " matches " + lFound.Count.ToString() + " files.");
             if (lFound.Count == 0) logMessage("Nothing matched " + sSource, "ERROR");
@@ -6329,6 +6454,28 @@ namespace Homer
         // A command asked only for what it prints, where failing is how it
         // answers. Used for "ffmpeg -i file", which reads a header and then
         // exits 1 because no output was named.
+        // A command whose output is UTF-8 rather than the console's code page.
+        //
+        // Tesseract writes UTF-8. Read with the default encoding, a curly quote
+        // arrives as three mangled characters and stays that way through the
+        // Markdown and into the Word file. Setting the encoding is the whole
+        // fix, and it has to be set before the process starts.
+        static int runUtf8Command(string sProgram, string sArgs, out string sOut, out string sErr)
+        {
+            bool bWas = bWantUtf8Output;
+            bWantUtf8Output = true;
+            try
+            {
+                return runCommand(sProgram, sArgs, out sOut, out sErr);
+            }
+            finally
+            {
+                bWantUtf8Output = bWas;
+            }
+        }
+
+        static bool bWantUtf8Output = false;
+
         static int runProbe(string sProgram, string sArgs, out string sOut, out string sErr)
         {
             bExpectFailure = true;
@@ -6351,6 +6498,1435 @@ namespace Homer
         static bool looksLikePdf(string sPath)
         {
             return string.Compare(Path.GetExtension(sPath), ".pdf", true) == 0;
+        }
+
+        // THE SECOND VIEW: the document as a screen reader would announce it.
+        //
+        // Taken from Equalify Iris, which reviews its work in TWO VIEWS -- the
+        // marked-up text, and a flattened reading of what a screen reader would
+        // actually say -- because a fault invisible in one is obvious in the
+        // other. A heading at the wrong level looks fine in Markdown and
+        // announces itself wrongly; an image with no alt text is a silent gap
+        // in the flattened view and an unremarkable line in the source.
+        //
+        // Iris asks a model to do the reviewing, because it is remediating
+        // arbitrary HTML it did not write. HomerScribe WROTE this document, so
+        // it can check deterministically: no model, no cost, no hallucinated
+        // objection, and the same answer every time.
+        static List<string> reviewAsScreenReader(string sMarkdown, out string sFlattened)
+        {
+            List<string> lFaults = new List<string>();
+            StringBuilder oSaid = new StringBuilder();
+            int iLastLevel = 0;
+            int iHeadings = 0;
+            int iTopLevel = 0;
+            int iPictures = 0;
+            int iBlankAlt = 0;
+            int iListItems = 0;
+            int iSkips = 0;
+            int iPages = 1;
+            foreach (Match oPage in Regex.Matches(sMarkdown, @"<!-- page \d+ -->")) iPages = iPages + 1;
+            foreach (string sLine in sMarkdown.Replace("\r\n", "\n").Split('\n'))
+            {
+                string sTrim = sLine.Trim();
+                if (sTrim == "" || sTrim.StartsWith("<!--")) continue;
+                Match oHead = Regex.Match(sTrim, @"^(#+)\s+(.*)$");
+                if (oHead.Success)
+                {
+                    int iLevel = oHead.Groups[1].Value.Length;
+                    iHeadings = iHeadings + 1;
+                    if (iLevel == 1) iTopLevel = iTopLevel + 1;
+                    // A level that jumps -- h2 straight to h4 -- leaves a reader
+                    // moving by heading unsure whether something was missed.
+                    if (iLastLevel > 0 && iLevel > iLastLevel + 1)
+                    {
+                        iSkips = iSkips + 1;
+                        if (iSkips <= 5)
+                            lFaults.Add("Heading level jumps from " + iLastLevel.ToString() + " to "
+                                        + iLevel.ToString() + " at \"" + shortened(oHead.Groups[2].Value, 50)
+                                        + "\".");
+                    }
+                    iLastLevel = iLevel;
+                    oSaid.AppendLine("heading level " + iLevel.ToString() + ", " + oHead.Groups[2].Value);
+                    continue;
+                }
+                Match oPic = Regex.Match(sTrim, @"^!\[([^\]]*)\]");
+                if (oPic.Success)
+                {
+                    iPictures = iPictures + 1;
+                    string sAlt = oPic.Groups[1].Value.Trim();
+                    if (sAlt == "")
+                    {
+                        iBlankAlt = iBlankAlt + 1;
+                        oSaid.AppendLine("graphic, no description");
+                    }
+                    else oSaid.AppendLine("graphic, " + sAlt);
+                    continue;
+                }
+                if (Regex.IsMatch(sTrim, @"^([-*]|\d+\.)\s+"))
+                {
+                    iListItems = iListItems + 1;
+                    oSaid.AppendLine("bullet, " + Regex.Replace(sTrim, @"^([-*]|\d+\.)\s+", ""));
+                    continue;
+                }
+                oSaid.AppendLine(sTrim);
+            }
+            sFlattened = oSaid.ToString();
+            if (iSkips > 5)
+                lFaults.Add("and " + (iSkips - 5).ToString() + " more heading level jumps.");
+            if (iTopLevel == 0)
+                lFaults.Add("The document has no level 1 heading, so there is nothing to jump to first.");
+            if (iTopLevel > 1)
+                lFaults.Add("The document has " + iTopLevel.ToString() + " level 1 headings; one is the title.");
+            if (iBlankAlt > 0)
+                lFaults.Add(counted(iBlankAlt, "picture has no description", "pictures have no description")
+                            + ", so a screen reader announces a graphic and nothing else.");
+            if (iHeadings == 0)
+                lFaults.Add("The document has no headings at all, so there is no way to move through it.");
+            else if (iPages >= 8 && iHeadings * 6 < iPages)
+                // ALMOST NONE IS THE SAME PROBLEM AS NONE.
+                //
+                // The warning used to fire only at zero, and only on the tagged
+                // path. Two of his documents slipped through: a 14-page guide
+                // with two headings, and a 25-page toolkit with one, which the
+                // layout path never checked at all.
+                //
+                // A heading every six pages is already too far apart to
+                // navigate by: his 14-page Event Planning guide has two, and at
+                // a bar of eight it slipped through. This runs over the finished document, so it
+                // catches both paths and needs no second copy.
+                lFaults.Add("The document has only "
+                            + counted(iHeadings, "heading", "headings") + " across "
+                            + counted(iPages, "page", "pages")
+                            + ", which is too few to move through. Where the original is tagged this is "
+                            + "a fault in it; otherwise its headings were not distinct enough in the "
+                            + "layout to find.");
+            return lFaults;
+        }
+
+        static string shortened(string sText, int iMost)
+        {
+            if (sText == null) return "";
+            sText = sText.Trim();
+            return sText.Length <= iMost ? sText : sText.Substring(0, iMost) + "...";
+        }
+
+        // A PDF read into accessible Markdown, using whichever layers it has.
+        //
+        // Named for what it produces: <name>.md beside the other documents, in
+        // a folder named after the PDF.
+        static int readPdf(string sFfmpeg, string sPdfPath, string sOutputDir)
+        {
+            string sRoot = Path.GetFileNameWithoutExtension(sPdfPath);
+            string sWorkDir = Path.Combine(workFolderFor(sPdfPath), "pdf");
+            string sPagePath = Path.Combine(sOutputDir, sDefaultPicturesName);
+            try
+            {
+                if (!Directory.Exists(sWorkDir)) Directory.CreateDirectory(sWorkDir);
+                if (!Directory.Exists(sOutputDir)) Directory.CreateDirectory(sOutputDir);
+            }
+            catch (Exception oError)
+            {
+                logMessage("The working folder could not be made: " + oError.Message, "ERROR");
+                return 1;
+            }
+            // Every other way out of this function clears the working folder.
+            // This one cannot -- the folder is what failed -- but it is worth
+            // saying that the rule is "every exit tidies", because an exit that
+            // forgets is how 260 folders of his came to hold 1,226 files.
+
+            announce("Preparing", -1.0, 1.0, "Opening " + Path.GetFileName(sPdfPath));
+            string sTrouble = "";
+            List<PdfPage> lPages = pagesOfPdf(sPdfPath, sWorkDir, out sTrouble);
+            if (lPages.Count == 0)
+            {
+                logMessage("Nothing could be read out of " + Path.GetFileName(sPdfPath)
+                           + (sTrouble == "" ? "." : ": " + sTrouble), "ERROR",
+                           "Nothing could be read out of that PDF.");
+                // WHEN AN ASSEMBLY IS MISSING, SAY WHAT IS ACTUALLY HERE.
+                //
+                // Three runs have now failed on a load error naming one file,
+                // and each time the run log said which file was wanted and
+                // nothing about which were present -- so the build log had to
+                // be fetched to learn anything. The answer is a directory
+                // listing, and it costs nothing.
+                if (sTrouble.IndexOf("Could not load file or assembly",
+                                     StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    try
+                    {
+                        List<string> lHere = new List<string>();
+                        foreach (string sOne in Directory.GetFiles(exeFolder(), "*.dll"))
+                            lHere.Add(Path.GetFileName(sOne));
+                        lHere.Sort();
+                        logMessage("  " + counted(lHere.Count, "assembly is", "assemblies are")
+                                   + " beside HomerScribe.exe: "
+                                   + (lHere.Count == 0 ? "none" : string.Join(", ", lHere.ToArray())),
+                                   "ERROR");
+                        string sConfig = Path.Combine(exeFolder(), "HomerScribe.exe.config");
+                        logMessage("  HomerScribe.exe.config: "
+                                   + (File.Exists(sConfig)
+                                      ? "present, " + new FileInfo(sConfig).Length.ToString() + " bytes"
+                                      : "MISSING, so no binding redirects are in force"), "ERROR");
+                        logMessage("  Rebuild with buildHomerScribe to fetch whatever is absent.", "HINT");
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+                tidyWorkFolder(sWorkDir);
+                return 1;
+            }
+
+            // What the PDF says about its own structure, before anything is
+            // inferred about it.
+            if (sTaggedSaid != "")
+            {
+                logMessage("About " + Path.GetFileName(sPdfPath) + ": " + sTaggedSaid + ".", "INFO", "");
+                if (bTaggedDocument && sTagSummary != "")
+                {
+                    logMessage("  Reading its tags: " + sTagSummary + ".", "INFO", "");
+                    // Matterhorn checkpoint 13-004: a Figure without Alt or
+                    // ActualText. Worth saying plainly, because it is a fault in
+                    // the SOURCE document rather than in this reading of it —
+                    // somebody tagged that PDF and left a picture undescribed.
+                    // Named apart from the iFigures counted from the picture
+                    // layer above: these are figures the TAGS name, which is a
+                    // different number about a different thing.
+                    int iTaggedFigures = 0;
+                    int iNoAlt = 0;
+                    foreach (TaggedItem oItem in lTagged)
+                    {
+                        if (oItem.sKind != "Figure") continue;
+                        iTaggedFigures = iTaggedFigures + 1;
+                        if (oItem.sAlt == "") iNoAlt = iNoAlt + 1;
+                    }
+                    if (iNoAlt > 0)
+                        logMessage("  " + counted(iNoAlt, "figure in the original carries no description",
+                                                  "figures in the original carry no description")
+                                   + ", which is a fault in that PDF rather than in this reading of it. "
+                                   + "HomerScribe describes them itself where it can.", "INFO", "");
+                    logMessage("  The structure below is still worked out from the layout. Using these tags "
+                               + "instead is the next piece of work, and they would be better: they are what "
+                               + "the author meant rather than what the layout suggests.", "INFO", "");
+                }
+            }
+            int iScanned = 0;
+            int iWithText = 0;
+            int iFigures = 0;
+            int iSkippedPictures = 0;
+            foreach (PdfPage oPage in lPages) iSkippedPictures = iSkippedPictures + oPage.iSkippedPictures;
+            foreach (PdfPage oPage in lPages)
+            {
+                if (oPage.bScanned) iScanned = iScanned + 1;
+                else if (oPage.lLines.Count > 0) iWithText = iWithText + 1;
+                iFigures = iFigures + oPage.lImages.Count;
+            }
+            // Say plainly when a document had no pictures at all, because
+            // "0 pictures" can mean two very different things: a document that
+            // genuinely has none, or a picture layer that failed to read them.
+            // Four of his documents reported zero and there was no way to tell
+            // which, so the count of pictures PASSED OVER is now reported too.
+            if (iFigures == 0 && iSkippedPictures > 0)
+                logMessage(counted(iSkippedPictures, "picture was found but could not be read",
+                                   "pictures were found but could not be read")
+                           + ": stored without a JPEG, PNG or JPEG-2000 header, which is how a chart in a "
+                           + "born-digital PDF is often kept. Those are passed over rather than written as a "
+                           + "file nothing can open.", "INFO", "");
+            logMessage(counted(lPages.Count, "page", "pages") + " in " + Path.GetFileName(sPdfPath)
+                       + ": " + counted(iWithText, "carries its own text", "carry their own text")
+                       + ", " + counted(iScanned, "is a scan", "are scans")
+                       + ", " + counted(iFigures, "picture", "pictures") + " in all.", "INFO",
+                       counted(lPages.Count, "page", "pages") + " to read.");
+
+            // THE TAGS FIRST, WHERE THEY CARRY THE DOCUMENT.
+            //
+            // Measured on his ten accessibility documents: against what the
+            // tags say, the inference found 10 headings where there were 62,
+            // and made 118 where there were 29. Four documents with tagged
+            // lists produced no list items at all.
+            //
+            // So where the tags carry enough of the document, they are used and
+            // nothing is guessed. "Enough" is judged by what came back: a tree
+            // yielding a handful of words for a fifty-page document has not
+            // been read properly, whatever it claims.
+            bool bBuiltFromTags = false;
+            if (lPieces.Count > 0)
+            {
+                int iTagHeadings = 0;
+                int iTagList = 0;
+                string sFromTags = markdownFromTags(lPieces, out iTagHeadings, out iTagList);
+                int iTagWords = sFromTags.Split(new char[] { ' ', '\n' },
+                                                StringSplitOptions.RemoveEmptyEntries).Length;
+                // WORDS ALONE ARE NOT ENOUGH, and his Able Gamers Guidelines
+                // proved it: its tags carry 1,374 words, 0 headings and 0
+                // lists, and the pages themselves hold 25,995 words. It is a
+                // SCANNED document that happens to be tagged, and its tags name
+                // 141 figures and almost no text. Taken at its word, the
+                // conversion lost 25,480 words.
+                //
+                // Two things are required now:
+                //   the tags must carry some STRUCTURE, since a tree with no
+                //   heading and no list is not describing a document; and
+                //   they must not be plainly poorer than the pages, which is
+                //   measured rather than assumed.
+                int iPageWords = 0;
+                foreach (PdfPage oPage in lPages)
+                {
+                    foreach (PageLine oLine in oPage.lLines)
+                    {
+                        if (oLine.sText == null) continue;
+                        iPageWords = iPageWords + oLine.sText.Split(new char[] { ' ' },
+                            StringSplitOptions.RemoveEmptyEntries).Length;
+                    }
+                }
+                bool bHasShape = iTagHeadings > 0 || iTagList > 0;
+                // FOUR FIFTHS, NOT A HALF.
+                //
+                // A half sounded cautious and is not. His 655-page handbook
+                // passed it and still lost 39 per cent of its words: 42,938
+                // from tags against 65,577 on the pages. Losing a third of a
+                // textbook is not a trade worth making for better headings.
+                //
+                // Some loss is right — a tagged document marks its running
+                // headers and footers as artifacts and they are correctly left
+                // out — but that is a few words a page, not a third of the
+                // document. Four fifths leaves room for the furniture and not
+                // for a third of the text.
+                bool bNotPoorer = iPageWords == 0 || iTagWords * 5 >= iPageWords * 4;
+                if (!bHasShape)
+                    logMessage("Its tags name no headings and no lists, so they do not describe the "
+                               + "document. The layout is used instead.", "INFO", "");
+                else if (!bNotPoorer)
+                    logMessage("Its tags yield " + iTagWords.ToString() + " words where the pages hold "
+                               + iPageWords.ToString() + ". The tags are not carrying the document, so the "
+                               + "layout is used instead.", "INFO", "");
+                if (bHasShape && bNotPoorer && iTagWords >= Math.Max(60, lPages.Count * 20))
+                {
+                    logMessage("Its own tags carry the document: "
+                               + counted(iTagHeadings, "heading", "headings") + ", "
+                               + counted(iTagList, "list item", "list items") + ", "
+                               + counted(iTagWords, "word", "words")
+                               + ". Nothing below is guessed from the layout.", "INFO",
+                               "This PDF carries its own structure, so it is used rather than guessed.");
+                    // PAC check 6, and a real fault in the source: "if the
+                    // document has no assigned headings". A 23-page toolkit
+                    // whose tags name 233 list items and no heading at all
+                    // gives a reader nothing to move through, and that is worth
+                    // saying about the original rather than passing on quietly.
+                    if (iTagHeadings == 0)
+                        logMessage("  But its tags name NO HEADINGS, only list items. That is a fault in the "
+                                   + "original — a reader moving by heading has nothing to move through. The "
+                                   + "words and lists below are its own; the headings it never had cannot be "
+                                   + "supplied from them.", "ERROR");
+                    // The pages are emptied and the tagged rendering put in
+                    // place of them, so the rest of this function -- writing
+                    // described.md, making the Word version, reading it back as
+                    // a screen reader -- carries on unchanged. Better than a
+                    // second copy of the write-out, which would drift from this
+                    // one the first time either changed.
+                    foreach (PdfPage oPage in lPages)
+                    {
+                        oPage.sMarkdown = "";
+                        oPage.lLines.Clear();
+                        oPage.bFromOcr = false;
+                    }
+                    if (lPages.Count > 0) lPages[0].sMarkdown = closedHeadingGaps(sFromTags);
+                    bBuiltFromTags = true;
+                }
+                else
+                    logMessage("Its tags were read but yielded only " + iTagWords.ToString()
+                               + " words for " + counted(lPages.Count, "page", "pages")
+                               + ", which is too little to be the document. The layout is used instead."
+                               + (sPiecesTrouble == "" ? "" : " (" + sPiecesTrouble + ")"), "INFO", "");
+            }
+            else if (bTaggedDocument && sPiecesTrouble != "")
+                logMessage("Its tags could not be joined to its words: " + sPiecesTrouble
+                           + ". The layout is used instead.", "INFO", "");
+
+            // A TEXT LAYER THAT CANNOT BE READ IS WORSE THAN NONE.
+            //
+            // PAC checks 8 and 14: a missing font translation table, or a
+            // generator that never wrote the spaces. Either way the page looks
+            // right and the text is nonsense — and nothing in the counts would
+            // ever say so.
+            //
+            // The page is a picture too, so where the text fails this, the
+            // pages are treated as scans and read instead.
+            string sWhyBad = "";
+            if (!bBuiltFromTags && iWithText > 0 && !textLayerIsSound(lPages, out sWhyBad))
+            {
+                logMessage("Its text layer cannot be trusted: " + sWhyBad + ". The pages will be read as "
+                           + "pictures instead, which is slower and gives a usable document.", "INFO",
+                           "The text in this PDF is not usable, so its pages will be read as pictures.");
+                int iTurned = 0;
+                foreach (PdfPage oPage in lPages)
+                {
+                    if (oPage.bScanned || oPage.lImages.Count == 0) continue;
+                    oPage.bScanned = true;
+                    oPage.lLines.Clear();
+                    iTurned = iTurned + 1;
+                }
+                if (iTurned == 0)
+                    logMessage("  But its pages hold no pictures either, so the text is all there is. "
+                               + "The result will be poor and there is nothing better to use.", "ERROR");
+                else
+                {
+                    iScanned = iScanned + iTurned;
+                    iWithText = iWithText - iTurned;
+                    logMessage("  " + counted(iTurned, "page will be read as a picture",
+                                              "pages will be read as pictures") + ".", "INFO", "");
+                }
+            }
+
+            // The heading structure, from font size alone. No model, and exact.
+            double nBody = bodySizeOf(lPages);
+            Dictionary<double, int> dLevel = headingLevels(lPages, nBody);
+            if (nBody > 0.0)
+                logMessage("Body text is set at " + num(nBody) + " point; "
+                           + counted(dLevel.Count, "larger size becomes a heading level",
+                                     "larger sizes become heading levels") + ".", "INFO", "");
+
+            string sExifTool = "";
+            string sTesseract = flag("ocr") ? tesseractProgram() : "";
+            int iOcrFloor = integer("ocr-floor");
+            if (iOcrFloor < 1 || iOcrFloor > 100) iOcrFloor = 70;
+            int iByOcr = 0;
+            int iByModel = 0;
+            int iLimit = integer("page-picture-limit");
+            int iDescribed = 0;
+            int iPassedOver = 0;
+            int iTagAltUsed = 0;
+            if (iLimit > 0 && iFigures > iLimit)
+                logMessage("This document holds " + counted(iFigures, "picture", "pictures")
+                           + ". The largest " + iLimit.ToString() + " are described and the rest are named "
+                           + "without one, which keeps the run to an evening rather than a day. Raise or "
+                           + "clear --page-picture-limit to change that.", "INFO", "");
+            for (int iAt = 0; bBuiltFromTags == false && iAt < lPages.Count; iAt = iAt + 1)
+            {
+                PdfPage oPage = lPages[iAt];
+                if (iAt == 0) announce("Reading", -1.0, 1.0, "Page 1 of " + lPages.Count.ToString());
+                else announce("Reading", -1.0, 1.0, "Page " + (iAt + 1).ToString() + ", "
+                              + ((int)((iAt + 1) * 100.0 / lPages.Count)).ToString() + "%");
+
+                if (oPage.bScanned)
+                {
+                    string sShow = asPngFor(sFfmpeg, oPage.lImages[0], sWorkDir);
+                    if (sShow == "") sShow = oPage.lImages[0];
+                    // TESSERACT FIRST, THE MODEL WHERE IT FALTERS.
+                    //
+                    // Tesseract reads clean print at least as well as the
+                    // picture model, about twenty-five times faster, and cannot
+                    // invent a word. Where its own confidence is poor the page
+                    // is worth the model's slower look, and below that it is
+                    // the model's job outright.
+                    string sByOcr = "";
+                    int iSure = 0;
+                    List<double> lHeights = new List<double>();
+                    if (sTesseract != "") sByOcr = tesseractRead(sTesseract, sShow, out iSure, lHeights);
+                    if (sByOcr.Trim() != "" && iSure >= iOcrFloor)
+                    {
+                        // STRUCTURE, NOT JUST WORDS.
+                        //
+                        // His 511 KB of Markdown held 32 headings across 112
+                        // pages and one list item, because a Tesseract page was
+                        // handed straight through as plain lines. The words
+                        // were right and the document had no shape.
+                        //
+                        // Tesseract gives each word's height, which does for a
+                        // scan what point size does for a text page, so the
+                        // same inference is used: the height most characters
+                        // are set at is the body, anything markedly taller is a
+                        // heading, and bullets and numbers become lists.
+                        oPage.lLines.Clear();
+                        string[] asByOcr = sByOcr.Replace("\r\n", "\n").Split('\n');
+                        for (int iLine = 0; iLine < asByOcr.Length; iLine = iLine + 1)
+                        {
+                            if (asByOcr[iLine].Trim() == "") continue;
+                            PageLine oOcrLine = new PageLine();
+                            oOcrLine.sText = asByOcr[iLine];
+                            oOcrLine.nSize = iLine < lHeights.Count ? lHeights[iLine] : 0.0;
+                            oPage.lLines.Add(oOcrLine);
+                        }
+                        // Left as plain text for now. The heading levels cannot
+                        // be known until every page has been read, because the
+                        // body size is measured across the whole document --
+                        // and on an all-scanned document there was nothing to
+                        // measure until this loop had run. That is why his
+                        // journal came out with 32 headings in 112 pages: the
+                        // sizes arrived after the decision that needed them.
+                        //
+                        // A second pass below renders these pages properly.
+                        oPage.sMarkdown = sByOcr;
+                        oPage.bFromOcr = true;
+                        iByOcr = iByOcr + 1;
+                        logMessage("  Page " + oPage.iNumber.ToString() + " read by Tesseract, "
+                                   + iSure.ToString() + " sure out of a hundred.", "INFO", "");
+                    }
+                    else
+                    {
+                        string[] asSaid = readPage(sShow, "", "");
+                        // THE MODEL WRITES ITS OWN MARKDOWN, and it writes a
+                        // page title as "# Something". Twenty-two pages of his
+                        // journal went to the model and produced 28 level-1
+                        // headings, one per page — so a document with one title
+                        // came out with twenty-nine.
+                        //
+                        // A page is not a document. Whatever the model calls a
+                        // level 1, it is at best a level 2 here, and everything
+                        // below it moves with it so the levels keep their
+                        // shape.
+                        oPage.sMarkdown = demotedHeadings(asSaid[1]);
+                        iByModel = iByModel + 1;
+                        logMessage("  Page " + oPage.iNumber.ToString() + " read by " + text("model")
+                                   + (sByOcr.Trim() == ""
+                                      ? ": Tesseract found no words on it."
+                                      : ": Tesseract was only " + iSure.ToString() + " sure, under the floor of "
+                                        + iOcrFloor.ToString() + "."), "INFO", "");
+                    }
+                }
+                else
+                {
+                    // The text is exact; the sizes give the structure.
+                    oPage.sMarkdown = pageAsMarkdown(oPage, nBody, dLevel);
+                }
+
+                // Any figure on the page becomes alt text, which is the part
+                // no PDF reader does and the reason this belongs here.
+                if (!oPage.bScanned && oPage.lImages.Count > 0 && flag("page-pictures"))
+                {
+                    StringBuilder oAlt = new StringBuilder();
+                    foreach (string sImage in oPage.lImages)
+                    {
+                        // A book of plates can carry two pictures on every
+                        // page. One of his documents held 1,307, and asking
+                        // about each is nine hours of work for a document
+                        // nobody would read to the end. The largest are
+                        // described -- they are the figures -- and the rest are
+                        // named without one.
+                        if (iLimit > 0 && iDescribed >= iLimit)
+                        {
+                            iPassedOver = iPassedOver + 1;
+                            oAlt.AppendLine("![Picture on page " + oPage.iNumber.ToString()
+                                            + ", not described: the limit of " + iLimit.ToString()
+                                            + " was reached](page" + oPage.iNumber.ToString("000") + ".png)");
+                            oAlt.AppendLine("");
+                            continue;
+                        }
+                        string sShow = asPngFor(sFfmpeg, sImage, sWorkDir);
+                        if (sShow == "") sShow = sImage;
+                        // THE AUTHOR'S OWN DESCRIPTION FIRST, where the PDF
+                        // carries one.
+                        //
+                        // A tagged PDF's Figure elements hold the alt text
+                        // somebody wrote for them. It is better than anything a
+                        // model produces — it is what the author meant the
+                        // picture to convey — and it costs nothing where the
+                        // model costs about ninety seconds.
+                        //
+                        // The tree is the reading order, so the nth Figure
+                        // describes the nth picture.
+                        string sShown = "";
+                        if (iTagAltUsed < lTaggedFigureAlt.Count
+                            && lTaggedFigureAlt[iTagAltUsed].Trim() != "")
+                        {
+                            sShown = lTaggedFigureAlt[iTagAltUsed].Trim();
+                            logMessage("  Page " + oPage.iNumber.ToString()
+                                       + ": the PDF's own description is used, so the model was not asked.",
+                                       "INFO", "");
+                        }
+                        if (iTagAltUsed < lTaggedFigureAlt.Count) iTagAltUsed = iTagAltUsed + 1;
+                        if (sShown == "") sShown = pictureOnPageSaid(sShow);
+                        if (sShown == "") continue;
+                        logMessage("  Page " + oPage.iNumber.ToString() + " carries a picture: "
+                                   + (sShown.Length > 120 ? sShown.Substring(0, 120) + "..." : sShown),
+                                   "INFO", "");
+                        iDescribed = iDescribed + 1;
+                        oAlt.AppendLine("![" + sShown.TrimEnd('.').Replace("]", ")") + "](page"
+                                        + oPage.iNumber.ToString("000") + ".png)");
+                        oAlt.AppendLine("");
+                    }
+                    if (oAlt.Length > 0) oPage.sMarkdown = oAlt.ToString() + oPage.sMarkdown;
+                }
+            }
+
+            // THE TAGS AS A CHECK ON THE INFERENCE.
+            //
+            // A tagged PDF states how many headings it has and how deep they
+            // go. That is worth having even before the tags can be matched to
+            // the text on the page, because it says whether the inference is
+            // anywhere near right — and this project has just produced 4,336
+            // headings for a document that should have had a few hundred.
+            //
+            // Matching a tag to the words it covers needs marked-content
+            // identifiers and the page's content stream, which is a larger
+            // piece of machinery. Counting is not, and it catches the failure
+            // that actually happened.
+            int iTaggedHeadings = 0;
+            int iDeepestTag = 0;
+            foreach (TaggedItem oItem in lTagged)
+            {
+                if (oItem.iLevel <= 0) continue;
+                iTaggedHeadings = iTaggedHeadings + 1;
+                if (oItem.iLevel > iDeepestTag) iDeepestTag = oItem.iLevel;
+            }
+
+            // THE SECOND PASS: now that every page has been read, the body
+            // size can be measured and the OCR pages given their structure.
+            //
+            // Nothing to redo where the document carried its own text: those
+            // pages had their sizes from the start.
+            int iOcrPages = 0;
+            foreach (PdfPage oPage in lPages) { if (oPage.bFromOcr) iOcrPages = iOcrPages + 1; }
+            if (iOcrPages > 0)
+            {
+                double nOcrBody = bodySizeOf(lPages);
+                // TIGHTEN UNTIL THE HEADINGS ARE A PLAUSIBLE PART OF THE
+                // DOCUMENT.
+                //
+                // No setting can be right for every scan, because the noise in
+                // a measured height depends on the scan. So the document
+                // corrects the setting: if more than a tenth of its lines would
+                // become headings, the bar goes up and it is tried again.
+                //
+                // ONE LINE IN TWENTY-FIVE. A tenth sounded safe and is not: his
+                // journal's 1,769 headings in about 20,000 lines is 8.8 per
+                // cent, which would have passed a tenth untouched. A well-made
+                // document runs nearer a fiftieth, so twenty-five is still
+                // generous and actually bites.
+                //
+                // This needs no tags, which most documents do not have.
+                Dictionary<double, int> dOcrLevel = headingLevels(lPages, nOcrBody);
+                int iLines = 0;
+                foreach (PdfPage oPage in lPages) iLines = iLines + oPage.lLines.Count;
+                double nBar = number("heading-size");
+                if (nBar < 1.05 || nBar > 4.0) nBar = 1.4;
+                for (int iTry = 0; iTry < 6; iTry = iTry + 1)
+                {
+                    int iWouldBe = 0;
+                    foreach (PdfPage oPage in lPages)
+                    {
+                        foreach (PageLine oLine in oPage.lLines)
+                        {
+                            double nAt = Math.Round(oLine.nSize * 2.0) / 2.0;
+                            string sTrim = oLine.sText == null ? "" : oLine.sText.Trim();
+                            if (dOcrLevel.ContainsKey(nAt) && sTrim.Length <= 100
+                                && !Regex.IsMatch(sTrim, @"[.;,][""'\)]?$"))
+                                iWouldBe = iWouldBe + 1;
+                        }
+                    }
+                    if (iLines == 0 || iWouldBe * 25 <= iLines) break;
+                    nBar = nBar * 1.15;
+                    logMessage("  " + iWouldBe.ToString() + " of " + iLines.ToString()
+                               + " lines would be headings, which is too many for one document. "
+                               + "Trying a taller bar: " + num(nBar) + " times the body.", "INFO", "");
+                    dOcrLevel = headingLevelsAt(lPages, nOcrBody, nBar);
+                }
+                // THE TAGS SET THE DEPTH, where the document has them.
+                //
+                // A tagged PDF states how deep its headings go. Inferring six
+                // levels for a document whose author used three invents a
+                // structure nobody wrote, so the inference is capped at what
+                // the document says.
+                if (iDeepestTag > 0)
+                {
+                    List<double> lKeys = new List<double>(dOcrLevel.Keys);
+                    bool bCapped = false;
+                    foreach (double nKey in lKeys)
+                    {
+                        if (dOcrLevel[nKey] <= iDeepestTag + 1) continue;
+                        dOcrLevel[nKey] = iDeepestTag + 1;
+                        bCapped = true;
+                    }
+                    if (bCapped)
+                        logMessage("  Its tags go " + iDeepestTag.ToString()
+                                   + " levels deep, so the inferred headings are kept within that.",
+                                   "INFO", "");
+                }
+                foreach (PdfPage oPage in lPages)
+                {
+                    if (!oPage.bFromOcr) continue;
+                    oPage.sMarkdown = pageAsMarkdown(oPage, nOcrBody, dOcrLevel);
+                }
+                logMessage("Reading finished, so the shape of the document could be measured: letters are "
+                           + num(nOcrBody) + " tall in the body text, and "
+                           + counted(dOcrLevel.Count, "taller size becomes a heading level",
+                                     "taller sizes become heading levels") + " across "
+                           + counted(iOcrPages, "page read by Tesseract", "pages read by Tesseract") + ".",
+                           "INFO", "");
+            }
+
+            // Assembled in page order, with a running header or footer dropped:
+            // a line that repeats on most pages is furniture, not content.
+            Dictionary<string, int> dRepeats = new Dictionary<string, int>();
+            foreach (PdfPage oPage in lPages)
+            {
+                foreach (string sLine in oPage.sMarkdown.Replace("\r\n", "\n").Split('\n'))
+                {
+                    string sBare = Regex.Replace(sLine.Trim().ToLower(), @"\d+", "#");
+                    if (sBare.Length < 3 || sBare.Length > 70) continue;
+                    if (!dRepeats.ContainsKey(sBare)) dRepeats[sBare] = 0;
+                    dRepeats[sBare] = dRepeats[sBare] + 1;
+                }
+            }
+            int iFurniture = 0;
+            StringBuilder oWhole = new StringBuilder();
+            oWhole.AppendLine("# " + sRoot);
+            oWhole.AppendLine("");
+            // Said in the document itself, since a reader deserves to know how
+            // much of its shape was stated and how much was guessed.
+            // The document's own language, where it states one. Pandoc turns
+            // this into the docx's language, which is what decides how a screen
+            // reader pronounces it.
+            if (sDocumentLanguage != "")
+            {
+            }
+            if (sTaggedSaid != "")
+            {
+                oWhole.AppendLine(bTaggedDocument
+                    ? "The original is a tagged PDF, so it carries its own structure. This reading still "
+                      + "works out the headings from the layout, which is less reliable than the tags."
+                    : "The original is not a tagged PDF, so its headings and lists have been worked out "
+                      + "from the layout rather than read from the document.");
+                oWhole.AppendLine("");
+            }
+            oWhole.AppendLine("Read from " + counted(lPages.Count, "page", "pages") + " of "
+                            + Path.GetFileName(sPdfPath) + ". "
+                            // "Every page carried its own text" was said whenever
+                            // no page was a scan — including when no page was
+                            // anything at all, which is how a document that
+                            // yielded nothing described itself as exact.
+                            + (iWithText == 0 && iScanned == 0
+                               ? "Nothing could be read from it: no page carried text, and no page "
+                                 + "yielded a picture that could be read either."
+                               : iScanned == 0
+                               ? "Every page carried its own text, so the words are exact."
+                               : counted(iScanned, "page was read from a picture", "pages were read from pictures")
+                                 + ", where the words are a reading rather than a certainty; anything unclear "
+                                 + "is marked."));
+            oWhole.AppendLine("");
+            bool bFirstPage = true;
+            foreach (PdfPage oPage in lPages)
+            {
+                // A HARD PAGE BREAK BETWEEN PAGES, so the docx paginates the
+                // way the PDF does.
+                //
+                // The reason is a real one: a blind lawyer reading a converted
+                // brief has to be on the same page as the colleague across the
+                // table. If page 14 of the document is page 14 of the PDF,
+                // "see the second paragraph on page 14" means the same thing to
+                // both of them. Without it the conversion is readable and
+                // useless for the argument.
+                //
+                // Pandoc has no native page break -- its issue 1934 is still
+                // open -- so this writes the paragraph the pagebreak.lua filter
+                // turns into one: a real break in Word, a styled div in a web
+                // page, and a form feed where pages do not exist.
+                if (!bFirstPage)
+                {
+                    oWhole.AppendLine("\\pagebreak");
+                    oWhole.AppendLine("");
+                }
+                bFirstPage = false;
+                // And the page's own number, as a comment, so a reader of the
+                // Markdown can find it and nothing is shown that the PDF does
+                // not show.
+                oWhole.AppendLine("<!-- page " + oPage.iNumber.ToString() + " -->");
+                oWhole.AppendLine("");
+                foreach (string sLine in oPage.sMarkdown.Replace("\r\n", "\n").Split('\n'))
+                {
+                    string sBare = Regex.Replace(sLine.Trim().ToLower(), @"\d+", "#");
+                    if (sBare != "" && dRepeats.ContainsKey(sBare)
+                        && dRepeats[sBare] > Math.Max(2, lPages.Count / 2)
+                        && !sLine.TrimStart().StartsWith("#"))
+                    {
+                        iFurniture = iFurniture + 1;
+                        continue;
+                    }
+                    oWhole.AppendLine(sLine);
+                }
+            }
+            if (iByOcr > 0 || iByModel > 0)
+                logMessage(counted(iByOcr, "page was read by Tesseract", "pages were read by Tesseract")
+                           + " and " + counted(iByModel, "by the picture model", "by the picture model") + ".",
+                           "INFO", "");
+            if (iFurniture > 0)
+                logMessage(counted(iFurniture, "running header or footer line was dropped",
+                                   "running header or footer lines were dropped")
+                           + ": a line repeating on most pages is furniture, not content.", "INFO", "");
+
+            try
+            {
+                StreamWriter fDoc = new StreamWriter(sPagePath, false, new UTF8Encoding(true));
+                fDoc.Write(oWhole.ToString());
+                fDoc.Close();
+                // How the inference did against what the document itself says.
+            if (iTaggedHeadings > 0)
+            {
+                int iMade = 0;
+                int iDeepestMade = 0;
+                foreach (Match oOne in Regex.Matches(oWhole.ToString(), @"(?m)^(#{1,6})\s+\S"))
+                {
+                    iMade = iMade + 1;
+                    if (oOne.Groups[1].Value.Length > iDeepestMade)
+                        iDeepestMade = oOne.Groups[1].Value.Length;
+                }
+                logMessage("The document's own tags name " + counted(iTaggedHeadings, "heading", "headings")
+                           + ", " + iDeepestTag.ToString() + " levels deep. This reading made "
+                           + counted(iMade, "heading", "headings") + ", " + iDeepestMade.ToString()
+                           + " levels deep.", "INFO", "");
+                // Three times as many is not a difference of judgement, it is a
+                // fault. A tenth as many is the same fault the other way.
+                if (iMade > iTaggedHeadings * 3)
+                    logMessage("  That is far more than the document says it has, so the sizes are being "
+                               + "read too generously. Raise --heading-size to tighten it.", "ERROR");
+                else if (iMade * 3 < iTaggedHeadings)
+                    logMessage("  That is far fewer than the document says it has, so the sizes are being "
+                               + "read too strictly. Lower --heading-size to loosen it.", "ERROR");
+                else
+                    logMessage("  Those are close enough that the inference is working on this document.",
+                               "INFO", "");
+            }
+
+            // Iris's third phase: read what was written, in the other view.
+                // Levels closed across the whole document before it is read
+                // back, so the review judges what will actually be written.
+                string sTidied = closedHeadingGaps(oWhole.ToString());
+                oWhole.Length = 0;
+                oWhole.Append(sTidied);
+
+                string sFlattened = "";
+                List<string> lFaults = reviewAsScreenReader(oWhole.ToString(), out sFlattened);
+                if (lFaults.Count == 0)
+                    logMessage("Read back as a screen reader would announce it: nothing to report.",
+                               "INFO", "");
+                else
+                {
+                    logMessage(counted(lFaults.Count, "thing was found", "things were found")
+                               + " on reading it back as a screen reader would announce it:", "INFO", "");
+                    foreach (string sFault in lFaults) logMessage("  " + sFault, "INFO", "");
+                }
+                logMessage("Written to " + sPagePath + ".", "INFO", "");
+                // And a Word version beside it, paginated like the original.
+                //
+                // Pandoc does the conversion -- it is what the other Homer
+                // Tools use -- with pagebreak.lua, since Pandoc still has no
+                // page break of its own.
+                //
+                // The pictures are NOT embedded. He measured the cost with me:
+                // for his scanned journal a docx holding the page images comes
+                // to about 17 MB against a quarter of a megabyte of Markdown,
+                // because a zip cannot compress a JPEG any further. The
+                // descriptions carry the meaning at a sixtieth of the weight.
+                // NAMED AFTER THE SOURCE, not after the Markdown.
+                //
+                // described.md says what HomerScribe did; the Word version is
+                // the document itself, and the document has a name. A lawyer
+                // with six converted briefs open needs to tell them apart by
+                // their titles, and six files called described.docx would not
+                // let him.
+                string sDocx = Path.Combine(sOutputDir, sRoot + ".docx");
+                string sPandoc = findTool("pandoc");
+                if (sPandoc == "")
+                    logMessage("Pandoc was not found, so no Word version was made. Run installPandoc.cmd "
+                               + "in the HomerScribe folder and try again. It is free and open source, about "
+                               + "30 MB, and needs no Microsoft Office — a .docx is a zip of XML and Pandoc "
+                               + "writes one directly.", "INFO",
+                               "Pandoc is not installed, so only the Markdown was written.");
+                else
+                {
+                    string sFilter = Path.Combine(exeFolder(), "pagebreak.lua");
+                    // THE LANGUAGE GOES TO PANDOC DIRECTLY, not through a YAML
+                    // block in the Markdown.
+                    //
+                    // A front-matter block is Markdown that Pandoc must parse,
+                    // and a bad value in it costs the whole document: his ADA
+                    // Checklist got no Word version at all because its /Lang
+                    // was binary rubbish. As a command-line setting the value
+                    // cannot break the parse, and the Markdown stays a document
+                    // rather than a document with configuration on top.
+                    string sArgs = "-f markdown -t docx --standalone";
+                    if (sDocumentLanguage != "") sArgs = sArgs + " -M lang=" + quoted(sDocumentLanguage);
+                    if (File.Exists(sFilter)) sArgs = sArgs + " -L " + quoted(sFilter);
+                    else logMessage("pagebreak.lua is missing, so the Word version will show the page "
+                                    + "breaks as text rather than breaking pages.", "ERROR");
+                    string sOut = "";
+                    string sErr = "";
+                    waitingOn("making the Word version");
+                    int iCode = runCommand(sPandoc, sArgs + " -o " + quoted(sDocx) + " " + quoted(sPagePath),
+                                           out sOut, out sErr);
+                    waitingOn("");
+                    if (iCode == 0 && File.Exists(sDocx))
+                    {
+                        logMessage("A Word version is beside it: " + sDocx + ", "
+                                   + counted(lPages.Count, "page", "pages") + " long, numbered as the PDF is.",
+                                   "INFO", "A Word version was made as well.");
+                        lResults.Add("    " + sDocx);
+                    }
+                    else logMessage("Pandoc could not make the Word version: " + tail(sErr, 200), "ERROR");
+                }
+                // iDescribed, not iFigures. His results box said "112 pictures
+                // described" for a document where NONE were: every page was a
+                // scan, and a scanned page's picture IS the page, so the
+                // describing branch never ran. iFigures counts pictures FOUND.
+                // Reporting found as described is the same class of untruth as
+                // trusting an exit code.
+                lResults.Add(sRoot + ": " + counted(lPages.Count, "page read", "pages read")
+                             + (iDescribed > 0 ? ", " + counted(iDescribed, "picture described", "pictures described") : "")
+                             + Environment.NewLine + "    " + sPagePath);
+            }
+            catch (Exception oError)
+            {
+                logMessage("The document could not be written to " + sPagePath + ": " + oError.Message, "ERROR");
+                tidyWorkFolder(sWorkDir);
+                return 1;
+            }
+            if (sExifTool == "") sExifTool = "";
+            sLastOutputFolder = sOutputDir;
+            writeFileLog(sOutputDir);
+            tidyWorkFolder(sWorkDir);
+            return 0;
+        }
+
+        // ---- a PDF made into accessible Markdown -------------------------
+        //
+        // BOTH LAYERS, because a PDF often has both and they know different
+        // things. The text layer is EXACT where a reading of a picture is a
+        // guess. The picture knows what the text cannot say: which lines look
+        // like headings, what a figure shows, where a table's columns lie.
+        //
+        // Taken from the research he asked for:
+        //
+        //   Equalify Iris runs extract, assemble, review -- and reviews in TWO
+        //   VIEWS, the marked-up text and a flattened screen-reader view,
+        //   looping until a round changes nothing. The two-view review is the
+        //   cleverest part of it and costs almost nothing.
+        //
+        //   OpenDataLoader-pdf, built with the PDF Association and the veraPDF
+        //   people, does layout analysis for headings, tables, lists and
+        //   reading order and emits Markdown with those preserved. It is close
+        //   to the reference implementation of this -- in Java.
+        //
+        //   iTagPDF found its errors clustered where two regions were
+        //   semantically alike: a caption merged with a table, a header with
+        //   the title. Worth knowing where to look when this goes wrong.
+        //
+        //   PdfPig (Apache 2.0, .NET Standard, works back to .NET 4.5) is what
+        //   makes it possible in C#. It hands back letters WITH POSITIONS AND
+        //   FONT SIZES, not a string, which is what the heading inference
+        //   below needs.
+
+        class PageLine
+        {
+            public string sText = "";
+            public double nSize;
+            public double nTop;
+            // Emphasis is kept; the typeface and its size are not. A size
+            // decides a heading level and then has no further business in the
+            // Markdown, and a font name has none at any point.
+            public bool bBold;
+            public bool bItalic;
+        }
+
+        class PdfPage
+        {
+            public int iNumber;
+            public List<PageLine> lLines = new List<PageLine>();
+            public List<string> lImages = new List<string>();
+            public bool bScanned;
+            public bool bFromOcr;      // read by Tesseract, so its lines have heights but no Markdown yet
+            public int iSkippedPictures;   // found, but stored in a form nothing can open
+            public string sMarkdown = "";
+        }
+
+        // The body text size: the one the most CHARACTERS are set in.
+        //
+        // Not the average, which a few large headings drag upwards, and not
+        // the commonest LINE size, since a page of headings would win. Rounded
+        // to the half point so 11.04 and 11.0 count as one size.
+        static double bodySizeOf(List<PdfPage> lPages)
+        {
+            Dictionary<double, int> dSeen = new Dictionary<double, int>();
+            foreach (PdfPage oPage in lPages)
+            {
+                foreach (PageLine oLine in oPage.lLines)
+                {
+                    double nAt = Math.Round(oLine.nSize * 2.0) / 2.0;
+                    if (nAt <= 0.0) continue;
+                    if (!dSeen.ContainsKey(nAt)) dSeen[nAt] = 0;
+                    dSeen[nAt] = dSeen[nAt] + oLine.sText.Length;
+                }
+            }
+            double nBody = 0.0;
+            int iMost = 0;
+            foreach (KeyValuePair<double, int> oPair in dSeen)
+            {
+                if (oPair.Value <= iMost) continue;
+                iMost = oPair.Value;
+                nBody = oPair.Key;
+            }
+            return nBody;
+        }
+
+        // Which heading level a size means, or nothing for body text.
+        //
+        // Sizes larger than the body are ranked biggest first and capped at
+        // five, leaving h1 for the document's own title. A tenth above the
+        // body is noise; a sixth is a heading.
+        // Sizes grouped into BANDS relative to the body, not taken as exact
+        // values.
+        //
+        // Taking the five largest distinct sizes works for a text PDF, where
+        // sizes are a designer's small set. It fails on a scan, where a
+        // measured pixel height is noisy: his journal produced dozens of
+        // distinct heights, the five largest were rare outliers on a title
+        // page, and the common subheadings a fifth above the body got no level
+        // at all — 38 headings in 112 pages, with one solitary h5.
+        //
+        // A band is a RATIO to the body size, so the same rule serves a point
+        // size and a pixel height, and heights of 13 and 14 land together
+        // instead of competing for one of five places.
+        static Dictionary<double, int> headingLevels(List<PdfPage> lPages, double nBody)
+        {
+            double nAsked = number("heading-size");
+            if (nAsked < 1.05 || nAsked > 4.0) nAsked = 1.4;
+            return headingLevelsAt(lPages, nBody, nAsked);
+        }
+
+        static Dictionary<double, int> headingLevelsAt(List<PdfPage> lPages, double nBody, double nLowest)
+        {
+            if (nBody <= 0.0) return new Dictionary<double, int>();
+            if (nLowest < 1.05 || nLowest > 8.0) nLowest = 1.4;
+            // How much of the document is set at each size, so a size used once
+            // on a cover cannot outrank one used on forty subheadings.
+            Dictionary<double, int> dWeight = new Dictionary<double, int>();
+            foreach (PdfPage oPage in lPages)
+            {
+                foreach (PageLine oLine in oPage.lLines)
+                {
+                    double nAt = Math.Round(oLine.nSize * 2.0) / 2.0;
+                    if (nAt < nBody * nLowest) continue;
+                    if (!dWeight.ContainsKey(nAt)) dWeight[nAt] = 0;
+                    dWeight[nAt] = dWeight[nAt] + 1;
+                }
+            }
+            // The bands: a fifth larger, a half larger, twice, and so on. Five
+            // of them, which is what Markdown has room for below the title.
+            // The lowest band is 1.4, not 1.16, BECAUSE A MEASURED LINE HEIGHT
+            // IS NOISY IN A WAY A POINT SIZE IS NOT.
+            //
+            // A line of "Migration" measures taller than a line of "was more"
+            // in the same font, because capitals and ascenders reach higher
+            // than lowercase. Ordinary text therefore wanders over a range of
+            // two or three pixels, and at 1.16 above a 9-pixel body every line
+            // with a capital in it qualified: his journal produced 2,416 level
+            // 6 headings.
+            //
+            // A real heading is set noticeably larger, not a sixth larger. At
+            // 1.4 the wandering of ordinary text falls below the bar and a
+            // heading still clears it comfortably.
+            double[] anBand = new double[] { nLowest, nLowest * 1.21, nLowest * 1.5,
+                                             nLowest * 1.86, nLowest * 2.29 };
+            Dictionary<double, int> dLevel = new Dictionary<double, int>();
+            foreach (KeyValuePair<double, int> oPair in dWeight)
+            {
+                double nRatio = oPair.Key / nBody;
+                int iLevel = 6;
+                for (int iBand = anBand.Length - 1; iBand >= 0; iBand = iBand - 1)
+                {
+                    if (nRatio >= anBand[iBand]) { iLevel = 2 + (anBand.Length - 1 - iBand); break; }
+                }
+                dLevel[oPair.Key] = iLevel;
+            }
+
+            // LEVELS MUST NOT SKIP.
+            //
+            // The bands run 2 to 6, but a document uses only the sizes it uses.
+            // One with two heading sizes came out as h2 and h6, and his
+            // screen-reader review caught it: "Heading level jumps from 2 to 6".
+            //
+            // That is Matterhorn checkpoint 14-003 and it matters to a reader
+            // moving by heading, who cannot tell whether a level was skipped or
+            // something was missed. So the levels actually used are squeezed
+            // onto consecutive numbers, largest size first, keeping their order
+            // and losing the gaps.
+            List<int> lUsed = new List<int>();
+            foreach (KeyValuePair<double, int> oPair in dLevel)
+            {
+                if (!lUsed.Contains(oPair.Value)) lUsed.Add(oPair.Value);
+            }
+            lUsed.Sort();
+            Dictionary<int, int> dSqueezed = new Dictionary<int, int>();
+            for (int iAt = 0; iAt < lUsed.Count; iAt = iAt + 1)
+                dSqueezed[lUsed[iAt]] = Math.Min(6, iAt + 2);
+            List<double> lSizes = new List<double>(dLevel.Keys);
+            foreach (double nSize in lSizes) dLevel[nSize] = dSqueezed[dLevel[nSize]];
+            return dLevel;
+        }
+
+        // A page's headings pushed down one level, so the document keeps one
+        // title.
+        //
+        // The model is asked for a page and answers with a document, complete
+        // with its own level 1. Six levels exist and the model rarely uses more
+        // than three, so pushing everything down one costs nothing and leaves
+        // the document's own title alone at the top.
+        // Heading levels walked through once, so none skips.
+        //
+        // Matterhorn 14-003: a level that jumps leaves a reader moving by
+        // heading unsure whether something was missed. His screen-reader review
+        // caught five such jumps — 1 to 6, 2 to 5, 2 to 6 three times.
+        //
+        // Each heading may be at most one deeper than the one before it. Going
+        // back up is always fine: that is how a document returns to a higher
+        // section.
+        //
+        // This runs over the WHOLE document, because the inferred pages squeeze
+        // their own levels and a model-written page has its own, and a document
+        // made of both can still skip where the two meet. A reader meets the
+        // document, not the pages it was made from.
+        static string closedHeadingGaps(string sMarkdown)
+        {
+            if (sMarkdown == null || sMarkdown == "") return sMarkdown;
+            StringBuilder oOut = new StringBuilder();
+            int iLast = 0;
+            foreach (string sLine in sMarkdown.Replace("\r\n", "\n").Split('\n'))
+            {
+                Match oHead = Regex.Match(sLine, @"^(#{1,6})(\s+\S.*)$");
+                if (!oHead.Success)
+                {
+                    oOut.AppendLine(sLine);
+                    continue;
+                }
+                int iLevel = oHead.Groups[1].Value.Length;
+                if (iLast > 0 && iLevel > iLast + 1) iLevel = iLast + 1;
+                iLast = iLevel;
+                oOut.AppendLine(new string('#', iLevel) + oHead.Groups[2].Value);
+            }
+            return oOut.ToString();
+        }
+
+        static string demotedHeadings(string sMarkdown)
+        {
+            if (sMarkdown == null || sMarkdown == "") return sMarkdown;
+            StringBuilder oOut = new StringBuilder();
+            foreach (string sLine in sMarkdown.Replace("\r\n", "\n").Split('\n'))
+            {
+                Match oHead = Regex.Match(sLine, @"^(#{1,5})(\s+\S.*)$");
+                if (oHead.Success) oOut.AppendLine("#" + oHead.Groups[1].Value + oHead.Groups[2].Value);
+                else oOut.AppendLine(sLine);
+            }
+            return oOut.ToString();
+        }
+
+        // Text that is not meant as markup, kept from becoming markup.
+        //
+        // His journal came out with 28 level-1 headings, one of them reading
+        // "# Haven. Three such sites produced about average counts" -- body
+        // text from the middle of a sentence. Tesseract had read some mark on
+        // the page as a "#", and because the line was written into the Markdown
+        // untouched, it became a heading.
+        //
+        // Only the characters that START a line matter, since that is where
+        // Markdown looks: a hash, a greater-than, a pipe. Anything inside the
+        // line is harmless and escaping it would litter the text with
+        // backslashes.
+        static string escapedForMarkdown(string sSaid)
+        {
+            if (sSaid == null || sSaid == "") return sSaid;
+            // A line the reader is meant to see as a heading has already been
+            // written as one above; anything reaching here is prose.
+            if (Regex.IsMatch(sSaid, @"^\s*(#|>|\||=|\+)"))
+                return "\\" + sSaid.TrimStart();
+            return sSaid;
+        }
+
+        // The document written from its own tags.
+        //
+        // Headings keep the level the author gave them. A list is a list
+        // because the tag says L, not because a line begins with a bullet. A
+        // figure carries the author's own description. Nothing here is guessed.
+        static string markdownFromTags(List<TaggedPiece> lPieces, out int iHeadings, out int iListItems)
+        {
+            iHeadings = 0;
+            iListItems = 0;
+            StringBuilder oOut = new StringBuilder();
+            int iPageAt = 0;
+            bool bFirst = true;
+            foreach (TaggedPiece oPiece in lPieces)
+            {
+                // A page break wherever the tags move to a new page, so the
+                // Word version still paginates like the original.
+                if (oPiece.iPage > 0 && oPiece.iPage != iPageAt)
+                {
+                    iPageAt = oPiece.iPage;
+                    if (!bFirst)
+                    {
+                        oOut.AppendLine("\\pagebreak");
+                        oOut.AppendLine("");
+                    }
+                    oOut.AppendLine("<!-- page " + iPageAt.ToString() + " -->");
+                    oOut.AppendLine("");
+                }
+                bFirst = false;
+                string sSaid = oPiece.sText == null ? "" : oPiece.sText.Trim();
+                sSaid = Regex.Replace(sSaid, @"\s+", " ");
+
+                if (oPiece.sKind == "Figure")
+                {
+                    string sAlt = oPiece.sAlt.Trim();
+                    if (sAlt == "") sAlt = sSaid;
+                    oOut.AppendLine(sAlt == ""
+                        ? "![A picture the original does not describe](figure.png)"
+                        : "![" + sAlt.Replace("]", ")") + "](figure.png)");
+                    oOut.AppendLine("");
+                    continue;
+                }
+                if (sSaid == "") continue;
+                if (oPiece.iLevel > 0)
+                {
+                    // The author's level, moved down one so the document's own
+                    // title keeps level 1.
+                    int iLevel = Math.Min(6, oPiece.iLevel + 1);
+                    oOut.AppendLine(new string('#', iLevel) + " " + sSaid);
+                    oOut.AppendLine("");
+                    iHeadings = iHeadings + 1;
+                    continue;
+                }
+                // bInList, not the tag on this piece: a tagged list puts its
+                // words in a P inside an LBody inside an LI, so asking this
+                // piece alone gave nine plain paragraphs where nine list items
+                // were tagged.
+                if (oPiece.bInList)
+                {
+                    oOut.AppendLine("- " + sSaid);
+                    iListItems = iListItems + 1;
+                    continue;
+                }
+                if (oPiece.sKind == "TH" || oPiece.sKind == "TD")
+                {
+                    // Tables are not built yet, so a cell is written as its own
+                    // line rather than silently dropped. A reader gets the
+                    // words; what is lost is which column they were in.
+                    oOut.AppendLine(escapedForMarkdown(sSaid));
+                    continue;
+                }
+                oOut.AppendLine(escapedForMarkdown(sSaid));
+                oOut.AppendLine("");
+            }
+            return oOut.ToString();
+        }
+
+        // IS THIS TEXT LAYER ACTUALLY USABLE?
+        //
+        // Two of PAC's fourteen checks describe ways a PDF can carry a text
+        // layer that is worthless, and HomerScribe trusted every text layer
+        // absolutely:
+        //
+        //   Check 8, accessible font encodings. "If a translation table is
+        //   missing for a certain font, non-interpretable characters are passed
+        //   to the assistive technology." The page looks perfect and the text
+        //   extracts as gibberish.
+        //
+        //   Check 14, spaces existent. "Some PDF Generators think it not
+        //   necessary to include invisible spaces to be passed into the PDF
+        //   document." The words run together with nothing between them.
+        //
+        // Both produce a document that reads as nonsense while every count in
+        // the log looks healthy — the worst kind of failure, because nothing
+        // reports it. And both have the same remedy: the page is a picture too,
+        // so read the picture instead.
+        //
+        // Three signs, each cheap:
+        //   almost no spaces      "Thewordsrunttogetherlikethis"
+        //   few letters at all    a page of replacement characters or boxes
+        //   absurd word lengths   a mean word length no language has
+        static bool textLayerIsSound(List<PdfPage> lPages, out string sWhy)
+        {
+            sWhy = "";
+            StringBuilder oAll = new StringBuilder();
+            foreach (PdfPage oPage in lPages)
+            {
+                foreach (PageLine oLine in oPage.lLines)
+                {
+                    oAll.Append(oLine.sText);
+                    oAll.Append(" ");
+                }
+                if (oAll.Length > 40000) break;
+            }
+            string sText = oAll.ToString();
+            if (sText.Trim().Length < 40) return true;   // too little to judge
+
+            int iLetters = 0;
+            int iSpaces = 0;
+            int iOdd = 0;
+            foreach (char cAt in sText)
+            {
+                if (char.IsLetter(cAt)) iLetters = iLetters + 1;
+                else if (cAt == ' ') iSpaces = iSpaces + 1;
+                else if (cAt == '\uFFFD' || cAt == '\u25A1' || cAt == '\u0000') iOdd = iOdd + 1;
+            }
+            // DIGITS ARE NOT A FAULT. A page of counts and totals is
+            // legitimately mostly numbers — his journal is full of them — and
+            // an earlier version of this test rejected exactly that. Only
+            // characters that are neither letters nor digits nor ordinary
+            // punctuation count against it.
+            int iJunk = 0;
+            foreach (char cAt in sText)
+            {
+                if (char.IsLetterOrDigit(cAt) || char.IsWhiteSpace(cAt)) continue;
+                if (char.IsPunctuation(cAt) || char.IsSymbol(cAt)) continue;
+                iJunk = iJunk + 1;
+            }
+            if (iJunk > sText.Length / 10)
+            {
+                sWhy = "more than a tenth of its characters are neither letters, digits nor punctuation";
+                return false;
+            }
+            if (iOdd > sText.Length / 50)
+            {
+                sWhy = "it is full of replacement characters, so a font has no translation table";
+                return false;
+            }
+            // A space every five or six characters is ordinary English. One
+            // every twenty-five means the spaces were never written.
+            if (iSpaces > 0 && iLetters / iSpaces > 20)
+            {
+                sWhy = "its words run together, with a space only every "
+                       + (iLetters / iSpaces).ToString() + " letters";
+                return false;
+            }
+            if (iSpaces == 0)
+            {
+                sWhy = "it contains no spaces at all";
+                return false;
+            }
+            return true;
+        }
+
+        // A line wrapped in Markdown emphasis where its font carried some.
+        //
+        // A whole line in bold that is not large enough to be a heading is
+        // usually a run-in heading or a defined term, and marking it keeps
+        // that. Nothing is done for a line already set as a heading: a
+        // heading is emphatic by being one.
+        static string emphasised(string sSaid, PageLine oLine)
+        {
+            if (sSaid == "" || oLine == null) return sSaid;
+            if (!oLine.bBold && !oLine.bItalic) return sSaid;
+            // Never wrap something that is already marked, or that is only
+            // punctuation.
+            if (!Regex.IsMatch(sSaid, @"[A-Za-z0-9]")) return sSaid;
+            if (sSaid.StartsWith("*") || sSaid.StartsWith("_")) return sSaid;
+            string sMark = oLine.bBold && oLine.bItalic ? "***" : (oLine.bBold ? "**" : "*");
+            return sMark + sSaid + sMark;
+        }
+
+        // A page's lines turned into Markdown, using the sizes for structure.
+        static string pageAsMarkdown(PdfPage oPage, double nBody, Dictionary<double, int> dLevel)
+        {
+            StringBuilder oOut = new StringBuilder();
+            StringBuilder oPara = new StringBuilder();
+            bool bMarkerSeen = false;
+            foreach (PageLine oLine in oPage.lLines)
+            {
+                string sSaid = oLine.sText.Trim();
+                if (sSaid == "") continue;
+                double nAt = Math.Round(oLine.nSize * 2.0) / 2.0;
+                // A HEADING IS SHORT, whatever size it is set in.
+                //
+                // His GAC document came out with 130 headings in six pages:
+                // every paragraph of body text became an h6, because the size
+                // most CHARACTERS were set in was the small print, and ordinary
+                // prose sat a sixth above it. Size alone cannot tell a heading
+                // from a paragraph.
+                //
+                // Length can. A heading names what follows; it does not run to
+                // two hundred characters and it does not end in a full stop.
+                // That test costs nothing and no real heading fails it.
+                bool bShortEnough = sSaid.Length <= 100
+                                    && !Regex.IsMatch(sSaid, @"[.;,][""'\)]?$");
+                if (dLevel.ContainsKey(nAt) && bShortEnough)
+                {
+                    if (oPara.Length > 0)
+                    {
+                        oOut.AppendLine(oPara.ToString().Trim());
+                        oOut.AppendLine("");
+                        oPara.Length = 0;
+                    }
+                    oOut.AppendLine(new string('#', dLevel[nAt]) + " " + sSaid);
+                    oOut.AppendLine("");
+                    continue;
+                }
+                // A bullet or a number at the start of a line is a list item,
+                // and a list item is the one thing a screen reader user
+                // navigates by that a paragraph cannot stand in for.
+                //
+                // PyMuPDF4LLM -- the reader EdSharp and FileDir settled on --
+                // does exactly three things to make a PDF rich: font sizes
+                // become heading levels, BULLET RUNS BECOME LISTS, and ruled
+                // areas become tables. The first was already here and this is
+                // the second. Tables are the one still missing.
+                // A BULLET IS OFTEN ITS OWN LINE.
+                //
+                // In a PDF the marker and the text are separate runs at
+                // different positions, so the reading order may deliver
+                // "\u2022" and then "Inner item two" as two lines — and
+                // matching "bullet, space, text" finds neither. His 03-lists
+                // test came out as one paragraph with the bullets embedded in
+                // the middle of it.
+                //
+                // So a line that is ONLY a marker turns the next line into a
+                // list item.
+                if (Regex.IsMatch(sSaid, @"^\s*([\u2022\u2023\u25AA\u25CF\u00B7\u2013\-\*]|\d{1,3}[.)]|[a-z][.)])\s*$"))
+                {
+                    bMarkerSeen = true;
+                    continue;
+                }
+                if (bMarkerSeen)
+                {
+                    bMarkerSeen = false;
+                    if (oPara.Length > 0)
+                    {
+                        oOut.AppendLine(oPara.ToString().Trim());
+                        oOut.AppendLine("");
+                        oPara.Length = 0;
+                    }
+                    oOut.AppendLine("- " + escapedForMarkdown(sSaid));
+                    continue;
+                }
+                Match oBullet = Regex.Match(sSaid, @"^\s*([\u2022\u2023\u25AA\u25CF\u00B7\-\*\u2013])\s+(.+)$");
+                Match oNumber = Regex.Match(sSaid, @"^\s*(\d{1,3})[.)]\s+(.+)$");
+                if (oBullet.Success || oNumber.Success)
+                {
+                    if (oPara.Length > 0)
+                    {
+                        oOut.AppendLine(oPara.ToString().Trim());
+                        oOut.AppendLine("");
+                        oPara.Length = 0;
+                    }
+                    oOut.AppendLine(oBullet.Success
+                                    ? "- " + oBullet.Groups[2].Value.Trim()
+                                    : oNumber.Groups[1].Value + ". " + oNumber.Groups[2].Value.Trim());
+                    continue;
+                }
+                // A PDF breaks its lines where the page ends, not where the
+                // sentence does, so lines are joined back into paragraphs and a
+                // line ending in a full stop closes one.
+                oPara.Append(emphasised(escapedForMarkdown(sSaid), oLine) + " ");
+                if (Regex.IsMatch(sSaid, @"[.!?][""'\)]?$"))
+                {
+                    oOut.AppendLine(oPara.ToString().Trim());
+                    oOut.AppendLine("");
+                    oPara.Length = 0;
+                }
+            }
+            if (oPara.Length > 0)
+            {
+                oOut.AppendLine(oPara.ToString().Trim());
+                oOut.AppendLine("");
+            }
+            return oOut.ToString();
         }
 
         // A PDF turned into a zip of page pictures, by the helper script.
@@ -8327,6 +9903,151 @@ namespace Homer
             return sSaid;
         }
 
+        // Tesseract, if it is on the machine.
+        static string tesseractProgram()
+        {
+            if (sTesseractFound != null) return sTesseractFound;
+            sTesseractFound = "";
+            foreach (string sTry in new string[] {
+                Path.Combine(exeFolder(), "tesseract.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                             "Tesseract-OCR\\tesseract.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                             "Tesseract-OCR\\tesseract.exe"),
+                "tesseract" })
+            {
+                try
+                {
+                    if (sTry == "tesseract")
+                    {
+                        string sOut = "";
+                        string sErr = "";
+                        if (runCommand("tesseract", "--version", out sOut, out sErr) == 0)
+                        {
+                            sTesseractFound = "tesseract";
+                            break;
+                        }
+                        continue;
+                    }
+                    if (File.Exists(sTry)) { sTesseractFound = sTry; break; }
+                }
+                catch (Exception)
+                {
+                }
+            }
+            if (sTesseractFound != "")
+                logMessage("Tesseract found at " + sTesseractFound + ". It reads the words on a scanned page "
+                           + "in about a second, against twenty-five for the picture model, and it cannot "
+                           + "invent one — where it cannot read, it says so rather than guessing.",
+                           "INFO", "");
+            else
+                logMessage("Tesseract was not found, so scanned pages are read by the picture model instead. "
+                           + "That works and is much slower. Run installTesseract.cmd to fetch it.",
+                           "INFO", "");
+            return sTesseractFound;
+        }
+
+        static string sTesseractFound = null;
+
+        // A scanned page read by Tesseract, with how sure it was.
+        //
+        // WHY THIS AND NOT THE MODEL. Tesseract cannot hallucinate: where it
+        // fails it produces visible nonsense rather than fluent wrong text, and
+        // it gives a confidence for every word, which no language model can. On
+        // clean print its accuracy is at least as good, and it is roughly
+        // twenty-five times faster. The model keeps the two jobs it is
+        // genuinely better at -- describing pictures, and telling a heading
+        // from a paragraph.
+        //
+        // The TSV output is asked for rather than plain text because it carries
+        // the confidence and the line numbering in the same pass.
+        static string tesseractRead(string sTesseract, string sImagePath, out int iSure,
+                                    List<double> lHeights)
+        {
+            iSure = 0;
+            double nLineHigh = 0.0;
+            int iHighWords = 0;
+            string sOut = "";
+            string sErr = "";
+            // UTF-8, BECAUSE THAT IS WHAT TESSERACT WRITES.
+            //
+            // His 511 KB of Markdown carries "ΓÇÖ" ninety-eight times: a right
+            // single quote, written as UTF-8 and read back as a code page. The
+            // words were recognised correctly and mangled on the way in.
+            int iCode = runUtf8Command(sTesseract, quoted(sImagePath) + " stdout tsv", out sOut, out sErr);
+            if (iCode != 0 || sOut.Trim() == "")
+            {
+                logMessage("  Tesseract read nothing from " + Path.GetFileName(sImagePath)
+                           + (sErr.Trim() == "" ? "." : ": " + tail(sErr, 120)), "INFO", "");
+                return "";
+            }
+            StringBuilder oText = new StringBuilder();
+            StringBuilder oLine = new StringBuilder();
+            int iLastLine = -1;
+            int iTotal = 0;
+            int iWords = 0;
+            bool bFirst = true;
+            foreach (string sRow in sOut.Replace("\r\n", "\n").Split('\n'))
+            {
+                if (bFirst) { bFirst = false; continue; }          // the header row
+                string[] asBit = sRow.Split('\t');
+                if (asBit.Length < 12) continue;
+                string sWord = asBit[11].Trim();
+                if (sWord == "") continue;
+                // TESSERACT 5 WRITES CONFIDENCE AS A FLOAT: "96.5", not "96".
+                //
+                // int.TryParse("96.5") fails and leaves zero, so every word
+                // scored nothing, every page came out "0 sure", every page
+                // fell under the floor of 70, and every page went to the
+                // picture model. Tesseract was installed, found and read
+                // correctly, and did no work at all -- which is exactly why
+                // there was no speed gain.
+                //
+                // Parsed as a number now, and with the invariant culture,
+                // since a machine set to a comma decimal would fail the same
+                // way on the same string.
+                double nConf = 0.0;
+                double.TryParse(asBit[10], NumberStyles.Any, CultureInfo.InvariantCulture, out nConf);
+                int iConf = (int)Math.Round(nConf);
+                if (iConf < 0) continue;
+                iTotal = iTotal + iConf;
+                iWords = iWords + 1;
+                int iLine = 0;
+                int.TryParse(asBit[4], out iLine);
+                int iBlock = 0;
+                int.TryParse(asBit[2], out iBlock);
+                int iWhich = iBlock * 1000 + iLine;
+                if (iWhich != iLastLine && iLastLine >= 0)
+                {
+                    oText.AppendLine(oLine.ToString().Trim());
+                    lHeights.Add(iHighWords == 0 ? 0.0 : nLineHigh / iHighWords);
+                    oLine.Length = 0;
+                    nLineHigh = 0.0;
+                    iHighWords = 0;
+                }
+                iLastLine = iWhich;
+                oLine.Append(sWord + " ");
+                // The TSV carries each word's HEIGHT, which does for a scanned
+                // page exactly what point size does for a text one: the height
+                // most of the characters are set at is the body, and anything
+                // markedly taller is a heading.
+                int iHigh = 0;
+                int.TryParse(asBit[9], out iHigh);
+                if (iHigh > 0)
+                {
+                    nLineHigh = nLineHigh + iHigh;
+                    iHighWords = iHighWords + 1;
+                }
+            }
+            if (oLine.Length > 0)
+            {
+                oText.AppendLine(oLine.ToString().Trim());
+                lHeights.Add(iHighWords == 0 ? 0.0 : nLineHigh / iHighWords);
+            }
+            iSure = iWords == 0 ? 0 : iTotal / iWords;
+            return oText.ToString();
+        }
+
         // A page of print, set out as Markdown.
         //
         // Not a description. A reader of a scanned journal wants the words,
@@ -8900,39 +10621,10 @@ namespace Homer
             }
             if (bFromPdf)
             {
-                string sPdfWork = Path.Combine(workFolderFor(sZipPath), "pdf");
-                string sMade = zipFromPdf(sZipPath, sPdfWork);
-                if (sMade == "") return 1;
-                // Kept for a converter that hands back a document rather than
-                // pictures. Extracting a PDF's own text layer is not a
-                // HomerScribe job -- plenty of tools do it, and doing it here
-                // would mean carrying a PDF library for something already
-                // solved. Recognising the words in a PICTURE of a page is the
-                // part worth being good at.
-                if (string.Compare(Path.GetExtension(sMade), ".md", true) == 0)
-                {
-                    try
-                    {
-                        if (!Directory.Exists(sOutputDir)) Directory.CreateDirectory(sOutputDir);
-                        File.Copy(sMade, sPagePath, true);
-                    }
-                    catch (Exception oError)
-                    {
-                        logMessage("The text could not be written to " + sPagePath + ": " + oError.Message, "ERROR");
-                        return 1;
-                    }
-                    logMessage("This PDF carries its own text, so it was taken straight from the file — no "
-                               + "model, no guessing, and nothing read off a picture. That is better than "
-                               + "anything reading the pages could have produced.",
-                               "INFO", "It carries its own text, so it was taken straight from the file.");
-                    lResults.Add(sRoot + ": text taken from the file itself"
-                                 + Environment.NewLine + "    " + sPagePath);
-                    sLastOutputFolder = sOutputDir;
-                    writeFileLog(sOutputDir);
-                    tidyWorkFolder(Path.Combine(workFolderFor(sZipPath), "pdf"));
-                    return 0;
-                }
-                sZipPath = sMade;
+                // Read here, with both layers, rather than turned into pictures
+                // and read as an archive. The text layer is exact where a
+                // reading of a picture is a guess, and a PDF usually has one.
+                return readPdf(sFfmpeg, sZipPath, sOutputDir);
             }
             List<string> lInside = new List<string>();
             List<string> lPassedOver = new List<string>();

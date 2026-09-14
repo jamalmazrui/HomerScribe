@@ -41,6 +41,7 @@ guide and **[ReadMe.md](ReadMe.md)** to get started.
 - **Alt+F** — tick or clear **Force overwrite**.
 - **Alt+L** — tick or clear **Log session**.
 - **Alt+U** — tick or clear **Use configuration**.
+- **Alt+R** — tick or clear **Remove ads**.
 - **Alt+V** — tick or clear **View output**.
 - **Alt+B** — **Browse source**, to pick a file rather than type a path.
 - **Alt+C** — **Choose output**, to pick the folder rather than type it.
@@ -136,6 +137,7 @@ Shift+F6, Control+Page Down, Control+Page Up.
 - **Alt+F8** — read the whole field aloud.
 - **Alt+L** — Log session.
 - **Alt+O** — go to the output directory box.
+- **Alt+R** — Remove ads.
 - **Alt+S** — go to the source paths box.
 - **Alt+Shift+K** — one sentence to a line.
 - **Alt+Shift+N** — numbered lines.

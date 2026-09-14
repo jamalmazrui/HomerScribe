@@ -1,5 +1,2536 @@
 ﻿# HomerScribe History
 
+## 1.0.274, 13 September 2026 — the announcement
+
+Retitled **"HomerScribe Now Batch Converts PDF to DOCX"**, since "What's New in
+HomerScribe" has been used before, and rewritten at ninth-grade level rather
+than sixth. His standard is ninth, and the earlier draft had been simplified
+past the point of respecting the reader.
+
+2,240 characters, comfortably inside LinkedIn's 3,000.
+
+### The three-layer claim, checked before it was written
+
+He asked for it to be mentioned **if true**. It is, with one distinction worth
+keeping:
+
+    reads the tag layer                      yes
+    reads the text layer                     yes
+    reads the image layer                    yes
+    weighs tag words against page words      yes
+    weighs tagged headings against inferred  yes
+    caps inferred depth by tagged depth      yes
+    abandons unusable text for the picture   yes
+    MERGES layers -- lists from tags AND
+      headings from layout                   no
+
+So it **measures the layers against one another and converts from whichever
+holds up best**. It does not blend them. "Reconciles" would have implied the
+blending, which is still outstanding work, so the announcement says measures
+and chooses — which is exactly what the code does.
+
+The distinction is small and the difference in a reader's expectations is not.
+
+## 1.0.273, 13 September 2026 — the release
+
+All ten test documents pass on content, the two-column page reads down each
+column, and `06-no-spaces` is correctly refused — the one test where succeeding
+would have been the failure.
+
+### The announcement, rewritten to fit
+
+`Announce.md` was **4,220 characters**, against LinkedIn's limit of 3,000. It
+is now **1,663**, at a sixth-grade reading level, and it leads with what is new
+rather than with what HomerScribe already did.
+
+The cuts were mostly explanation nobody asked for. What stayed: it reads
+scanned PDFs, it uses the PDF's own tags, the page numbers match, it tells you
+about faults in the original, and it runs in batch from the keyboard.
+
+### What the announcement does not claim
+
+**Tables come through as text. Nested lists in untagged PDFs are sometimes
+flattened.** Both are in the announcement, under a heading that says so
+plainly.
+
+That is not modesty. A tool that oversells itself gets one try with a lawyer
+before a deadline, and a gap they were warned about is a limitation while a gap
+they discover is a betrayal.
+
+### Checked, not assumed
+
+Every claim in the announcement and the ReadMe was matched against the build:
+the two install scripts exist and the installer offers them, the tag reader is
+there, the page breaks are written, the unusable-text check runs, and the table
+gap is stated rather than hidden.
+
+`ReadMe.md` now describes the PDF work as it stands rather than as it was
+fifteen builds ago. Reading levels after the rewrite: Announce 6.1, ReadMe 8.2,
+HomerScribe.md 8.0, Hotkeys 3.0.
+
+## 1.0.272, 13 September 2026 — lists, from both directions
+
+**The pure scan reads.** `07-pure-scan.pdf` now reports *2 are scans, 2
+pictures in all*, and Tesseract took both pages at 96 and 95 out of a hundred,
+with every expected phrase present. The ASCII85 fix did what it was meant to.
+
+That leaves the lists, and the two test files failed in different ways —
+which is why there were two of them.
+
+### Tagged: the words are in a paragraph inside the list
+
+`10-tagged-lists.pdf` put each item on its own line and marked none of them:
+
+    Erster Punkt
+    Zweiter Punkt
+    Innerer Punkt eins
+
+**A tagged list puts its words in a `P`, inside an `LBody`, inside an `LI`.**
+The piece that carries the text is a paragraph; only its ancestors say it is a
+list item. Asking the piece alone gave nine plain paragraphs where nine list
+items were tagged.
+
+A list anywhere above now marks everything below it, carried down the walk.
+
+### Untagged: the bullet is its own line
+
+`03-lists.pdf` came out as one paragraph with the markers embedded in the
+middle of it:
+
+    Outer item one Outer item two Inner item one • Inner item two • Oute...
+
+**In a PDF the marker and the text are separate runs at different positions**,
+so the reading order delivers "•" and then "Inner item two" as two lines — and
+matching "bullet, space, text" finds neither.
+
+A line that is **only** a marker now turns the next line into an item. Checked
+on the exact shape the test file produces: five items out of five, and the
+prose after them untouched.
+
+### What the pair was for
+
+Neither fault would have been visible in the other file. The tagged one needed
+ancestry; the untagged one needed to stop expecting the marker and the words to
+arrive together. **Two files holding the same content, one tagged and one not,
+found two different bugs** — which is the argument for building test documents
+rather than collecting them.
+
+## 1.0.271, 13 September 2026 — the test suite earned itself in one run
+
+Ten purpose-built PDFs, answers written down beforehand. Eight passed on
+content. **Two failures, and the first is the one that matters.**
+
+### A document made entirely of pictures yielded nothing
+
+`07-pure-scan.pdf` is two pages of drawn text with a verified **zero**
+characters of text layer. Its log:
+
+    0 carry their own text, 0 are scans, 0 pictures in all
+
+And its output then said:
+
+    Every page carried its own text, so the words are exact.
+
+A document that produced nothing described itself as exact. **That sentence
+fired whenever no page was a scan — including when no page was anything at
+all**, and it is now specific about the difference.
+
+### The cause: a filter I did not know about
+
+    /Filter [ /ASCII85Decode /DCTDecode ]
+
+**A PDF may wrap an image in more than one filter.** Those bytes are a JPEG
+printed as ASCII85 text, and the decoder only knew about Flate — so they never
+looked like a picture, every page was passed over, and the whole document came
+back empty.
+
+`unAscii85` is written now and runs before the inflater. Checked against the
+real file: the stream decodes to 70,727 bytes beginning **FF D8 FF**.
+
+This is the third format assumption to fail this way. Raw samples with no
+header, Flate-wrapped JPEGs, and now ASCII85 — each time the fix was to look at
+the bytes rather than to assume what they would be.
+
+### And this is exactly the case the feature exists for
+
+A PDF that is nothing but pictures of text is the ABBYY use case — the blind
+lawyer with a scanned brief. **It was the one document in sixty-plus that
+HomerScribe could not read at all**, and the only reason it surfaced is that
+this file was built to be that and nothing else.
+
+The sixty real documents never found it because accessibility publishers do not
+ship pure scans.
+
+## 1.0.270, 13 September 2026 — one document got no Word version at all
+
+Ten more, and the results list gives it away by what is missing: **ADA
+Checklist for Existing Facilities has a `described.md` and no `.docx`.** Its
+log says why:
+
+    Pandoc could not make the Word version: YAML parse exception at
+    line 0, column 0
+
+And the head of its Markdown says why that happened:
+
+    lang: ^u@^^ ¸²aJn}Ö߸¼Æ...
+
+**Its `/Lang` is binary rubbish** — an undecoded byte string, not a language —
+and HomerScribe wrote it straight into the front matter. Pandoc choked on the
+document, and an 89-page conversion lost its Word version entirely over one
+malformed entry in the original.
+
+This is the same lesson as the OCR text that became headings: **a value read
+out of a file is data, not a fact.** I had escaped OCR output and not this.
+
+### Two fixes, because one is not enough
+
+**The value is checked.** A language tag looks like `en` or `en-US` or
+`zh-Hans-CN` — letters, digits and hyphens, and short. Anything else is not one
+and is dropped.
+
+**And the language no longer travels as Markdown.** It goes to Pandoc as
+`-M lang=...`, a command-line setting, so a bad value cannot break the parse
+even if one gets past the check. The front-matter blocks are gone from both
+paths.
+
+Checking the value stops this case. Not putting configuration inside the
+document stops the class.
+
+## 1.0.269, 13 September 2026 — almost none is the same problem as none
+
+The rerun was identical across all ten, which is right: 1.0.268 added a
+message and changed no output. **But the message only fired once in three.**
+
+    Accessible Meetings Toolkit     tags    1 heading  / 23 pages   warned
+    Accessible Event Planning       tags    2 headings / 14 pages   NOT warned
+    Accessible Procurement Toolkit  layout  1 heading  / 25 pages   NOT warned
+
+Two gaps, and the second is the worse one:
+
+- the warning fired only at **exactly zero**, so a 14-page guide with two
+  headings passed;
+- it lived on the **tagged path only**, so a document read from the layout was
+  never asked the question at all.
+
+### Moved to where both paths pass
+
+The screen-reader review already reads the finished document, whichever way it
+was built. That is the right place, and it needs no second copy: **a heading
+every six pages is too far apart to navigate by**, whatever produced it.
+
+    Event Planning            2 / 14    warned
+    Meetings Toolkit          1 / 23    warned
+    Procurement Toolkit       1 / 25    warned
+    Signage Guidelines       25 / 27    fine
+    Publishing Guidelines   180 / 51    fine
+    Physics textbook        384 / 784   fine
+
+The wording says which kind of fault it is, because it depends: where the
+original is tagged, the headings are missing from the document; where it is
+not, they were not distinct enough in the layout to find. A reader deserves to
+know which.
+
+### A note on where the bar sits
+
+Eight pages let Event Planning through and six catches it. Neither number is
+principled — what is principled is that the bar was set by looking at documents
+rather than by choosing a round figure, and that the well-structured ones are
+untouched by it.
+
+## 1.0.268, 13 September 2026
+
+A 784-page physics textbook read in part of twenty-eight seconds:
+**218,548 words, 384 headings, 3,038 list items.** That is the largest document
+this has been given by a factor of seven, and nothing about it was remarkable
+in the log, which is the right kind of dull.
+
+### But some documents come out with no headings at all
+
+    Accessible Meetings Toolkit    23 pages, 1 heading, 235 list items
+    Accessible Procurement Toolkit 25 pages, 1 heading,   0 list items
+    Accessible Event Planning      14 pages, 2 headings, 104 list items
+
+The Meetings Toolkit's log says why:
+
+    own tags carry the document: 0 headings, 233 list items
+
+**Its tags name no headings.** That is not a fault in the reading — it is
+**PAC check 6**, word for word: *"if the document has no assigned headings"*
+produces a warning, because a reader moving by heading has nothing to move
+through.
+
+So it is now said outright, as a fault in the original rather than passed on
+quietly. HomerScribe cannot supply headings a document never had — the tagged
+path has no sizes to infer from, only tags — and pretending otherwise would be
+inventing structure nobody wrote.
+
+### What that suggests next
+
+Where the tags carry good lists and no headings, the two sources could be
+combined: lists from the tags, headings inferred from the layout. That is a
+real improvement and a larger change than tonight allows, and it wants its own
+build.
+
+## 1.0.267, 13 September 2026 — one document wearing another's tags
+
+Ten documents, and the log reported identical tag counts in pairs:
+
+    Accessibility Testing Criteria For iOS   96 headings, 313 list items
+    Accessibility Toolkit                    96 headings, 313 list items
+
+    Accessibility Training and Resources      6 headings, 0 list items
+    Accessible Charts                         6 headings, 0 list items
+
+A 63-page guide and a 76-page toolkit do not have the same structure. **The
+second document of each pair was being described by the first document's
+tags.**
+
+### Ten static fields, none of them cleared
+
+`bTaggedDocument`, `sTaggedSaid`, `sTagSummary`, `sDocumentLanguage`,
+`sPiecesTrouble`, `iMarkPages`, `lTagged`, `lPieces`, `lTaggedFigureAlt`,
+`dRoleMap`.
+
+They are static because one document is read at a time — **which is true, and
+says nothing about what happens when the next one starts.** Nothing cleared
+them, so a document whose own tree could not be read silently inherited its
+predecessor's, and every count in the log looked plausible.
+
+Cleared now at the one place that cannot be forgotten: the moment a PDF is
+opened. Checked by listing every static this file holds against what the reset
+touches — nine of nine, plus the flag.
+
+### The worst kind of bug
+
+It produced no error, no empty output, and numbers that looked entirely
+reasonable. **`Accessible Charts` is 46 pages and came out with 2,752 words and
+6 headings** — thin, but not obviously wrong unless you notice that the
+15-page document before it reported exactly the same structure.
+
+Batch processing is where this kind of fault lives, and HomerScribe has been
+batch-processing since long before it read a PDF. Worth a look at whether
+anything else carries state across sources.
+
+## 1.0.266, 13 September 2026 — a half was not cautious enough
+
+The page-search fix worked: **0:14 for ten documents**, all ten taking the tag
+path, and the structure is transformed —
+
+    Accessibility Handbook   381 headings, 3,803 list items
+    In E-Learning             49 headings,   102 list items
+    Print Design              19 headings,    54 list items
+
+against 456 headings and 523 list items for the handbook by inference, and
+**zero** list items for several of the others a few runs ago.
+
+### But three documents lost words
+
+    Handbook for Teaching  69,842 -> 42,938   -39%
+    In E-Learning          10,202 ->  7,684   -25%
+    Marketing               6,503 ->  5,846   -10%
+
+The handbook **passed my parity test and still lost 39 per cent**: 42,938 words
+from its tags against 65,577 on its pages. Losing a third of a textbook is not
+a trade worth making for better headings, and a half was never a cautious bar —
+it permits exactly this.
+
+**Four fifths now.** Some loss is right: a tagged document marks its running
+headers and footers as artifacts and they are correctly left out. But that is a
+few words a page, not a third of the document.
+
+    document                tag words  page words  kept   taken from
+    Handbook for Teaching      42,938      65,577   65%   layout
+    In E-Learning               7,684       9,962   77%   layout
+    Marketing                   5,846       6,503   90%   tags
+    Skills Hiring Toolkit       8,590       8,776   98%   tags
+    Interview Questions         1,574       1,574  100%   tags
+    Print Design                2,578       2,194  118%   tags
+
+Eight by tags, two by layout — and the two that fall back are precisely the two
+that were quietly losing a quarter or more.
+
+### Where the tags give MORE
+
+Four documents come out longer from their tags than from their pages — Print
+Design by 18 per cent, the HECVAT guide by twice. That is not invention: a
+tagged table reads its cells as content where the layout reading ran them
+together, and alt text on a figure is text the pages never had.
+
+## 1.0.265, 13 September 2026 — the lookup was blind
+
+Ten more documents, and a pattern I could not ignore:
+
+    Accessibility Handbook   tags yield  5,228 words, pages hold 65,577
+    Accessibility In E-Learning          1,784                 9,962
+    Accessibility Skills Hiring Toolkit    973                 8,776
+
+**About a tenth, three times over.** Added to the Public Libraries
+disagreement, that is not three odd documents. That is a fault.
+
+### The page search never got past page three
+
+An identifier's words were looked for on pages 1 to `iPage + 2`, and `iPage`
+only advanced when something matched. **On a document whose first elements did
+not match, it never looked past page three** — so a 655-page handbook found
+almost nothing, and the two tests added yesterday correctly refused the result.
+
+The tags were fine. The lookup was blind.
+
+    identifiers matched out of 200, on a 655-page document
+      old loop, pages 1 to iPage+2:    1
+      new search, every page:        200
+
+Every page is searched now, **starting at the one we think we are on**, since
+that is nearly always right and makes the ordinary case cost nothing.
+
+### What yesterday's work did right
+
+Those three documents came out correct anyway — 69,842 words, 10,202, 9,269 —
+because the word-parity test caught the shortfall and sent them to the layout.
+**A safety net that fires three times in ten is doing its job and is also
+telling you something**, and I nearly read it as documents being awkward rather
+than as my own lookup failing.
+
+The gate saved the output. It did not save me from the bug, and I should have
+asked why it kept firing.
+
+## 1.0.264, 13 September 2026 — the tags must earn it
+
+**Fourteen seconds for 373 pages**, against six minutes and seventeen. The tag
+reader works and costs almost nothing, because a tagged document needs no model
+and no OCR.
+
+And on two of the ten it threw away most of the document.
+
+### Able Gamers Guidelines: 25,995 words became 515
+
+Its log says why:
+
+    own tags carry the document: 0 headings, 0 list items, 1374 words
+
+**Zero headings. Zero lists.** It is a SCANNED document that happens to be
+tagged — its tags name 141 figures and almost no text — and the pages
+themselves hold 25,995 words that Tesseract had read perfectly well the run
+before.
+
+My test was words alone, and 1,374 cleared the bar of twenty a page. **A count
+of words says nothing about whether the tags describe the document.**
+
+### Two tests now, and both measured
+
+- **Shape.** A tree with no heading and no list is not describing a document,
+  whatever else it contains.
+- **Not plainly poorer than the pages.** The words the pages hold are counted
+  and compared. Tags yielding less than half of what the pages carry are not
+  carrying the document.
+
+Against the real numbers:
+
+    Able Gamers            1,374 tag words,  0 headings, 25,995 on the pages -> no shape
+    10 Key Guidelines      4,216 tag words, 28 headings,  7,277 on the pages -> tags
+    Public Libraries      12,951 tag words,118 headings, 12,925 on the pages -> tags
+    Interactive Web Maps   2,644 tag words, 54 headings,  9,922 on the pages -> poorer
+
+**Interactive Web Maps is the one I would have missed.** Its tags have plenty
+of shape — 54 headings, 159 list items — and still carry barely a quarter of
+the words. Shape alone would have passed it and lost 7,000 words.
+
+### What this says about the feature
+
+The tag reader is right when the tags are good, and the check for whether they
+are good is now the more important half. A tagged PDF is a claim about a
+document, not a guarantee — and this project has learnt that lesson in about
+six different forms now.
+
+## 1.0.263, 13 September 2026
+
+    error CS0052: Inconsistent accessibility: field type
+    'List<HomerScribe.TaggedPiece>' is less accessible than field
+    'HomerScribe.lPieces'
+
+**The same fault as `TaggedItem`, six builds ago, repeated verbatim.** I fixed
+it once, wrote a near-identical class later, and made the identical mistake —
+having also, at the time, run a check that found no others.
+
+That check was too narrow. It looked at public members and asked what type they
+held. The better question is the other way round: **every class, and whether
+anything public exposes it.** Asked that way:
+
+    TaggedItem    public    exposed by a public member: yes
+    TaggedPiece   public    exposed by a public member: yes
+    PageLine      internal  exposed by a public member: yes  <-- looked wrong
+    PdfPage       internal  exposed by a public member: no
+    AdBreak       internal  exposed by a public member: no
+
+`PageLine` turned out to be a false alarm: the field holding it is `public`, but
+it sits **inside** `PdfPage`, which is `internal`, so its effective
+accessibility is internal and the compiler is content. Worth checking rather
+than assuming — the pattern that flagged it could not see the containing class.
+
+The rule, for next time there is a class like this: **if a class is named in
+anything `public`, the class is `public` too.**
+
+## 1.0.262, 13 September 2026 — the tag reader
+
+Ten accessibility documents made the case with numbers. Nine are tagged, and
+against what their tags say the inference is wrong in both directions:
+
+    Interactive Web Maps      62 tagged headings, 10 inferred
+    Public Libraries          29 tagged headings, 118 inferred
+    9 Steps                   23 tagged lists, 0 list items produced
+    Access Handbook           32 tagged lists, 0 list items produced
+
+**Four documents with tagged lists produced no list items at all.**
+
+So the tags are read properly now, not merely counted.
+
+### How a tag finds its words
+
+A structure element's `/K` holds **marked content identifiers** — numbers — and
+the page's content stream marks each run of text with the matching identifier.
+PdfPig hands those runs over through `GetMarkedContents()`, so the join is:
+
+    element -> identifier -> run of letters -> words
+
+Both spellings are handled: a bare number in `/K`, and an `MCR` dictionary
+naming `/MCID`.
+
+### What the document then becomes
+
+Headings keep **the level the author gave them**. A list is a list because the
+tag says `L`, not because a line begins with a bullet. A figure carries the
+author's own description. Page breaks come from where the tags say the pages
+change, so the Word version still paginates like the original.
+
+**Nothing in it is guessed.**
+
+### Judged by what came back, not by what it claims
+
+A tree yielding a handful of words for a fifty-page document has not been read
+properly, whatever it says about itself. So the tagged rendering is used only
+where it produces at least twenty words a page, and otherwise the layout
+inference runs as before, with the log saying which and why.
+
+That matters: a tagged document this cannot read is no worse off than an
+untagged one.
+
+### And a patch I had to throw away
+
+The first attempt wove the new path into the middle of `readPdf` with string
+surgery and index arithmetic. It compiled. It also dropped the code that used
+its own result and left a "too little to be the document" message firing every
+time — visible only because I read the region afterwards rather than trusting
+the edit. Rewritten whole.
+
+## 1.0.261, 13 September 2026 — a text layer can be worthless
+
+The PAC guide lists fourteen accessibility checks, and two of them describe
+ways a PDF can carry a text layer that is **worthless**. HomerScribe trusted
+every text layer absolutely.
+
+> **Check 8, accessible font encodings.** If a translation table is missing for
+> a certain font, non-interpretable characters are passed to the assistive
+> technology.
+
+> **Check 14, spaces existent.** Some PDF generators think it not necessary to
+> include invisible spaces to be passed into the PDF document.
+
+A missing translation table gives a page that looks perfect and extracts as
+gibberish. A generator that skipped the spaces gives
+`Thewordsrunttogetherlikethis`.
+
+**Both produce a document that reads as nonsense while every count in the log
+looks healthy** — the worst kind of failure, because nothing reports it. And
+this is precisely the reliability he asked about before announcing.
+
+Both have the same remedy: **the page is a picture too**, so where the text
+fails, the pages are treated as scans and read instead. Slower, and it gives a
+usable document.
+
+Three signs, each cheap:
+
+    no spaces at all, or a space only every twenty letters
+    replacement characters, meaning a font has no translation table
+    more than a tenth neither letter, digit nor punctuation
+
+### The false positive I nearly shipped
+
+The first version rejected a text layer where fewer than a quarter of
+characters were letters — and **a page of counts and totals is legitimately
+mostly digits.** His journal is full of them. Digits and ordinary punctuation
+no longer count against a text layer; only characters that are neither.
+
+    ordinary prose            sound
+    a page of totals          sound
+    mixed prose and figures   sound
+    words run together        rejected
+    broken font               rejected
+
+### The rest of PAC's list
+
+Already done: marked as tagged, language defined, consistent heading structure
+(all three of its cases), alternative text, correct tag syntax through role
+mapping, logical reading order.
+
+Not done, and worth knowing: **document title**, **bookmarks**, and **security
+settings** — the last of which can block assistive technology outright, and is
+a fact about a document worth telling somebody before they try to read it.
+
+## 1.0.260, 13 September 2026 — the tags are used, not merely noticed
+
+He is willing to release without tables. He is **not** willing to announce that
+tags are recognised when they are only detected, and he is right: recognising
+something and doing nothing with it is not a feature.
+
+Four uses, none of which needs the marked-content machinery that has been
+holding this up.
+
+### The author's own description, instead of the model's
+
+A tagged PDF's `Figure` elements hold alt text somebody wrote. **It is better
+than anything a model produces** — it is what the author meant the picture to
+convey — and it costs nothing where the model costs about ninety seconds.
+
+The structure tree **is** the reading order, so the nth Figure describes the nth
+picture. That is exact for a well-made document and no worse than nothing for a
+bad one. The log says when the PDF's own description was used and the model was
+not asked.
+
+### The document's language
+
+`/Lang` from the catalogue, written into the Markdown's front matter, which
+Pandoc turns into the docx's language — **what decides how a screen reader
+pronounces it.** A document HomerScribe produced from a French PDF should not
+be read aloud in English.
+
+### The tags set the depth
+
+A tagged PDF states how deep its headings go. Inferring six levels for a
+document whose author used three invents a structure nobody wrote, so the
+inference is now capped at what the document says.
+
+### And the count still audits the inference
+
+From 1.0.255, and now one of four uses rather than the only one.
+
+### A stub I wrote and threw away
+
+The first attempt at matching figures to pages read `/Pg`, the element's
+reference to its page object — and PdfPig does not expose a page's object
+number, so I wrote a helper that **always returned zero**. It would have
+compiled, run, and quietly matched nothing.
+
+Matching by order needs none of that and is what the tree already guarantees.
+
+## 1.0.259, 13 September 2026 — reliability before an announcement
+
+He wants to announce the OCR work, and asked whether it is reliable enough.
+Reading all four documents, most of the answer is yes and one thing was not.
+
+### What is sound
+
+    document                    pages  headings  per page  words
+    GAC-Evidence-Gap-Resource       6        11       1.8   3,419
+    HMS Vol.15 No.1               112       303       2.7  91,227
+    mlk                             9         1       0.1   6,962
+    tickets                         1         3       3.0      83
+
+- **No page came out empty**, in any of the four.
+- **Two passages marked unclear** in 91,227 words of scanned journal.
+- **Heading counts are plausible** — 2.7 a page on a journal, 1.8 on a policy
+  paper.
+- **mlk has one heading in nine pages, and that is correct.** The Letter from
+  Birmingham Jail is continuous prose with no sections. A tool that invented
+  headings there would be worse, not better.
+
+Both kinds of document work: born-digital read exactly, scanned read by
+Tesseract with the model for what it cannot manage.
+
+### What was not sound
+
+The screen-reader review — the check taken from Iris — earned its place:
+
+    Heading level jumps from 1 to 6
+    Heading level jumps from 2 to 5
+    Heading level jumps from 2 to 6   (three times)
+
+**Matterhorn checkpoint 14-003.** A level that jumps leaves a reader moving by
+heading unsure whether something was missed, and it is precisely the reader
+this feature exists for.
+
+The cause is two sources meeting. Inferred pages squeeze their own levels; a
+model-written page brings its own; a document made of both skips where they
+join. So the levels are now walked once over **the whole document**: each
+heading at most one deeper than the one before, and going back up always
+allowed, since that is how a document returns to a higher section.
+
+It runs before the review, so what is judged is what will be written.
+
+### My view on announcing
+
+**The words are reliable. The structure is now defensible.** What I would not
+claim yet is tables, and what I would say plainly is that a document's own tags
+are read but not yet used.
+
+One honest caution: every measurement here is on four documents. They are four
+good ones — scanned and born-digital, one page and a hundred and twelve, prose
+and policy — but four is four.
+
+## 1.0.258, 13 September 2026
+
+Two things, and the first is embarrassing.
+
+### The tree walker found nothing in a document that plainly has tags
+
+    Reading its tags: its structure tree names no headings, lists, tables
+    or figures.
+
+`/K` is very often an **indirect reference to an array**, and the walker asked
+"is this an array?" of the reference itself, which it is not. So the tree was
+dropped at the first hop.
+
+Everything else resolved references properly; this one place asked the question
+before resolving. A `resolved()` helper now does it once, at the top of the
+walk, and the dictionary-only helper that could not see arrays is gone.
+
+### And the journal's headings tighten themselves now
+
+1,769 headings in 112 pages — down from 4,336, and still ten times too many.
+The deepest ones were a fair mix: *Myth or Fact: Sexing Osprey* is a real
+heading, *Migration -* is a contents-page leader.
+
+**No fixed setting can be right for every scan**, because the noise in a
+measured height depends on the scan. So the document corrects the setting: if
+too many of its lines would become headings, the bar goes up and it is tried
+again, up to six times, and the log says each time.
+
+The threshold matters more than it sounds. **A tenth sounded safe and is not**:
+1,769 of about 20,000 lines is 8.8 per cent, which would have passed a tenth
+untouched. One line in twenty-five is still generous — a well-made document
+runs nearer a fiftieth — and it actually bites:
+
+    bar 1.40 -> 1,769 headings (8.8%)
+    bar 1.61 ->   972 headings (4.9%)
+    bar 1.85 ->   534 headings (2.7%)   accepted
+
+About five a page, which is what a journal looks like.
+
+And this needs no tags — which matters, because three of his four documents
+have none.
+
+## 1.0.257, 13 September 2026
+
+Two errors and four warnings, all in the new tag code.
+
+### The role map is keyed by string
+
+    error CS0030: Cannot convert KeyValuePair<string, IToken> to
+    KeyValuePair<NameToken, IToken>
+
+`DictionaryToken.Data` is keyed by `string`. I wrote `NameToken` because the
+keys in a PDF dictionary *are* names, and the library has already turned them
+into strings by the time they reach you.
+
+### Two counters with one name
+
+    error CS0136: A local named 'iFigures' cannot be declared in this scope
+    because that name is used in an enclosing local scope
+
+Two different counts of figures: those found in the picture layer, and those
+the tags name. Different numbers about different things, and they wanted
+different names. The tag one is `iTaggedFigures`.
+
+### And `Letter.Font` is obsolete, again
+
+Four warnings, and I had fixed this exact obsolescence a dozen builds ago —
+then reintroduced it in new code by writing the same line from memory.
+
+**`FontDetails` is better than a workaround**: it carries `IsBold` and
+`IsItalic` outright, rather than leaving them to be read out of the typeface
+name. Both are used now — the flags first, since they state what the name only
+implies, and the name still read, because plenty of PDFs set neither flag and
+call the font "Times-Bold".
+
+So a warning I had been treating as tidying turned out to be an improvement I
+had been declining.
+
+### One caught before it shipped
+
+`bSawBold` and `bSawItalic` were used and never declared — the next build's
+error, found by checking the file for names used but not declared rather than
+waiting for the compiler to say so.
+
+## 1.0.256, 13 September 2026
+
+    PdfRead.cs(446,40): error CS0052: Inconsistent accessibility: field type
+    'List<HomerScribe.TaggedItem>' is less accessible than field
+    'HomerScribe.lTagged'
+
+`TaggedItem` was written before the field that exposes it, and its default
+accessibility was never revisited. A `public` field cannot hold a type nobody
+outside can name. The class is `public` now.
+
+Then the same question was asked of everything else rather than only the line
+the compiler pointed at: every `public static` member in both files, checked
+against the accessibility of the type it holds. **None other is wrong** —
+`PageLine`, `PdfPage` and `AdBreak` are internal and only ever used internally,
+which is correct.
+
+One error, one line, and the check that it was the only one of its kind.
+
+## 1.0.255, 13 September 2026 — the tags audit the inference
+
+**One of his four PDFs is tagged.**
+
+    GAC-Evidence-Gap-Resource   it declares itself marked and carries a
+                                structure tree
+    HMS Vol.15 No.1             not tagged
+    mlk                         not tagged
+    tickets                     not tagged
+
+A policy paper prepared for publication, and three that were printed to PDF.
+That ratio is worth knowing: **most documents a person is handed will not be
+tagged**, so the inference is not a fallback, it is the usual case.
+
+### What the tags are used for now
+
+Matching a tag to the words it covers needs marked-content identifiers and the
+page's content stream — a larger piece of machinery, and the right next step.
+**Counting is not**, and counting catches the failure that actually happened:
+
+    The document's own tags name 47 headings, 3 levels deep.
+    This reading made 4,336 headings, 6 levels deep.
+      That is far more than the document says it has, so the sizes are being
+      read too generously. Raise --heading-size to tighten it.
+
+Three times as many is not a difference of judgement, it is a fault — and a
+tenth as many is the same fault the other way. Where the two are close, it says
+so, which is the only independent confirmation the inference has ever had.
+
+**A tagged PDF is a marking scheme for the guesswork**, and that is worth having
+before it is worth reading in full.
+
+### And the threshold is a setting now
+
+`--heading-size`, 1.4 by default, driving all five bands proportionally. The
+audit above tells him which way to move it, so the advice and the control match.
+
+## 1.0.254, 13 September 2026
+
+The band change over-corrected badly. His journal went from 38 headings to
+**4,336** — thirty-nine a page — and the levels say exactly where they came
+from:
+
+    h1 28   h2 394   h3 383   h4 502   h5 613   h6 2416
+
+### 2,416 level-6 headings
+
+**A measured line height is noisy in a way a point size is not.** A line of
+"Migration" measures taller than a line of "was more" in the same font, because
+capitals and ascenders reach higher than lowercase. Ordinary text wanders over
+two or three pixels — and at 1.16 above a 9-pixel body, every line with a
+capital in it qualified.
+
+A real heading is set **noticeably** larger, not a sixth larger. The lowest band
+is 1.4 now, where the wandering of ordinary text falls below the bar and a
+heading still clears it comfortably.
+
+### And the 28 level-1 headings were not what I said they were
+
+I blamed OCR misreading a mark as a hash, and escaped lines beginning with one.
+**Not one escape fired**, because that was not the cause.
+
+**The model writes its own Markdown.** Twenty-two pages went to the picture
+model, and it answers a page with a document — complete with its own `# Title`.
+One per page, twenty-eight in all, in a document that should have exactly one.
+
+A page is not a document. Whatever the model calls a level 1 is at best a level
+2 here, so every heading in a model-read page is pushed down one and the levels
+keep their shape among themselves.
+
+That is worth recording as a mistake in method: I had a plausible explanation,
+implemented it, and did not check that the fix fired. **The escape count was
+zero in the very next run and I would not have noticed had the symptom not
+survived.**
+
+## 1.0.253, 13 September 2026 — reading the structure tree
+
+No free .NET package reads PDF tags: PdfPig says accessibility tagging is out
+of scope, iText does it and is AGPL — which would force HomerScribe off its MIT
+licence — and VellumPdf is .NET 10 and writes rather than reads.
+
+So it is written here, on PdfPig's tokens, which is all a structure tree
+actually needs. **The tree is a dictionary tree**, and PdfPig hands over
+dictionaries.
+
+### Role mapping first
+
+Matterhorn checkpoint 02: only standard PDF 1.7 tags may be used, and a custom
+tag must carry a role map entry saying which standard tag it stands for. A
+document using `Heading1` for `H1` is perfectly valid — and **without applying
+the role map it would look untagged**. So `/RoleMap` is read before anything
+else, and followed where one custom name points at another, with a limit
+because a broken document can point in a circle.
+
+Tested on a realistic tree: `Heading1` resolved to `H1` and came out as a level
+1 heading.
+
+### What it reports
+
+    its structure tree names 2 headings, 1 lists, 1 tables, 2 figures,
+    1 with alternative text
+
+And where a figure carries no description, it says so — **Matterhorn 13-004**.
+That is worth stating carefully, because it is a fault in the SOURCE document
+rather than in this reading of it: somebody tagged that PDF and left a picture
+undescribed. HomerScribe describes it itself where it can, which is a thing the
+original author should have done and did not.
+
+### Guards, because a PDF may be malformed
+
+Depth capped at 40, items at 200,000, role-map hops at 8, every step in a
+try/catch that returns rather than throws. A structure tree can be circular,
+and a document that cannot be read should not take the program down with it.
+
+### Still inferred rather than used
+
+The tree is read and reported; the headings in the output still come from the
+layout. Using the tags instead is the next step and a larger one — it means
+matching structure elements to the text on the page through marked-content
+identifiers, which is a different piece of machinery.
+
+## 1.0.252, 13 September 2026 — a tagged PDF says what it is
+
+He asked whether HomerScribe looks for a PDF's accessibility tags. **It did
+not**, and they are the one source that beats everything it infers.
+
+A tagged PDF carries real headings with real levels, lists that know they are
+lists, tables that mark which cells are headers, alt text on every figure, and
+a reading order the author set. Every inference built here over the last two
+days — font size into heading level, length into heading or paragraph, word
+height on a scan, Docstrum into reading order — **is a reconstruction of what a
+tagged PDF simply states.**
+
+Where the tags exist they win, because they are what the author meant rather
+than what the layout suggests.
+
+### What is built, and what is not
+
+HomerScribe now **looks** for them: `/MarkInfo /Marked` in the catalogue, which
+is the declaration, and `/StructTreeRoot`, which is the tree itself. A document
+can carry one without the other, so both are checked and the answer is specific:
+
+    it is tagged: it declares itself marked and carries a structure tree
+    it carries a structure tree but does not declare itself marked
+    it declares itself marked but carries no structure tree, so there is
+      nothing to read
+    it is not tagged, so its structure has to be inferred from the layout
+
+It says so in the log, and **in the document itself**, because a reader deserves
+to know how much of a document's shape was stated and how much was guessed.
+
+**It does not read the tags yet.** That is the honest position and the log says
+it outright rather than letting the mention imply more than it does.
+
+### Why reporting is worth having on its own
+
+A lawyer handed a filed brief can be told whether it was **made accessible or
+merely printed to PDF** — which is a fact about the other side's document, not
+about HomerScribe, and one nobody currently has an easy way to check.
+
+## 1.0.251, 13 September 2026 — the picture layer is unproven
+
+He asked how the two layers are doing, beyond headings. Reading all four
+documents:
+
+### The text layer is working
+
+    GAC-Evidence-Gap-Resource   every page carried its own text
+    mlk                         every page carried its own text
+    tickets                     every page carried its own text
+    HMS Vol.15 No.1             112 pages read from pictures
+
+Three born-digital documents read exactly, one scanned journal read by
+Tesseract. The routing is doing what it should, and the words in the three text
+documents are the document's own rather than a reading of it.
+
+### The picture layer has described nothing, in any document
+
+**Zero pictures described across all four.** For the journal that is correct —
+every page IS a picture, and a scanned page's picture is the page. For the
+other three it means either they genuinely contain no figures, or the picture
+layer is dropping them, **and the log gave no way to tell.**
+
+I know which I suspect. A figure in a born-digital PDF is often stored as
+Flate-compressed **raw samples with no header at all** — and the code skips
+anything that does not begin like a JPEG, a PNG or a JPEG 2000 after
+inflating. That test drops precisely the case those three documents would have
+exercised.
+
+So the first fix is to stop guessing: **pictures found but unreadable are now
+counted and reported**, rather than passed over in silence. "0 pictures" will
+mean a document with no pictures, and anything else will say so.
+
+That is the honest state of it. The two-layer reconciliation has been proved on
+the text side and **has never once been proved on the picture side**, and I had
+not noticed because every document I had checked was either all text or all
+scan.
+
+**What would settle it**: a PDF with a chart or a photograph on a text page. If
+the log then reports pictures found but unreadable, the header test is the
+fault and a PNG header can be built from the width, height and colour space
+PdfPig already provides.
+
+## 1.0.250, 13 September 2026
+
+The GAC document went from **130 headings to 46** — the length test works. The
+journal went from 32 to 38, which does not, and reading its levels said why:
+
+    h1 28   h2 3   h3 5   h4 1   h5 1   h6 1
+
+### Five places, taken by outliers
+
+`headingLevels` took the five largest DISTINCT sizes. That is right for a text
+PDF, where sizes are a designer's small set. On a scan a measured pixel height
+is noisy: the journal produced dozens of distinct heights, **the five largest
+were rare outliers on a cover**, and the common subheadings a fifth above the
+body got nothing at all.
+
+Sizes are grouped into **bands by ratio to the body** now, so the same rule
+serves a point size and a pixel height, and heights of 13 and 14 land together
+instead of competing for one of five places:
+
+    body 9px
+    11px, 12px  ->  h6      18px, 22px  ->  h3
+    13px, 14px  ->  h5      26px, 34px  ->  h2
+    15px        ->  h4
+
+A size is also weighed by how much of the document uses it, so one used once on
+a cover cannot outrank one used on forty subheadings.
+
+### And 28 of those headings were not headings at all
+
+One read:
+
+    # Haven. Three such sites produced about average counts
+
+Body text from the middle of a sentence. **Tesseract had read some mark on the
+page as a hash**, and because the line went into the Markdown untouched, it
+became a level-1 heading.
+
+OCR output is text, not markup, and it was being trusted as markup. A line
+beginning with `#`, `>`, `|`, `=` or `+` is escaped now. Only the start of a
+line matters, since that is where Markdown looks; escaping inside the line
+would litter the prose with backslashes for nothing.
+
+That one is worth remembering beyond this project: **anything a machine reads
+off a page is data, and writing it into a structured format without escaping is
+the same mistake as putting user input into a query.**
+
+## 1.0.249, 13 September 2026
+
+Three PDFs of quite different kinds in one run, and reading all three outputs
+found two faults that no single document would have shown.
+
+**The encoding fix holds**: zero mangled characters in any of the three, where
+there were 98 before.
+
+### The journal still had 32 headings in 112 pages
+
+The height inference was built and did nothing, for a reason of ordering:
+`bodySizeOf` runs **before** the page loop, and on an all-scanned document
+there are no lines to measure until that loop has run. The sizes arrived after
+the decision that needed them.
+
+**A second pass** now renders the OCR pages once every page has been read and
+the body size can actually be measured. Pages that carried their own text are
+untouched — they had their sizes from the start.
+
+### And the other document had 130 headings in six pages
+
+Every paragraph of `GAC-Evidence-Gap-Resource.pdf` came out as an `h6`. The
+size most CHARACTERS were set in was the small print, so ordinary prose sat a
+sixth above it and qualified.
+
+**Size alone cannot tell a heading from a paragraph.** Length can: a heading
+names what follows, it does not run to two hundred characters, and it does not
+end in a full stop. Under 100 characters and not ending in sentence punctuation
+— a test that costs nothing and that no real heading fails.
+
+    UNPROVEN AND UNSAFE:                     heading
+    Claims abound regarding the benefits...  paragraph
+    Myth or Fact: Sexing Osprey              heading
+    the eighth edition of the World Prof...  paragraph
+
+### What the three documents together showed
+
+One scanned, one born-digital, one a single page. **Each exposed a different
+fault, and each fault was invisible in the other two.** The journal's ordering
+bug needed an all-scanned document; the heading flood needed a text document
+with small print. A single test file would have passed.
+
+## 1.0.248, 13 September 2026 — the second view
+
+He asked whether I had incorporated the learnings from Equalify Iris. **Partly,
+and I had named the best part twice without building it.**
+
+Honest audit of Iris's three phases against HomerScribe:
+
+    extract each page                  done
+      ...and VERIFY it                 not done
+      ...specialist per content type   done
+    assemble in page order             done
+      ...validate the result           not done
+    review in TWO VIEWS                not done
+      ...loop until nothing changes    not done
+
+Four of seven missing, and the two-view review is the one worth having.
+
+### What it does
+
+Iris reads its work in two views — the marked-up text, and a flattened reading
+of what a screen reader would actually announce — **because a fault invisible in
+one is obvious in the other.** A heading at the wrong level looks perfectly fine
+in Markdown and announces itself wrongly. A picture with no alt text is an
+unremarkable line in the source and a silent gap in the reading.
+
+    heading level 1, Journal
+    heading level 2, Features
+    heading level 4, Eagle Migration      <- the jump is audible here
+    graphic, no description               <- and so is this
+
+It reports heading levels that skip, a document with no level 1 or with several,
+pictures with no description, and a document with no headings at all.
+
+### Where it departs from Iris, and why
+
+**Iris asks a model to do the reviewing. This does not.**
+
+Iris is remediating arbitrary HTML it did not write, so it needs judgement.
+HomerScribe **wrote** this document and knows what it meant, so the same faults
+can be found deterministically: no model, no minutes of work, no hallucinated
+objection, and the same answer every time.
+
+That matters for the heading inference particularly. Levels here come from font
+size or from OCR word height, and both can be fooled — by a dropped cap, by a
+page of nothing but headings. This is the check that catches it, and it costs
+nothing.
+
+Still not done: verifying each page as it is extracted, and looping the review
+until a round changes nothing. Both need a model, and both are worth doing once
+there is something for them to fix.
+
+## 1.0.247, 13 September 2026
+
+He asked whether the OCR work has cost anything elsewhere. Traced rather than
+asserted, and **it found one**.
+
+### The one real risk, now fixed
+
+`sweepOldWork` clears working folders older than a day. It judged age by the
+FOLDER's own timestamp — and **a batch of video can run for more than a day**,
+while a second HomerScribe started alongside the first would have swept the
+first's folder out from under it. Windows does not reliably touch a parent
+folder when files inside it change, so a folder in active use can look old.
+
+**The newest file anywhere inside decides now**, and the log says when a folder
+was spared. Checked against five cases:
+
+    abandoned 3 days ago        swept
+    a batch running 30 hours    left alone
+    a second run started now    left alone
+    finished yesterday          swept
+    started an hour ago         left alone
+
+That fault predates this question and would have shown up as a batch failing
+overnight for no visible reason — the hardest kind to diagnose.
+
+### What is genuinely untouched
+
+- **The UTF-8 change is scoped.** `bWantUtf8Output` is false by default, set in
+  exactly one place, and restored in a `finally`. ffmpeg, yt-dlp, Whisper,
+  ExifTool and Ollama read exactly as before.
+- **A `.zip` never reaches `readPdf`.** The routing is guarded by `bFromPdf` and
+  returns immediately, so the picture-archive path — descriptions, renamed
+  copies, ExifTool metadata — runs the same code it did a fortnight ago.
+- **Removing ads touches nothing OCR-related**, checked function by function.
+- **Transcribing and describing** never enter the PDF path at all.
+- Both test harnesses pass.
+
+The honest summary: no regression in those four features, and a real one found
+in the housekeeping that serves all of them.
+
+## 1.0.246, 13 September 2026
+
+Reading his 511 KB of Markdown found two faults the logs could not show.
+
+### The words were mangled on the way in
+
+`ΓÇÖ` appears **98 times**. That is a right single quote, written by Tesseract
+as UTF-8 and read back through the console's code page. Tesseract recognised
+those characters correctly and HomerScribe corrupted them, then carried the
+corruption into the Word file.
+
+`runCommand` now sets `StandardOutputEncoding` to UTF-8 when asked, before the
+process starts — after it starts, the setting is ignored.
+
+### And the document had no shape
+
+**32 headings across 112 pages, and one list item.** A page read by Tesseract
+was handed through as plain lines: the words were right and the structure was
+absent, on 91 of the 112 pages.
+
+Tesseract's TSV carries each word's **height**, which does for a scan exactly
+what point size does for a text page. The same inference now runs on both:
+
+    body height 14px, from 775 characters
+    MIGRATION                 34px  -> h2
+    Features                  22px  -> h3
+    The Newsletter of the...  18px  -> h4
+    New Perspective on...     14px  -> body
+
+So a scanned page gets headings, lists, and the page breaks — the same document
+a text PDF gets.
+
+### The redundant model is gone from the installer
+
+He asked whether anything offered has been superseded, and one thing has.
+**`granite3.2-vision`**, 2.4 GB, was offered "for reading scanned pages on a
+computer short of memory". It was already measured as worse than the ordinary
+vision model, and **Tesseract now reads scanned pages in 60 MB with no graphics
+card at all**. Anyone short of memory should install Tesseract, not a weaker
+2.4 GB model. The task is removed; the `--document-model` setting stays for
+anyone who wants it.
+
+The installer now offers, in order: **Ollama and the vision model**, the vision
+model alone, **ExifTool** (which shipped but was never offered), **Pandoc**,
+**Tesseract**, the **reading model**, and **Whisper**.
+
+## 1.0.245, 13 September 2026
+
+Two things, one a confirmation and one a lesson taken from `BuildEdSharp.ps1`.
+
+### The documentation is already in both formats
+
+Nine documents, nine `.htm` beside them, checked file by file: `ReadMe`,
+`HomerScribe`, `Hotkeys`, `History`, `Developer`, `License`, `Review`,
+`Announce`, `video_formats`. None missing either way.
+
+And HomerScribe's **output** stays Markdown. He has not asked for `described.htm`
+and I have not added one.
+
+### PdfPig is pinned now, the way EdSharp pins everything
+
+`BuildEdSharp.ps1` pins every package and says why beside each one:
+
+> ReverseMarkdown is pinned at the last line that supports .NET Framework: the
+> 4.x series ships netstandard2.0, which net48 consumes; 5.x and 6.x ship only
+> net8.0 and later, which net48 cannot reference at all.
+
+> HtmlAgilityPack 1.12.1 — ReverseMarkdown 4.7.1 is compiled against it, and a
+> mismatched copy fails at runtime with a manifest-definition error the moment
+> any HTML-to-Markdown path runs.
+
+`getPdfPig.ps1` asked nuget.org for **"the latest PdfPig"** with no pin at all.
+That is the same fragility: the day PdfPig ships a version targeting only
+net8.0, or changes the assemblies it needs, a build that worked yesterday fails
+with nothing changed here — and after the fortnight this project has just spent
+on dependency faults, that is not a risk worth carrying for nothing.
+
+`0.1.16` is what HomerScribe has been built and tested against. The pin says
+so, says why, and says to change the comment when the version is raised
+deliberately.
+
+That is worth more than the pin itself. **Every version constant in EdSharp's
+build carries the failure that taught it**, with a date — Scott's crash of 25
+August, the build log of 19 August. A pin without a reason is a number somebody
+will raise on a whim.
+
+## 1.0.244, 13 September 2026
+
+He asked how the Word file is built, wanting no dependency on Word's COM
+interface or an Office installation. **There is none, and there never was.**
+
+**Pandoc writes it.** Free, open source under the GPL, one program with no
+runtime behind it, and the same converter the other Homer Tools already use. A
+`.docx` is a zip of XML; anything can write one. The common shortcut is to
+drive Word itself through COM, which needs Office installed, licensed and
+running, and which fails outright on a machine that has none — exactly the
+machine a person is most likely to be using if they are looking for a free
+tool.
+
+Checked rather than asserted: the only `InteropServices` in HomerScribe is
+`DllImport` of `kernel32` and `user32`, the plain Windows API used for window
+and screen-reader work. No `Word.Application`, no `Microsoft.Office`, no
+`Interop` assembly anywhere.
+
+### But nothing fetched Pandoc
+
+That is the gap his question found. Every other component has a script —
+Ollama, the models, Whisper, ExifTool, Tesseract — and Pandoc had none. A
+person installing HomerScribe would get `described.md` and no Word version, and
+a line in the log they might never read.
+
+**`installPandoc.cmd`** now fetches it with winget, about 30 MB, and it is
+ticked by default on the installer's last page. The message when Pandoc is
+absent names that script instead of leaving him to work it out, and says
+plainly that no Office is required.
+
+## 1.0.243, 12 September 2026
+
+He asked whether Tesseract was installed, since there was no speed gain. **It
+was installed, found, and did no work at all:**
+
+    Tesseract found at C:\Program Files\Tesseract-OCR\tesseract.exe
+    ...
+    Tesseract was only 0 sure, under the floor of 70.
+
+Zero on every page, so every page fell under the floor and went to the picture
+model — which is precisely why it ran at the old speed.
+
+### Tesseract 5 writes confidence as a float
+
+`96.5`, not `96`. And I read it with
+
+    int.TryParse(asBit[10], out iConf);
+
+which fails on a decimal point and leaves **zero**. Every word scored nothing,
+every page averaged nothing, every page was handed to the model. The OCR was
+running correctly the whole time and its answers were being thrown away by a
+parse.
+
+Read as a number now, and with the invariant culture — a machine set to a comma
+decimal would have failed the same way on the same string, and that is the kind
+of fault that only appears on somebody else's computer.
+
+    conf field   int.TryParse   as a number
+    96                     96            96
+    96.5                    0            96
+    41.83                   0            42
+    -1                     -1            -1
+
+A page of five words in the nineties averaged **0** before and **93** now: the
+difference between going to the model and being taken from Tesseract.
+
+### What he should see
+
+Forty-six seconds a page should become one or two, with the model called only
+where Tesseract is genuinely unsure. His 112-page journal should finish in a
+few minutes rather than an hour and a half, and the tally line will say how the
+pages divided.
+
+## 1.0.242, 12 September 2026
+
+The journal came out whole: **112 pages read**, both `described.md` and
+`HMS Vol.15 No.1 (Compressed).docx` written, in 1:27:15.
+
+### But the results box told him something untrue
+
+    HMS Vol.15 No.1 (Compressed): 112 pages read, 112 pictures described
+
+**None were described.** Every page of that journal is a scan, and a scanned
+page's picture IS the page — so the describing branch never ran. The number
+reported was `iFigures`, which counts pictures **found**.
+
+Reporting found as described is the same class of untruth as trusting an exit
+code, and this project has spent a fortnight on that lesson. It now reports
+`iDescribed`, and says nothing at all where nothing was described.
+
+### And 1:27 says Tesseract did not run
+
+Eighty-seven minutes for 112 pages is forty-six seconds a page — the same rate
+as the build before Tesseract existed. Either the build predates it or
+Tesseract is not installed; the run log would say which, and it was not in the
+upload. **`installTesseract.cmd` is the thing to try**, and the log's first
+mention of Tesseract will say plainly which way it went.
+
+### Settings move to .inix
+
+His universal preference: a Homer Tool's configuration file is **`.inix`**, not
+`.ini`. Inix is not a variant of the common format — it is a different one,
+carrying multiline verbatim values and doubling as a table of records a screen
+reader can move through. A format that does not follow .ini's rules should not
+borrow its extension.
+
+`HomerScribe.inix` is written from now on. An existing `HomerScribe.ini` is
+still **read** where one is found, so nobody loses settings they have already
+chosen; anything written goes to the new name.
+
+## 1.0.241, 12 September 2026
+
+**One error, and a precise one:**
+
+    PdfRead.cs(53,46): error CS0266: Cannot implicitly convert type
+    'IEnumerable<Word>' to 'IReadOnlyList<Word>'
+
+`GetWords` hands back a sequence, not a list. Both are taken as `List<>` now,
+which is the right shape anyway since each is walked more than once, and the
+null checks went with the change because a list built that way cannot be null.
+
+What is worth noting is what did **not** error. `NearestNeighbourWordExtractor`,
+`DocstrumBoundingBoxes`, `UnsupervisedReadingOrderDetector`, `TextBlock`,
+`TextLine` and `.Instance` on all three are real, spelled right, and used
+correctly. Of three guessed APIs the compiler objected to one detail of one —
+against a fortnight in which almost every guess was wrong.
+
+The difference is that these came from PdfPig's documented layout-analysis
+namespace rather than from my memory of what an image API might be called.
+
+`lOrdered` stays an `IEnumerable` on purpose: it is walked once, so there is
+nothing to gain by materialising it.
+
+## 1.0.240, 12 September 2026 — reading order
+
+He wants HomerScribe to be able to claim the best PDF-to-Word conversion built
+on free, open source parts, run from the keyboard in batch on an ordinary PC.
+Four things stood between the claim and the truth. **This is the first, and it
+was the one that had to go before anything could be announced.**
+
+A two-column page was being read **straight across the gutter**. Letters were
+sorted top to bottom and grouped into lines by their vertical position, which
+is right for a letter and nonsense for a brief — and a lawyer's brief is very
+often two columns. Publishing the claim with that in place would have been
+discredited by the first document anybody tried.
+
+**PdfPig ships the fix and HomerScribe was not using it:**
+
+- `NearestNeighbourWordExtractor` builds words from letters by spacing, rather
+  than my grouping letters by how far apart their baselines sit;
+- `DocstrumBoundingBoxes` groups those words into blocks;
+- `UnsupervisedReadingOrderDetector` puts the blocks in the order a person
+  reads them.
+
+All three are better tested than anything I would write, which is the same
+lesson PyMuPDF4LLM taught a few builds ago: **the library has thought about
+this harder than I have.**
+
+The old letter sorting is kept as `readByPosition` and used when the analysis
+cannot handle a page. A page read badly beats a page not read at all, and a
+fallback means a wrong guess about the API degrades rather than takes the
+document down.
+
+### What remains before the claim is fully true
+
+- **the PDF's own tags** — a tagged PDF carries real headings, lists, tables
+  and alt text, and using them beats inferring every time
+- **tables**, from the drawn rules in `page.Paths`
+- **horizontal rules**, from the same place
+
+One at a time, and each with a build behind it. Four unverifiable API guesses
+at once would give four tangled errors instead of one clear one.
+
+## 1.0.239, 12 September 2026 — Tesseract reads the words
+
+A scanned page can be read two ways, and until now HomerScribe used the slower
+and riskier one for everything.
+
+**The picture model** takes about twenty-five seconds a page and can invent a
+word that was never there — fluent, plausible and wrong, which is the worst
+kind of error in a legal document. **Tesseract** takes about a second, cannot
+invent anything, and reports how sure it was of every word. On clean print its
+accuracy is at least as good.
+
+So Tesseract now reads the words, and the model keeps the two jobs it is
+genuinely better at: **describing the pictures**, and **reading a page
+Tesseract could not**.
+
+- The confidence decides. Tesseract's own figure for a page is averaged across
+  its words, and below **70** — `--ocr-floor` — the page goes to the model
+  instead. A model that is slow is better than a reading that is wrong.
+- The log says which read each page and why: *"Page 7 read by Tesseract, 92
+  sure out of a hundred"*, or *"Page 9 read by qwen2.5vl:7b: Tesseract was only
+  41 sure, under the floor of 70."* And a tally at the end.
+- `installTesseract.cmd` fetches it with winget, about 60 MB, and is ticked by
+  default on the installer's last page. Without it nothing breaks — scanned
+  pages go to the model as before, and the log says so.
+
+The TSV output is asked for rather than plain text, because it carries the
+confidence and the line numbering in one pass. Checked against a real TSV: the
+lines rebuild correctly across block boundaries, a word with confidence -1 is
+skipped rather than counted, and the mean comes out right.
+
+### What this changes for his 112-page journal
+
+Roughly **forty-five minutes becomes a few**, with the model called only where
+a page has a figure or Tesseract struggles. That is the difference between a
+tool a lawyer uses before a hearing and one they start the night before.
+
+## 1.0.238, 12 September 2026
+
+He asked whether the folder should also hold a log. It should, and it does —
+`HomerScribe.log`, written by `writeFileLog`, which the PDF path calls like
+every other. I traced it rather than assume: `describeArchive` starts the
+per-item log before it routes to `readPdf`, so the reading of the document is
+in it from the first page.
+
+So the folder holds three things:
+
+    described.md
+    HMS Vol.15 No.1 (Compressed).docx
+    HomerScribe.log
+
+and the omnibus log stays in the output directory above them, which is the
+shape he described.
+
+What was wrong was the wording. Two messages called it a **film**:
+
+    A log of this film alone is in ...
+    The per-film log could not be written: ...
+
+True when a film was all there was. It is now also a podcast, an archive of
+photographs, or a PDF, and a message that calls a scanned journal a film is the
+kind of small untruth that makes a reader doubt the rest.
+
+## 1.0.237, 12 September 2026
+
+The Word version is named after the **source**, not after the Markdown:
+
+    described.md
+    HMS Vol.15 No.1 (Compressed).docx
+
+`described.md` says what HomerScribe did, and that is right for it — it sits in
+a folder named after the document and reports on the reading. But the Word file
+**is the document**, and a document has a name. A lawyer with six converted
+briefs open needs to tell them apart by their titles, and six files called
+`described.docx` would not let him.
+
+## 1.0.236, 12 September 2026 — a Word version that paginates like the PDF
+
+He gave the reason before the requirement, and the reason is the design: **a
+blind lawyer reading a converted brief has to be on the same page as the
+colleague across the table.** If page 14 of the document is page 14 of the PDF,
+"the second paragraph on page 14" means the same thing to both of them. Without
+that, the conversion is readable and useless for the argument.
+
+So `described.docx` is written beside `described.md`, **with a hard page break
+between every page**, and it comes out the same number of pages, numbered the
+same way.
+
+### Pandoc still has no page break
+
+I checked before building around a workaround, and the workaround is still the
+answer: **jgm/pandoc issue #1934 is open**, and multi-format page breaks are
+described as on the roadmap. The sanctioned solution is the official
+`pandoc-ext/pagebreak` Lua filter, which HomerScribe now ships and uses.
+
+That settles his worry about `.htm`. **With the filter, `\pagebreak` is safe in
+every target**: a real break in Word, a styled div in a web page, `\newpage` in
+LaTeX, and a form feed where pages do not exist. Without it, the same paragraph
+reaches Word as the literal text, which is worse than nothing — so the code
+says so in the log if the filter is missing rather than producing a document
+with `\pagebreak` printed through it.
+
+### The pictures are not embedded, and that was measured
+
+He asked what embedding would cost and we worked it out: for his scanned
+journal a docx holding the page images comes to about **17 MB against a quarter
+of a megabyte of Markdown**, because a zip cannot compress a JPEG any further —
+the Word file would weigh what the PDF weighs. The alt-text descriptions carry
+the meaning at a sixtieth of the weight.
+
+Fonts are not embedded either, for the same reason and one more: he asked for
+font distinctions to be dropped where they are insignificant, and the
+conversion already keeps only what structure needs — headings, lists, bold and
+italic. There is no typeface left to embed.
+
+## 1.0.235, 12 September 2026
+
+He set out what the Markdown should carry, and it is a short list worth having
+in one place: **headings, lists, horizontal rules, tables, bold and italic, and
+alt text for any picture that is not decoration.** And what it should NOT
+carry: font choices and sizes. No embedded HTML or CSS to reproduce styling.
+
+That is the right line. A size decides a heading level and then has no further
+business in the document; a typeface name has none at any point.
+
+### Bold and italic are now kept
+
+A PDF names its fonts `Times-BoldItalic` or `Arial,Bold`, so the name carries
+the emphasis and nothing else is needed. A line set in bold that is not large
+enough to be a heading is usually a run-in heading or a defined term, and
+marking it keeps that.
+
+    The Dante Club     bold           -> **The Dante Club**
+    sotto voce         italic         -> *sotto voce*
+    Important note     bold + italic  -> ***Important note***
+    ordinary prose     neither        -> ordinary prose
+    — — —              bold           -> — — —   (punctuation only, left alone)
+
+Headings are not wrapped: a heading is emphatic by being one.
+
+### Where this stands against his list
+
+- **headings** — done, from font size
+- **lists** — done, bullets and numbers
+- **bold and italic** — done here
+- **alt text** — done, and capped since 1.0.234
+- **horizontal rules** — NOT done. A rule is a drawn line rather than text, so
+  it needs the page's paths rather than its letters.
+- **tables** — NOT done, and the hardest: ruled areas have to be found from
+  line positions.
+
+Two of six outstanding, and both need the same thing — the page's graphics
+rather than its text. That is the next piece of work.
+
+### And the logging convention
+
+He reminded me of the shape: an omnibus log in the output directory and an
+individual log in each subdirectory for the file processed. That is what
+HomerScribe already does — `writeFileLog` writes the per-file log, and the PDF
+path calls it — so nothing needed changing once the mistaken copy into
+`HomerScribe\logs` was removed in 1.0.234.
+
+## 1.0.234, 12 September 2026
+
+Five PDFs in one run, and three things learnt.
+
+### The two fixes landed
+
+`c:\pdf2txt\pdf\*.pdf` **matches 5 files** now. And the inflating fix shows
+plainly:
+
+    HMS Vol.15 No.1: 0 carry their own text, 112 are scans, 112 pictures
+
+112 scans where the run before found 11. Every page of that journal is readable
+now.
+
+A born-digital PDF works too — `Dante Club.pdf`, 644 pages carrying their own
+text, body set at 11 point with three larger sizes becoming heading levels.
+
+### But it asked about 1,286 pictures
+
+`Dante Club.pdf` holds **1,307 pictures**, two on most pages — real ones, book
+covers and street scenes, not artefacts. At roughly twenty-five seconds each
+that is **nine hours**, for a document nobody would read to the end.
+
+So there is a limit: **`--page-picture-limit`, sixty by default**. The largest
+are described, since size is what separates a figure from a decoration, and the
+rest are named in the Markdown without a description so nothing vanishes
+silently. The log says what it is doing and how to change it.
+
+### And the runtime log goes back where it belongs
+
+He corrected me: this is the kind of Homer Tool that has an **output
+directory**, so the run log belongs with the output. `HomerScribe\logs` is for
+an installation log, not this. I read the convention too broadly and copied the
+run log there as well; that copy is gone, along with the function that made it.
+
+## 1.0.233, 12 September 2026
+
+`c:\pdf2txt\pdf\*.pdf` found nothing, though the files are plainly there.
+
+**The wildcard matched every one of them and then threw them all away.** The
+expansion asks, of each file it finds, whether it is a video or a recording —
+and nothing else. Every PDF was passed over as "not a video or a recording".
+
+The list it checks against holds twenty-three sound and video extensions and
+has not changed since before archives of pictures became a source in August,
+or PDFs this month. **A source path typed out in full is accepted whatever its
+kind; a wildcard was held to a narrower rule**, and nobody would guess that
+from the outside.
+
+A wildcard now takes anything HomerScribe can read: video, sound, `.pdf`, an
+archive of pictures, or a list of sources. Checked:
+
+    report.pdf     taken
+    scan.PDF       taken
+    notes.zip      taken
+    films.m3u      taken
+    clip.mp4       taken
+    readme.docx    passed over
+
+And the message for what it does skip now names the kinds it accepts, rather
+than mentioning only video and recordings — which was the line that would have
+explained this immediately had it been accurate.
+
+## 1.0.232, 12 September 2026
+
+**It read the PDF.** `described.md` written, 4 minutes 50 seconds, no crash and
+no missing assembly. The whole chain works.
+
+But the figures say the work was a tenth done:
+
+    112 pages in HMS Vol.15 No.1: 0 carry their own text, 11 are scans,
+    11 pictures in all
+
+**101 of 112 pages produced nothing.** Only pages 1, 12, 21, 31 and seven
+others were read at all.
+
+### Why: a JPEG that does not look like one yet
+
+That journal stores 101 of its 112 pages as
+
+    /Filter [/FlateDecode /DCTDecode]
+
+a JPEG, **deflated**. `RawBytes` hands back the raw stream, so those bytes do
+not begin `FF D8 FF`, my format sniffing called them headerless bitmaps, and
+every one was passed over. The eleven that worked are the JPEG 2000 pages,
+which carry no Flate layer.
+
+I knew this. In August, deciding not to write a PDF parser in C#, I wrote down
+that this very file stores its pages as *"a JPEG, deflated, inside an object
+whose length lives in a cross-reference table"* — and then built a reader that
+did not inflate.
+
+**Inflating is the whole of the fix**, and .NET has had `DeflateStream` all
+along. Where the bytes are not already a picture they are inflated and looked
+at again; a zlib stream's two header bytes are skipped, and raw deflate is
+tried as well since a PDF may carry either.
+
+Checked against his actual file, page by page:
+
+    already an image       11
+    recovered by inflating 101
+    still not usable        0
+    usable                112 of 112
+
+## 1.0.231, 12 September 2026
+
+**The diagnostic did its job.** His run log now says exactly what is there:
+
+    13 assemblies are beside HomerScribe.exe: System.Buffers.dll,
+    System.Memory.dll, ... UglyToad.PdfPig.Tokens.dll
+    HomerScribe.exe.config: present, 1776 bytes
+
+Thirteen present, `Microsoft.Bcl.HashCode.dll` absent. Not a binding problem, a
+missing file — and that took one run to establish rather than a round trip for
+the build log.
+
+### What the research says
+
+`Microsoft.Bcl.HashCode` **6.0.0** is on nuget.org — exactly the version PdfPig
+asks for. It provides the `HashCode` type for .NET Standard 2.0, and is needed
+for `net462` and similar targets and not for newer ones, which is why a library
+built for seven frameworks carries it for some and not others.
+
+So it is fetchable, and my walk simply is not finding it. Two builds of reading
+nuspecs have not produced it.
+
+### Seeded, and still walked
+
+Rather than a sixth guess at why the reading misses it, **the dependency PdfPig
+is known to need is named outright**, and the nuspec walk still runs on top to
+catch anything else.
+
+A list is a poor way to FIND dependencies — that is why the walk stays. It is a
+perfectly good way to make sure of one already known by name.
+
+### And every fetch now reports its outcome
+
+The old code threw the answer away with `| Out-Null`. Now each says which of
+four things happened: already present, arrived, downloaded but the dll was not
+in it, or could not be fetched at all. If this fails again the build log will
+say which, and that is a different question from the one I have been guessing
+at.
+
+## 1.0.230, 12 September 2026
+
+Same failure at 1.0.205: `Microsoft.Bcl.HashCode` still absent. So the
+nuspec walk did not bring it, and **the run log cannot say why** — it names the
+assembly wanted and nothing about what is present.
+
+That is the thing to fix first, before another guess.
+
+### A load failure now lists what is actually there
+
+When the error is "could not load file or assembly", HomerScribe writes out
+every `.dll` beside its executable and whether `HomerScribe.exe.config` is
+present and how big it is. Three runs have failed on this shape and each time
+the build log had to be fetched to learn anything. A directory listing costs
+nothing and answers it.
+
+### And a sweep that does not depend on reading the nuspec correctly
+
+A nuspec groups its dependencies **by target framework**, and a reader that
+misses a group misses its contents. Rather than trust the walk, the script now
+also looks at what the chosen `lib` folder actually holds: nuget puts every
+assembly a build needs in the same folder, so anything there that is not
+PdfPig's own is a dependency whether a nuspec mentioned it or not.
+
+It also lists what it found, so the build log says plainly which dependencies
+were named and which were picked up from the folder.
+
+**I would rather see the build log than guess again.** The run log shows the
+program, not the fetch; whether `getPdfPig.ps1` found `Microsoft.Bcl.HashCode`
+and what it did about it is recorded there and nowhere else.
+
+## 1.0.229, 12 September 2026
+
+**It did not crash.** The window stayed, the failure was caught and reported,
+and the run finished with a message rather than a vanishing. That part works:
+
+    Nothing could be read out of HMS Vol.15 No.1 (Compressed).pdf: Could not
+    load file or assembly 'Microsoft.Bcl.HashCode'
+
+A **seventh** assembly, which was not in the list of six I had written by
+hand.
+
+### The list was the wrong idea
+
+Guessing a dependency list gets one assembly closer each time and never
+arrives. **The package says what it needs, in its own `.nuspec`** — so that is
+read instead, and followed for the dependencies' dependencies as well.
+`getPdfPig.ps1` now walks that graph, fetching whatever is named and whatever
+those name in turn.
+
+Three things that were lists are now readings of what is actually there:
+
+- the **dependencies to fetch** come from the nuspecs;
+- the **binding redirects** are written for every managed dll beside the
+  executable that is not PdfPig's own;
+- **`checkConfig.ps1`** checks that same set, so it cannot pass a config that
+  omits something.
+
+And the installer takes `System.*.dll` and `Microsoft.*.dll` rather than six
+names, so it ships what the build copied instead of what somebody remembered.
+
+### The early exit is gone entirely
+
+It could not survive this change anyway — the dependency list is not known
+until the nuspecs are read. Which is just as well: an early exit that skips
+work added later has now cost three builds here, and copying a file that is
+already correct is cheap.
+
+## 1.0.228, 12 September 2026
+
+    FATAL System.IO.FileLoadException: Could not load file or assembly
+    'System.Memory, Version=4.0.2.0'
+
+**The same exception, for a new reason.** `getPdfPig.ps1` finds the assembly
+and every dependency already present, says so, and **exits before writing the
+config** — so the wrong redirect left by the previous version stayed exactly
+where it was.
+
+That is the third fault of this shape here: **an early return that skips work
+added since the early return was written.** The stale `pdfpig.name` marker was
+the first, the dependency copying the second, this the third.
+
+- The config is written by a function now, called on **every** path out,
+  including the one that finds everything already in place.
+- And the build no longer takes its existence as proof. **`checkConfig.ps1`**
+  reads the real version of each assembly present and compares it against the
+  redirect that names it. A mismatch fails the build, with the numbers:
+
+      [config] System.Memory is 4.0.5.0 but the redirect points at 4.0.2.0
+
+Checking that a file exists is not the same as checking that it is right, and
+that difference has now cost two runs.
+
+## 1.0.227, 12 September 2026
+
+    HomerScribe.cs(821,13): error CS0103: The name 'sweepOldWork' does not
+    exist in the current context
+
+**Called once, defined nowhere.** The patch that was to add the method had two
+edits in it; the second failed its anchor and the script exited before writing
+either, so the method never arrived. A later patch added the call. Between them
+they left a program that referred to something that did not exist.
+
+That is the third time in this project a patch has half-applied, and the
+remedy is the same each time: **check the result rather than the patch's own
+report.** A count of definitions against calls would have caught it in a
+second, so that is what I ran afterwards — every method added in this session,
+defined against called. The other fifteen are all present.
+
+## 1.0.226, 12 September 2026
+
+### The redirect pointed at a version that was not there
+
+    System.IO.FileLoadException: Could not load file or assembly
+    'System.Memory, Version=4.0.2.0'
+       at Homer.HomerScribe.pagesOfPdf
+
+I wrote the config by hand with `newVersion="4.0.2.0"` — **the version PdfPig
+asks for** — when the file on disk is 4.0.5.0. A redirect to something that
+does not exist, which threw exactly the exception it was meant to prevent. And
+because the window died with it, he heard "Processing one file" and then
+nothing, and HomerScribe left the Alt+Tab list.
+
+**The config is now generated from the versions actually on the disk.**
+`getPdfPig.ps1` reads each assembly's real version and public key token with
+`[Reflection.AssemblyName]::GetAssemblyName` and writes the redirects to match.
+Whatever nuget hands over next year, the config will fit it. Guessing a version
+was the fault; reading it is the fix.
+
+### 260 working folders left behind
+
+He found **1,226 files** under the work folder in 260 folders, one holding 344
+page images from the PDF run that crashed.
+
+A run that ends badly cannot tidy up after itself, so **the next run does it**:
+anything under the work folder untouched for a day belongs to a run that is
+over, however it ended. The log says how many went and how much space came
+back. Only folders, only under `work`, nothing else touched.
+
+### And the log was not where he looked
+
+He looked in `HomerScribe\logs`, which is where the other Homer Tools keep
+theirs, and there was no such folder. HomerScribe wrote its log beside the
+output — right for a run that produces files somewhere he chose, but not the
+convention.
+
+The finished log is now **also** copied to `<app data>\HomerScribe\logs`, and
+the newest thirty are kept so the folder does not become its own clutter
+problem.
+
+## 1.0.225, 12 September 2026
+
+**Everything is in the installer now.** The compressed list holds all seven
+PdfPig assemblies, all six System dependencies, and
+`HomerScribe.exe.config` — so the installed copy has what the build folder has.
+The `CS1702` warning is still printed, and is now answered by the config rather
+than left to chance.
+
+One cosmetic fault fixed: the log said both
+
+    UglyToad.PdfPig.dll is beside the executable.
+    PdfPig.dll is beside the executable.
+
+The second was a leftover naming a file that does not exist. A log that reports
+a file which was never there is a small lie, and small lies in logs are how
+large ones get believed.
+
+### What this does that EdSharp and FileDir do not
+
+He asked, reasonably, since those already convert PDF to Markdown.
+
+**They use PyMuPDF4LLM, and for a born-digital PDF it is better than what is
+here.** It reads font sizes into headings, bullet runs into lists, and ruled
+areas into tables. HomerScribe does the first two and not the third.
+
+**But it can only read what is already text.** Two things it cannot do:
+
+- **A scanned page has no text at all**, and PyMuPDF4LLM returns nothing useful
+  from one. HomerScribe reads the page picture with a vision model.
+- **A picture on a page stays a picture.** PyMuPDF4LLM can extract the image; it
+  cannot say what is in it. HomerScribe describes it and writes the description
+  as alt text.
+
+So they are not the same job. EdSharp and FileDir convert a document that is
+already readable into a form he can edit. HomerScribe takes a document that
+**cannot be read at all** and makes one — which is what it does for video and
+photographs too.
+
+Neither should be ported wholesale into the other. What would help each:
+HomerScribe wants table extraction, which it has not got; EdSharp and FileDir
+want alt text and scanned-page reading, which need a vision model they do not
+otherwise require. The natural arrangement is that a scanned PDF goes to
+HomerScribe and a born-digital one to FileDir.
+
+## 1.0.224, 12 September 2026
+
+**The build succeeded** — thirteen files fetched, all six dependencies found,
+`HomerScribe.exe` and `HomerScribe_setup.exe` written.
+
+And it would have failed the moment he opened a PDF. Two things in that log say
+so, and this is precisely the case he asked me to watch for: shipping something
+that does not work as advertised.
+
+### The compiler assumed; the runtime will not
+
+    warning CS1702: Assuming assembly reference 'System.Memory,
+    Version=4.0.2.0' used by 'UglyToad.PdfPig' matches identity
+    'System.Memory, Version=4.0.5.0' ... you may need to supply runtime policy
+
+PdfPig asks for **4.0.2.0** by name. What sits beside it is **4.0.5.0**. The
+compiler shrugs; the runtime throws `FileLoadException` on the first PDF
+opened. `HomerScribe.exe.config` now carries binding redirects for all six
+assemblies, and the build warns if it is missing.
+
+### The installer shipped none of the dependencies
+
+Reading the list of what Inno Setup compressed: seven `UglyToad.PdfPig.*.dll`
+and **not one `System.*`**. My pattern was `*PdfPig*.dll`, which matches
+PdfPig's own names and nothing else — so an installed HomerScribe would have
+had the library without what it needs to run. The six are named explicitly now,
+along with the config.
+
+### Worth noting about the checking
+
+The config was written with a `--` inside an XML comment, which is illegal.
+Parsing it caught that before it shipped. Two builds ago I would not have
+parsed it.
+
+## 1.0.223, 12 September 2026
+
+The script works, and it names the problem in its own words:
+
+    [pdfpig] taking ...\net462\UglyToad.PdfPig.dll
+    [pdfpig] copied UglyToad.PdfPig.dll          (and six more)
+    [pdfpig] dependency NOT FOUND: System.Memory.dll   (and five more)
+
+The right assembly is chosen now. What is missing is the six that PdfPig's
+.NET Framework build needs — and the reason they were never fetched is three
+lines above:
+
+    Package "PdfPig.0.1.16" is already installed.
+
+**nuget stops there.** `-DependencyVersion Highest` never gets a chance to
+resolve anything, because a package installed once is installed, whatever is
+asked of it the second time. Adding that switch to a machine where the first
+install had already happened changed nothing at all.
+
+### So each dependency is fetched by name
+
+The package is named after the assembly — `System.Memory.dll` lives in the
+`System.Memory` package — so the script now downloads each missing one straight
+from nuget.org and unpacks it under `packages`. That needs nothing installed
+and **cannot be skipped by something already being there.**
+
+`FetchPackage` is one function used for PdfPig and for every dependency, so
+there is one download path rather than two.
+
+Checked before delivery, since I still cannot run it: quotes balanced on every
+line, braces, parentheses and brackets counted, `FetchPackage` defined before
+first use, and all eight steps of the logic traced by hand.
+
+## 1.0.222, 12 September 2026
+
+He asked why this is taking so many iterations. The answer is in this build's
+log, and it is not PdfPig.
+
+    Join-Path : A positional parameter cannot be found that accepts
+    argument 'downloading'
+    At line:52 char:8
+    + $pkg = Join-Path $PWD 'packages''
+
+**A stray trailing quote, put there by my own edit.** The fetch never ran, so
+the dependencies were never copied, so the same two errors appeared again.
+
+### The real cause, which is a process fault
+
+I had been carrying the PowerShell inside the batch file — first with caret
+continuations, then written line by line with `echo`, then base64'd into
+`-EncodedCommand` — and **editing it afterwards by string replacement, with no
+way to check the result.** Three layers of quoting, no compiler, no parser, no
+check of any kind.
+
+That is exactly the trap I kept diagnosing in the batch file. I simply did it to
+myself in another language, and it cost four of the last six builds.
+
+### So the PowerShell is a file now
+
+`getPdfPig.ps1` ships beside the build script and is run with `-File`. Nothing
+is encoded and nothing is patched. It can be read, diffed, and checked before
+it goes anywhere — and it was: every line balanced for quotes, and the braces,
+parentheses and brackets counted.
+
+The block in the batch file went from about 110 lines to 52, because a script
+that is a script does not need escaping.
+
+It also reports what it could not find:
+
+    [pdfpig] dependency NOT FOUND: System.Memory.dll
+    [pdfpig] still missing: System.Memory.dll
+
+so the next failure, if there is one, names itself.
+
+## 1.0.221, 12 September 2026
+
+`TryGetBytes` and the obsolete `GlyphRectangle` are gone. Two errors left, both
+the same one, and the log says why the fix for them never ran:
+
+    References:  /reference:"...UglyToad.PdfPig.Core.dll" ... (seven, and
+                 not one System.Memory among them)
+
+**The dependency copying never happened**, because the block began with
+
+    if exist "pdfpig.name" goto :pdfHaveName
+
+and `pdfpig.name` was left by the previous build. **A marker written by the old
+version made the new version skip its own new work.** The build was told
+"already done" by a file that had no idea what this build had learnt to do
+since.
+
+That is a real trap and worth naming: **a file that records "done" cannot know
+what "done" means in the next version.**
+
+- The shortcut is gone.
+- The check is now inside the PowerShell, where it can be specific: it skips
+  only when the main assembly **and every dependency** are present, and says
+  so. Anything missing and it does the work.
+
+## 1.0.220, 12 September 2026
+
+Real API errors at last, which is the sort I have been waiting for. Three
+faults and a set of warnings.
+
+### System.Memory was missing
+
+    error CS0012: The type 'Span<>' is defined in an assembly that is not
+    referenced. You must add a reference to assembly 'System.Memory'
+
+PdfPig's .NET Framework build uses `Span` and `ReadOnlyMemory`, which live in
+`System.Memory` and its companions. nuget pulls them in as dependencies; they
+simply were not being copied.
+
+The fetch now takes `System.Memory`, `System.Buffers`,
+`System.Runtime.CompilerServices.Unsafe`, `System.Numerics.Vectors`,
+`System.Threading.Tasks.Extensions` and `System.ValueTuple` as well, says which
+it copied and which it could not find, and the build references each one that
+is present. nuget is asked with `-DependencyVersion Highest` so they are there
+to copy.
+
+### TryGetBytes does not exist
+
+    error CS1061: 'IPdfImage' does not contain a definition for 'TryGetBytes'
+
+I guessed at that API, and at `TryGetPng` beside it, whose shape varies between
+versions. Both guesses are gone. **`RawBytes` is always there**, and for a
+scanned page it is the JPEG itself — so the bytes are taken and the file
+extension is decided by looking at them: `FF D8 FF` is a JPEG, the PNG
+signature is a PNG, `6A 50` at offset four is JPEG 2000.
+
+Anything else is a raw bitmap with no header, which ffmpeg cannot open without
+being told its shape. Those are passed over rather than written as a file
+nothing can read.
+
+### GlyphRectangle is obsolete
+
+    warning CS0618: 'Letter.GlyphRectangle' is obsolete: 'Use BoundingBox instead.'
+
+Six of those, all fixed. Warnings rather than errors, but a warning left alone
+becomes an error at the next version of the library.
+
+## 1.0.219, 12 September 2026
+
+**The fetch works.** The log lists all 49 assemblies in the package across
+seven target frameworks, picks `net462`, and copies seven files. That part is
+finished.
+
+And it reached the compiler, which is what I have been waiting for:
+
+    PdfRead.cs(22,23): error CS0234: The type or namespace name 'Content'
+    does not exist in the namespace 'UglyToad.PdfPig'
+
+Two faults behind one message.
+
+### It referenced the wrong assembly
+
+    [pdfpig] taking ...\net462\UglyToad.PdfPig.Core.dll
+
+`UglyToad.PdfPig.**Core**.dll` sorts before `UglyToad.PdfPig.dll`, and my
+chooser took the first of the list. It now asks for the exact name and falls
+back to first only if that is absent.
+
+### And one reference was never going to be enough
+
+**PdfPig is seven assemblies** — Core, Fonts, Tokens, Tokenization,
+DocumentLayoutAnalysis, Package, and the main one — and its types live across
+them. `Content` is in the main assembly; referencing only `Core` could not have
+worked whichever one was chosen.
+
+The build now references **every** `*PdfPig*.dll` it copied, and writes the list
+to the log.
+
+### A trap avoided rather than sprung, for once
+
+The reference list was first written as
+
+    set "pdfRefs=!pdfRefs! /reference:"%%~fF""
+
+— a quoted `set` whose value contains quotes, which is the nested-quote fault
+that has cost this script four builds in other disguises. Caught by reading it
+rather than by running it, and the outer quotes are gone.
+
+## 1.0.218, 12 September 2026
+
+**The log spoke, and named the bug in four lines:**
+
+    [pdfpig] found 0 copy or copies under packages
+    [pdfpig] downloading from nuget.org
+    [pdfpig] the package holds 0 copy or copies
+    [pdfpig] no PdfPig.dll anywhere
+
+The package does not contain `PdfPig.dll`. **The assembly is
+`UglyToad.PdfPig.dll`** — and the namespace at the top of `PdfRead.cs`, `using
+UglyToad.PdfPig;`, said so from the day I wrote it.
+
+Four builds were spent hunting a filename that does not exist, and the answer
+was in my own source.
+
+- The search now matches **`*PdfPig*.dll`**.
+- It copies **every dll in that folder**, because a package's companions are
+  its dependencies and referencing one without them fails at run time.
+- It writes the chosen name to `pdfpig.name`, which the build reads, so the
+  compiler references whatever the file is actually called rather than what I
+  assumed.
+- The installer ships `*PdfPig*.dll` for the same reason.
+
+### What this cost, and what actually fixed it
+
+Five builds. The first four failed silently — a parse error, a swallowed pipe,
+a loop that found nothing — and I answered each by guessing at the mechanism.
+**The fifth reported what it saw, and the bug was obvious immediately.**
+
+The lesson is not about batch files or filenames. It is that I spent four
+attempts making the thing work and one making it *speak*, and only the latter
+found anything. Logging is the cheaper fix and I reached for it last, on a
+project whose whole method has been to measure rather than assume.
+
+## 1.0.217, 12 September 2026
+
+Fourth attempt at the same twenty lines. The log:
+
+    Package "PdfPig.0.1.16" is already installed.
+      downloading the package from nuget.org
+    #< CLIXML ...
+    Build FAILED
+
+So the package was there, **both `for /r` loops found nothing**, the download
+ran and produced nothing either.
+
+The first loop had a pipe in its body — `echo %%F ^| findstr` — which inside
+`( )` needs escaping I had not done. And I cannot tell from here why the second
+found nothing, which is the real problem: **batch gives no way to see.**
+
+### So the batch searching is gone entirely
+
+One PowerShell now does all of it, as `-EncodedCommand`, so not one character
+passes through cmd's parser. It:
+
+- looks under `packages` first and **says how many copies it found**;
+- downloads from nuget.org only if it must, and **lists what the package
+  holds**;
+- prefers a `net4` build, then `netstandard2`, then whatever there is;
+- says which one it took, and whether the copy arrived;
+- returns 0 or 1.
+
+nuget still runs first when present, because it caches.
+
+**The point is not that PowerShell is nicer.** It is that every one of the four
+failures was invisible — a parse error, a silent loop, a swallowed pipe — and
+the new version reports each step. If it fails again, the log will say where,
+which none of the previous four did.
+
+Checked before delivery: no line in that block carries a pipe, a caret, or an
+unbalanced quote, and the encoded command decodes to the 40 lines intended.
+
+## 1.0.216, 12 September 2026
+
+nuget put the package in the right folder this time. Then **the script died
+without a word**: the log ends at
+
+    Successfully installed 'PdfPig 0.1.16' to packages
+    Executing nuget actions took 323.82 ms
+
+and nothing follows. No error, no "PdfPig ready", no compiler. A batch parse
+error ends a script silently, which is the worst way for anything to fail.
+
+The line that did it was mine:
+
+    for /f "delims=" %%F in ('dir /b /s /o-d "packages\PdfPig*.dll" 2^>nul
+      ^| findstr /i /v "\\netstandard1" ^| findstr /i "PdfPig.dll"') do (
+
+A `for /f` wrapping a piped command, with carets escaping the pipes and doubled
+backslashes inside a quoted findstr pattern. Four kinds of escaping in one
+line, in a language with no way to test it short of running it.
+
+### Both replacements avoid cmd's parser rather than satisfying it
+
+- **The search is now two plain `for /r` loops.** `for /r` walks a tree
+  natively: no pipes, no carets, nothing to misparse. The first pass prefers a
+  `net4` build, the second takes whatever there is.
+- **The download is one `-EncodedCommand`.** The PowerShell is base64'd into a
+  single token, so **nothing in it passes through cmd's parser at all** — no
+  quotes to balance, no carets, no parentheses to escape. Writing it out line
+  by line with `echo` is what broke the attempt before, and writing it inline
+  with carets is what broke the one before that.
+
+That is three failures in the same place from the same cause. The rule I should
+have started with: **if a line needs cmd escaping to work, find a way not to
+need it.**
+
+Every line of the block is now checked for unbalanced quotes and stray carets,
+and there are none.
+
+## 1.0.215, 12 September 2026
+
+The build log is worth reading closely, because **nuget succeeded and the build
+still failed.**
+
+    Successfully installed 'PdfPig 0.1.16' to \packages
+    ...
+    PdfPig could not be fetched
+    Build FAILED
+
+Three faults, all mine.
+
+1. **I used a variable the script does not set.** `%here%` is nothing in
+   `buildHomerScribe.cmd`, so `"%here%\packages"` became `"\packages"` and the
+   package landed in `C:\packages`. The script already does `cd /d "%~dp0"` at
+   the top, so plain relative paths work and no variable was needed at all. I
+   copied the idiom from the install scripts without checking it existed here.
+2. **The search then looked in the wrong place**, which is why a successful
+   download was reported as a failure.
+3. **The PowerShell fallback broke on its own quoting** —
+   `Get-ChildItem -Recurse -Filter PdfPig.dll $env:TEMP\pdfpig` needs `-Path`,
+   and cmd's caret continuations made it hard to see. It is written to a `.ps1`
+   file now rather than fighting cmd's parser.
+
+### And no more instructions to go and fetch things
+
+He asked for these to go, and he is right: an instruction to download something
+by hand is a build script admitting defeat.
+
+- **PdfPig** now has three routes: nuget if present; **winget to install nuget**
+  and then nuget; and failing both, a direct download of the package from
+  nuget.org unpacked by a written-out PowerShell script. Nothing installed on
+  the machine is assumed.
+- **ffmpeg** falls back to `winget install Gyan.FFmpeg` and copies what that
+  puts on the path.
+- **yt-dlp** falls back to `winget install yt-dlp.yt-dlp` the same way.
+
+Where something still cannot be had, the message now says the log holds what
+was tried, rather than handing him a URL and a copy instruction.
+
+## 1.0.214, 12 September 2026
+
+He asked whether the PDF work needs another local model. **It does not, and I
+should have been clearer.**
+
+**PyMuPDF4LLM is not an AI model.** It is a Python library doing layout
+analysis — measuring font sizes, spotting bullet runs, finding ruled areas. No
+model, no download beyond the package itself, and nothing that would go into
+Ollama. It was mentioned as evidence that the method here is the right one, not
+as something to install.
+
+What reading a PDF actually asks of a model is already covered:
+
+- **A scanned page** goes to `readPage`, which uses the document model where
+  one is installed and the ordinary picture model otherwise. Both already have
+  installer ticks.
+- **A picture on a text page** goes to the picture model, for its alt text.
+  Already installed by `installModels.cmd`.
+- **A page with its own text** needs no model at all. The words are exact and
+  the structure comes from font size.
+
+So no new model, and nothing added to the build.
+
+The two installer descriptions were misleading, though, and are fixed: the
+vision model tick said "for describing video" when it now also reads PDFs and
+describes the pictures on their pages. Somebody choosing what to install should
+be told what it is for.
+
+The only new thing the build fetches remains **PdfPig**, which is a DLL rather
+than a model and was already handled.
+
+## 1.0.213, 12 September 2026
+
+**What EdSharp and FileDir actually use is PyMuPDF4LLM**, and the whole of it
+is one call:
+
+    sMarkdown = pymupdf4llm.to_markdown(pathSource)
+
+`installPdfTools.cmd` names it plainly — the free PDF reader used in place of
+Microsoft Word, about 25 MB, no Word and no account. `pdfRich.py` says why:
+
+> Plain text from a PDF loses everything a screen reader user navigates by:
+> headings, lists, tables, emphasis, and reading order.
+
+### What that told me
+
+**It validates the approach here and names exactly what was missing.**
+PyMuPDF4LLM does three things to make a PDF rich:
+
+1. font sizes become heading levels — **already built, and tested**
+2. **bullet runs become lists** — missing
+3. ruled areas become tables — still missing
+
+So the font-size inference was not a guess at a method; it is the method,
+arrived at independently. And the gap was named for me rather than found by
+accident.
+
+**Lists are now read.** A bullet — any of the several characters PDFs use for
+one — or a number followed by a dot or a bracket starts a list item, which
+closes any paragraph in progress. Checked that "In 1963 the city refused" and
+"Mr. Boutwell is a gentle person" stay prose, since a sentence beginning with a
+year or an abbreviation is the obvious way to get this wrong.
+
+**Tables are the one thing still missing**, and they are the hardest: ruled
+areas have to be found from line positions rather than text.
+
+### What cannot be copied
+
+PyMuPDF4LLM is Python, and HomerScribe may not depend on Python — his own
+ruling of 24 August, and still right. EdSharp can install a helper on request
+and fall back to Word; HomerScribe has no such fallback.
+
+Two things do carry over, and both were already in place: **install on request
+with graceful degradation**, as HomerScribe does for its document and reading
+models, and **one rich conversion serving every target**, which is why
+`described.md` is written well enough that an `.htm` could be made from it
+without reading the PDF again.
+
+## 1.0.212, 10 September 2026
+
+**PdfPig is a plain DLL on disk now, not a resource inside the executable.**
+
+I had carried the single-file rule over from 2htm, extCheck and urlCheck, where
+it is right: those are small independent tools, and one file each is the whole
+point. HomerScribe is not that. It leans on Ollama, Whisper, ffmpeg, yt-dlp and
+ExifTool, and pretending the executable is self-contained was a fiction that
+cost something.
+
+It cost reliability. Loading an assembly from a byte array, which is what the
+embedding required, hands the runtime a copy with no file identity: no path, no
+version on disk, and a separate failure mode of its own for anything with
+satellite or native parts. Referencing a DLL beside the executable is what the
+runtime is built to do.
+
+- The `/resource` embedding and the `AssemblyResolve` handler are gone.
+- The build leaves `PdfPig.dll` beside `HomerScribe.exe`.
+- The installer ships it.
+- A `using` I had added for the resolver went with it — every use of
+  `Assembly` in the program was already fully qualified, so it had been dead
+  weight from the moment the resolver was removed.
+
+## 1.0.211, 10 September 2026 — PDF reading, wired up properly
+
+He would rather meet a build error than ship something that does not work as
+advertised. So the quarantine is gone: **PdfRead.cs is always compiled, and the
+build fetches PdfPig itself.**
+
+- **The build fetches it.** `nuget install` where nuget is on the machine,
+  otherwise a plain download of the package from nuget.org — which is a zip
+  with the DLL inside — unpacked by PowerShell. If neither works the build
+  **fails and says so**, rather than quietly producing a HomerScribe that
+  cannot read a PDF while the guide says it can.
+- **The executable stays one file.** `PdfPig.dll` is embedded as a resource and
+  resolved at run time from inside the exe, so nothing sits beside it. That
+  rule was worth keeping.
+- **A `.pdf` source now goes to `readPdf`** and produces `described.md` in a
+  folder named after the document.
+
+### What it does with a page
+
+- **A page with its own text**: the words are taken exactly, and the heading
+  structure comes from font size with no model at all. Any figure on the page
+  is described by the picture model and becomes alt text — which is the part no
+  PDF reader does, and the reason this belongs in HomerScribe.
+- **A scanned page**: read from the picture, the way a page out of a zip of
+  scans already was.
+- **Both**: the text is trusted for the words, because it is exact where a
+  reading is a guess.
+
+### And the furniture is dropped
+
+A line repeating on more than half the pages is a running header or footer, not
+content. Those are left out, and the log says how many.
+
+### What is still not done
+
+The two-view review Iris does — reading the finished document as marked-up text
+and again as a flattened screen-reader view, and fixing what the second view
+objects to. That is the next thing worth building, and it is the part that
+would catch a heading at the wrong level.
+
+**This has not been compiled.** There is no compiler or NuGet here. The PdfPig
+calls are written from its documented API, and the first build is the test.
+
+## 1.0.210, 10 September 2026 — PDF reading, a pilot
+
+He asked for PDFs to be read again, this time using both layers and a C# PDF
+package, with the result written as `<name>.md` in the output folder.
+
+### What the research says
+
+- **Equalify Iris**, whose documentation he sent, runs three phases: extract
+  each page to an accessible fragment with one vision call and **verify** it,
+  correcting when the verifier objects; assemble in page order; then **review
+  the whole in two views** — the marked-up text and a flattened screen-reader
+  view — fixing what the review objects to and looping until a round changes
+  nothing. The two-view review is the cleverest part of it and costs almost
+  nothing.
+- **OpenDataLoader-pdf** (Apache 2.0, built with the PDF Association and the
+  veraPDF people) does layout analysis for headings, tables, lists and reading
+  order and emits Markdown with those preserved. It is close to the reference
+  implementation of what he is asking for — in Java.
+- **iTagPDF** (CHI 2026) found its errors clustered where two regions were
+  semantically alike: a caption merged with a table, a header with the title.
+  Worth knowing where to look when this goes wrong.
+- **PdfPig** (Apache 2.0, .NET Standard, back to .NET 4.5) is what makes it
+  possible in C#. It does not hand back a string; it hands back **letters with
+  positions and font sizes**, which is what the structure inference needs.
+
+### What is built
+
+**The structure comes from font size and needs no model at all.** The size the
+most characters are set in is the body; anything a sixth larger is a heading;
+the distinct larger sizes rank into levels, leaving h1 for the document's own
+title. Tested on realistic line data: an 18-point title becomes h2, 14-point
+section headings become h3, 11-point body stays body, and an 8-point footer
+stays body. That is, in essence, what OpenDataLoader's layout analysis does,
+and it is free.
+
+**Both layers are read.** `PdfRead.cs` groups PdfPig's letters into lines by
+vertical position, takes the point size of each line from most of its letters
+rather than its first, and writes out the page's pictures biggest first —
+because on a scanned page the biggest IS the page, and on a text page it is a
+figure wanting alt text. A page with almost no text and a big picture is
+treated as a scan whatever else it claims.
+
+### What is honest about this pilot
+
+**I could not compile it.** PdfPig is a NuGet package and there is no compiler
+or package here, so the half of this that calls PdfPig is written from its
+documented API and has never been built.
+
+So it is quarantined. `PdfRead.cs` is a separate file, `HomerScribe` is now a
+`partial` class, and **the build includes that file only when `PdfPig.dll` is
+beside it**. Without the package, HomerScribe compiles and behaves exactly as
+it did before. A mistake in the untested half cannot stop the program building
+at all — which matters more than the feature does.
+
+To try it:
+
+    nuget install PdfPig -OutputDirectory packages
+
+then copy `PdfPig.dll` beside the build script and build. The log says which
+way it went.
+
+### Still to come
+
+The pieces above are the foundation, not the whole. Not yet built: joining the
+text and picture knowledge per page, alt text for the figures found, the
+two-view review Iris does, and dropping running headers and footers — the
+8-point "page 3" is correctly not a heading, but it should not be in a
+paragraph either.
+
+## 1.0.209, 10 September 2026
+
+**Remove ads is part of HomerScribe now**, and the documentation says so.
+
+It came in behind an unticked box with a rollback point marked in case it
+proved unwise. Fifteen builds of testing later it has not: four shows, nine
+episodes, ad loads from one and a half per cent to fifteen, no error lines in
+the later runs, and the gate visibly refusing a real false positive — a host
+asking for ratings, which the model called an advertisement at 95 and which
+would have taken a piece of the programme with it.
+
+- **`ReadMe.md`** gains a section on it, at ninth-grade reading level as the
+  rest of that file is: what it does, the two files it writes, the reading
+  model it wants, and the plain statement that it will not catch everything and
+  is not meant to.
+- **`HomerScribe.md`** gains the full account — how the four signals are
+  weighed, how a span is widened and joined and moved to silence, every
+  setting, and why the reading model matters.
+- **`Announce.md`** gains a section, kept to the shape of the rest: short,
+  plain, and honest about the limit. It says the number tracks the show rather
+  than promising a figure.
+- **`Hotkeys.md`** lists **Alt+R** in both its orderings.
+- The rollback marker is retired, kept as a record rather than a plan.
+
+Reading levels checked rather than assumed after the edits: `Announce.md` 6.6,
+`ReadMe.md` 8.4, `Hotkeys.md` 2.9, `HomerScribe.md` 8.1. All within what he
+asked for.
+
+**The one thing the documentation does not claim** is the host-read case. The
+code handles it and the scoring was tested on written passages, but it has not
+fired on real material — every advertisement found across nine episodes carried
+disclosure wording. So the guide describes it as how the weighing works, not as
+a result, and the announcement does not mention it at all.
+
 ## 1.0.208, 10 September 2026
 
 ### The runs
@@ -674,14 +3205,17 @@ repeatedly means the number is too high for that material.
 - New behaviours: `ads-removed`, `ads-gated-at-confidence`,
   `ad-cuts-land-in-silence`.
 
-## ROLLBACK POINT
+## The rollback point, and why it is no longer needed
 
-**1.0.193 is the last version before ad removal.** Everything from 1.0.194
-onward belongs to that feature, which cuts media rather than adding to it and
-is the first thing HomerScribe has ever done that destroys anything. If it
-proves unwise, roll back to the 1.0.193 tag and nothing else is lost: no
-earlier behaviour was changed to make room for it, and the whole of it sits
-behind one unticked box.
+1.0.193 was marked as the last version before ad removal, in case the feature
+proved unwise. **It did not.** It was kept as a marker through fifteen builds
+of testing and is left here as a record rather than a plan.
+
+What settled it: four shows, nine episodes, ad loads from one and a half per
+cent to fifteen, zero error lines in the later runs, and the gate visibly
+refusing a real false positive — a host asking for ratings, which the model
+called an advertisement at 95 and which would have taken a piece of the
+programme with it.
 
 ## 1.0.193, 24 August 2026
 
