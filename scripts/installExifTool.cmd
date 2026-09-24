@@ -1,5 +1,30 @@
 @echo off
 setLocal enableDelayedExpansion
+
+rem ---- the log -------------------------------------------------------------
+rem The common half lives in the kit, so a fix reaches every install script in
+rem every Homer app rather than the one being edited. It sets sApp, sLogDir,
+rem log and sQuiet, and writes the environment header.
+set "sScript=%~n0"
+set "sCallerDir=%~dp0"
+rem IF THE SHARED HALF IS MISSING, SAY SO. It was left out of the installer
+rem once, and every script that calls it died at this line -- no message, no
+rem log folder, nothing to diagnose from. A missing file must announce itself.
+if not exist "%~dp0homerInstall.cmd" (
+  echo(
+  echo homerInstall.cmd is missing from %~dp0
+  echo That file is part of HomerScribe. Reinstall, or copy it from the
+  echo HomerScribe zip into this folder, and run this again.
+  echo(
+  pause
+  exit /b 1
+)
+call "%~dp0homerInstall.cmd" setup "%~f0"
+
+
+
+
+:afterLogSetup
 rem installExifTool.cmd -- put a single-file ExifTool where HomerScribe will
 rem find it.
 rem
@@ -26,10 +51,10 @@ rem Takes no arguments. Writes a detailed log beside this script.
 
 set "here=%~dp0"
 if "%here:~-1%"=="\" set "here=%here:~0,-1%"
-set "log=%here%\installExifTool.log"
+rem the log path is set above
 set "target=%ProgramFiles%\ExifTool"
 
-echo ExifTool setup started %date% %time%> "%log%"
+echo ExifTool setup started %date% %time%>> "%log%"
 echo Script: %~f0>> "%log%"
 echo Folder: %here%>> "%log%"
 echo Command line: %0 %*>> "%log%"

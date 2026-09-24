@@ -304,19 +304,19 @@ This file is the short way in. Everything else lives in its own document, and
 each one has a matching `.htm` beside it if you would rather read it in a
 browser.
 
-- **[HomerScribe.md](HomerScribe.md)** — the complete guide. Every setting,
+- **[HomerScribe.md](help/HomerScribe.md)** — the complete guide. Every setting,
   every document it writes, what it does with captions and with pictures, and
   what to do when something goes wrong. Read this one when you want to know how
   something works.
-- **[Hotkeys.md](Hotkeys.md)** — every key you can press, listed three ways: by
+- **[Hotkeys.md](help/Hotkeys.md)** — every key you can press, listed three ways: by
   what it does, by the key itself, and by where you are when you press it.
-- **[History.md](History.md)** — what changed and when, in plain English.
-- **[Developer.md](Developer.md)** — how to rebuild HomerScribe or change it.
+- **[History.md](help/History.md)** — what changed and when, in plain English.
+- **[Developer.md](help/Developer.md)** — how to rebuild HomerScribe or change it.
 - **[License.md](License.md)** — the MIT license, and the terms of the other
   programs HomerScribe uses.
-- **[Review.md](Review.md)** — an honest account of what went wrong during
+- **[Review.md](help/Review.md)** — an honest account of what went wrong during
   development and what stops it happening again.
-- **[Announce.md](Announce.md)** — the announcement, if you want the short
+- **[Announce.md](help/Announce.md)** — the announcement, if you want the short
   version of what this is for.
-- **[video_formats.md](video_formats.md)** — a plain explanation of video file
+- **[video_formats.md](help/video_formats.md)** — a plain explanation of video file
   formats: what `.mkv` is, how it differs from `.mp4`, and where captions live.

@@ -1750,14 +1750,50 @@ namespace Homer
 
         // ---------- running other programs ----------
 
+        // Where a shared local AI component lives, in the order to look.
+        //
+        // The Homer convention: a component many apps use goes to its own
+        // DEFAULT machine-wide directory, never inside an app's tree. One copy,
+        // shared, and an app upgrade cannot destroy it.
+        static List<string> sharedToolFolders()
+        {
+            List<string> lWhere = new List<string>();
+            string sFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string sFiles86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            foreach (string sRoot in new string[] { sFiles, sFiles86 })
+            {
+                if (sRoot == null || sRoot == "") continue;
+                // Each component's own default folder, as its own installer
+                // makes it.
+                lWhere.Add(Path.Combine(sRoot, "Whisper"));
+                lWhere.Add(Path.Combine(sRoot, "ExifTool"));
+                lWhere.Add(Path.Combine(sRoot, "Tesseract-OCR"));
+                lWhere.Add(Path.Combine(sRoot, "Pandoc"));
+                lWhere.Add(Path.Combine(sRoot, "ffmpeg", "bin"));
+                lWhere.Add(Path.Combine(sRoot, "Homer"));
+            }
+            // Where earlier versions put things, so an existing machine keeps
+            // working until its next install.
+            lWhere.Add(Path.Combine(appDataFolder(), "whisper"));
+            lWhere.Add(Path.Combine(appDataFolder(), "exiftool"));
+            lWhere.Add(exeFolder());
+            return lWhere;
+        }
+
         static string findTool(string sName)
         {
-            string sBeside = Path.Combine(exeFolder(), sName + ".exe");
-            if (File.Exists(sBeside)) return sBeside;
-            // Whisper and anything else installed for this user rather than for
-            // the machine, since Program Files is not writable at run time.
-            string sMine = Path.Combine(appDataFolder(), "whisper", sName + ".exe");
-            if (File.Exists(sMine)) return sMine;
+            // MACHINE-WIDE FIRST, because that is where a shared component
+            // belongs and where every Homer app can find the same copy.
+            //
+            // Beside the program is searched last, and only so an old
+            // installation keeps working. A shared tool must never be INSTALLED
+            // there: an app upgrade replaces that folder, which is exactly how
+            // Whisper vanished from his machine after a HomerScribe install.
+            foreach (string sRoot in sharedToolFolders())
+            {
+                string sThere = Path.Combine(sRoot, sName + ".exe");
+                if (File.Exists(sThere)) return sThere;
+            }
             string sExtra = text("ffmpeg-dir");
             if (sExtra != "")
             {
@@ -2901,7 +2937,7 @@ namespace Homer
             {
                 logMessage("Whisper was not found, so speech cannot be detected. Falling back to listening for silence.", "INFO",
                            "Whisper is not installed, so descriptions are placed by silence instead of speech. Run installWhisper.cmd to improve that.");
-                if (sWhisper == "") logMessage("  whisper-cli.exe was not found beside the program, under application data, or on the PATH.", "INFO", "");
+                if (sWhisper == "") logMessage("  whisper-cli.exe was not found. Looked in: " + string.Join("; ", sharedToolFolders().ToArray()), "INFO", "");
                 if (sModel == "") logMessage("  ggml-" + text("whisper-model") + ".bin was not found.", "INFO", "");
                 return lSpeech;
             }
@@ -7335,7 +7371,11 @@ namespace Homer
                                "Pandoc is not installed, so only the Markdown was written.");
                 else
                 {
-                    string sFilter = Path.Combine(exeFolder(), "pagebreak.lua");
+                    // The Homer layout puts helper scripts in their own folder, both in
+                    // the development tree and in the installed one, so a program
+                    // folder holds the program and not a heap of everything.
+                    string sFilter = Path.Combine(exeFolder(), "scripts", "pagebreak.lua");
+                    if (!File.Exists(sFilter)) sFilter = Path.Combine(exeFolder(), "pagebreak.lua");
                     // THE LANGUAGE GOES TO PANDOC DIRECTLY, not through a YAML
                     // block in the Markdown.
                     //
@@ -11460,7 +11500,7 @@ namespace Homer
                     // when captions are turned off. A film that turns out to
                     // have none is refused later, by name, with the reason.
                     bool bFatal = flag("transcribe") && !flag("captions");
-                    logMessage("Whisper was not found. Run installWhisper.cmd in the program folder."
+                    logMessage("Whisper was not found. Run installWhisper.cmd in the HomerScribe scripts folder."
                                + (bFatal ? "" : " A film carrying its own English captions can still be transcribed from those."),
                                bFatal ? "ERROR" : "INFO", bFatal ? null : "");
                     if (bFatal) bReady = false;

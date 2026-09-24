@@ -202,12 +202,11 @@ if errorlevel 1 (
   echo WARNING: ffmpeg could not be downloaded.>> "%log%"
   echo   trying winget>> "%log%"
   winget install --id Gyan.FFmpeg --accept-source-agreements --accept-package-agreements --silent >> "%log%" 2>&1
-  for /f "delims=" %%F in ('where ffmpeg.exe 2^>nul') do (
-    if not exist "ffmpeg.exe" copy /y "%%F" "ffmpeg.exe" >nul 2>&1
-  )
-  for /f "delims=" %%F in ('where ffprobe.exe 2^>nul') do (
-    if not exist "ffprobe.exe" copy /y "%%F" "ffprobe.exe" >nul 2>&1
-  )
+  rem NOT COPIED HERE. winget has just installed ffmpeg machine-wide, which is
+  rem where a shared component belongs — one copy, found by every Homer app, and
+  rem safe from any single app's upgrade. Copying it into this folder undid that.
+  rem HomerScribe finds it on the PATH and in the usual Program Files locations.
+  rem ffprobe likewise: left where winget put it.
   if not exist "ffmpeg.exe" echo WARNING: ffmpeg is still absent; the log says what was tried.
 )
 :haveFfmpeg
@@ -227,9 +226,7 @@ if errorlevel 1 (
   echo WARNING: yt-dlp could not be downloaded.>> "%log%"
   echo   trying winget>> "%log%"
   winget install --id yt-dlp.yt-dlp --accept-source-agreements --accept-package-agreements --silent >> "%log%" 2>&1
-  for /f "delims=" %%F in ('where yt-dlp.exe 2^>nul') do (
-    if not exist "yt-dlp.exe" copy /y "%%F" "yt-dlp.exe" >nul 2>&1
-  )
+  rem yt-dlp likewise: left where winget put it.
   if not exist "yt-dlp.exe" echo WARNING: yt-dlp is still absent; the log says what was tried.
 )
 :haveYtDlp
@@ -351,6 +348,61 @@ rem The .htm files are built alongside the .md files and shipped with them, so
 rem there is nothing to generate here. no converter is consulted: the one that used to be
 rem reported its own absence on every build and did nothing when present.
 
+
+rem ---- the Homer Development Kit ---------------------------------------
+rem HomerScribe no longer carries its own copies of the Homer classes. They
+rem live in one place, so a fix reaches every app that uses them, and so the
+rem version HomerScribe compiles against is a fact rather than a guess.
+rem
+rem That mattered here: the copies of Inix.cs, Lbc.cs, Say.cs and Web.cs in
+rem this folder had all drifted from the kit's, and PdfRead.cs — written for
+rem HomerScribe and since promoted into the kit — was byte for byte the same,
+rem which is the good case and still one file too many.
+rem
+rem Looked for in order: the HomerDev environment variable, C:\HomerDev, then
+rem this folder.
+set "homerDev="
+if defined HomerDev if exist "%HomerDev%\CSharp\Lbc.cs" set "homerDev=%HomerDev%"
+if not defined homerDev if exist "C:\HomerDev\CSharp\Lbc.cs" set "homerDev=C:\HomerDev"
+if not defined homerDev if exist "%CD%\CSharp\Lbc.cs" set "homerDev=%CD%"
+if not defined homerDev (
+  echo ERROR: The Homer Development Kit was not found.
+  echo Unzip it into C:\HomerDev, or set the HomerDev environment variable.
+  echo ERROR: kit not found >> "%log%"
+  exit /b 1
+)
+set "homerVer=unknown"
+if exist "!homerDev!\version.txt" set /p homerVer=<"!homerDev!\version.txt"
+echo Kit: !homerDev! version !homerVer! >> "%log%"
+echo Kit: !homerDev! version !homerVer!
+
+rem THE KIT MUST BE NEW ENOUGH FOR THE SOURCE. HomerScribe.cs uses what the kit
+rem gives it, and a kit older than the source fails deep in the compiler with a
+rem message naming the symptom and not the cause. So the build says the cause.
+set "kitNeeded=1.25.0"
+powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
+  echo(
+  echo HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!.
+  echo Unzip HomerDev.zip into C:\HomerDev, then build again.
+  exit /b 1
+)
+
+rem The modules HomerScribe uses. PdfRead needs nothing else; Inix reads and
+rem writes .xlsx, so the compression assembly is referenced below.
+set "homerSources="
+set "homerSources=!homerSources! "!homerDev!\CSharp\Inix.cs""
+set "homerSources=!homerSources! "!homerDev!\CSharp\Lbc.cs""
+set "homerSources=!homerSources! "!homerDev!\CSharp\Log.cs""
+set "homerSources=!homerSources! "!homerDev!\CSharp\Ollama.cs""
+set "homerSources=!homerSources! "!homerDev!\CSharp\Paths.cs""
+set "homerSources=!homerSources! "!homerDev!\CSharp\PdfRead.cs""
+set "homerSources=!homerSources! "!homerDev!\CSharp\Say.cs""
+set "homerSources=!homerSources! "!homerDev!\CSharp\Util.cs""
+set "homerSources=!homerSources! "!homerDev!\CSharp\Web.cs""
+echo Homer modules: !homerSources! >> "%log%"
+
 rem ---- PdfPig, found or fetched ---------------------------------------
 rem HomerScribe reads PDFs and PdfPig (Apache 2.0) is what lets it.
 rem
@@ -372,8 +424,8 @@ if not errorlevel 1 (
   nuget install PdfPig -OutputDirectory packages -ExcludeVersion -NonInteractive -DependencyVersion Highest >> "%log%" 2>&1
 )
 
-if exist "getPdfPig.ps1" (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "getPdfPig.ps1" >> "%log%" 2>&1
+if exist "scripts\getPdfPig.ps1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\getPdfPig.ps1" >> "%log%" 2>&1
 ) else (
   echo ERROR: getPdfPig.ps1 is missing from this folder.>> "%log%"
 )
@@ -412,7 +464,7 @@ if not exist "HomerScribe.exe.config" (
   echo HomerScribe.exe.config is missing>> "%log%"
   goto :failed
 )
-if exist "checkConfig.ps1" powershell -NoProfile -ExecutionPolicy Bypass -File "checkConfig.ps1" >> "%log%" 2>&1
+if exist "scripts\checkConfig.ps1" powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\checkConfig.ps1" >> "%log%" 2>&1
 if errorlevel 1 (
   echo ERROR: the binding redirects do not match the assemblies present.
   echo See %log%.
@@ -485,39 +537,21 @@ rem Seven sources compiled together into ONE assembly, so the result is
 rem still a single self-contained executable:
 rem   Version.cs        -- generated from version.txt
 rem   HomerScribe.cs  -- the program
-rem   Lbc.cs            -- Homer layout-by-code dialogs
-rem   Say.cs            -- Homer screen-reader announcements
-rem   Inix.cs           -- Homer ini codec and input history
-rem   Util.cs           -- Homer general utilities
-rem   Web.cs            -- Homer web helpers
-rem System.IO.Compression and its FileSystem partner are for reading a zip of
-rem pictures. Both are part of the .NET Framework itself, so referencing them
-rem adds nothing beside HomerScribe.exe. They must go BEFORE the csc line and
-rem not among its continued arguments: a "rem" inside a "^" continuation is
-rem handed to the compiler as a file name.
-echo Compiling>> "%log%"
-echo(>> "%log%"
-"!csc!" /nologo /target:exe /platform:x64 /optimize+ ^
-  /reference:System.dll ^
-  /reference:System.Core.dll ^
-  /reference:System.Data.dll ^
-  /reference:System.Drawing.dll ^
-  /reference:System.Windows.Forms.dll ^
-  /reference:System.Web.dll ^
-  /reference:System.Web.Extensions.dll ^
-  /reference:System.Net.Http.dll ^
-  /reference:System.Xml.dll ^
-  /reference:System.IO.Compression.dll ^
-  /reference:System.IO.Compression.FileSystem.dll ^
-  /reference:Microsoft.VisualBasic.dll ^
-  /reference:"!speech!" ^
-  /reference:"!uiaProv!" ^
-  /reference:"!uiaTypes!" ^
-  !icon! ^
+rem   the Homer classes -- compiled from C:\HomerDev\CSharp, not from here
+rem
+rem THIS LINE WAS DELETED BY AN EDIT OF MINE AND NOT REPLACED. The script went
+rem on finding the compiler, checking the exe was not locked, reporting "Built
+rem HomerScribe.exe", and never compiling anything -- so every build since
+rem produced no new executable, and he kept running the same old one while I
+rem kept explaining why my changes should have taken effect. The version stayed
+rem at 1.0.237 in every log he sent, which was the evidence, in front of me,
+rem every time.
+"!csc!" /nologo /target:winexe /platform:x64 /out:"%app%.exe" ^
+  /reference:"!speech!" /reference:"!uiaProv!" /reference:"!uiaTypes!" ^
+  /reference:"System.IO.Compression.dll" /reference:"System.IO.Compression.FileSystem.dll" ^
+  /reference:"Microsoft.VisualBasic.dll" ^
   !pdfRefs! ^
-  /out:%app%.exe ^
-  Version.cs %app%.cs Lbc.cs Say.cs Inix.cs Util.cs Web.cs PdfRead.cs >> "%log%" 2>&1
-
+  Version.cs %app%.cs !homerSources! >> "%log%" 2>&1
 set iBuildResult=%ERRORLEVEL%
 type "%log%"
 if not "%iBuildResult%"=="0" (
@@ -532,6 +566,23 @@ rem disk is the simpler and more reliable arrangement: the runtime loads it by
 rem path, with its identity and version intact, instead of from a byte array.
 if exist "%pdfDll%" (
   echo %pdfDll% is beside the executable.>> "%log%"
+)
+rem THE FILE, NOT THE EXIT CODE, AND ITS AGE. A build that compiles nothing
+rem once reported "Built HomerScribe.exe" for a week while the exe on disk was
+rem untouched. So: it must exist, and it must have been written just now.
+if not exist "%app%.exe" (
+  echo(
+  echo ERROR: %app%.exe was not produced. Nothing was compiled.
+  echo ERROR: %app%.exe does not exist after the compile step.>> "%log%"
+  goto :failed
+)
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$f=Get-Item '%cd%\%app%.exe'; if (((Get-Date) - $f.LastWriteTime).TotalMinutes -gt 5) { exit 1 } else { exit 0 }" >nul 2>&1
+if errorlevel 1 (
+  echo(
+  echo ERROR: %app%.exe is older than this build, so nothing was compiled.
+  echo ERROR: %app%.exe was not rewritten by this build.>> "%log%"
+  goto :failed
 )
 echo Built %app%.exe version !ver!>> "%log%"
 echo(

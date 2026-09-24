@@ -33,7 +33,19 @@
 #define HotKey        "Alt+Ctrl+H"
 #define HotKeyDisplay "Alt+Control+H"
 
+
+; ---- shared component detection -------------------------------------------
+; The kit answers, for each component: is it here, is it current, what should
+; the checkbox say, and should it be ticked. HomerScribe only has to say which
+; components it cares about and what each one is FOR.
+#include "C:\HomerDev\Inno\HomerComponents.iss"
+
 [Setup]
+; THE INSTALLER'S OWN LOG, which is a HomerDev requirement and was missing.
+; Inno writes it to %TEMP%; the [Code] section below copies it into
+; %LOCALAPPDATA%\HomerScribe\logs at the end, where every other Homer log
+; lives, so the folder can be zipped and sent.
+SetupLogging=yes
 AppId={{B4E27A19-6C08-4F3D-8A52-D9137E60C4BB}
 
 AppName={#AppName}
@@ -95,14 +107,24 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
 Uninstallable=yes
-UninstallDisplayIcon={app}\{#AppExeName}
+UninstallDisplayIcon={app}\exec\{#AppExeName}
 UninstallDisplayName={#AppName} {#AppVersion}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+; SHARED COMPONENTS ARE NOT SHIPPED HERE.
+;
+; ffmpeg, ffprobe, yt-dlp and exiftool used to be installer payload, which put
+; them inside this app's folder. That is the wrong home twice over: no other
+; Homer app can find them, and the next upgrade of THIS app replaces the folder
+; and destroys them. That is how Whisper went missing.
+;
+; Each is installed to its own default machine-wide directory by the scripts
+; below, and HomerScribe looks there. The DLLs further down are different: a
+; library the program links against belongs beside the executable.
+Source: "{#AppExeName}"; DestDir: "{app}\exec"; Flags: ignoreversion
 ; Every line below the program itself carries skipifsourcedoesntexist. Only
 ; HomerScribe.exe is genuinely required; a missing document or an empty
 ; context folder must not abort a build, and a wildcard matching nothing is a
@@ -114,25 +136,35 @@ Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ReadMe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 ; The complete guide and the hotkey summary. ReadMe.md is the short way in and
 ; points at both.
-Source: "HomerScribe.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Hotkeys.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "video_formats.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "History.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Camel_Type_C#.htm"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\Camel_Type_C#.md"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\captioned_videos.htm"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\captioned_videos.md"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\handover.htm"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\handover.md"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\science_playlist.htm"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\silent_films.htm"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\tv_shows.htm"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\w3c-perspectives.htm"; DestDir: "{app}\help"; Flags: ignoreversion
+Source: "help\HomerScribe.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Hotkeys.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\video_formats.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\History.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Developer.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Review.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Context.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Announce.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Developer.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Review.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Context.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Announce.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "HomerScribe.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Hotkeys.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "video_formats.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "History.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\HomerScribe.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Hotkeys.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\video_formats.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\History.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "License.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Developer.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Review.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Context.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Announce.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Developer.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Review.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Context.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Announce.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
 ; buildHomerScribe.cmd downloads them when they are missing, so normally they
@@ -140,57 +172,74 @@ Source: "Announce.htm"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesn
 ; HomerScribe then looks on the PATH instead. Installing them beside
 ; HomerScribe.exe is what makes the program work with nothing else set up,
 ; since its own folder is the first place it looks.
-Source: "ffmpeg.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "ffprobe.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "yt-dlp.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 ; ExifTool writes the descriptions into the pictures. A SINGLE FILE only --
 ; no "exiftool_files" folder is packaged, deliberately. See License.md and
 ; the ExifTool section of buildHomerScribe.cmd for why.
-Source: "exiftool.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "installExifTool.cmd"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "scripts\installExifTool.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion skipifsourcedoesntexist
 
-Source: "installOllama.cmd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "installModels.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\installOllama.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "scripts\installModels.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; Reads a page of print rather than describing a photograph. Optional.
-Source: "installDocumentModel.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\installDocumentModel.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; Reads a transcript to find advertisements. Only needed for Remove ads.
-Source: "installTextModel.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\installTextModel.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; Tesseract reads the words on a scanned page, fast and without inventing any.
-Source: "installTesseract.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\installTesseract.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; Pandoc writes the Word version. No Microsoft Office is involved.
-Source: "installPandoc.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\installPandoc.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; The page-break filter, without which a Word version shows "\pagebreak" as
 ; text instead of breaking the page. Pandoc has none of its own.
-Source: "pagebreak.lua"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\pagebreak.lua"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; PdfPig, which reads PDF files. Referenced rather than embedded, so it has to
 ; be installed beside the executable.
 ; PdfPig's seven assemblies.
-Source: "*PdfPig*.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "*PdfPig*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
 ; AND WHATEVER THEY DEPEND ON. Naming six by hand missed a seventh
 ; (Microsoft.Bcl.HashCode) and HomerScribe threw on the first PDF. The build
 ; copies whatever the packages declare, so the installer takes what is there
 ; rather than what somebody remembered.
-Source: "System.*.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Microsoft.*.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "HomerScribe.exe.config"; DestDir: "{app}"; Flags: ignoreversion
+Source: "System.*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "Microsoft.*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "HomerScribe.exe.config"; DestDir: "{app}\exec"; Flags: ignoreversion
 ; No Python is shipped and none is needed. HomerScribe reads a zip of page
 ; pictures; turning a PDF into those is a solved problem with many free tools,
 ; and carrying a PDF library to redo it would cost the single-file build.
-Source: "installWhisper.cmd"; DestDir: "{app}"; Flags: ignoreversion
+; homerInstall.cmd is the half every other script CALLS. Not shipping it
+; meant each one died at its first line, before it could even make a log
+; folder -- which is exactly the symptom: a Results box and no logs.
+Source: "scripts\checkConfig.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "scripts\getPdfPig.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "scripts\homerInstall.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "scripts\pdfPages.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
+; A standalone Whisper installer that depends on nothing else and checks
+; the files rather than the exit codes. Run it by hand when the ordinary
+; route has not worked.
+Source: "scripts\getWhisper.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "scripts\installWhisper.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "context\*.md"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 Source: "context\*.htm"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
 [Icons]
 ; WorkingDir is the user's Documents folder, so a run started from a shortcut
 ; writes its results somewhere writable by default.
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{userdocs}"
-Name: "{group}\{#AppName} documentation"; Filename: "{app}\ReadMe.htm"; Flags: createonlyiffileexists
+Name: "{group}\{#AppName}"; Filename: "{app}\exec\{#AppExeName}"; WorkingDir: "{userdocs}"
+Name: "{group}\{#AppName} documentation"; Filename: "{app}\help\ReadMe.htm"; Flags: createonlyiffileexists
 Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 ; Created without asking. The hotkey is mentioned on the launch checkbox at the
 ; end, which is where the user is looking when it matters.
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{userdocs}"; HotKey: "{#HotKey}"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\exec\{#AppExeName}"; WorkingDir: "{userdocs}"; HotKey: "{#HotKey}"
 
 [Run]
+; THE CONSOLE STAYS VISIBLE. An earlier attempt hid these windows, which was
+; the wrong reading of the pattern: the console is not noise to be suppressed,
+; it is where a person sees what is happening. It says, briefly and in plain
+; words, what was found and what was done. The DETAIL -- every command, exit
+; code and path -- goes to %LOCALAPPDATA%\HomerScribe\logs, where it can be
+; zipped and sent when something needs diagnosing.
+;
+; What is suppressed is only the waiting: HOMER_QUIET stops a script pausing
+; for a key, since the installer is driving it and nobody is watching for a
+; prompt.
 ; Post-install checkboxes shown on the final wizard page. What HomerScribe
 ; needs comes first, then what to do next. All four default to checked; any can
 ; be unchecked to skip.
@@ -208,61 +257,186 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "
 ; profile of whoever is signed in, and this installer is running elevated.
 
 FileName: "{cmd}"; \
-  Parameters: "/c """"{app}\installOllama.cmd"""""; \
+  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installOllama.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install Ollama and the vision model, for DESCRIBING video and the pictures in a PDF (about 6.5 GB; not needed for transcribing or for reading scanned text)"; \
-  Flags: postinstall skipifsilent runascurrentuser
+  Description: "{code:labelOllama}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantOllama
 
 FileName: "{cmd}"; \
-  Parameters: "/c """"{app}\installModels.cmd"""""; \
+  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installModels.cmd"""""; \
   WorkingDir: "{app}"; \
   Description: "Install the vision model only, for describing video and the pictures in a PDF (about 5.5 GB; tick this if Ollama is already installed)"; \
-  Flags: postinstall skipifsilent runascurrentuser unchecked
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked
 
 FileName: "{cmd}"; \
-  Parameters: "/c """"{app}\installTextModel.cmd"""""; \
+  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installTextModel.cmd"""""; \
   WorkingDir: "{app}"; \
   Description: "Install the reading model, for REMOVING ADS from podcasts (about 4.7 GB; only needed for that, and it finds five times as many ads as the picture model)"; \
-  Flags: postinstall skipifsilent runascurrentuser unchecked
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked
 
 FileName: "{cmd}"; \
-  Parameters: "/c """"{app}\installExifTool.cmd"""""; \
+  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installExifTool.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install ExifTool, to write DESCRIPTIONS INTO PHOTOGRAPHS (about 12 MB; only needed for describing a folder of pictures)"; \
-  Flags: postinstall skipifsilent runascurrentuser
+  Description: "{code:labelExifTool}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantExifTool
 
 FileName: "{cmd}"; \
-  Parameters: "/c """"{app}\installPandoc.cmd"""""; \
+  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installPandoc.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install Pandoc, to write the WORD version of a PDF (about 30 MB; free and open source, and no Microsoft Office is needed)"; \
-  Flags: postinstall skipifsilent runascurrentuser
+  Description: "{code:labelPandoc}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantPandoc
 
 FileName: "{cmd}"; \
-  Parameters: "/c """"{app}\installTesseract.cmd"""""; \
+  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installTesseract.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install Tesseract, for READING SCANNED PDFs quickly (about 60 MB; twenty-five times faster than the picture model and it cannot invent a word)"; \
-  Flags: postinstall skipifsilent runascurrentuser
+  Description: "{code:labelTesseract}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantTesseract
 
 FileName: "{cmd}"; \
-  Parameters: "/c """"{app}\installWhisper.cmd"""""; \
+  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installWhisper.cmd"""""; \
   WorkingDir: "{app}"; \
-  Description: "Install Whisper, for TRANSCRIBING speech and for placing descriptions well (about 500 MB)"; \
-  Flags: postinstall skipifsilent runascurrentuser
+  Description: "{code:labelWhisper}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantWhisper
 
-FileName: "{app}\{#AppExeName}"; \
+FileName: "{app}\exec\{#AppExeName}"; \
   WorkingDir: "{userdocs}"; \
   Description: "Launch {#AppName} now (desktop hotkey: {#HotKeyDisplay})"; \
   Flags: nowait postinstall skipifsilent
 
-FileName: "{app}\ReadMe.htm"; \
-  Description: "Read documentation for {#AppName}"; \
-  Flags: postinstall shellexec skipifsilent skipifdoesntexist
+FileName: "{app}\help\ReadMe.htm"; \
+  Description: "Open the user guide (F1 opens it inside {#AppName})"; \
+  Flags: postinstall shellexec nowait skipifsilent skipifdoesntexist runasoriginaluser unchecked
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\context"
 
-; The settings, the resume records and the working files, so nothing of
-; HomerScribe is left behind. Described films and scripts are never touched:
-; they live wherever the user chose to put them.
-Type: filesandordirs; Name: "{localappdata}\HomerScribe"
+; THIS LINE DESTROYED HIS WHISPER, and every reinstall did it again.
+;
+; installWhisper.cmd used to put Whisper in {localappdata}\HomerScribe\whisper.
+; Deleting the whole folder therefore deleted a 500 MB component the user had
+; installed deliberately -- on an UPGRADE as much as a removal, because an
+; upgrade runs the uninstaller first.
+;
+; The evidence was in his own logs all along: on 21 August Whisper ran from
+; C:\Users\Jamal\AppData\Local\HomerScribe\whisper\whisper-cli.exe, and by
+; September that folder held only the working files and the settings.
+;
+; So the named things go, and nothing else. A folder that may hold something a
+; user installed is never removed wholesale.
+Type: filesandordirs; Name: "{localappdata}\HomerScribe\work"
+Type: files; Name: "{localappdata}\HomerScribe\HomerScribe.inix"
+Type: files; Name: "{localappdata}\HomerScribe\HomerScribe.ini"
+Type: filesandordirs; Name: "{localappdata}\HomerScribe\logs"
 
+[Code]
+
+var
+  iOllama, iWhisper, iTesseract, iPandoc, iExifTool: Integer;
+
+procedure InitializeWizard();
+begin
+  (* name, winget ids (semicolon separated), an exe that answers --version,
+     a file that proves it, and three or four words on what it does.
+
+     Whisper and ExifTool have no winget package, so their exe and file do the
+     work. Ollama carries two ids because it registers differently depending on
+     how it was installed -- the very case that made HomerScribe offer to
+     install things he already had. *)
+  iOllama    := homerAdd('Ollama', 'Ollama.Ollama',
+                         'ollama', '{localappdata}\Programs\Ollama\ollama.exe',
+                         'describes video and pictures');
+  iWhisper   := homerAdd('Whisper', '',
+                         '"{pf}\Whisper\whisper-cli.exe"', '{pf}\Whisper\whisper-cli.exe',
+                         'transcribes speech');
+  iTesseract := homerAdd('Tesseract', 'UB-Mannheim.TesseractOCR',
+                         'tesseract', '{pf}\Tesseract-OCR\tesseract.exe',
+                         'reads scanned pages');
+  iPandoc    := homerAdd('Pandoc', 'JohnMacFarlane.Pandoc',
+                         'pandoc', '{pf}\Pandoc\pandoc.exe',
+                         'writes the Word version');
+  iExifTool  := homerAdd('ExifTool', 'OliverBetz.ExifTool;PhilHarvey.ExifTool',
+                         'exiftool', '{pf}\ExifTool\exiftool.exe',
+                         'writes descriptions into photographs');
+end;
+
+function labelWhisper(sParam: String): String;   begin Result := homerLabel(iWhisper); end;
+function labelTesseract(sParam: String): String; begin Result := homerLabel(iTesseract); end;
+function labelPandoc(sParam: String): String;    begin Result := homerLabel(iPandoc); end;
+function labelExifTool(sParam: String): String;  begin Result := homerLabel(iExifTool); end;
+function labelOllama(sParam: String): String;    begin Result := homerLabel(iOllama); end;
+
+function wantWhisper(): Boolean;   begin Result := homerWanted(iWhisper); end;
+function wantTesseract(): Boolean; begin Result := homerWanted(iTesseract); end;
+function wantPandoc(): Boolean;    begin Result := homerWanted(iPandoc); end;
+function wantExifTool(): Boolean;  begin Result := homerWanted(iExifTool); end;
+function wantOllama(): Boolean;    begin Result := homerWanted(iOllama); end;
+
+   HomerScribe had no [Code] section at all, which is why an installation ended
+   with no summary: the wizard closed and the only record of what had happened
+   was in a log nobody had been told about.
+
+   DbDo's rule is the one followed here: the box is built from what the
+   installation actually DID, so a component that was already present and needed
+   nothing is never mentioned. A box listing seven things every time teaches the
+   reader to ignore it.
+
+   It is not a checkbox on the finish page. It is not optional and it must run
+   last of all, so it is shown from code after every other step has finished. *)
+
+var
+  sActions: String;
+
+procedure addAction(sText: String);
+begin
+  if sText = '' then exit;
+  if sActions <> '' then sActions := sActions + #13#10;
+  sActions := sActions + '  ' + sText;
+end;
+
+procedure reportWhatHappened();
+(* Built from the shared component state, so the box says what IS true rather
+   than what was attempted -- and says it in the same words the checkbox used,
+   from the same probe. Two places telling different stories is worse than one
+   telling none. *)
+var
+  sBody: String;
+begin
+  addAction(homerSummaryLine(iWhisper,
+    'Speech cannot be transcribed until scripts\installWhisper.cmd is run.'));
+  addAction(homerSummaryLine(iTesseract,
+    'Scanned PDFs will be read by the picture model, which is much slower.'));
+  addAction(homerSummaryLine(iPandoc,
+    'A PDF will produce Markdown only, with no Word version.'));
+  addAction(homerSummaryLine(iExifTool,
+    'Descriptions cannot be written into photographs.'));
+  addAction(homerSummaryLine(iOllama,
+    'Video and pictures cannot be described.'));
+
+  sBody := 'HomerScribe {#AppVersion} is installed.' + #13#10 + #13#10
+         + sActions + #13#10 + #13#10
+         + 'Logs are kept in ' + ExpandConstant('{localappdata}\{#AppName}\logs') + '.';
+  MsgBox(sBody, mbInformation, MB_OK);
+end;
+
+procedure keepTheSetupLog();
+(* Inno's own log lands in %TEMP% under a name nobody would guess. It is copied
+   to the Homer logs folder so it sits beside the runtime logs and the install
+   scripts' logs -- one folder to zip when something needs diagnosing. *)
+var
+  sLogs, sTo: String;
+begin
+  sLogs := ExpandConstant('{localappdata}\{#AppName}\logs');
+  if not DirExists(sLogs) then ForceDirectories(sLogs);
+  sTo := sLogs + '\{#AppName}-setup-' + GetDateTimeString('yyyymmdd-hhnnss', #0, #0) + '.log';
+  if not FileCopy(ExpandConstant('{log}'), sTo, False) then
+    MsgBox('The setup log could not be copied to ' + sLogs + '.', mbInformation, MB_OK);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssDone then
+  begin
+    keepTheSetupLog();
+    reportWhatHappened();
+  end;
+end;
