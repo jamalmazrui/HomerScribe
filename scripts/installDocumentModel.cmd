@@ -16,10 +16,10 @@ if not exist "%~dp0homerInstall.cmd" (
   echo That file is part of HomerScribe. Reinstall, or copy it from the
   echo HomerScribe zip into this folder, and run this again.
   echo(
-  pause
+  if not defined noPause pause
   exit /b 1
 )
-call "%~dp0homerInstall.cmd" setup "%~f0"
+call "%~dp0homerInstall.cmd" setup "%~f0" %*
 
 
 
@@ -119,7 +119,7 @@ if errorlevel 1 (
   echo %model% did NOT install. The command reported success and the model is
   echo not in the list. The log has the detail: %log%
   call "%~dp0homerInstall.cmd" log "FAILED: ollama reported success but %model% is not listed"
-  if not defined noPause if not defined HOMER_QUIET pause
+  if not defined noPause pause
   exit /b 1
 )
 echo %model% is installed. HomerScribe will use it for any picture that is

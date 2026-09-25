@@ -16,128 +16,59 @@ if not exist "%~dp0homerInstall.cmd" (
   echo That file is part of HomerScribe. Reinstall, or copy it from the
   echo HomerScribe zip into this folder, and run this again.
   echo(
-  pause
+  if not defined noPause pause
   exit /b 1
 )
-call "%~dp0homerInstall.cmd" setup "%~f0"
-
-
-
-
-:afterLogSetup
-rem installExifTool.cmd -- put a single-file ExifTool where HomerScribe will
-rem find it.
+call "%~dp0homerInstall.cmd" setup "%~f0" %*
+rem ---- WHY THIS USES WINGET NOW -------------------------------------------
 rem
-rem ONE FILE, AND ONLY ONE FILE. exiftool.exe must be a self-contained binary
-rem with nothing beside it: no "exiftool_files" folder, no Perl DLLs.
+rem The single-file exiftool.exe is DEPRECATED. Phil Harvey stopped releasing
+rem it in July 2024, at about version 12.88, so a single file is frozen at
+rem whatever it was then -- missing every camera and format added since.
 rem
-rem THIS SCRIPT FETCHES NOTHING, and that is deliberate rather than an
-rem oversight. Nothing currently published is a single file:
+rem It was also the SLOWER arrangement, not the tidier one. The single file was
+rem a self-extracting archive that unpacked its whole Perl runtime into a
+rem temporary folder on EVERY run. That is why antivirus software kept flagging
+rem it, and why the current packaging measurably halved processing time for
+rem people doing many files.
 rem
-rem   exiftool.org / SourceForge 13.59  a small launcher PLUS an
-rem                                     "exiftool_files" folder holding Perl
-rem   winget OliverBetz.ExifTool        the same thing, installed
-rem   Image-ExifTool-<ver>.tar.gz       Perl source, needs Perl installed
+rem The exiftool_files folder beside the executable is therefore not clutter:
+rem it is the unpacked runtime, kept where it belongs instead of being rebuilt
+rem every time the program starts.
 rem
-rem The one-file form is the OLD exiftool.org format, a packed archive, and it
-rem was replaced by the launcher deliberately: unpacking a packed archive on
-rem every invocation is slow, and HomerScribe runs ExifTool once per picture.
-rem
-rem None of this costs anything. HomerScribe carries the definitions of the two
-rem IPTC accessibility properties itself and hands them to ExifTool with
-rem -config, so even an old single-file copy writes every field.
-rem
-rem Takes no arguments. Writes a detailed log beside this script.
+rem Oliver Betz packages that as a proper installer, and winget carries it.
+rem --scope machine puts it where every Homer app can share one copy.
 
-set "here=%~dp0"
-if "%here:~-1%"=="\" set "here=%here:~0,-1%"
-rem the log path is set above
-set "target=%ProgramFiles%\ExifTool"
-
-echo ExifTool setup started %date% %time%>> "%log%"
-echo Script: %~f0>> "%log%"
-echo Folder: %here%>> "%log%"
-echo Command line: %0 %*>> "%log%"
-echo Target: %target%>> "%log%"
-echo Windows: %OS%, processor %PROCESSOR_ARCHITECTURE%>> "%log%"
-echo Requirement: a single-file exiftool.exe, with no exiftool_files folder>> "%log%"
-echo(>> "%log%"
-
-echo Looking for a single-file ExifTool.
-echo The log is %log%
+echo Installing ExifTool, so descriptions can be written into photographs.
 echo(
 
-rem ---- already in place and single? --------------------------------------
-set "haveExif="
-call :trySingle "%target%"
-if defined haveExif (
-  echo ExifTool %exifVer% is already in place at %target%
-  echo Already in place at %target%, version %exifVer%>> "%log%"
-  goto :done
+where winget >nul 2>&1
+if errorlevel 1 (
+  echo winget was not found, so ExifTool cannot be fetched automatically.
+  echo HomerScribe will still describe pictures; it just cannot write the
+  echo descriptions into them.
+  call "%~dp0homerInstall.cmd" log "FAILED: winget is not on this machine"
+  if not defined noPause pause
+  exit /b 1
 )
 
-rem ---- anywhere else on this machine? ------------------------------------
-call :trySingle "%here%"
-call :trySingle "C:\HomerScribe"
-call :trySingle "%ProgramFiles%\HomerScribe"
-call :trySingle "%LOCALAPPDATA%\Programs\HomerScribe"
-if not defined haveExif goto :nothingToFetch
+winget install --id OliverBetz.ExifTool --exact --scope machine ^
+  --accept-package-agreements --accept-source-agreements >> "%log%" 2>&1
 
-echo Copying the single-file ExifTool %exifVer% from %haveExif%
-echo Copying from %haveExif%, version %exifVer%>> "%log%"
-if not exist "%target%" mkdir "%target%" >nul 2>&1
-copy /y "%haveExif%\exiftool.exe" "%target%\exiftool.exe" >nul 2>&1
-set "haveExif="
-call :trySingle "%target%"
-if not defined haveExif goto :nothingToFetch
+rem THE FILE, NOT THE EXIT CODE.
+set "found="
+for /f "delims=" %%E in ('where exiftool.exe 2^>nul') do if not defined found set "found=%%E"
+if not defined found if exist "%ProgramFiles%\ExifTool\exiftool.exe" set "found=%ProgramFiles%\ExifTool\exiftool.exe"
+if not defined found (
+  echo(
+  echo ExifTool did NOT install. The log has what winget said: %log%
+  call "%~dp0homerInstall.cmd" log "FAILED: exiftool.exe not found after winget"
+  if not defined noPause pause
+  exit /b 1
+)
+echo   ExifTool is at %found%
+call "%~dp0homerInstall.cmd" log "OK: exiftool.exe at %found%"
 echo(
-echo ExifTool %exifVer% is installed at %target%
-echo HomerScribe will find it there and write descriptions into your pictures.
-echo Installed to %target%, version %exifVer%>> "%log%"
-goto :done
-
-:nothingToFetch
-echo Nothing was fetched: no single-file build is published.>> "%log%"
-echo(
-echo No single-file exiftool.exe was found, and none can be fetched.
-echo(
-echo HomerScribe wants ONE binary, with no "exiftool_files" folder beside it.
-echo Nothing currently published is in that form: the downloads from
-echo exiftool.org and SourceForge, and the winget package
-echo OliverBetz.ExifTool, are all a small launcher plus a folder of Perl.
-echo(
-echo If you have a self-contained exiftool.exe, copy it into either of:
-echo   %target%
-echo   the HomerScribe program folder
-echo and it will be used.
-echo(
-echo Without one, pictures are still described and still renamed. Only the
-echo writing of descriptions into the files themselves is skipped.
-echo ExifTool setup finished %date% %time%>> "%log%"
-exit /b 1
-
-:done
-echo ExifTool setup finished %date% %time%>> "%log%"
+echo ExifTool is ready.
+if not defined noPause pause
 exit /b 0
-
-rem ---- is there a single-file exiftool.exe in this folder? ----------------
-rem Sets haveExif and exifVer if the folder holds an exiftool.exe that RUNS
-rem and has no "exiftool_files" beside it. A folder beside the exe
-rem disqualifies it whatever its version.
-:trySingle
-if defined haveExif goto :eof
-if "%~1"=="" goto :eof
-if not exist "%~1\exiftool.exe" goto :eof
-if exist "%~1\exiftool_files" (
-  echo Passing over %~1: it needs an exiftool_files folder beside it.>> "%log%"
-  goto :eof
-)
-set "exifVer="
-for /f "usebackq delims=" %%v in (`"%~1\exiftool.exe" -ver 2^>nul`) do set "exifVer=%%v"
-if not defined exifVer (
-  echo Passing over %~1: exiftool.exe would not run.>> "%log%"
-  goto :eof
-)
-set "haveExif=%~1"
-echo Found a single-file ExifTool at %~1, version %exifVer%>> "%log%"
-goto :eof

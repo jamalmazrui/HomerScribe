@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 function Say($m) { Write-Output ("  [pdfpig] " + $m) }
 
 # PdfPig's assembly is UglyToad.PdfPig.dll, and the package is seven assemblies
@@ -79,6 +79,13 @@ $redirects    </assemblyBinding>
 </configuration>
 "@
   Set-Content -Path (Join-Path $PWD 'HomerScribe.exe.config') -Value $config -Encoding UTF8
+
+  # THE BUILD READS pdfpig.name TO LEARN WHICH DLL TO REFERENCE, and this
+  # script never wrote it -- so the build always concluded PdfPig could not be
+  # found, however many assemblies were sitting right there. The file holds the
+  # main assembly's name and nothing else.
+  Set-Content -Path (Join-Path $PWD 'pdfpig.name') -Value $mainName -Encoding ASCII -NoNewline
+  Write-Host ("  [pdfpig] pdfpig.name written: " + $mainName)
   Say 'HomerScribe.exe.config written from the versions on disk'
 }
 

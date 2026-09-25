@@ -22,6 +22,97 @@ running my work. The version number is the one thing that ties a log to a
 change, and I had made it fiction.
 
 
+
+
+
+### 25 September: a BOM where it cannot go, and the HomerDev logs
+
+**The build refused a kit of exactly the version it asked for.** The log
+said "needs HomerDev 1.28.0 or later, and the kit is 1.28.0" -- with three
+invisible bytes in front of the second number. The evening before, every kit
+file had been brought to UTF-8 with a byte order mark, version.txt included.
+But version.txt is read by cmd's `set /p`, which cannot strip a mark, so the
+mark went into the version compare and broke it. HomerDev's own build says
+so: "version.txt: should not have a byte order mark". The mark is removed,
+and the build now reads the kit version through PowerShell, which drops a
+mark and trims, so this cannot recur however the file is saved.
+
+The rule, stated once: a file that cmd.exe reads -- a .cmd, a .bat, or a
+value file read with `set /p` -- takes no byte order mark. Everything else
+does.
+
+**The kit files were in the wrong folders.** HomerComponents.iss and
+homerInstall.cmd had been delivered under Inno\\ and Scripts\\, and two documents
+under Docs\\ -- folders HomerDev never had. Kit 1.29.0 puts them in Templates\\
+and help\\, and the installer now includes HomerComponents.iss from Templates.
+The build requires kit 1.29.0.
+
+**HomerDev's build logs did not follow the convention.** buildHomerDev.py
+wrote a fixed buildHomerDev.log at the kit root, and the four sample builds
+wrote build<App>.log beside themselves -- each run overwriting the one
+before. Tools\fixHomerDevLogs.cmd moves them: HomerDev-build-yyyyMMdd-HHmmss.log
+in logs\, and <App>-build-yyyyMMdd-HHmmss.log in each sample's own logs\.
+
+They are replacement files in HomerDev.zip, and the kit's own move list
+removes the old logs and the old folders on the next build -- no patch script,
+no hand deletions. Tested on a copy of the kit laid out as the machine was:
+ten files and folders removed, the log in logs\\, 0 problems in shipped files.
+
+### The regression, found in the first install log that ever got written
+
+    No Windows build was listed in the latest release
+
+whisper.cpp changed its release process on 20 August 2026. A version tag such
+as v1.9.4 now carries only the two source archives; the compiled binaries are
+published under nightly tags such as b5130, marked pre-release. GitHub's
+`/releases/latest` returns the newest release that is NOT a pre-release -- so
+it returned v1.9.4, whose two assets hold no Windows build.
+
+The download now reads the release LIST, newest first, and takes the first
+release carrying a Windows x64 CPU build under either naming scheme
+(`whisper-bin-win-<variant>-x64.zip` or the older `whisper-bin-x64.zip`),
+skipping CUDA, Vulkan and arm builds. If the API cannot be read at all, a
+pinned release known to carry `whisper-bin-x64.zip` is fetched directly.
+
+### Three more from the same logs
+
+- **installOllama did nothing on "Update".** It found Ollama, said "already
+  installed", and exited in a second -- which is the too-fast update he
+  noticed. It now runs `winget upgrade` when Ollama is present.
+- **Reinstall boxes were hidden, not unticked.** In Inno, Check: controls
+  visibility. One entry per component gated on "wanted" made every present
+  component vanish from the page, models included. Each component now has two
+  entries: wanted and ticked, or current and unticked.
+- **Kit files broke the encoding standard.** Docs, homerTidy.py and
+  homerTidy.cmd lacked a BOM or CRLF endings; HomerDev's own build reported
+  it. All brought to UTF-8 with BOM and CRLF, .cmd files CRLF without BOM.
+
+### The regression that stopped transcription, found by tracing the whole path
+
+`whisperModelPath()` looked for `ggml-small.bin` in two places: the old
+per-user folder, and beside HomerScribe.exe. **Never in C:\Program Files\Whisper**,
+where installWhisper.cmd has put it since the machine-wide move. So the program
+was found there and the model was not, and every run ended with "ggml-small.bin
+was not found" -- which his logs said all along.
+
+The model is now looked for BESIDE whisper-cli.exe first, wherever findTool
+found it, then in every shared-tool folder, then the old places.
+
+### Three more, from reading every line rather than patching
+
+- **The install logs went to the wrong folder.** homerInstall.cmd worked the app
+  name out with `~nx` of a path ending in `..`, which can yield `..` itself, so
+  the log landed in `%LOCALAPPDATA%\..\logs`. It now resolves the parent with
+  `~f` first, and needs no delayed expansion -- five of the eight callers never
+  enabled it.
+- **The Whisper downloads did not log.** Both PowerShell blocks now append to
+  the log, record which release asset they chose, and each failure path writes
+  a line saying so.
+- **I briefly added `setlocal` to homerInstall.cmd** while fixing the above,
+  which would have discarded every variable it exists to pass back. Caught and
+  removed in the same turn; recorded because it is the kind of thing that
+  survives when only the console says "ok".
+
 ### The installer writes its own log now
 
 He asked for one, and it is a HomerDev requirement. `SetupLogging=yes` makes

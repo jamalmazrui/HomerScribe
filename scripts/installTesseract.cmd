@@ -16,10 +16,10 @@ if not exist "%~dp0homerInstall.cmd" (
   echo That file is part of HomerScribe. Reinstall, or copy it from the
   echo HomerScribe zip into this folder, and run this again.
   echo(
-  pause
+  if not defined noPause pause
   exit /b 1
 )
-call "%~dp0homerInstall.cmd" setup "%~f0"
+call "%~dp0homerInstall.cmd" setup "%~f0" %*
 
 
 

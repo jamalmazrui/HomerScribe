@@ -1758,6 +1758,19 @@ namespace Homer
         static List<string> sharedToolFolders()
         {
             List<string> lWhere = new List<string>();
+
+            // BESIDE THE PROGRAM FIRST. The single-file ExifTool is carried in
+            // the installer and lands in exec\ next to HomerScribe.exe, so a
+            // tool shipped with the program must be found before any search of
+            // the machine -- otherwise shipping it changes nothing.
+            try
+            {
+                string sHere = Path.GetDirectoryName(
+                    System.Reflection.Assembly.GetExecutingAssembly().Location);
+                if (sHere != null && sHere != "") lWhere.Add(sHere);
+            }
+            catch { }
+
             string sFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
             string sFiles86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
             foreach (string sRoot in new string[] { sFiles, sFiles86 })
@@ -2281,6 +2294,27 @@ namespace Homer
         static string whisperModelPath()
         {
             string sName = "ggml-" + text("whisper-model") + ".bin";
+
+            // BESIDE whisper-cli.exe FIRST. installWhisper.cmd puts the program
+            // and its model in the same folder, machine-wide, and that folder
+            // is wherever findTool found the program -- C:\Program Files\Whisper
+            // today. This function used to look only in the old per-user place
+            // and beside HomerScribe.exe, so after the machine-wide move the
+            // program was found and the model was not, and every transcription
+            // failed with "ggml-small.bin was not found".
+            string sProgram = whisperProgram();
+            if (sProgram != "")
+            {
+                string sWith = Path.Combine(Path.GetDirectoryName(sProgram), sName);
+                if (File.Exists(sWith)) return sWith;
+            }
+
+            // Every folder a shared tool may live in, then the old places.
+            foreach (string sRoot in sharedToolFolders())
+            {
+                string sThere = Path.Combine(sRoot, sName);
+                if (File.Exists(sThere)) return sThere;
+            }
             string sMine = Path.Combine(Path.Combine(appDataFolder(), "whisper"), sName);
             if (File.Exists(sMine)) return sMine;
             string sBeside = Path.Combine(exeFolder(), sName);

@@ -31,10 +31,10 @@ if not exist "%~dp0homerInstall.cmd" (
   echo That file is part of HomerScribe. Reinstall, or copy it from the
   echo HomerScribe zip into this folder, and run this again.
   echo(
-  pause
+  if not defined noPause pause
   exit /b 1
 )
-call "%~dp0homerInstall.cmd" setup "%~f0"
+call "%~dp0homerInstall.cmd" setup "%~f0" %*
 
 
 
@@ -70,18 +70,31 @@ echo Installing the vision model next.
 echo(
 if exist "%~dp0installModels.cmd" call "%~dp0installModels.cmd" noPause
 echo(
-if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 0
 
 :already
+rem IT IS HERE, SO THIS IS AN UPDATE OR A REINSTALL, NOT A NO-OP. The finish
+rem page offered "Update Ollama from X to Y" and this script answered "already
+rem installed" and exited in a second -- which is exactly what he noticed. A
+rem winget upgrade is what an Update box means; when nothing is newer, winget
+rem says so and returns at once, and that is the honest outcome.
 echo(
-echo Ollama is already installed.
+echo Ollama is installed. Checking for a newer version.
+winget upgrade --id Ollama.Ollama --exact --silent --accept-source-agreements --accept-package-agreements >> "%log%" 2>&1
+set "iUp=%ERRORLEVEL%"
+call "%~dp0homerInstall.cmd" log "winget upgrade exit code %iUp%"
+if "%iUp%"=="0" echo Ollama was updated.
+if not "%iUp%"=="0" echo Ollama is already the newest winget offers.
+call :findOllama
+if not defined ollamaExe goto :installedButLost
+echo Ollama is at !ollamaExe!
 "!ollamaExe!" --version
 echo(
 echo Next, install the vision model with installModels.cmd.
 echo(
-if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 0
 
@@ -91,7 +104,7 @@ echo Ollama was installed, but this window cannot see it yet, which is normal:
 echo a console keeps the PATH it started with. Open a NEW command window, or
 echo run installModels.cmd from the Start menu folder, to install the model.
 echo(
-if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 0
 
@@ -100,7 +113,7 @@ echo(
 echo Ollama could not be installed automatically.
 echo Download it instead from https://ollama.com/download
 echo(
-if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 1
 

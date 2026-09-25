@@ -34,11 +34,6 @@
 #define HotKeyDisplay "Alt+Control+H"
 
 
-; ---- shared component detection -------------------------------------------
-; The kit answers, for each component: is it here, is it current, what should
-; the checkbox say, and should it be ticked. HomerScribe only has to say which
-; components it cares about and what each one is FOR.
-#include "C:\HomerDev\Inno\HomerComponents.iss"
 
 [Setup]
 ; THE INSTALLER'S OWN LOG, which is a HomerDev requirement and was missing.
@@ -177,6 +172,18 @@ Source: "help\Announce.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifs
 ; the ExifTool section of buildHomerScribe.cmd for why.
 Source: "scripts\installExifTool.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion skipifsourcedoesntexist
 
+; AND THE BINARY ITSELF, from exec\, which he put there by hand.
+;
+; ExifTool's current packages are Perl-based and need an exiftool_files folder
+; of hundreds of files beside the executable. The SINGLE-FILE build does
+; everything HomerScribe asks of it -- reading and writing the description and
+; keyword tags -- so that is the one carried, and it is carried rather than
+; fetched because no current download offers it on its own.
+;
+; skipifsourcedoesntexist: a developer without the file can still build; the
+; program then falls back to looking for ExifTool on the machine.
+Source: "exec\exiftool.exe"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
+
 Source: "scripts\installOllama.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "scripts\installModels.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; Reads a page of print rather than describing a photograph. Optional.
@@ -230,6 +237,25 @@ Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\exec\{#AppExeName}"; WorkingDir: "{userdocs}"; HotKey: "{#HotKey}"
 
 [Run]
+; TWO ENTRIES PER COMPONENT, and why.
+;
+; In Inno, Check: decides whether an entry is SHOWN, not whether it is ticked.
+; With one entry per component gated on "wanted", every component already on
+; the machine simply vanished from the finish page -- which is why no Reinstall
+; boxes and no model boxes appeared on his run. DbDo had three entries per
+; component for exactly this reason, and I collapsed them to one.
+;
+; So each component has two entries with the same label function: one shown
+; when it is wanted (missing or stale), ticked; one shown when it is current,
+; unticked. The label function says Install, Update or Reinstall as the case
+; is, so the reader sees one box per component with the right verb and the
+; right default.
+; cmd NEEDS /s WITH THE DOUBLED QUOTES. Without it, cmd took
+; ""C:\Program Files\...\installWhisper.cmd"" apart at the spaces and gave up:
+; every one of these exited with code 1 in a tenth of a second, having run
+; nothing, while the finish page reported them as done. With /s cmd strips the
+; outermost pair and runs what is left verbatim, which is the whole point of
+; writing the path that way. DbDo learned this in its 1.0.168.
 ; THE CONSOLE STAYS VISIBLE. An earlier attempt hid these windows, which was
 ; the wrong reading of the pattern: the console is not noise to be suppressed,
 ; it is where a person sees what is happening. It says, briefly and in plain
@@ -256,52 +282,99 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\exec\{#AppExeName}"; WorkingD
 ; runascurrentuser matters -- winget and ollama install per-user, into the
 ; profile of whoever is signed in, and this installer is running elevated.
 
-FileName: "{cmd}"; \
-  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installOllama.cmd"""""; \
-  WorkingDir: "{app}"; \
+FileName: "{app}\scripts\installOllama.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
   Description: "{code:labelOllama}"; \
   Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantOllama
+FileName: "{app}\scripts\installOllama.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelOllama}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantOllama
 
-FileName: "{cmd}"; \
-  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installModels.cmd"""""; \
-  WorkingDir: "{app}"; \
-  Description: "Install the vision model only, for describing video and the pictures in a PDF (about 5.5 GB; tick this if Ollama is already installed)"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked
+FileName: "{app}\scripts\installModels.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelVisionModel}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantVisionModel
+FileName: "{app}\scripts\installModels.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelVisionModel}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantVisionModel
 
-FileName: "{cmd}"; \
-  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installTextModel.cmd"""""; \
-  WorkingDir: "{app}"; \
-  Description: "Install the reading model, for REMOVING ADS from podcasts (about 4.7 GB; only needed for that, and it finds five times as many ads as the picture model)"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked
+FileName: "{app}\scripts\installTextModel.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelTextModel}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantTextModel
+FileName: "{app}\scripts\installTextModel.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelTextModel}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantTextModel
 
-FileName: "{cmd}"; \
-  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installExifTool.cmd"""""; \
-  WorkingDir: "{app}"; \
+FileName: "{app}\scripts\installExifTool.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
   Description: "{code:labelExifTool}"; \
   Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantExifTool
+FileName: "{app}\scripts\installExifTool.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelExifTool}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantExifTool
 
-FileName: "{cmd}"; \
-  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installPandoc.cmd"""""; \
-  WorkingDir: "{app}"; \
+FileName: "{app}\scripts\installPandoc.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
   Description: "{code:labelPandoc}"; \
   Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantPandoc
+FileName: "{app}\scripts\installPandoc.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelPandoc}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantPandoc
 
-FileName: "{cmd}"; \
-  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installTesseract.cmd"""""; \
-  WorkingDir: "{app}"; \
+FileName: "{app}\scripts\installTesseract.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
   Description: "{code:labelTesseract}"; \
   Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantTesseract
+FileName: "{app}\scripts\installTesseract.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelTesseract}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantTesseract
 
-FileName: "{cmd}"; \
-  Parameters: "/c set HOMER_QUIET=1 && """"{app}\scripts\installWhisper.cmd"""""; \
-  WorkingDir: "{app}"; \
+FileName: "{app}\scripts\installWhisper.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
   Description: "{code:labelWhisper}"; \
   Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantWhisper
+FileName: "{app}\scripts\installWhisper.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelWhisper}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantWhisper
 
-FileName: "{app}\exec\{#AppExeName}"; \
-  WorkingDir: "{userdocs}"; \
+; THE LAUNCH IS RECORDED HERE AND HAPPENS AFTER THE RESULTS BOX.
+;
+; Starting the program from this entry puts its window on top of a box the user
+; has not read yet -- and for a screen reader user that is worse than untidy:
+; the new window takes focus, the reader begins announcing it, and the summary
+; of what the installer just did is buried behind it.
+;
+; Inno runs postinstall entries BEFORE CurStepChanged(ssDone), so no ordering of
+; the entries can fix this. The entry therefore leaves a marker, and the Results
+; box starts the program once it has been closed. The checkbox reads the same
+; either way. DbDo has worked this way since its 1.0.145.
+FileName: "{cmd}"; \
+  Parameters: "/c echo launch > ""{localappdata}\{#AppName}\logs\{#AppName}_launch.flag"""; \
+  WorkingDir: "{app}\exec"; \
   Description: "Launch {#AppName} now (desktop hotkey: {#HotKeyDisplay})"; \
-  Flags: nowait postinstall skipifsilent
+  Flags: postinstall skipifsilent runhidden runasoriginaluser
 
 FileName: "{app}\help\ReadMe.htm"; \
   Description: "Open the user guide (F1 opens it inside {#AppName})"; \
@@ -329,6 +402,12 @@ Type: files; Name: "{localappdata}\HomerScribe\HomerScribe.ini"
 Type: filesandordirs; Name: "{localappdata}\HomerScribe\logs"
 
 [Code]
+// ---- shared component detection -------------------------------------------
+// INCLUDED FROM INSIDE [Code], not before it. The kit file carries no section
+// header of its own, so these definitions join this section rather than
+// starting a competing one.
+#include "C:\HomerDev\Templates\HomerComponents.iss"
+
 
 var
   iOllama, iWhisper, iTesseract, iPandoc, iExifTool: Integer;
@@ -344,19 +423,19 @@ begin
      install things he already had. *)
   iOllama    := homerAdd('Ollama', 'Ollama.Ollama',
                          'ollama', '{localappdata}\Programs\Ollama\ollama.exe',
-                         'describes video and pictures');
+                         'describes video and pictures', 'Ollama');
   iWhisper   := homerAdd('Whisper', '',
                          '"{pf}\Whisper\whisper-cli.exe"', '{pf}\Whisper\whisper-cli.exe',
-                         'transcribes speech');
+                         'transcribes speech', '');
   iTesseract := homerAdd('Tesseract', 'UB-Mannheim.TesseractOCR',
                          'tesseract', '{pf}\Tesseract-OCR\tesseract.exe',
-                         'reads scanned pages');
+                         'reads scanned pages', 'Tesseract-OCR');
   iPandoc    := homerAdd('Pandoc', 'JohnMacFarlane.Pandoc',
                          'pandoc', '{pf}\Pandoc\pandoc.exe',
-                         'writes the Word version');
+                         'writes the Word version', 'Pandoc');
   iExifTool  := homerAdd('ExifTool', 'OliverBetz.ExifTool;PhilHarvey.ExifTool',
                          'exiftool', '{pf}\ExifTool\exiftool.exe',
-                         'writes descriptions into photographs');
+                         'writes descriptions into photographs', 'ExifTool');
 end;
 
 function labelWhisper(sParam: String): String;   begin Result := homerLabel(iWhisper); end;
@@ -371,6 +450,15 @@ function wantPandoc(): Boolean;    begin Result := homerWanted(iPandoc); end;
 function wantExifTool(): Boolean;  begin Result := homerWanted(iExifTool); end;
 function wantOllama(): Boolean;    begin Result := homerWanted(iOllama); end;
 
+// The two models are not components in the table: they live inside Ollama.
+function labelVisionModel(sParam: String): String;
+begin Result := homerModelLabel('qwen2.5vl:7b', 'describes video and pictures', 'about 5.5 GB'); end;
+function labelTextModel(sParam: String): String;
+begin Result := homerModelLabel('qwen2.5:7b', 'removes advertisements', 'about 4.7 GB'); end;
+function wantVisionModel(): Boolean; begin Result := homerModelWanted('qwen2.5vl:7b'); end;
+function wantTextModel(): Boolean;   begin Result := homerModelWanted('qwen2.5:7b'); end;
+
+(* THE RESULTS BOX.
    HomerScribe had no [Code] section at all, which is why an installation ended
    with no summary: the wizard closed and the only record of what had happened
    was in a log nobody had been told about.
@@ -391,6 +479,28 @@ begin
   if sText = '' then exit;
   if sActions <> '' then sActions := sActions + #13#10;
   sActions := sActions + '  ' + sText;
+end;
+
+procedure startIfAsked();
+(* Starts the program if the finish page asked for it, and removes the marker
+   so a later run does not start it again.
+
+   runasoriginaluser on the marker entry matters: the installer is elevated, and
+   a program started from it would run as administrator and write its settings
+   into the wrong profile. *)
+var
+  sFlag: String;
+  iResult: Integer;
+begin
+  sFlag := ExpandConstant('{localappdata}\{#AppName}\logs\{#AppName}_launch.flag');
+  if not FileExists(sFlag) then exit;
+  DeleteFile(sFlag);
+  (* TWO pairs of quotes, not one. cmd /s strips the outermost pair and runs
+     what is left verbatim, so with one pair a path under Program Files arrives
+     unquoted and cmd tries to run "C:\Program". *)
+  Exec(ExpandConstant('{cmd}'),
+       '/s /c ""' + ExpandConstant('{app}\exec\{#AppExeName}') + '""',
+       ExpandConstant('{userdocs}'), SW_SHOW, ewNoWait, iResult);
 end;
 
 procedure reportWhatHappened();
@@ -416,6 +526,9 @@ begin
          + sActions + #13#10 + #13#10
          + 'Logs are kept in ' + ExpandConstant('{localappdata}\{#AppName}\logs') + '.';
   MsgBox(sBody, mbInformation, MB_OK);
+
+  (* THE BOX HAS BEEN READ AND CLOSED. Only now does the program start. *)
+  startIfAsked();
 end;
 
 procedure keepTheSetupLog();

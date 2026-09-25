@@ -43,7 +43,20 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 set "app=HomerScribe"
-set "log=%CD%\buildHomerScribe.log"
+rem THE LOG GOES IN logs\, WITH A TIMESTAMP. A fixed name at the project root
+rem overwrites the build before it -- which is the one you want when a build
+rem has failed twice. Homer convention: <App>-<task>-yyyyMMdd-HHmmss.log, one
+rem per run, so an alphabetical sort is a chronological one.
+set "sLogDir=%CD%\logs"
+if not exist "%sLogDir%" mkdir "%sLogDir%" >nul 2>&1
+rem WMIC IS GONE. Windows 11 removed it, so this fell straight through to the
+rem fallback and every log was called ...-00000000-000000.log -- one name, so
+rem each build overwrote the last, which is exactly what the timestamp was for.
+rem PowerShell's Get-Date is present on every supported Windows.
+for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss" 2^>nul') do set "sNow=%%T"
+if not defined sNow for /f "tokens=2 delims==" %%T in ('wmic os get localdatetime /value 2^>nul') do set "sNow=%%T-"
+if not defined sNow set "sNow=unknown-time"
+set "log=%sLogDir%\HomerScribe-build-%sNow%.log"
 echo %app% build started %DATE% %TIME%> "%log%"
 echo Script: %~f0>> "%log%"
 echo Folder: %CD%>> "%log%"
@@ -289,51 +302,26 @@ rem
 rem So: use a single-file copy if one is here, say which and how old, and
 rem never fetch or keep the folder kind.
 
-set "exifWant=12.41"
-set "exifSingle="
-
-rem Is the copy in the build folder a single file that runs?
-if not exist "exiftool.exe" goto :exifToolFind
-if exist "exiftool_files" goto :exifToolNotSingle
-call :exifToolOldEnough "exiftool.exe"
-if defined exifVer set "exifSingle=%CD%"
-if defined exifSingle goto :exifToolDone
-
-:exifToolNotSingle
-if exist "exiftool_files" (
-  echo Removing exiftool_files: only a single-file ExifTool is wanted here.>> "%log%"
-  rmdir /s /q "exiftool_files" >nul 2>&1
+rem ---- ExifTool ------------------------------------------------------
+rem THE SINGLE-FILE BUILD IS DEPRECATED. Phil Harvey stopped releasing it in
+rem July 2024 (about 12.88). The current packaging keeps its Perl runtime in an
+rem exiftool_files folder beside the executable, which is faster and stops
+rem antivirus flagging it. So this build does not hunt for a single file any
+rem more: the INSTALLER offers ExifTool through
+rem   winget install --id OliverBetz.ExifTool --scope machine
+rem and the program finds it in %ProgramFiles%\ExifTool.
+rem
+rem A single-file copy placed in exec\ by hand is still honoured, as a
+rem fallback, and shipped by the installer from there.
+if exist "exec\exiftool.exe" (
+  echo exiftool.exe is present in exec\, placed there by hand>> "%log%"
+  echo exiftool.exe is present, from exec\
+  goto :exifToolDone
 )
-
-:exifToolFind
-rem Look for a single-file copy elsewhere on this machine. A folder beside the
-rem exe disqualifies it, whatever its version.
-set "haveExif="
-call :exifToolTrySingle "C:\HomerScribe"
-call :exifToolTrySingle "%LOCALAPPDATA%\HomerScribe\exiftool"
-call :exifToolTrySingle "%ProgramFiles%\HomerScribe"
-call :exifToolTrySingle "%LOCALAPPDATA%\Programs\HomerScribe"
-if not defined haveExif goto :exifToolNone
-if /i "%haveExif%"=="%CD%" goto :exifToolDone
-echo Using the single-file ExifTool %exifVer% from %haveExif%>> "%log%"
-echo Using the single-file ExifTool %exifVer% from %haveExif%
-copy /y "%haveExif%\exiftool.exe" "exiftool.exe" >nul 2>&1
-goto :exifToolDone
-
-:exifToolNone
-echo NOTE: no single-file exiftool.exe was found, and none is fetched: every>> "%log%"
-echo NOTE: current package needs an exiftool_files folder beside it, which is>> "%log%"
-echo NOTE: not wanted here. Put a self-contained exiftool.exe in this folder>> "%log%"
-echo NOTE: and the build will use it. Without one, pictures are still described>> "%log%"
-echo NOTE: but the descriptions are not written into them.>> "%log%"
-echo No single-file exiftool.exe found. Pictures will be described but not tagged.
-
+echo NOTE: no exiftool.exe in exec\. That is fine: the installer offers ExifTool>> "%log%"
+echo NOTE: through winget, which is the supported way to have it now.>> "%log%"
+echo ExifTool not bundled; the installer offers it through winget.
 :exifToolDone
-if not exist "exiftool.exe" goto :exifToolSaid
-call :exifToolOldEnough "exiftool.exe"
-echo exiftool.exe is present, version %exifVer%, a single file with nothing beside it>> "%log%"
-if not "%exifOk%"=="yes" echo NOTE: that is older than %exifWant%, so it does not know the IPTC accessibility fields by name. HomerScribe supplies their definitions, so they are still written.>> "%log%"
-:exifToolSaid
 
 rem ---- JSON -----------------------------------------------------------
 rem No JSON package is fetched, because none is needed. HomerScribe reads and
@@ -372,14 +360,23 @@ if not defined homerDev (
   exit /b 1
 )
 set "homerVer=unknown"
-if exist "!homerDev!\version.txt" set /p homerVer=<"!homerDev!\version.txt"
+rem READ WITH POWERSHELL, NOT set /p: on 25 Sep 2026 version.txt carried a byte
+rem order mark, set /p handed the three BOM bytes to the [version] cast, and the
+rem build refused a kit of exactly the version it asked for. Get-Content with
+rem -Encoding UTF8 drops a BOM; Trim drops spaces and line ends.
+if exist "!homerDev!\version.txt" for /f "usebackq delims=" %%V in (`powershell -NoProfile -Command "(Get-Content -Raw -Encoding UTF8 '!homerDev!\version.txt').Trim([char]0xFEFF).Trim()"`) do set "homerVer=%%V"
 echo Kit: !homerDev! version !homerVer! >> "%log%"
 echo Kit: !homerDev! version !homerVer!
 
 rem THE KIT MUST BE NEW ENOUGH FOR THE SOURCE. HomerScribe.cs uses what the kit
 rem gives it, and a kit older than the source fails deep in the compiler with a
 rem message naming the symptom and not the cause. So the build says the cause.
-set "kitNeeded=1.25.0"
+rem 1.29.0 puts HomerComponents.iss and homerInstall.cmd in Templates\, where the
+rem installer includes the first from; an older kit has them elsewhere or not at all.
+rem An older kit compiles the C# and then fails the installer with "Invalid
+rem number of parameters" -- which is what happened when HomerDev.zip was
+rem delivered but not unpacked. Failing here says what is wrong.
+set "kitNeeded=1.29.0"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"

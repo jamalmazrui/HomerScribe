@@ -37,10 +37,10 @@ if not exist "%~dp0homerInstall.cmd" (
   echo That file is part of HomerScribe. Reinstall, or copy it from the
   echo HomerScribe zip into this folder, and run this again.
   echo(
-  pause
+  if not defined noPause pause
   exit /b 1
 )
-call "%~dp0homerInstall.cmd" setup "%~f0"
+call "%~dp0homerInstall.cmd" setup "%~f0" %*
 
 set "model=small"
 set "noPause="
@@ -90,7 +90,7 @@ if not exist "%whisperDir%\ggml-%model%.bin" goto :fetchAll
 echo Nothing to do: Whisper is ready.
 echo(
 rem No key press when the installer runs this hidden.
-if not defined noPause if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 0
 
@@ -100,25 +100,61 @@ rem ---- the program ---------------------------------------------------
 if exist "%whisperDir%\whisper-cli.exe" goto :haveProgram
 echo Fetching whisper.cpp. This is a small download.
 echo(
+rem HOW THE DOWNLOAD IS CHOSEN, and why it is not "latest".
+rem
+rem On 20 August 2026 whisper.cpp changed its release process. A version tag
+rem such as v1.9.4 now carries only the two source archives; the compiled
+rem binaries are published under nightly build tags such as b5130, which are
+rem marked pre-release. GitHub's /releases/latest returns the newest release
+rem that is NOT a pre-release -- so it returns v1.9.4, whose two assets contain
+rem no Windows build, and this script said "No Windows build was listed in the
+rem latest release". That single line was the whole regression.
+rem
+rem So the LIST of releases is read, newest first, and the first one carrying a
+rem Windows x64 CPU build is taken -- whichever tag it is under. Two naming
+rem schemes are accepted: the current whisper-bin-win-<variant>-x64.zip and the
+rem older whisper-bin-x64.zip. CUDA, Vulkan and arm builds are skipped: the
+rem CPU build runs on every machine and needs no driver.
+rem
+rem If GitHub's API cannot be read at all (rate limit, no network), a pinned
+rem release known to carry whisper-bin-x64.zip is fetched directly, so the
+rem install does not depend on an API answer.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference='Stop';" ^
   "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;" ^
   "$dir = $env:HOMER_WHISPER_DIR;" ^
-  "$rel = Invoke-RestMethod -Uri 'https://api.github.com/repos/ggml-org/whisper.cpp/releases/latest' -Headers @{ 'User-Agent' = 'HomerScribe' };" ^
-  "$asset = $null;" ^
-  "foreach ($a in $rel.assets) { if ($asset -eq $null -and $a.name -match 'bin-x64|win.*x64|windows') { $asset = $a } };" ^
-  "if ($asset -eq $null) { throw 'No Windows build was listed in the latest release' };" ^
+  "$hdr = @{ 'User-Agent' = 'HomerScribe-installWhisper'; 'Accept' = 'application/vnd.github+json' };" ^
+  "$url = $null; $picked = '';" ^
+  "try {" ^
+  "  $rels = Invoke-RestMethod -Uri 'https://api.github.com/repos/ggml-org/whisper.cpp/releases?per_page=30' -Headers $hdr;" ^
+  "  foreach ($r in $rels) {" ^
+  "    foreach ($a in $r.assets) {" ^
+  "      $n = $a.name.ToLower();" ^
+  "      $isWin = ($n -match 'win' -and $n -match 'x64') -or ($n -match '^whisper-bin-x64\.zip$');" ^
+  "      $isGpu = $n -match 'cuda|cublas|vulkan|arm|openvino|sycl';" ^
+  "      if ($isWin -and -not $isGpu -and $n -match '\.zip$') { $url = $a.browser_download_url; $picked = $r.tag_name + ' / ' + $a.name; break }" ^
+  "    }" ^
+  "    if ($url) { break }" ^
+  "  }" ^
+  "} catch { Write-Output ('GitHub API could not be read: ' + $_.Exception.Message) }" ^
+  "if (-not $url) { $url = 'https://github.com/ggml-org/whisper.cpp/releases/download/v1.9.2/whisper-bin-x64.zip'; $picked = 'pinned v1.9.2 / whisper-bin-x64.zip' };" ^
+  "Write-Output ('asset: ' + $picked);" ^
+  "Write-Output ('url:   ' + $url);" ^
   "$zip = Join-Path $env:TEMP 'homerWhisper.zip';" ^
   "$tmp = Join-Path $env:TEMP 'homerWhisper';" ^
   "if (Test-Path $zip) { Remove-Item -Force $zip };" ^
   "if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp };" ^
-  "Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zip -UseBasicParsing;" ^
-  "Expand-Archive -Path $zip -DestinationPath $tmp;" ^
+  "Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing -Headers $hdr;" ^
+  "Write-Output ('downloaded ' + [math]::Round((Get-Item $zip).Length / 1MB, 1) + ' MB');" ^
+  "Expand-Archive -Path $zip -DestinationPath $tmp -Force;" ^
   "$files = Get-ChildItem -Path $tmp -Recurse -Include '*.exe','*.dll';" ^
+  "Write-Output ('unpacked ' + $files.Count + ' program files');" ^
   "foreach ($f in $files) { Copy-Item -Path $f.FullName -Destination $dir -Force };" ^
   "Remove-Item -Force $zip; Remove-Item -Recurse -Force $tmp;" ^
   "$cli = Join-Path $dir 'whisper-cli.exe';" ^
-  "if (-not (Test-Path $cli)) { $old = Get-ChildItem -Path $dir -Filter 'main.exe'; if ($old -ne $null) { Copy-Item $old[0].FullName $cli -Force } };"
+  "if (-not (Test-Path $cli)) { $old = Get-ChildItem -Path $dir -Filter 'main.exe'; if ($old -ne $null) { Copy-Item $old[0].FullName $cli -Force } };" ^
+  "if (-not (Test-Path $cli)) { throw 'whisper-cli.exe was not in the archive' };" ^
+  "Write-Output ('whisper-cli.exe is at ' + $cli)" >> "%log%" 2>&1
 if errorlevel 1 goto :programFailed
 
 :haveProgram
@@ -135,7 +171,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$dir = $env:HOMER_WHISPER_DIR;" ^
   "$name = 'ggml-%model%.bin';" ^
   "$url = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/' + $name;" ^
-  "Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir $name) -UseBasicParsing;"
+  "Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir $name) -UseBasicParsing;" >> "%log%" 2>&1
 if errorlevel 1 goto :modelFailed
 
 :haveModel
@@ -156,7 +192,7 @@ echo Whisper is ready. HomerScribe uses it to transcribe speech, and to find
 echo where descriptions can be spoken without covering the dialogue.
 echo(
 rem No key press when the installer runs this hidden.
-if not defined noPause if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 0
 
@@ -170,11 +206,12 @@ echo(
 echo The commands reported success, so this is worth reporting. The log has the
 echo detail: %log%
 call "%~dp0homerInstall.cmd" log "FAILED: commands succeeded but the files are not present in %whisperDir%"
-if not defined noPause if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 1
 
 :programFailed
+call "%~dp0homerInstall.cmd" log "FAILED: whisper.cpp download or unpack failed; PowerShell output is above"
 echo(
 echo whisper.cpp could not be downloaded.
 echo Get a Windows build by hand from
@@ -183,11 +220,12 @@ echo and put whisper-cli.exe and its dll files in
 echo   %whisperDir%
 echo(
 rem No key press when the installer runs this hidden.
-if not defined noPause if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 1
 
 :modelFailed
+call "%~dp0homerInstall.cmd" log "FAILED: ggml-%model%.bin download failed; PowerShell output is above"
 echo(
 echo The %model% model could not be downloaded.
 echo Get ggml-%model%.bin by hand from
@@ -196,6 +234,6 @@ echo and put it in
 echo   %whisperDir%
 echo(
 rem No key press when the installer runs this hidden.
-if not defined noPause if not defined HOMER_QUIET pause
+if not defined noPause pause
 endlocal
 exit /b 1
