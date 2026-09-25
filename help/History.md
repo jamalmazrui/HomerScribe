@@ -25,6 +25,61 @@ change, and I had made it fiction.
 
 
 
+
+
+### 25 September, evening: two patterns for every Homer app
+
+**Names Whisper should spell right.** The JAWS training recording came back
+with "Joss" eight times. Whisper spells a name it has never read the way it
+sounds, and its own remedy is an initial prompt: names in it are spelled as
+given. The new `--vocabulary` setting is that prompt, starting with the
+screen readers and the Homer programs; add your own.
+
+**Both builds failed on the first try of the new kit** -- a Pascal
+procedure declared as a function, and sample builds without Elevate.cs.
+Kit 1.31.1 fixes both; this build requires it.
+
+**"Took 19:00" read as nineteen hundred hours.** The run took 19 minutes.
+Every length a person reads or hears -- how long a run took, how long a film
+runs, how much speech was heard, how much advertising was cut -- is now said
+in words: "19 minutes", "1 hour and 6 minutes", "45 seconds". A clock reading
+stays only where it marks a place in the film, as in a caption's "[12:34]".
+The words come from Util.spokenLength in HomerDev, so every Homer app can say
+lengths the same way.
+
+**The finish page is now in a fixed order.** Install boxes first (ticked;
+screen reader scripts would lead, then components alphabetically), then
+Update (ticked), then Reinstall (unticked), then Launch (ticked), then Open
+the user guide (unticked). Each component has three entries, one per verb;
+the installer shows the one that applies. HomerScribe's page: ExifTool,
+Ollama, Pandoc, the two models, Tesseract, Whisper -- each under the verb its
+state calls for.
+
+**The Help box checks for a newer version.** Press Help (or F1) in the main
+dialog and the box ends with what version this is and whether a newer one is
+on the web. Its buttons are Yes and No: Yes is the default when a newer
+version exists, No when this is the newest, and OK alone when the web could
+not be reached. Yes fetches the setup program from the latest release and
+starts it. This is the shared Elevate class in HomerDev 1.31.0, so EdSharp
+and FileDir can carry the same box.
+
+### 25 September, afternoon: three things from the first successful install
+
+**Enter in the source paths field opened Help.** The dialog listed its
+buttons as Help, Default settings, OK, Cancel -- and Lbc makes the first one
+the default. OK is now first; Lbc adds Help itself, rightmost.
+
+**The Results box told the old story.** A minute after Whisper was installed
+and Ollama updated from 0.34.3 to 0.34.4, the box said Whisper was not
+installed and Ollama was out of date, and it recited Tesseract, Pandoc and
+ExifTool, which nobody had ticked. It was reading the probe made when the
+wizard opened. It now reports one past-tense line per ticked box, from a probe
+made after the scripts ran, and nothing about a box that was not ticked. Kit
+1.30.0 carries the mechanism.
+
+**"Checking for a newer version" hid a 1 GB download.** Every install script
+now says "Downloading", with a rough size and time, before any long step.
+
 ### 25 September: a BOM where it cannot go, and the HomerDev logs
 
 **The build refused a kit of exactly the version it asked for.** The log

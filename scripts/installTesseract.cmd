@@ -73,7 +73,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo Fetching Tesseract. This is about 60 MB and happens once.
+echo Downloading Tesseract. This is about 60 MB and happens once.
 echo Fetching with winget>> "%log%"
 winget install --id UB-Mannheim.TesseractOCR --accept-source-agreements --accept-package-agreements --silent >> "%log%" 2>&1
 

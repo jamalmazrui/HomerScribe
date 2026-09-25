@@ -76,7 +76,7 @@ if not errorlevel 1 (
 )
 del "%TEMP%\homerTextModel.txt" >nul 2>&1
 
-echo Fetching %model%. This is about 4.7 GB and happens once.
+echo Downloading %model%. This is about 4.7 GB and happens once.
 ollama pull %model% >> "%log%" 2>&1
 if errorlevel 1 (
   echo(

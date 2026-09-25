@@ -531,6 +531,16 @@ with a graphics card.
 speech is, not what every word was. `--dialogue-window` sets how much preceding
 dialogue the model sees, or `0` for none.
 
+### Names Whisper should spell right
+
+Whisper spells a name it has never read the way it sounds. A recording about
+JAWS came back saying "Joss". The `--vocabulary` setting is a list of names
+and terms, separated by commas, that Whisper spells as written. It starts
+with the screen readers and Homer programs -- JAWS, NVDA, VoiceOver, Narrator,
+Windows, Notepad, WordPad, Insert, Caps Lock, HomerScribe, EdSharp, FileDir,
+Ollama, Whisper. Add the people and products in your own recordings. Leave it
+empty for none.
+
 ### When the transcript comes back empty
 
 Occasionally Whisper returns almost nothing from a film that plainly has speech

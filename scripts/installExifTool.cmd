@@ -39,7 +39,7 @@ rem
 rem Oliver Betz packages that as a proper installer, and winget carries it.
 rem --scope machine puts it where every Homer app can share one copy.
 
-echo Installing ExifTool, so descriptions can be written into photographs.
+echo Downloading and installing ExifTool, so descriptions can be written into photographs.
 echo(
 
 where winget >nul 2>&1

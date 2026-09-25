@@ -371,12 +371,12 @@ echo Kit: !homerDev! version !homerVer!
 rem THE KIT MUST BE NEW ENOUGH FOR THE SOURCE. HomerScribe.cs uses what the kit
 rem gives it, and a kit older than the source fails deep in the compiler with a
 rem message naming the symptom and not the cause. So the build says the cause.
-rem 1.29.0 puts HomerComponents.iss and homerInstall.cmd in Templates\, where the
+rem 1.30.0 adds homerOutcomeLine for the Results box; 1.29.0 put the kit files in Templates\, where the
 rem installer includes the first from; an older kit has them elsewhere or not at all.
 rem An older kit compiles the C# and then fails the installer with "Invalid
 rem number of parameters" -- which is what happened when HomerDev.zip was
 rem delivered but not unpacked. Failing here says what is wrong.
-set "kitNeeded=1.29.0"
+set "kitNeeded=1.31.1"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
@@ -389,6 +389,7 @@ if errorlevel 1 (
 rem The modules HomerScribe uses. PdfRead needs nothing else; Inix reads and
 rem writes .xlsx, so the compression assembly is referenced below.
 set "homerSources="
+set "homerSources=!homerSources! "!homerDev!\CSharp\Elevate.cs""
 set "homerSources=!homerSources! "!homerDev!\CSharp\Inix.cs""
 set "homerSources=!homerSources! "!homerDev!\CSharp\Lbc.cs""
 set "homerSources=!homerSources! "!homerDev!\CSharp\Log.cs""

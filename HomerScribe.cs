@@ -347,6 +347,10 @@ namespace Homer
             addParam("captions", "", "flag", "yes", "Use the film's own English captions as the transcript when it has them, instead of listening to it with Whisper");
             addParam("auto-captions", "", "flag", "no", "Also accept captions a machine made, such as YouTube's automatic ones. They carry no speaker names and none of the sounds that are not speech, so listening to the film usually gives a richer transcript");
             addParam("whisper-model", "", "string", "small", "Which Whisper model to hear the film with: tiny, base, small, medium or large-v3");
+            // Whisper spells a name it has never read the way it sounds. A JAWS
+            // training recording came back with "Joss" eight times. The initial
+            // prompt is Whisper's own remedy: words in it are spelled as given.
+            addParam("vocabulary", "", "string", "JAWS, NVDA, VoiceOver, Narrator, Windows, Notepad, WordPad, Insert, Caps Lock, HomerScribe, EdSharp, FileDir, Ollama, Whisper", "Names and terms Whisper should spell as written, comma separated. Empty for none.");
             addParam("speaker-window", "", "number", "120.0", "Seconds either side of a moment in which a caption speaker counts as being in the same scene. Scene-sized on purpose, which is much wider than the dialogue window");
             addParam("dialogue-window", "", "number", "25.0", "Seconds of dialogue before a moment shown to the model, so a description does not restate what was just said");
             addParam("summarise", "", "flag", "yes", "Look thoroughly with the vision model, then have the same model compress what it saw into one spoken description");
@@ -1738,6 +1742,14 @@ namespace Homer
             return iHowMany.ToString() + " " + (iHowMany == 1 ? sSingular : sPlural);
         }
 
+        // A LENGTH IS SAID IN WORDS; A POSITION IS A CLOCK READING. formatClock
+        // is for where in the film something is: "[12:34]" is a place. A
+        // length -- how long a film runs, how long a run took -- goes through
+        // Util.spokenLength (HomerDev), because a screen reader reads "19:00"
+        // as nineteen hundred hours. A run that took nineteen minutes was
+        // reported as "Took 19:00" on 25 September 2026.
+        static string spokenLength(double nSeconds) { return Util.spokenLength(nSeconds); }
+
         static string formatClock(double nSeconds)
         {
             int iWhole = (int)nSeconds;
@@ -2989,7 +3001,12 @@ namespace Homer
             DateTime dtBegan = DateTime.Now;
             waitingOn("listening to the film");
             string sBase = Path.Combine(sWorkDir, "transcript");
-            runStreamed(sWhisper, "-m " + quoted(sModel) + " -f " + quoted(sWave) + " -l auto -oj -of " + quoted(sBase), "Listening");
+            // --prompt: Whisper's initial prompt. It is not an instruction; it
+            // is text Whisper pretends preceded the recording, so the names in
+            // it come out spelled as written rather than as they sound.
+            string sVocabulary = text("vocabulary").Trim();
+            string sPrompt = sVocabulary == "" ? "" : " --prompt " + quoted(sVocabulary.Replace("\"", ""));
+            runStreamed(sWhisper, "-m " + quoted(sModel) + " -f " + quoted(sWave) + " -l auto -oj -of " + quoted(sBase) + sPrompt, "Listening");
             waitingOn("");
             double nTook = DateTime.Now.Subtract(dtBegan).TotalSeconds;
             if (!File.Exists(sJson))
@@ -3011,7 +3028,7 @@ namespace Homer
             double nShareHeard = nSpoken / Math.Max(nDuration, 1.0) * 100.0;
             if (nDuration > 300.0 && nShareHeard < nDefaultTooQuiet)
             {
-                string sWrong = "Only " + formatClock(nSpoken) + " of speech was heard in " + formatClock(nDuration)
+                string sWrong = "Only " + spokenLength(nSpoken) + " of speech was heard in " + spokenLength(nDuration)
                               + ". Either this film has almost no speech in it -- a silent film, or one carrying only music -- "
                               + "or the sound track is in a form Whisper could not read, or the file holds more than one audio "
                               + "track and the wrong one was taken. Descriptions will be placed by listening for silence, which "
@@ -3383,7 +3400,7 @@ namespace Homer
                        iNatural.ToString() + " real gaps and " + iForced.ToString() + " placed on the timer.");
             lLastGaps = lGaps;
             logMessage("Describing " + lGaps.Count.ToString() + " moments across " + formatClock(nDuration),
-                       "INFO", "Describing " + lGaps.Count.ToString() + " moments across " + formatClock(nDuration) + ". Each description follows as it is made.");
+                       "INFO", "Describing " + lGaps.Count.ToString() + " moments across " + spokenLength(nDuration) + ". Each description follows as it is made.");
             return lGaps;
         }
 
@@ -4831,7 +4848,7 @@ namespace Homer
             fDoc.WriteLine("");
             if (sVideoTitle != "" && sVideoTitle != sSourceName) fDoc.WriteLine("- Title: " + sVideoTitle);
             if (sVideoBy != "") fDoc.WriteLine("- Published by: " + sVideoBy);
-            if (nDuration > 0.0) fDoc.WriteLine("- Running time: " + formatClock(nDuration));
+            if (nDuration > 0.0) fDoc.WriteLine("- Running time: " + spokenLength(nDuration));
             fDoc.WriteLine("- " + sMadeBy);
             fDoc.WriteLine("- Made: " + DateTime.Now.ToString("d MMMM yyyy"));
             if (sVideoAddress != "")
@@ -5372,8 +5389,12 @@ namespace Homer
                     CheckBox oViewBox = oDialog.addCheckBox("&View output", bViewOutput,
                         "Open the folder holding the results when the run finishes.");
 
-                    logMessage("Dialog buttons: Help, Default settings, OK, Cancel", "INFO", "");
-                    sButton = oDialog.runWithButtons(new string[] { "Help", "Default settings", "OK", "Cancel" }, true);
+                    // OK FIRST. Lbc makes the first label the dialog's default
+                    // button, so with "Help" listed first, Enter in the source
+                    // paths field opened Help instead of running. Lbc adds Help
+                    // itself, rightmost, when the second argument is true.
+                    logMessage("Dialog buttons: OK, Default settings, Cancel, Help", "INFO", "");
+                    sButton = oDialog.runWithButtons(new string[] { "OK", "Default settings", "Cancel" }, true);
                     logMessage("Dialog answered with: " + (sButton == null ? "(nothing)" : sButton), "INFO", "");
 
                     sSources = (oSourceBox.Text == null ? "" : oSourceBox.Text).Trim();
@@ -9499,7 +9520,7 @@ namespace Homer
                 fDoc.WriteLine("");
                 if (iCut > 0 && bWritten)
                     fDoc.WriteLine("**" + counted(iCut, "advertisement", "advertisements") + " removed**, "
-                                 + formatClock(nGone) + " of " + formatClock(nDuration) + ", written as **"
+                                 + spokenLength(nGone) + " of " + spokenLength(nDuration) + ", written as **"
                                  + Path.GetFileName(sTo) + "**. The original is untouched.");
                 else if (iCut > 0)
                     fDoc.WriteLine("**Nothing was written**: the copy could not be made. The log says why.");
@@ -9535,7 +9556,7 @@ namespace Homer
             }
             if (bWritten)
                 lResults.Add(Path.GetFileName(sInput) + ": " + counted(iCut, "advertisement removed", "advertisements removed")
-                             + ", " + formatClock(nGone) + " of " + formatClock(nDuration)
+                             + ", " + spokenLength(nGone) + " of " + spokenLength(nDuration)
                              + Environment.NewLine + "    " + sTo
                              + Environment.NewLine + "    " + sPage);
             else
@@ -11622,7 +11643,7 @@ namespace Homer
                 ? "Nothing was done: the one source given could not be used."
                 : "Nothing was done: none of the " + lFailures.Count.ToString() + " sources given could be used.");
             if (iSkipped > 0) oSaid.Append(" " + iSkipped.ToString() + " already done and skipped.");
-            oSaid.Append(Environment.NewLine + "Took " + formatClock(oTook.TotalSeconds) + ".");
+            oSaid.Append(Environment.NewLine + "Took " + spokenLength(oTook.TotalSeconds) + ".");
             if (lFailures.Count > 0) oSaid.Append(" " + lFailures.Count.ToString() + (lFailures.Count == 1 ? " could not be used." : " could not be used."));
             if (lResults.Count > 0)
             {
@@ -12242,7 +12263,7 @@ namespace Homer
                 nDuration = probeDuration(sFfmpeg, sInput);
                 if (nDuration <= 0.0) return 1;
             }
-            logMessage("Duration: " + num(nDuration) + " seconds", "INFO", "Film runs " + formatClock(nDuration) + ".");
+            logMessage("Duration: " + num(nDuration) + " seconds", "INFO", "Film runs " + spokenLength(nDuration) + ".");
             // A file that was not downloaded still often knows its own title,
             // carried as a tag inside it. That belongs in the heading too.
             if (sVideoTitle == "")
@@ -12907,7 +12928,7 @@ namespace Homer
             // HomerScribe a folder full of them. The results are collected and
             // shown once, at the end.
             string sOddity = "";
-            if (nDuration < 60.0) sOddity = "  (only " + formatClock(nDuration) + " long: the file may be damaged or incomplete)";
+            if (nDuration < 60.0) sOddity = "  (only " + spokenLength(nDuration) + " long: the file may be damaged or incomplete)";
             // Everything worth knowing about this film's descriptions, in one
             // place, so a question about quality does not need the whole log
             // read to answer it.
@@ -12959,7 +12980,7 @@ namespace Homer
                 return 1;
             }
             writeFileLog(sOutputDir);
-            lResults.Add(Path.GetFileName(sInput) + ": " + lDone.Count.ToString() + " descriptions, " + formatClock(nDuration) + sOddity
+            lResults.Add(Path.GetFileName(sInput) + ": " + lDone.Count.ToString() + " descriptions, " + spokenLength(nDuration) + sOddity
                          + Environment.NewLine + "    " + Path.Combine(sOutputDir, outputName(sInput)));
             sLastOutputFolder = sOutputDir;
             return 0;
@@ -12977,6 +12998,9 @@ namespace Homer
             {
                 bConsoleHidden = consoleWindow.hide();
             }
+            // The shared Help box and F11 check the web for a newer release
+            // and offer to install it; this is all they need to know.
+            Homer.Elevate.configure("JamalMazrui", "HomerScribe", BuildVersion.Version);
             buildParams();
             if (!parseArgs(asArgs))
             {

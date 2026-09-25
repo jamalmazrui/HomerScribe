@@ -98,7 +98,7 @@ exit /b 0
 
 rem ---- the program ---------------------------------------------------
 if exist "%whisperDir%\whisper-cli.exe" goto :haveProgram
-echo Fetching whisper.cpp. This is a small download.
+echo Downloading whisper.cpp. This is a small download.
 echo(
 rem HOW THE DOWNLOAD IS CHOSEN, and why it is not "latest".
 rem
@@ -163,7 +163,7 @@ if exist "%whisperDir%\whisper-cli.exe" echo whisper.cpp is in place.
 rem ---- the model ------------------------------------------------------
 if exist "%whisperDir%\ggml-%model%.bin" goto :haveModel
 echo(
-echo Fetching the %model% model. This is a few hundred megabytes.
+echo Downloading the %model% model. This is a few hundred megabytes.
 echo(
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference='Stop';" ^

@@ -44,7 +44,7 @@ call "%~dp0homerInstall.cmd" setup "%~f0" %*
 call :findOllama
 if defined ollamaExe goto :already
 
-echo Installing Ollama. This is about 1 GB and takes a few minutes.
+echo Downloading and installing Ollama. This is about 1 GB and takes a few minutes.
 echo Nothing is asked of you while it runs.
 echo(
 winget install --id Ollama.Ollama --exact --silent --accept-source-agreements --accept-package-agreements
@@ -81,7 +81,9 @@ rem installed" and exited in a second -- which is exactly what he noticed. A
 rem winget upgrade is what an Update box means; when nothing is newer, winget
 rem says so and returns at once, and that is the honest outcome.
 echo(
-echo Ollama is installed. Checking for a newer version.
+echo Ollama is installed. Checking for a newer version. If there is one, it is
+echo downloaded and installed now: about 1 GB, and a few minutes. Nothing is
+echo asked of you while it runs.
 winget upgrade --id Ollama.Ollama --exact --silent --accept-source-agreements --accept-package-agreements >> "%log%" 2>&1
 set "iUp=%ERRORLEVEL%"
 call "%~dp0homerInstall.cmd" log "winget upgrade exit code %iUp%"

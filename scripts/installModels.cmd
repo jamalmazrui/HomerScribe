@@ -93,7 +93,7 @@ if not errorlevel 1 (
   goto :eof
 )
 echo(
-echo Installing %model%. This is several gigabytes and takes a while.
+echo Downloading %model%. This is several gigabytes and takes a while.
 echo(
 "!ollamaExe!" pull %model%
 if errorlevel 1 set "failed=yes"

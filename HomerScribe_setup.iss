@@ -237,145 +237,144 @@ Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\exec\{#AppExeName}"; WorkingDir: "{userdocs}"; HotKey: "{#HotKey}"
 
 [Run]
-; TWO ENTRIES PER COMPONENT, and why.
-;
-; In Inno, Check: decides whether an entry is SHOWN, not whether it is ticked.
-; With one entry per component gated on "wanted", every component already on
-; the machine simply vanished from the finish page -- which is why no Reinstall
-; boxes and no model boxes appeared on his run. DbDo had three entries per
-; component for exactly this reason, and I collapsed them to one.
-;
-; So each component has two entries with the same label function: one shown
-; when it is wanted (missing or stale), ticked; one shown when it is current,
-; unticked. The label function says Install, Update or Reinstall as the case
-; is, so the reader sees one box per component with the right verb and the
-; right default.
-; cmd NEEDS /s WITH THE DOUBLED QUOTES. Without it, cmd took
-; ""C:\Program Files\...\installWhisper.cmd"" apart at the spaces and gave up:
-; every one of these exited with code 1 in a tenth of a second, having run
-; nothing, while the finish page reported them as done. With /s cmd strips the
-; outermost pair and runs what is left verbatim, which is the whole point of
-; writing the path that way. DbDo learned this in its 1.0.168.
-; THE CONSOLE STAYS VISIBLE. An earlier attempt hid these windows, which was
-; the wrong reading of the pattern: the console is not noise to be suppressed,
-; it is where a person sees what is happening. It says, briefly and in plain
-; words, what was found and what was done. The DETAIL -- every command, exit
-; code and path -- goes to %LOCALAPPDATA%\HomerScribe\logs, where it can be
-; zipped and sent when something needs diagnosing.
-;
-; What is suppressed is only the waiting: HOMER_QUIET stops a script pausing
-; for a key, since the installer is driving it and nobody is watching for a
-; prompt.
-; Post-install checkboxes shown on the final wizard page. What HomerScribe
-; needs comes first, then what to do next. All four default to checked; any can
-; be unchecked to skip.
-;
-; helpFido leaves its Ollama box unchecked because helpFido works without it.
-; HomerScribe does not: with no local model there is nothing to write the
-; descriptions. Both are shown every time rather than being hidden when already
-; present -- the scripts themselves notice what is installed and say so in a
-; second, and a checkbox that sometimes vanishes is worse than one that
-; occasionally has nothing to do.
-;
-; The installs happen here rather than by sending the user to a download page:
-; winget ships with Windows 10 and 11 and can fetch Ollama unattended.
-; runascurrentuser matters -- winget and ollama install per-user, into the
-; profile of whoever is signed in, and this installer is running elevated.
+; FINISH-PAGE ORDER, a HomerDev rule (25 September 2026):
+;   1. Install entries, ticked -- screen reader scripts first, then components
+;      in alphabetical order (HomerScribe has no screen reader scripts).
+;   2. Update entries, ticked, alphabetical.
+;   3. Reinstall entries, UNTICKED, alphabetical.
+;   4. Launch, ticked.
+;   5. Open the user guide, unticked.
+; Inno shows [Run] entries in script order and Check: hides the ones that do not
+; apply, so three entries per component -- one per verb, each with its own
+; Check: -- group the page by themselves. The label function words each one.
+; A model has Install and Reinstall only: ollama pull always fetches the
+; current model.
+
+; ---- 1. Install --------------------------------------------------------------
+FileName: "{app}\scripts\installExifTool.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelExifTool}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallExifTool
 
 FileName: "{app}\scripts\installOllama.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelOllama}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantOllama
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallOllama
+
+FileName: "{app}\scripts\installPandoc.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelPandoc}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallPandoc
+
+FileName: "{app}\scripts\installTextModel.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelTextModel}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isModelInstallText
+
+FileName: "{app}\scripts\installModels.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelVisionModel}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isModelInstallVision
+
+FileName: "{app}\scripts\installTesseract.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelTesseract}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallTesseract
+
+FileName: "{app}\scripts\installWhisper.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelWhisper}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallWhisper
+
+; ---- 2. Update ---------------------------------------------------------------
+FileName: "{app}\scripts\installExifTool.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelExifTool}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdateExifTool
+
 FileName: "{app}\scripts\installOllama.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelOllama}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantOllama
-
-FileName: "{app}\scripts\installModels.cmd"; \
-  Parameters: "noPause"; \
-  WorkingDir: "{app}\scripts"; \
-  Description: "{code:labelVisionModel}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantVisionModel
-FileName: "{app}\scripts\installModels.cmd"; \
-  Parameters: "noPause"; \
-  WorkingDir: "{app}\scripts"; \
-  Description: "{code:labelVisionModel}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantVisionModel
-
-FileName: "{app}\scripts\installTextModel.cmd"; \
-  Parameters: "noPause"; \
-  WorkingDir: "{app}\scripts"; \
-  Description: "{code:labelTextModel}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantTextModel
-FileName: "{app}\scripts\installTextModel.cmd"; \
-  Parameters: "noPause"; \
-  WorkingDir: "{app}\scripts"; \
-  Description: "{code:labelTextModel}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantTextModel
-
-FileName: "{app}\scripts\installExifTool.cmd"; \
-  Parameters: "noPause"; \
-  WorkingDir: "{app}\scripts"; \
-  Description: "{code:labelExifTool}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantExifTool
-FileName: "{app}\scripts\installExifTool.cmd"; \
-  Parameters: "noPause"; \
-  WorkingDir: "{app}\scripts"; \
-  Description: "{code:labelExifTool}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantExifTool
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdateOllama
 
 FileName: "{app}\scripts\installPandoc.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelPandoc}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantPandoc
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdatePandoc
+
+FileName: "{app}\scripts\installTesseract.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelTesseract}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdateTesseract
+
+FileName: "{app}\scripts\installWhisper.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelWhisper}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdateWhisper
+
+; ---- 3. Reinstall, unticked --------------------------------------------------
+FileName: "{app}\scripts\installExifTool.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelExifTool}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallExifTool
+
+FileName: "{app}\scripts\installOllama.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelOllama}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallOllama
+
 FileName: "{app}\scripts\installPandoc.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelPandoc}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantPandoc
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallPandoc
+
+FileName: "{app}\scripts\installTextModel.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelTextModel}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isModelReinstallText
+
+FileName: "{app}\scripts\installModels.cmd"; \
+  Parameters: "noPause"; \
+  WorkingDir: "{app}\scripts"; \
+  Description: "{code:labelVisionModel}"; \
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isModelReinstallVision
 
 FileName: "{app}\scripts\installTesseract.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelTesseract}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantTesseract
-FileName: "{app}\scripts\installTesseract.cmd"; \
-  Parameters: "noPause"; \
-  WorkingDir: "{app}\scripts"; \
-  Description: "{code:labelTesseract}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantTesseract
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallTesseract
 
 FileName: "{app}\scripts\installWhisper.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelWhisper}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: wantWhisper
-FileName: "{app}\scripts\installWhisper.cmd"; \
-  Parameters: "noPause"; \
-  WorkingDir: "{app}\scripts"; \
-  Description: "{code:labelWhisper}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: not wantWhisper
+  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallWhisper
 
-; THE LAUNCH IS RECORDED HERE AND HAPPENS AFTER THE RESULTS BOX.
-;
-; Starting the program from this entry puts its window on top of a box the user
-; has not read yet -- and for a screen reader user that is worse than untidy:
-; the new window takes focus, the reader begins announcing it, and the summary
-; of what the installer just did is buried behind it.
-;
-; Inno runs postinstall entries BEFORE CurStepChanged(ssDone), so no ordering of
-; the entries can fix this. The entry therefore leaves a marker, and the Results
-; box starts the program once it has been closed. The checkbox reads the same
-; either way. DbDo has worked this way since its 1.0.145.
+; ---- 4. Launch, ticked -------------------------------------------------------
 FileName: "{cmd}"; \
   Parameters: "/c echo launch > ""{localappdata}\{#AppName}\logs\{#AppName}_launch.flag"""; \
   WorkingDir: "{app}\exec"; \
   Description: "Launch {#AppName} now (desktop hotkey: {#HotKeyDisplay})"; \
   Flags: postinstall skipifsilent runhidden runasoriginaluser
 
+; ---- 5. Open the user guide, unticked ----------------------------------------
 FileName: "{app}\help\ReadMe.htm"; \
   Description: "Open the user guide (F1 opens it inside {#AppName})"; \
   Flags: postinstall shellexec nowait skipifsilent skipifdoesntexist runasoriginaluser unchecked
@@ -444,19 +443,31 @@ function labelPandoc(sParam: String): String;    begin Result := homerLabel(iPan
 function labelExifTool(sParam: String): String;  begin Result := homerLabel(iExifTool); end;
 function labelOllama(sParam: String): String;    begin Result := homerLabel(iOllama); end;
 
-function wantWhisper(): Boolean;   begin Result := homerWanted(iWhisper); end;
-function wantTesseract(): Boolean; begin Result := homerWanted(iTesseract); end;
-function wantPandoc(): Boolean;    begin Result := homerWanted(iPandoc); end;
-function wantExifTool(): Boolean;  begin Result := homerWanted(iExifTool); end;
-function wantOllama(): Boolean;    begin Result := homerWanted(iOllama); end;
+function isInstallExifTool(): Boolean;   begin Result := homerIs(iExifTool, 0); end;
+function isUpdateExifTool(): Boolean;    begin Result := homerIs(iExifTool, 1); end;
+function isReinstallExifTool(): Boolean; begin Result := homerIs(iExifTool, 2); end;
+function isInstallOllama(): Boolean;   begin Result := homerIs(iOllama, 0); end;
+function isUpdateOllama(): Boolean;    begin Result := homerIs(iOllama, 1); end;
+function isReinstallOllama(): Boolean; begin Result := homerIs(iOllama, 2); end;
+function isInstallPandoc(): Boolean;   begin Result := homerIs(iPandoc, 0); end;
+function isUpdatePandoc(): Boolean;    begin Result := homerIs(iPandoc, 1); end;
+function isReinstallPandoc(): Boolean; begin Result := homerIs(iPandoc, 2); end;
+function isInstallTesseract(): Boolean;   begin Result := homerIs(iTesseract, 0); end;
+function isUpdateTesseract(): Boolean;    begin Result := homerIs(iTesseract, 1); end;
+function isReinstallTesseract(): Boolean; begin Result := homerIs(iTesseract, 2); end;
+function isInstallWhisper(): Boolean;   begin Result := homerIs(iWhisper, 0); end;
+function isUpdateWhisper(): Boolean;    begin Result := homerIs(iWhisper, 1); end;
+function isReinstallWhisper(): Boolean; begin Result := homerIs(iWhisper, 2); end;
 
 // The two models are not components in the table: they live inside Ollama.
 function labelVisionModel(sParam: String): String;
 begin Result := homerModelLabel('qwen2.5vl:7b', 'describes video and pictures', 'about 5.5 GB'); end;
 function labelTextModel(sParam: String): String;
 begin Result := homerModelLabel('qwen2.5:7b', 'removes advertisements', 'about 4.7 GB'); end;
-function wantVisionModel(): Boolean; begin Result := homerModelWanted('qwen2.5vl:7b'); end;
-function wantTextModel(): Boolean;   begin Result := homerModelWanted('qwen2.5:7b'); end;
+function isModelInstallVision(): Boolean;   begin Result := homerModelIs('qwen2.5vl:7b', False); end;
+function isModelReinstallVision(): Boolean; begin Result := homerModelIs('qwen2.5vl:7b', True); end;
+function isModelInstallText(): Boolean;     begin Result := homerModelIs('qwen2.5:7b', False); end;
+function isModelReinstallText(): Boolean;   begin Result := homerModelIs('qwen2.5:7b', True); end;
 
 (* THE RESULTS BOX.
    HomerScribe had no [Code] section at all, which is why an installation ended
@@ -476,6 +487,7 @@ var
 
 procedure addAction(sText: String);
 begin
+  if sText = '' then exit;
   if sText = '' then exit;
   if sActions <> '' then sActions := sActions + #13#10;
   sActions := sActions + '  ' + sText;
@@ -504,26 +516,28 @@ begin
 end;
 
 procedure reportWhatHappened();
-(* Built from the shared component state, so the box says what IS true rather
-   than what was attempted -- and says it in the same words the checkbox used,
-   from the same probe. Two places telling different stories is worse than one
-   telling none. *)
+(* ONE LINE PER BOX THAT WAS TICKED, AND NOTHING ELSE. On 25 September 2026
+   this box listed every component from the probe made when the wizard opened:
+   it said Whisper was not installed and Ollama was out of date, a minute after
+   both scripts had succeeded, and it recited three components nobody had
+   asked about. A result box reports the actions taken this session, from a
+   probe made after they ran. The kit records the ticked boxes when Finish is
+   pressed (homerNoteTicked, called from NextButtonClick) and probes again
+   only those. *)
 var
   sBody: String;
 begin
-  addAction(homerSummaryLine(iWhisper,
-    'Speech cannot be transcribed until scripts\installWhisper.cmd is run.'));
-  addAction(homerSummaryLine(iTesseract,
-    'Scanned PDFs will be read by the picture model, which is much slower.'));
-  addAction(homerSummaryLine(iPandoc,
-    'A PDF will produce Markdown only, with no Word version.'));
-  addAction(homerSummaryLine(iExifTool,
-    'Descriptions cannot be written into photographs.'));
-  addAction(homerSummaryLine(iOllama,
-    'Video and pictures cannot be described.'));
+  addAction(homerOutcomeLine(iOllama));
+  addAction(homerModelOutcomeLine('qwen2.5vl:7b', 'describes video and pictures', 'about 5.5 GB'));
+  addAction(homerModelOutcomeLine('qwen2.5:7b', 'removes advertisements', 'about 4.7 GB'));
+  addAction(homerOutcomeLine(iExifTool));
+  addAction(homerOutcomeLine(iPandoc));
+  addAction(homerOutcomeLine(iTesseract));
+  addAction(homerOutcomeLine(iWhisper));
 
-  sBody := 'HomerScribe {#AppVersion} is installed.' + #13#10 + #13#10
-         + sActions + #13#10 + #13#10
+  sBody := 'HomerScribe {#AppVersion} is installed.';
+  if sActions <> '' then sBody := sBody + #13#10 + #13#10 + sActions;
+  sBody := sBody + #13#10 + #13#10
          + 'Logs are kept in ' + ExpandConstant('{localappdata}\{#AppName}\logs') + '.';
   MsgBox(sBody, mbInformation, MB_OK);
 
@@ -543,6 +557,13 @@ begin
   sTo := sLogs + '\{#AppName}-setup-' + GetDateTimeString('yyyymmdd-hhnnss', #0, #0) + '.log';
   if not FileCopy(ExpandConstant('{log}'), sTo, False) then
     MsgBox('The setup log could not be copied to ' + sLogs + '.', mbInformation, MB_OK);
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+(* Finish pressed: the boxes are settled, the scripts have not yet run. *)
+begin
+  Result := True;
+  if CurPageID = wpFinished then homerNoteTicked();
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

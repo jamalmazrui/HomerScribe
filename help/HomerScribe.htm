@@ -221,6 +221,9 @@ id="toc-configuration">Configuration</a></li>
 <li><a href="#hearing-the-film" id="toc-hearing-the-film">Hearing the
 film</a>
 <ul>
+<li><a href="#names-whisper-should-spell-right"
+id="toc-names-whisper-should-spell-right">Names Whisper should spell
+right</a></li>
 <li><a href="#when-the-transcript-comes-back-empty"
 id="toc-when-the-transcript-comes-back-empty">When the transcript comes
 back empty</a></li>
@@ -824,6 +827,16 @@ chooses a different size — <code>small</code> is the default and is the
 right size for this: the question is only where speech is, not what
 every word was. <code>--dialogue-window</code> sets how much preceding
 dialogue the model sees, or <code>0</code> for none.</p>
+<h3 id="names-whisper-should-spell-right">Names Whisper should spell
+right</h3>
+<p>Whisper spells a name it has never read the way it sounds. A
+recording about JAWS came back saying “Joss”. The
+<code>--vocabulary</code> setting is a list of names and terms,
+separated by commas, that Whisper spells as written. It starts with the
+screen readers and Homer programs – JAWS, NVDA, VoiceOver, Narrator,
+Windows, Notepad, WordPad, Insert, Caps Lock, HomerScribe, EdSharp,
+FileDir, Ollama, Whisper. Add the people and products in your own
+recordings. Leave it empty for none.</p>
 <h3 id="when-the-transcript-comes-back-empty">When the transcript comes
 back empty</h3>
 <p>Occasionally Whisper returns almost nothing from a film that plainly
