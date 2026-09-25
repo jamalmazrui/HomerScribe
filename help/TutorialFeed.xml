@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>HomerScribe Walkthroughs</title>
+    <link>Tutorials.htm</link>
+    <description>Short simulated walks through HomerScribe. Each one is a real job done from start to finish, about three minutes, with something to try at the end.</description>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 25 Sep 2026 21:15:09 +0000</lastBuildDate>
+    <itunes:author>Jamal Mazrui</itunes:author>
+    <itunes:explicit>false</itunes:explicit>
+    <itunes:category text="Technology"/>
+    <itunes:owner><itunes:name>Jamal Mazrui</itunes:name><itunes:email>jamal@homertools.org</itunes:email></itunes:owner>
+    <item>
+      <title>00 - Overview</title>
+      <description>Nothing yet. This one is two minutes of what to expect. Full transcript: Tutorials.htm#0-00-overview</description>
+      <link>Tutorials.htm#0-00-overview</link>
+      <guid isPermaLink="false">homer-tutorial_00_overview</guid>
+      <enclosure url="tutorials/Tutorial_00_Overview.mp3" length="916996" type="audio/mpeg"/>
+      <itunes:duration>00:02:27</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+    <item>
+      <title>01 - Transcribe a Recording</title>
+      <description>A recording named Introduction_to_Windows.mp3 is in the Videos folder. HomerScribe is installed. Full transcript: Tutorials.htm#0a-01-transcribe-a-recording</description>
+      <link>Tutorials.htm#0a-01-transcribe-a-recording</link>
+      <guid isPermaLink="false">homer-tutorial_01_transcribe</guid>
+      <enclosure url="tutorials/Tutorial_01_Transcribe.mp3" length="1401315" type="audio/mpeg"/>
+      <itunes:duration>00:03:34</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+    <item>
+      <title>02 - Describe a Video</title>
+      <description>HomerScribe is installed, with Ollama and its picture model. The dialog still holds the sample address. Full transcript: Tutorials.htm#0b-02-describe-a-video</description>
+      <link>Tutorials.htm#0b-02-describe-a-video</link>
+      <guid isPermaLink="false">homer-tutorial_02_describe</guid>
+      <enclosure url="tutorials/Tutorial_02_Describe.mp3" length="1229318" type="audio/mpeg"/>
+      <itunes:duration>00:03:07</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+    <item>
+      <title>03 - A Web Address, Sound Only</title>
+      <description>HomerScribe is installed, with Ollama. A YouTube address is on the clipboard. Full transcript: Tutorials.htm#0c-03-a-web-address-sound-only</description>
+      <link>Tutorials.htm#0c-03-a-web-address-sound-only</link>
+      <guid isPermaLink="false">homer-tutorial_03_webaddress</guid>
+      <enclosure url="tutorials/Tutorial_03_WebAddress.mp3" length="1100299" type="audio/mpeg"/>
+      <itunes:duration>00:02:53</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+    <item>
+      <title>04 - Remove the Advertisements</title>
+      <description>HomerScribe is installed, with Ollama and its reading model. An episode named Episode_212.mp3 is in the Videos folder. Full transcript: Tutorials.htm#0d-04-remove-the-advertisements</description>
+      <link>Tutorials.htm#0d-04-remove-the-advertisements</link>
+      <guid isPermaLink="false">homer-tutorial_04_removeads</guid>
+      <enclosure url="tutorials/Tutorial_04_RemoveAds.mp3" length="1048557" type="audio/mpeg"/>
+      <itunes:duration>00:02:43</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+    <item>
+      <title>05 - Read a PDF</title>
+      <description>HomerScribe is installed, with Ollama, Tesseract and Pandoc. A file named Annual_Report.pdf is in the Videos folder. Full transcript: Tutorials.htm#0e-05-read-a-pdf</description>
+      <link>Tutorials.htm#0e-05-read-a-pdf</link>
+      <guid isPermaLink="false">homer-tutorial_05_readpdf</guid>
+      <enclosure url="tutorials/Tutorial_05_ReadPdf.mp3" length="910889" type="audio/mpeg"/>
+      <itunes:duration>00:02:23</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+    <item>
+      <title>06 - Help, and a Newer Version</title>
+      <description>HomerScribe is installed and its dialog is open. The computer is online. Full transcript: Tutorials.htm#0f-06-help-and-a-newer-version</description>
+      <link>Tutorials.htm#0f-06-help-and-a-newer-version</link>
+      <guid isPermaLink="false">homer-tutorial_06_newerversion</guid>
+      <enclosure url="tutorials/Tutorial_06_NewerVersion.mp3" length="872931" type="audio/mpeg"/>
+      <itunes:duration>00:02:19</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+  </channel>
+</rss>

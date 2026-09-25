@@ -1,0 +1,59 @@
+﻿; Tutorial_06_NewerVersion.inix -- the Help box, and updating to a newer version.
+[about]
+Title=06 - Help, and a Newer Version
+Intro=F1 in the dialog lists every field and key, checks the web for a newer HomerScribe, and offers to install it.
+Setup=HomerScribe is installed and its dialog is open. The computer is online.
+Homework=Press F1 when there is no newer version. The box ends with "the newest on the web", and No is the default.
+
+[step]
+Say=Every Homer dialog answers F1 with the same kind of help: the fields, what each is for, the keys that work anywhere in the dialog, and, at the end, which version this is and whether a newer one is out.
+Key=
+Hear=
+
+[step]
+Say=Alt plus Control plus H opens the dialog. Then F1.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+Say=F1.
+Key=F1
+Hear=Help: HomerScribe dialog
+Hear=Help text edit, read only, Fields in this dialog:
+Note=The help is a read-only text box, so you can arrow through it line by line, and Control plus F8 copies all of it.
+
+[step]
+Say=Focus is in a read-only text box. Down Arrow reads it a line at a time. The first lines are the fields.
+Key=DownArrow
+Hear=Source paths: edit, One or more files, wildcard patterns, or web addresses to download from, separated by spaces. Put double quotes around any item containing a space.
+
+[step]
+Say=Each field, with its tip. Further down, the dialog keys.
+Key=
+Hear=Control plus Enter presses the accept button from anywhere.
+Hear=F7 lists the dialog's controls in navigation order; choose one and press OK to focus it.
+Pause=1
+Note=F7 is the answer when a dialog has more controls than you want to Tab through: a list, a letter, Enter.
+
+[step]
+Say=And at the end, the version. Control plus End goes to the last line.
+Key=Control+End
+Hear=Update to the version on the web now? Yes fetches it and starts its setup program.
+
+[step]
+Say=Up Arrow for the line before it.
+Key=UpArrow
+Hear=This is version 1.0.239. Version 1.0.240 is on the web.
+
+[step]
+Say=A newer version is out. The box's buttons are Yes and No, and because a newer version exists, Yes is the default: Enter takes it. If this were already the newest, No would be the default, and if the web could not be reached, there would be an OK button and nothing to decide.
+Key=Enter
+Hear=Setup - HomerScribe dialog
+Hear=Welcome to the HomerScribe Setup Wizard
+Note=Yes fetches HomerScribe_setup.exe from the latest release and starts it. The installer asks for administrator rights, closes HomerScribe when it needs to, and its last page offers the same boxes as a first install.
+
+[step]
+Say=The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already ticked.
+Key=
+Hear=

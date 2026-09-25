@@ -1,0 +1,71 @@
+﻿; Tutorial_03_WebAddress.inix -- a web address, sound only, with context from the page.
+[about]
+Title=03 - A Web Address, Sound Only
+Intro=A lecture on YouTube becomes one described MP3, a quarter the size of the video, with the page's own title guiding the descriptions.
+Setup=HomerScribe is installed, with Ollama. A YouTube address is on the clipboard.
+Homework=Give HomerScribe the address of a playlist. It says "Processing 3 of 9" as it goes, and each film gets its own folder.
+
+[step]
+Say=A lecture on YouTube, an hour of slides and a speaker. I do not need the video; I need to know what the slides say, and I want one file I can put on my phone.
+Key=
+Hear=
+
+[step]
+Say=Alt plus Control plus H opens the dialog, in Source paths as always.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+Say=Control plus A selects the sample address, and Control plus V pastes mine over it.
+Key=Control+A
+Hear=selected https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+Say=Control plus V.
+Key=Control+V
+Hear=
+Note=The reader is silent on a paste. Press Insert plus Up Arrow to read the line if you want to check it.
+
+[step]
+Say=Silence on a paste is normal. Now the boxes. Alt plus D, Describe. Alt plus A, Audio only, A for Audio. Alt plus W, Web context, W for Web.
+Key=Alt+D
+Hear=Describe video check box, checked, Alt plus D
+
+[step]
+Say=Alt plus A.
+Key=Alt+A
+Hear=Audio only check box, checked, Alt plus A
+Note=Audio only produces one described dot m p 3: the film's own sound with the descriptions mixed in, and no video. It is quicker to make and a quarter the size.
+
+[step]
+Say=Alt plus W.
+Key=Alt+W
+Hear=Web context check box, checked, Alt plus W
+Note=Web context reads the page's title and description first, so the model knows it is looking at a lecture on, say, tax law, and describes the slides as slides rather than guessing.
+
+[step]
+Say=Three boxes checked. Enter.
+Key=Enter
+Hear=HomerScribe, working
+Hear=Initializing, Downloading Introduction to Estate Planning, Lecture 4
+Pause=1
+
+[step]
+Say=It named the lecture from the page. That title is what Web context gives the model. Let me verify the window while it works, with Insert T.
+Key=Insert+T
+Hear=HomerScribe, describing 17 of 88
+
+[step]
+Say=Describing seventeen of eighty eight. The title carries the progress, so Insert T is all it takes to check on a long run from another window. I will let it finish.
+Key=
+Hear=Done. Introduction to Estate Planning, Lecture 4
+Hear=HomerScribe results dialog
+Hear=One source done. Took 22 minutes. Introduction to Estate Planning, Lecture 4: 88 descriptions, 58 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Introduction_to_Estate_Planning_Lecture_4. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Introduction_to_Estate_Planning_Lecture_4 backslash HomerScribe dot log.
+Hear=OK button
+Pause=1
+
+[step]
+Say=Enter presses OK. The folder holds described dot m p 3, one file with the lecture and its descriptions, and described dot m d to read.
+Key=Enter
+Hear=

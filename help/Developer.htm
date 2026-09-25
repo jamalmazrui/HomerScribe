@@ -247,6 +247,7 @@ scripts</a></li>
 run</a></li>
 <li><a href="#what-is-not-done" id="toc-what-is-not-done">What is not
 done</a></li>
+<li><a href="#releasing-1" id="toc-releasing-1">Releasing</a></li>
 </ul></li>
 </ul>
 </nav>
@@ -872,5 +873,28 @@ exemplars, which names characters far more reliably.</li>
 <li><strong>A dialog that carries every setting.</strong> It carries the
 ones named for it; the rest are command line only.</li>
 </ol>
+<h2 id="releasing-1">Releasing</h2>
+<p>Every tool the release needs is in <code>scripts</code>, refreshed
+from HomerDev on each build, so the commands are the same in every Homer
+app, run from the project folder:</p>
+<ul>
+<li><code>scripts\homerTidy --do-it</code> – put stray files in place,
+delete fetched things, write the whitelist <code>.gitignore</code> from
+<code>RepoFiles.txt</code>, commit and push. It stages nothing unless
+<code>RepoFiles.txt</code> exists.</li>
+<li><code>scripts\gitRelease</code> – run the checks, then
+tagRelease.</li>
+<li><code>scripts\tagRelease</code> – tag the commit with the version
+stamped in <code>HomerScribe_setup.exe</code>, push the tag, and publish
+the installer as a GitHub release.</li>
+<li><code>scripts\gitPush "message"</code> – commit and push with a
+message.</li>
+<li><code>scripts\gitUnpushed</code> – undo the commits not yet pushed,
+keeping every file, when something was committed that should not have
+been.</li>
+</ul>
+<p><code>RepoFiles.txt</code> names what the repository carries;
+<code>LocalFiles.txt</code> names what stays on this disk and is never
+pushed. Every log lands in <code>logs</code>.</p>
 </body>
 </html>

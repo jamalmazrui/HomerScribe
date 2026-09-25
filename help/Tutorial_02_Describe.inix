@@ -1,0 +1,70 @@
+﻿; Tutorial_02_Describe.inix -- describe what can be seen in a video.
+[about]
+Title=02 - Describe a Video
+Intro=The sample film in the Source paths box gets descriptions of every shot, as a document and as a described copy.
+Setup=HomerScribe is installed, with Ollama and its picture model. The dialog still holds the sample address.
+Homework=Open described dot m d and read the first three descriptions. Then play described dot m k v and listen to the same three.
+
+[step]
+Say=This time I want to know what is on screen. HomerScribe looks at the film, one moment at a time, and writes a description for each, using a picture model on my own machine.
+Key=
+Hear=
+
+[step]
+Say=Alt plus Control plus H opens the dialog.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+Say=I will leave the sample address as it is. It is the W3C's Perspectives film, seven and a half minutes, published with professional descriptions, so I can judge the result against the real thing. Alt plus D is Describe video, D for Describe.
+Key=Alt+D
+Hear=Describe video check box, checked, Alt plus D
+Note=Alt plus D is shared with Default settings. Windows cycles between the two; if the reader names Default settings, press Alt plus D once more.
+
+[step]
+Say=Checked. I also want the words that are spoken, woven in with the descriptions, so Alt plus T as well.
+Key=Alt+T
+Hear=Transcribe audio check box, checked, Alt plus T
+
+[step]
+Say=Both boxes are checked. Enter presses OK.
+Key=Enter
+Hear=HomerScribe, working
+Hear=Initializing, Downloading Perspectives colon Video Captions
+Note=A web address is downloaded first. HomerScribe fetches yt-dlp and ffmpeg itself when it needs them.
+
+[step]
+Say=It is downloading the film, and it named it from the page. Next it listens for where the speech is, then it looks. The announcements change their first word as the job changes.
+Key=
+Hear=Initializing, 7 min, 100%
+Hear=Describing, 1 of 42
+Pause=1
+
+[step]
+Say=Describing one of forty two. Each description is spoken as it is made, so you can follow along or go and do something else. Here is one.
+Key=
+Hear=Describing, 12 of 42, A woman with short grey hair sits at a kitchen table, a laptop open in front of her, morning light from a window on her left.
+Pause=1
+Note=Every description is also written into the document, so nothing depends on hearing it now.
+
+[step]
+Say=When the last description is written, it puts the film back together with the descriptions as a spoken track, and says so.
+Key=
+Hear=Finalizing, writing described dot m k v
+Hear=Done. Perspectives colon Video Captions
+Hear=HomerScribe results dialog
+Hear=One source done. Took 9 minutes. Perspectives colon Video Captions: 42 descriptions, 7 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Perspectives_Video_Captions. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Perspectives_Video_Captions backslash HomerScribe dot log.
+Hear=OK button
+Pause=1
+
+[step]
+Say=Forty two descriptions for a seven minute film, in nine minutes. Enter presses OK.
+Key=Enter
+Hear=
+
+[step]
+Say=The folder holds described dot m k v, the film with the description as its first sound track; described dot m d, the descriptions as a document; described dot v t t, the same as timed captions; transcribed dot m d, the words; and scribed dot m d, words and descriptions together in the order they happen. Read scribed dot m d for the whole film in one document.
+Key=
+Hear=
+Note=described dot m k v opens in any media player. In FileDir, Control plus Shift plus H plays it in the Homer Player.

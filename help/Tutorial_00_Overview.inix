@@ -1,0 +1,86 @@
+﻿; Tutorial_00_Overview.inix -- the first walk through HomerScribe.
+;
+; THE FORMAT: each [step] is one passage of narration and one of screen reader
+; speech. Say= is the narrator; Key= the key pressed, in Homer key-name form;
+; Hear= what the reader answers, word for word at a reader's middle verbosity;
+; Note= is written only, never spoken; Pause= seconds of silence before it.
+;
+; FOUR BEATS PER KEY, the way a screen reader trainer narrates: say the key,
+; press it, hear the reader, then say what that meant. Name silence when the
+; reader says nothing. Verify with Insert T after a change of focus. Teach the
+; repeat key in this first script. help\Tutorials.md has the whole list.
+;
+; ALWAYS SAY THE WORD THE KEY COMES FROM: "Alt plus T, T for Transcribe".
+
+[feed]
+Title=HomerScribe Walkthroughs
+Description=Short simulated walks through HomerScribe. Each one is a real job done from start to finish, about three minutes, with something to try at the end.
+Author=Jamal Mazrui
+Email=jamal@homertools.org
+Base=
+
+[global]
+NarratorScale=0.80
+ReaderScale=0.64
+LeadIn=2.0
+
+[about]
+Title=00 - Overview
+Intro=A simulated walk through HomerScribe, made with AI: a person working, and a screen reader answering.
+Setup=Nothing yet. This one is two minutes of what to expect.
+Homework=Pick the walk that matches what you want to do today. If it is a recording of speech, take walk one.
+
+[step]
+Say=HomerScribe listens to a film or a recording and writes down what is said, and looks at a film and writes down what can be seen. It runs on your own computer. Nothing is uploaded.
+Key=
+Hear=
+Note=Everything it makes is a document you can read with any screen reader.
+
+[step]
+Say=Two voices take these walks. I am the narrator, the person doing the work. The other voice is the screen reader, and it says only what a screen reader would say. You always know which of us is talking.
+Key=
+Hear=
+Note=The reader's lines are written the way a screen reader speaks at its middle verbosity setting: name, kind of control, state, then the access key.
+
+[step]
+Say=The walks are numbered. One transcribes a recording of speech. Two describes a video. Three works from a web address. Four takes the advertisements out of a podcast. Five reads a PDF. Six checks for a newer version. Take one first; the rest go in any order.
+Key=
+Hear=
+Note=Each walk starts from the dialog, so each one begins the same way.
+
+[step]
+Say=Every key is named with the word it comes from, so the key and the command stay together in memory. Alt plus T is Transcribe, T for Transcribe. Alt plus D is Describe, D for Describe.
+Key=
+Hear=
+Note=In a Homer dialog, the Alt key for a control is the underlined letter of its label, and the reader says it after the control's name.
+
+[step]
+Say=One key before anything else. If the reader says something and you miss it, Insert Up Arrow says the current line again. That is the screen reader's own key, not HomerScribe's. Use it freely; nothing in these walks depends on catching a line the first time.
+Key=
+Hear=
+Note=Insert plus Up Arrow is Say Line in most screen readers; some use their own modifier key in place of Insert.
+
+[step]
+Say=And one habit. When a window changes, I press Insert T to read its title, to verify where I am. You will hear me do it in every walk. It costs a second and it has saved me an hour.
+Key=
+Hear=
+Note=Insert plus T is Say Window Title in most screen readers.
+
+[step]
+Say=HomerScribe opens from the desktop with Alt plus Control plus H, H for HomerScribe. Let me press it, so you hear what the start of every walk sounds like.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+Note=The Source paths box starts with a sample video already in it: the W3C's Perspectives films, seven and a half minutes, freely licensed and published with professional descriptions, so a first run can be compared with how it should be done.
+
+[step]
+Say=The reader said the window is a dialog, and focus is in the Source paths edit box, which already holds a web address. That address is a sample film, and it is what walk two uses. I will close the dialog now with Escape.
+Key=Escape
+Hear=
+Note=Escape is Cancel in every Homer dialog. The reader says nothing, because the desktop that focus returns to is where it was before.
+
+[step]
+Say=The reader did not say anything, and that is right. Escape closed the dialog and focus went back to where it was. Silence after a key is information too, and I will always tell you when it is the correct answer.
+Key=
+Hear=
+Note=When nothing is announced after a key, verify with Insert T if you are unsure.

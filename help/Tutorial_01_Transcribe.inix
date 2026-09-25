@@ -1,0 +1,80 @@
+﻿; Tutorial_01_Transcribe.inix -- write down what is said in a recording.
+[about]
+Title=01 - Transcribe a Recording
+Intro=A one-hour MP3 of a screen reader class becomes a document of what was said.
+Setup=A recording named Introduction_to_Windows.mp3 is in the Videos folder. HomerScribe is installed.
+Homework=Transcribe a podcast episode of your own. Read the transcript's first heading: it names the recording and how long it runs.
+
+[step]
+Say=A friend sent me a recording of a screen reader class, an hour long, and I want it as text I can search. That is a transcription, and it is HomerScribe's simplest job.
+Key=
+Hear=
+
+[step]
+Say=Alt plus Control plus H, H for HomerScribe, opens the dialog from anywhere.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+Say=Focus is in Source paths, holding the sample address. I will select it all and type my own file's path over it.
+Key=Control+A
+Hear=selected https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+Say=Now the path. I type it, and the reader echoes as I go, so I will say it plainly instead: C colon, backslash Users, backslash Jamal, backslash Videos, backslash Introduction underscore to underscore Windows dot m p 3.
+Key=
+Hear=
+Note=Type the full path, or press Alt plus B, B for Browse source, and pick the file from a standard Open dialog instead.
+
+[step]
+Say=Next, say what to do with it. Alt plus T is Transcribe audio, T for Transcribe.
+Key=Alt+T
+Hear=Transcribe audio check box, checked, Alt plus T
+Note=Alt plus a letter toggles a check box directly; you do not have to Tab to it first.
+
+[step]
+Say=The reader said checked. That is the whole request: one file, one box. The output goes to the Videos folder unless I change it, and I will not. Enter presses OK from anywhere in the dialog.
+Key=Enter
+Hear=HomerScribe, working
+Hear=Initializing, 1 hour and 6 minutes long.
+Note=The dialog stays on screen for the whole run with its controls disabled, and its title says what is happening. Alt plus Tab always finds it.
+
+[step]
+Say=Two things happened. The window's title changed to HomerScribe, working, and an announcement said how long the recording is: an hour and six minutes. Hearing the length first is how you know it opened the right file.
+Key=
+Hear=
+
+[step]
+Say=Now it listens. Every so often it says how far it has got, as a place in the recording and a percentage. I will let one go by.
+Key=
+Hear=Initializing, 30 min, 45%
+Pause=2
+Note=On a processor without a graphics card, transcribing takes about a quarter of the recording's own length. An hour of speech is a quarter of an hour of waiting.
+
+[step]
+Say=Thirty minutes into the recording, forty five percent done. If I am doing something else and miss one of these, Insert Up Arrow repeats the last line the reader said. Let me verify where I am with Insert T.
+Key=Insert+T
+Hear=HomerScribe, working
+
+[step]
+Say=Still working. When it finishes, it names the file, and then a results box tells me what it made.
+Key=
+Hear=Done. Introduction to Windows dot m p 3
+Hear=HomerScribe results dialog
+Hear=One source done. Took 19 minutes. Introduction to Windows dot m p 3: transcript of 1682 spoken stretches. C colon backslash Users backslash Jamal backslash Videos backslash Introduction_to_Windows backslash transcribed dot m d. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Introduction_to_Windows backslash HomerScribe dot log.
+Hear=OK button
+Pause=1
+Note=The results box says what was done, how long it took, and where the document is, with a log beside it.
+
+[step]
+Say=Nineteen minutes for an hour of speech, and 1682 spoken stretches written into transcribed dot m d, in a folder named for the recording. Enter presses OK.
+Key=Enter
+Hear=
+Note=After the results box, focus returns to the dialog with its controls enabled again, ready for the next job.
+
+[step]
+Say=The transcript is a Markdown document. Its first heading names the recording; then comes what was said, in order, with a heading every ten minutes so you can jump by heading. Names that Whisper has never read are spelled as written in the vocabulary setting, so the names of screen readers and programs come out spelled right rather than as they sound.
+Key=
+Hear=
+Note=If a recording is full of names it gets wrong, add them to the vocabulary setting in the configuration, separated by commas.

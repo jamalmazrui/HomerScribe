@@ -1,0 +1,20 @@
+﻿# LocalFiles.txt -- what belongs to HomerScribe on this disk, but never in the repository.
+#
+# homerTidy keeps these where they are, and writes each line into .gitignore
+# as never pushed. One path or pattern a line; a trailing slash means a folder.
+
+# The spoken tutorials and their playlist: made by the build whenever a walk
+# has no audio, from the scripts in help, which are in the repository.
+help/tutorials/
+
+# Logs, one file per run
+logs/
+
+# Built binaries, fetched programs, working files
+exec/
+work/
+notes/
+packages/
+
+# The tutorial voices are NOT here: they live in C:\HomerDev\exec, fetched by
+# buildHomerDev and shared by every Homer app's build.

@@ -336,7 +336,6 @@ rem The .htm files are built alongside the .md files and shipped with them, so
 rem there is nothing to generate here. no converter is consulted: the one that used to be
 rem reported its own absence on every build and did nothing when present.
 
-
 rem ---- the Homer Development Kit ---------------------------------------
 rem HomerScribe no longer carries its own copies of the Homer classes. They
 rem live in one place, so a fix reaches every app that uses them, and so the
@@ -376,7 +375,7 @@ rem installer includes the first from; an older kit has them elsewhere or not at
 rem An older kit compiles the C# and then fails the installer with "Invalid
 rem number of parameters" -- which is what happened when HomerDev.zip was
 rem delivered but not unpacked. Failing here says what is wrong.
-set "kitNeeded=1.31.1"
+set "kitNeeded=1.35.0"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
@@ -400,6 +399,44 @@ set "homerSources=!homerSources! "!homerDev!\CSharp\Say.cs""
 set "homerSources=!homerSources! "!homerDev!\CSharp\Util.cs""
 set "homerSources=!homerSources! "!homerDev!\CSharp\Web.cs""
 echo Homer modules: !homerSources! >> "%log%"
+
+rem ---- tutorials: spoken when their audio is missing -------------------
+rem The scripts are help\Tutorial_*.inix; the audio is help\tutorials\<name>.mp3,
+rem one file per walk, with Tutorials.m3u beside them. The three tools that
+rem make them -- buildTutorials.cmd, buildTutorials.ps1, makeTutorials.py --
+rem are the kit's, refreshed into scripts\ on every build so there is one
+rem source of truth and the app still carries what it needs. Speaking happens
+rem only when a walk has no audio yet: delete an .mp3 to have it spoken again.
+rem The voices live in C:\HomerDev\exec, fetched by buildHomerDev alone; when they are
+rem missing, the tool says to run buildHomerDev and speaks nothing.
+rem THE KIT'S TOOLS THE APP CARRIES, refreshed on every build so there is one
+rem source of truth: the tutorial tools, homerTidy, and the release tools --
+rem tagRelease (tag, push, publish the installer), gitRelease (check first,
+rem then tagRelease), gitPush (commit and push with a message), gitUnpushed
+rem (undo commits not yet pushed, keeping every file). Run them from the
+rem project folder: scripts\tagRelease, scripts\homerTidy --do-it, and so on.
+if exist "!homerDev!\scripts\buildTutorials.ps1" (
+  for %%F in (buildTutorials.cmd buildTutorials.ps1 makeTutorials.py homerTidy.cmd homerTidy.py checkHomerApp.cmd checkHomerApp.py tagRelease.cmd tagRelease.ps1 gitRelease.cmd gitPush.cmd gitUnpushed.cmd gitUnpushed.py) do (
+    if exist "!homerDev!\scripts\%%F" copy /y "!homerDev!\scripts\%%F" scripts\ >nul
+  )
+  echo Kit tools refreshed into scripts\.>> "%log%"
+)
+set "tutorialsMissing="
+for %%F in (help\Tutorial_*.inix) do if not exist "help\tutorials\%%~nF.mp3" set "tutorialsMissing=1"
+if defined tutorialsMissing (
+  echo Speaking the tutorials that have no audio yet. The first time fetches the voices.
+  echo ---- tutorials ---->> "%log%"
+  call "scripts\buildTutorials.cmd" >> "%log%" 2>&1
+  if errorlevel 1 (
+    echo WARN: not every tutorial could be spoken. The tutorials log in logs\ says why.
+    echo WARN: not every tutorial could be spoken.>> "%log%"
+  ) else (
+    echo Tutorials spoken.
+  )
+) else (
+  echo Tutorials: every walk already has its audio.>> "%log%"
+)
+
 
 rem ---- PdfPig, found or fetched ---------------------------------------
 rem HomerScribe reads PDFs and PdfPig (Apache 2.0) is what lets it.

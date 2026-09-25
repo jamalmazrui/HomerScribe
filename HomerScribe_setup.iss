@@ -160,6 +160,14 @@ Source: "help\Developer.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipif
 Source: "help\Review.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "help\Context.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "help\Announce.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+; The tutorials: the written walks, the podcast feed, and one .mp3 per walk
+; in help\tutorials with a playlist beside them. Spoken by the build when
+; missing, so they are here whenever the build ran to the end.
+Source: "help\Tutorials.md"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\Tutorials.htm"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\TutorialFeed.xml"; DestDir: "{app}\help"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\tutorials\*.mp3"; DestDir: "{app}\help\tutorials"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "help\tutorials\Tutorials.m3u"; DestDir: "{app}\help\tutorials"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
 ; buildHomerScribe.cmd downloads them when they are missing, so normally they

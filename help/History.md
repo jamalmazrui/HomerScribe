@@ -27,6 +27,45 @@ change, and I had made it fiction.
 
 
 
+
+### 25 September, late: the stopped push, and the release command
+
+**The push you stopped.** The first tutorial build had left the voices in
+HomerScribe's own scripts folder; the tidy called all 486 files strays, moved
+them into notes, and, with no RepoFiles.txt to whitelist against, committed
+them all. Three fixes in kit 1.35.0: only buildHomerDev fetches voices, and
+into C:\HomerDev\exec; homerTidy deletes fetched things rather than archiving
+them; and it stages nothing without RepoFiles.txt. HomerScribe now has
+RepoFiles.txt and LocalFiles.txt, and `scripts\gitUnpushed` undoes that commit
+while keeping every file, ready for a proper tidy.
+
+**The release command is `scripts\tagRelease`.** The build refreshes the
+kit's tools into scripts on every build: tagRelease, gitRelease (check, then
+release), gitPush, gitUnpushed, homerTidy, checkHomerApp and the tutorial
+tools. The copy of tagRelease in C:\bin is an older edition; this one logs to
+logs and works for every Homer app.
+
+### 25 September, night: the tutorials, and the version the zip clobbered
+
+**Seven spoken walks.** Overview, transcribe a recording, describe a video, a
+web address for sound only, remove the advertisements, read a PDF, and the
+Help box with a newer version. Two voices: a narrator at work and a screen
+reader answering, in the four beats a trainer uses -- say the key, press it,
+hear the reader word for word, then say what it meant. The reader's lines
+follow the grammar of a real reader at its middle verbosity, taken from two
+training classes read back through HomerScribe; no reader is named. The
+audio is one `.mp3` per walk in `help\tutorials`, made by the build whenever a
+walk has none, with the tools refreshed from HomerDev on every build. The
+voices are Kokoro through sherpa-onnx when they can be fetched, piper
+otherwise; both licensed so the audio can be published under MIT. They are
+fetched once into C:\\HomerDev\\exec and shared by every Homer app. The kit's tools
+are now in its scripts folder, like every app's. Kit 1.34.0.
+
+**"Already released" from tagRelease.** The delivery zip carried
+`version.txt` at 1.0.237, so every unarchiving put the number back and the
+build stepped to the 1.0.238 that was already out. The zip no longer carries
+`version.txt`; the copy on the machine is the only one.
+
 ### 25 September, evening: two patterns for every Homer app
 
 **Names Whisper should spell right.** The JAWS training recording came back

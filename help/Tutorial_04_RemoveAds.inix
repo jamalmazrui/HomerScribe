@@ -1,0 +1,69 @@
+﻿; Tutorial_04_RemoveAds.inix -- take the advertisements out of a podcast.
+[about]
+Title=04 - Remove the Advertisements
+Intro=A podcast episode loses its advertisements and keeps everything else, with the original untouched.
+Setup=HomerScribe is installed, with Ollama and its reading model. An episode named Episode_212.mp3 is in the Videos folder.
+Homework=Run it on an episode with a mid-roll break. Read the summary line at the top of the document it writes: it says how much was cut and from where.
+
+[step]
+Say=A podcast I like carries four minutes of advertisements in every hour. HomerScribe can find them and cut them, and it is careful about it: nothing is cut unless the model is at least ninety five out of a hundred sure.
+Key=
+Hear=
+
+[step]
+Say=Alt plus Control plus H.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+Say=Alt plus B, B for Browse source, opens a standard Open dialog, which is easier than typing a path.
+Key=Alt+B
+Hear=Choose a file to work on dialog
+Hear=File name: edit
+
+[step]
+Say=I type Episode underscore 212 dot m p 3 and press Enter. The Videos folder is where the dialog starts.
+Key=Enter
+Hear=HomerScribe dialog
+Hear=Source paths: edit, C colon backslash Users backslash Jamal backslash Videos backslash Episode_212 dot m p 3
+Note=Browse puts the chosen path into Source paths and returns focus there.
+
+[step]
+Say=The path is in the box, and focus came back to it. Alt plus R is Remove ads, R for Remove.
+Key=Alt+R
+Hear=Remove ads check box, checked, Alt plus R
+
+[step]
+Say=Checked. Enter.
+Key=Enter
+Hear=HomerScribe, working
+Hear=Initializing, 58 minutes long.
+Pause=1
+
+[step]
+Say=Fifty eight minutes. It listens to the whole episode first, then reads what was said and asks the model where the advertisements are. That reading is the slow part.
+Key=
+Hear=Initializing, 58 min, 100%
+Hear=Reading, where the advertisements are
+Pause=2
+
+[step]
+Say=And the result.
+Key=
+Hear=Done. Episode 212 dot m p 3
+Hear=HomerScribe results dialog
+Hear=One source done. Took 16 minutes. Episode 212 dot m p 3: 3 advertisements removed, 4 minutes of 58 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Episode_212 backslash stripped dot m p 3. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Episode_212 backslash HomerScribe dot log.
+Hear=OK button
+Pause=1
+
+[step]
+Say=Three advertisements, four minutes of fifty eight, written as a new file named stripped, in the episode's own folder. The original is untouched. Enter.
+Key=Enter
+Hear=
+
+[step]
+Say=Beside the new file is a document saying what was cut, where each cut was, and what the model heard that made it sure. If it cut something it should not have, that document is how you would know.
+Key=
+Hear=
+Note=If nothing was ninety five percent certain, nothing is cut, and the document says so.

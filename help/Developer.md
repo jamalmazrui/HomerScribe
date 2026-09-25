@@ -599,3 +599,23 @@ Ranked by what would improve descriptions most.
    more reliably.
 2. **A dialog that carries every setting.** It carries the ones named for it; the
    rest are command line only.
+
+## Releasing
+
+Every tool the release needs is in `scripts`, refreshed from HomerDev on each
+build, so the commands are the same in every Homer app, run from the project
+folder:
+
+- `scripts\homerTidy --do-it` -- put stray files in place, delete fetched
+  things, write the whitelist `.gitignore` from `RepoFiles.txt`, commit and
+  push. It stages nothing unless `RepoFiles.txt` exists.
+- `scripts\gitRelease` -- run the checks, then tagRelease.
+- `scripts\tagRelease` -- tag the commit with the version stamped in
+  `HomerScribe_setup.exe`, push the tag, and publish the installer as a
+  GitHub release.
+- `scripts\gitPush "message"` -- commit and push with a message.
+- `scripts\gitUnpushed` -- undo the commits not yet pushed, keeping every
+  file, when something was committed that should not have been.
+
+`RepoFiles.txt` names what the repository carries; `LocalFiles.txt` names
+what stays on this disk and is never pushed. Every log lands in `logs`.

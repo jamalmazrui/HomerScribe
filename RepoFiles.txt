@@ -1,0 +1,48 @@
+﻿# RepoFiles.txt -- what the HomerScribe repository carries.
+#
+# One name per line. A trailing slash names a whole folder. Blank lines and
+# lines beginning with # or ; are ignored. homerTidy writes the whitelist
+# .gitignore from this file: everything is ignored, then exactly these are
+# pushed, less anything LocalFiles.txt names. Adding a file to the
+# repository means adding one line here.
+
+# Sources and build files at the top
+HomerScribe.cs
+HomerScribe.exe.config
+HomerScribe_setup.iss
+buildHomerScribe.cmd
+createHomerScribeRepo.cmd
+createHomerScribeRepo.ps1
+version.txt
+
+# The PdfPig assemblies the program links against, beside the executable
+Microsoft.Bcl.HashCode.dll
+System.Buffers.dll
+System.Memory.dll
+System.Numerics.Vectors.dll
+System.Runtime.CompilerServices.Unsafe.dll
+System.Threading.Tasks.Extensions.dll
+System.ValueTuple.dll
+UglyToad.PdfPig.Core.dll
+UglyToad.PdfPig.DocumentLayoutAnalysis.dll
+UglyToad.PdfPig.Fonts.dll
+UglyToad.PdfPig.Package.dll
+UglyToad.PdfPig.Tokenization.dll
+UglyToad.PdfPig.Tokens.dll
+UglyToad.PdfPig.dll
+pdfpig.name
+
+# Documents
+ReadMe.md
+ReadMe.htm
+License.md
+License.htm
+help/
+
+# Scripts the installer ships and the build uses, and the tutorial scripts
+scripts/
+
+# The project's own lists
+RepoFiles.txt
+LocalFiles.txt
+.gitignore

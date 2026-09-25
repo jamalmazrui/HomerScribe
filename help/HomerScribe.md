@@ -1263,6 +1263,18 @@ what a person would write down.
   literary description. It is a real improvement over nothing, and a real step
   below professional description.
 
+## Tutorials you can listen to
+
+Seven short walks, each a real job done from start to finish, are in the
+`help\tutorials` folder as `.mp3` files, one per walk. Two voices take each
+walk: a person doing the work, and a screen reader answering the way a reader
+speaks at its middle setting. Play the one you want in any media player. In
+FileDir, put the cursor on `Tutorials.m3u` in that folder and press
+Control+Shift+H to hear them as a list of tracks.
+
+The written version of every walk is in `help\Tutorials.md`, and there is a
+podcast feed beside it.
+
 ## Documentation in two forms
 
 Every document ships as both `.md` and `.htm`. The Markdown is the source, and

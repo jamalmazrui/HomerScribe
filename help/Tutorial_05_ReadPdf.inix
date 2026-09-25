@@ -1,0 +1,64 @@
+﻿; Tutorial_05_ReadPdf.inix -- read a PDF, scanned pages and all.
+[about]
+Title=05 - Read a PDF
+Intro=A PDF of a scanned report becomes a Markdown document, and a Word document beside it.
+Setup=HomerScribe is installed, with Ollama, Tesseract and Pandoc. A file named Annual_Report.pdf is in the Videos folder.
+Homework=Give it a PDF with pictures in it. Each picture gets a description where it sits in the text.
+
+[step]
+Say=A scanned report came as a PDF with no text in it, just pictures of pages. HomerScribe reads the pages, recognises the text, describes any pictures, and writes a document.
+Key=
+Hear=
+
+[step]
+Say=Alt plus Control plus H. Then Alt plus B to browse.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+Say=Alt plus B.
+Key=Alt+B
+Hear=Choose a file to work on dialog
+Hear=File name: edit
+
+[step]
+Say=Annual underscore Report dot p d f, Enter.
+Key=Enter
+Hear=HomerScribe dialog
+Hear=Source paths: edit, C colon backslash Users backslash Jamal backslash Videos backslash Annual_Report dot p d f
+
+[step]
+Say=A PDF needs no box ticked: HomerScribe knows what to do with one. Enter.
+Key=Enter
+Hear=HomerScribe, working
+Hear=Preparing, Opening Annual Report dot p d f
+Pause=1
+
+[step]
+Say=Preparing. It counts the pages and checks whether they carry text. These do not, so it reads them with Tesseract, page by page.
+Key=
+Hear=Reading, Page 12 of 40
+Pause=1
+Note=A PDF that already has text is read directly and is much quicker. Only scanned pages go through recognition.
+
+[step]
+Say=Page twelve of forty. Pictures on a page get described as it goes.
+Key=
+Hear=Describing, Page 15, a bar chart of revenue by region, five bars, the tallest labelled North America
+Pause=1
+
+[step]
+Say=And the result.
+Key=
+Hear=Done. Annual Report dot p d f
+Hear=HomerScribe results dialog
+Hear=One source done. Took 11 minutes. Annual Report dot p d f: 40 pages read, 6 pictures described. C colon backslash Users backslash Jamal backslash Videos backslash Annual_Report backslash Annual_Report dot m d. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Annual_Report backslash HomerScribe dot log.
+Hear=OK button
+Pause=1
+
+[step]
+Say=Forty pages and six pictures, eleven minutes. Enter. The folder holds Annual underscore Report dot m d, and, because Pandoc is installed, Annual underscore Report dot d o c x with the same page breaks as the original.
+Key=Enter
+Hear=
+Note=Without Pandoc, only the Markdown is written. The installer offers Pandoc as a box on its last page.

@@ -173,6 +173,14 @@ id="toc-homerscribe-history">HomerScribe History</a>
 <li><a href="#september-2026" id="toc-september-2026">1.0.238, 24
 September 2026</a>
 <ul>
+<li><a href="#september-late-the-stopped-push-and-the-release-command"
+id="toc-september-late-the-stopped-push-and-the-release-command">25
+September, late: the stopped push, and the release command</a></li>
+<li><a
+href="#september-night-the-tutorials-and-the-version-the-zip-clobbered"
+id="toc-september-night-the-tutorials-and-the-version-the-zip-clobbered">25
+September, night: the tutorials, and the version the zip
+clobbered</a></li>
 <li><a href="#september-evening-two-patterns-for-every-homer-app"
 id="toc-september-evening-two-patterns-for-every-homer-app">25
 September, evening: two patterns for every Homer app</a></li>
@@ -1311,6 +1319,46 @@ logs.</strong> Twice I saw “HomerScribe 1.0.237 starting”, compared it
 against a History claiming the 280s, and told him he was running a build
 that predated my work. He was running my work. The version number is the
 one thing that ties a log to a change, and I had made it fiction.</p>
+<h3 id="september-late-the-stopped-push-and-the-release-command">25
+September, late: the stopped push, and the release command</h3>
+<p><strong>The push you stopped.</strong> The first tutorial build had
+left the voices in HomerScribe’s own scripts folder; the tidy called all
+486 files strays, moved them into notes, and, with no RepoFiles.txt to
+whitelist against, committed them all. Three fixes in kit 1.35.0: only
+buildHomerDev fetches voices, and into C:; homerTidy deletes fetched
+things rather than archiving them; and it stages nothing without
+RepoFiles.txt. HomerScribe now has RepoFiles.txt and LocalFiles.txt, and
+<code>scripts\gitUnpushed</code> undoes that commit while keeping every
+file, ready for a proper tidy.</p>
+<p><strong>The release command is
+<code>scripts\tagRelease</code>.</strong> The build refreshes the kit’s
+tools into scripts on every build: tagRelease, gitRelease (check, then
+release), gitPush, gitUnpushed, homerTidy, checkHomerApp and the
+tutorial tools. The copy of tagRelease in C:is an older edition; this
+one logs to logs and works for every Homer app.</p>
+<h3
+id="september-night-the-tutorials-and-the-version-the-zip-clobbered">25
+September, night: the tutorials, and the version the zip clobbered</h3>
+<p><strong>Seven spoken walks.</strong> Overview, transcribe a
+recording, describe a video, a web address for sound only, remove the
+advertisements, read a PDF, and the Help box with a newer version. Two
+voices: a narrator at work and a screen reader answering, in the four
+beats a trainer uses – say the key, press it, hear the reader word for
+word, then say what it meant. The reader’s lines follow the grammar of a
+real reader at its middle verbosity, taken from two training classes
+read back through HomerScribe; no reader is named. The audio is one
+<code>.mp3</code> per walk in <code>help\tutorials</code>, made by the
+build whenever a walk has none, with the tools refreshed from HomerDev
+on every build. The voices are Kokoro through sherpa-onnx when they can
+be fetched, piper otherwise; both licensed so the audio can be published
+under MIT. They are fetched once into C:\HomerDev\exec and shared by
+every Homer app. The kit’s tools are now in its scripts folder, like
+every app’s. Kit 1.34.0.</p>
+<p><strong>“Already released” from tagRelease.</strong> The delivery zip
+carried <code>version.txt</code> at 1.0.237, so every unarchiving put
+the number back and the build stepped to the 1.0.238 that was already
+out. The zip no longer carries <code>version.txt</code>; the copy on the
+machine is the only one.</p>
 <h3 id="september-evening-two-patterns-for-every-homer-app">25
 September, evening: two patterns for every Homer app</h3>
 <p><strong>Names Whisper should spell right.</strong> The JAWS training
