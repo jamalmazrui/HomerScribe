@@ -76,7 +76,10 @@ UsePreviousAppDir=yes
 DisableDirPage=auto
 UsePreviousGroup=yes
 
-OutputDir=exec
+; THE INSTALLER IS WRITTEN TO THE TOP OF THE PROJECT, as in every Homer app:
+; scripts\release looks for it there, and LocalFiles.txt names it, so tidy
+; leaves it in place and git never takes it (exec until 26 September 2026).
+OutputDir=.
 OutputBaseFilename={#AppName}_setup
 SolidCompression=yes
 ; Empty on purpose: no license page. The license travels with the program
@@ -219,13 +222,13 @@ Source: "exec\HomerScribe.exe.config"; DestDir: "{app}\exec"; Flags: ignoreversi
 ; No Python is shipped and none is needed. HomerScribe reads a zip of page
 ; pictures; turning a PDF into those is a solved problem with many free tools,
 ; and carrying a PDF library to redo it would cost the single-file build.
-; homerInstall.cmd is the half every other script CALLS. Not shipping it
+; installCommon.cmd (homerInstall.cmd before kit 1.42) is the half every other script CALLS. Not shipping it
 ; meant each one died at its first line, before it could even make a log
 ; folder -- which is exactly the symptom: a Results box and no logs.
 ; checkConfig.ps1 and getPdfPig.ps1 are build-time scripts and are not
 ; shipped: HomerDev is a development-time dependency only, and the installed
 ; program must run with no kit on the machine (25 Sep 2026).
-Source: "scripts\homerInstall.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "scripts\installCommon.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "scripts\pdfPages.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; A standalone Whisper installer that depends on nothing else and checks
 ; the files rather than the exit codes. Run it by hand when the ordinary
@@ -420,7 +423,12 @@ Type: filesandordirs; Name: "{localappdata}\HomerScribe\logs"
 // INCLUDED FROM INSIDE [Code], not before it. The kit file carries no section
 // header of its own, so these definitions join this section rather than
 // starting a competing one.
-#include "C:\HomerDev\Templates\HomerComponents.iss"
+// The kit comes from the build as /DHomerDev=; compiled by hand, C:\HomerDev.
+// (Inside [Code] the language is Pascal: a comment starts with //, never ;.)
+#ifndef HomerDev
+  #define HomerDev "C:\HomerDev"
+#endif
+#include HomerDev + "\Templates\HomerComponents.iss"
 
 
 var

@@ -31,16 +31,16 @@ set "sCallerDir=%~dp0"
 rem IF THE SHARED HALF IS MISSING, SAY SO. It was left out of the installer
 rem once, and every script that calls it died at this line -- no message, no
 rem log folder, nothing to diagnose from. A missing file must announce itself.
-if not exist "%~dp0homerInstall.cmd" (
+if not exist "%~dp0installCommon.cmd" (
   echo(
-  echo homerInstall.cmd is missing from %~dp0
+  echo installCommon.cmd is missing from %~dp0
   echo That file is part of HomerScribe. Reinstall, or copy it from the
   echo HomerScribe zip into this folder, and run this again.
   echo(
   if not defined noPause pause
   exit /b 1
 )
-call "%~dp0homerInstall.cmd" setup "%~f0" %*
+call "%~dp0installCommon.cmd" setup "%~f0" %*
 
 set "model=small"
 set "noPause="
@@ -72,7 +72,7 @@ rem That is the whole point of a shared machine-wide component.
 for /f "delims=" %%W in ('where whisper-cli.exe 2^>nul') do (
   if not exist "%whisperDir%\whisper-cli.exe" (
     echo   whisper.cpp: already installed at %%W
-    call "%~dp0homerInstall.cmd" log "Found an existing whisper-cli.exe at %%W"
+    call "%~dp0installCommon.cmd" log "Found an existing whisper-cli.exe at %%W"
     set "whisperDir=%%~dpW"
     set "whisperDir=!whisperDir:~0,-1!"
   )
@@ -205,13 +205,13 @@ if not exist "%whisperDir%\ggml-%model%.bin" echo   the %model% model is missing
 echo(
 echo The commands reported success, so this is worth reporting. The log has the
 echo detail: %log%
-call "%~dp0homerInstall.cmd" log "FAILED: commands succeeded but the files are not present in %whisperDir%"
+call "%~dp0installCommon.cmd" log "FAILED: commands succeeded but the files are not present in %whisperDir%"
 if not defined noPause pause
 endlocal
 exit /b 1
 
 :programFailed
-call "%~dp0homerInstall.cmd" log "FAILED: whisper.cpp download or unpack failed; PowerShell output is above"
+call "%~dp0installCommon.cmd" log "FAILED: whisper.cpp download or unpack failed; PowerShell output is above"
 echo(
 echo whisper.cpp could not be downloaded.
 echo Get a Windows build by hand from
@@ -225,7 +225,7 @@ endlocal
 exit /b 1
 
 :modelFailed
-call "%~dp0homerInstall.cmd" log "FAILED: ggml-%model%.bin download failed; PowerShell output is above"
+call "%~dp0installCommon.cmd" log "FAILED: ggml-%model%.bin download failed; PowerShell output is above"
 echo(
 echo The %model% model could not be downloaded.
 echo Get ggml-%model%.bin by hand from

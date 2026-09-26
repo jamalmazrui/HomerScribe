@@ -165,92 +165,9 @@
   </style>
 </head>
 <body>
-<nav id="TOC" role="doc-toc">
-<ul>
-<li><a href="#homerscribe-for-developers"
-id="toc-homerscribe-for-developers">HomerScribe for Developers</a>
-<ul>
-<li><a href="#what-it-is" id="toc-what-it-is">What it is</a></li>
-<li><a href="#the-parts" id="toc-the-parts">The parts</a>
-<ul>
-<li><a href="#written-here" id="toc-written-here">Written here</a></li>
-<li><a href="#shared-with-the-other-homer-tools"
-id="toc-shared-with-the-other-homer-tools">Shared with the other Homer
-Tools</a></li>
-<li><a href="#other-programs-called-not-linked"
-id="toc-other-programs-called-not-linked">Other programs, called not
-linked</a></li>
-<li><a href="#framework-pieces-worth-knowing"
-id="toc-framework-pieces-worth-knowing">Framework pieces worth
-knowing</a></li>
-</ul></li>
-<li><a href="#how-a-description-is-made"
-id="toc-how-a-description-is-made">How a description is made</a></li>
-<li><a href="#the-console" id="toc-the-console">The console</a></li>
-<li><a href="#what-counts-as-a-source"
-id="toc-what-counts-as-a-source">What counts as a source</a></li>
-<li><a href="#speaking-to-the-user"
-id="toc-speaking-to-the-user">Speaking to the user</a></li>
-<li><a href="#captions-and-the-one-thing-they-must-not-touch"
-id="toc-captions-and-the-one-thing-they-must-not-touch">Captions, and
-the one thing they must not touch</a>
-<ul>
-<li><a href="#the-route-in" id="toc-the-route-in">The route in</a></li>
-<li><a href="#rolling-and-the-bug-that-is-worth-remembering"
-id="toc-rolling-and-the-bug-that-is-worth-remembering">Rolling, and the
-bug that is worth remembering</a></li>
-</ul></li>
-<li><a href="#naming-the-presenter" id="toc-naming-the-presenter">Naming
-the presenter</a></li>
-<li><a href="#keeping-yt-dlp-current"
-id="toc-keeping-yt-dlp-current">Keeping yt-dlp current</a></li>
-<li><a href="#how-many-times-youtube-is-asked"
-id="toc-how-many-times-youtube-is-asked">How many times YouTube is
-asked</a></li>
-<li><a href="#what-the-video-says-about-itself"
-id="toc-what-the-video-says-about-itself">What the video says about
-itself</a></li>
-<li><a href="#writing-the-three-documents"
-id="toc-writing-the-three-documents">Writing the three
-documents</a></li>
-<li><a href="#where-things-live" id="toc-where-things-live">Where things
-live</a></li>
-<li><a href="#building" id="toc-building">Building</a>
-<ul>
-<li><a href="#what-you-need" id="toc-what-you-need">What you
-need</a></li>
-<li><a href="#building-1" id="toc-building-1">Building</a></li>
-<li><a href="#versioning" id="toc-versioning">Versioning</a></li>
-<li><a href="#releasing" id="toc-releasing">Releasing</a></li>
-<li><a href="#traps" id="toc-traps">Traps</a></li>
-</ul></li>
-<li><a href="#changing-the-descriptions"
-id="toc-changing-the-descriptions">Changing the descriptions</a></li>
-<li><a href="#speed" id="toc-speed">Speed</a></li>
-<li><a href="#the-prototype" id="toc-the-prototype">The
-prototype</a></li>
-<li><a href="#testing-the-placement-without-a-film"
-id="toc-testing-the-placement-without-a-film">Testing the placement
-without a film</a></li>
-<li><a href="#taking-something-out-of-the-history"
-id="toc-taking-something-out-of-the-history">Taking something out of the
-history</a></li>
-<li><a href="#when-a-push-is-rejected-for-file-size"
-id="toc-when-a-push-is-rejected-for-file-size">When a push is rejected
-for file size</a></li>
-<li><a href="#putting-the-repository-right"
-id="toc-putting-the-repository-right">Putting the repository
-right</a></li>
-<li><a href="#the-helper-scripts" id="toc-the-helper-scripts">The helper
-scripts</a></li>
-<li><a href="#measuring-a-run" id="toc-measuring-a-run">Measuring a
-run</a></li>
-<li><a href="#what-is-not-done" id="toc-what-is-not-done">What is not
-done</a></li>
-<li><a href="#releasing-1" id="toc-releasing-1">Releasing</a></li>
-</ul></li>
-</ul>
-</nav>
+<header id="title-block-header">
+<h1 class="title">Developer</h1>
+</header>
 <h1 id="homerscribe-for-developers">HomerScribe for Developers</h1>
 <p>What the program is made of, how the pieces fit together, and how to
 build it.</p>
@@ -685,8 +602,9 @@ generates nothing.</p>
 the single source: the build reads it into <code>Version.cs</code>, and
 <code>HomerScribe_setup.iss</code> reads the same file through
 <code>FileOpen</code> and <code>FileRead</code> and writes it into the
-version resource of the setup. <code>tagRelease</code> then reads the
-FileVersion string back out of the built setup and forms the tag.</p>
+version resource of the setup. <code>scripts\release</code> then reads
+the FileVersion string back out of the built setup and forms the
+tag.</p>
 <p>No version literal appears in any other file, which is the point: a
 stale copy of a file cannot rewind the number.</p>
 <p>The build INCREMENTS <code>version.txt</code> before compiling, so
@@ -700,18 +618,18 @@ the origin remote with one <code>git ls-remote --tags</code> and steps
 over any number already tagged. A working copy whose
 <code>version.txt</code> has fallen behind the repository would
 otherwise stamp a number that is already spent and be refused by
-<code>tagRelease</code> after the whole build had run, which is what
-happened on 17 August 2026. If the remote cannot be reached, the plain
-increment is used and <code>tagRelease</code> remains the check it has
-always been.</p>
+<code>scripts\release</code> after the whole build had run, which is
+what happened on 17 August 2026. If the remote cannot be reached, the
+plain increment is used and <code>scripts\release</code> remains the
+check it has always been.</p>
 <h3 id="releasing">Releasing</h3>
-<pre><code>buildHomerScribe.cmd
-git add -A &amp;&amp; git commit -m &quot;...&quot;
-tagRelease</code></pre>
+<pre><code>buildHomerScribe
+scripts\push &quot;What changed.&quot;
+scripts\release</code></pre>
 <p><code>createHomerScribeRepo.cmd</code> is the one-time bootstrap that
-creates the repository. It, <code>tagRelease</code>, and their logs are
-in <code>.gitignore</code>; they are maintainer tools and not part of
-the distribution.</p>
+creates the repository. It, <code>scripts\release</code>, and their logs
+stay out of git; they are maintainer tools and not part of the
+distribution.</p>
 <h3 id="traps">Traps</h3>
 <ul>
 <li>The variable name <code>ProgramFiles(x86)</code> contains
@@ -878,18 +796,19 @@ ones named for it; the rest are command line only.</li>
 from HomerDev on each build, so the commands are the same in every Homer
 app, run from the project folder:</p>
 <ul>
-<li><code>scripts\homerTidy --do-it</code> – put stray files in place,
-delete fetched things, write the whitelist <code>.gitignore</code> from
+<li><code>scripts\tidy</code> – put stray files in place, delete fetched
+things, write the whitelist <code>.gitignore</code> from
 <code>RepoFiles.txt</code>, commit and push. It stages nothing unless
 <code>RepoFiles.txt</code> exists.</li>
-<li><code>scripts\tagRelease</code> – run the checks, then tag the
-commit with the version stamped in <code>HomerScribe_setup.exe</code>,
-push the tag, and publish the installer as a GitHub release.</li>
-<li><code>scripts\gitPush "message"</code> – the everyday commit:
-rewrites the whitelist from <code>RepoFiles.txt</code>, adds what it
-names, refuses anything over 10 MB, commits, pushes, shows the status.
-Run it after the build, before tagRelease.</li>
-<li><code>scripts\gitUnpushed</code> – undo the commits not yet pushed,
+<li><code>scripts\release</code> – run <code>scripts\check</code>, then
+tag the commit with the version stamped in
+<code>HomerScribe_setup.exe</code>, push the tag, and publish the
+installer as a GitHub release.</li>
+<li><code>scripts\push "message"</code> – the everyday commit: rewrites
+the whitelist from <code>RepoFiles.txt</code>, adds what it names,
+refuses anything over 10 MB, commits, pushes, shows the status. Run it
+after the build, before release.</li>
+<li><code>scripts\unpushed</code> – undo the commits not yet pushed,
 keeping every file, when something was committed that should not have
 been.</li>
 </ul>

@@ -316,7 +316,7 @@ rem installer includes the first from; an older kit has them elsewhere or not at
 rem An older kit compiles the C# and then fails the installer with "Invalid
 rem number of parameters" -- which is what happened when HomerDev.zip was
 rem delivered but not unpacked. Failing here says what is wrong.
-set "kitNeeded=1.39.3"
+set "kitNeeded=1.43.15"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
@@ -368,19 +368,37 @@ rem only when a walk has no audio yet: delete an .mp3 to have it spoken again.
 rem The voices live in C:\HomerDev\exec, fetched by buildHomerDev alone; when they are
 rem missing, the tool says to run buildHomerDev and speaks nothing.
 rem THE KIT'S TOOLS THE APP CARRIES, refreshed on every build so there is one
-rem source of truth: the tutorial tools, homerTidy, and the release tools --
-rem tagRelease (tag, push, publish the installer), gitPush (commit and push with a message), gitUnpushed
+rem source of truth: the tutorial tools, installCommon (the shared half of every
+rem install script), tidy, check, and the release tools -- release (tag, push,
+rem publish the installer), push (commit and push with a message), unpushed
 rem (undo commits not yet pushed, keeping every file). Run them from the
-rem project folder: scripts\tagRelease, scripts\homerTidy --do-it, and so on.
+rem project folder: scripts\release, scripts\tidy, and so on.
 if exist "!homerDev!\scripts\buildTutorials.ps1" (
-  for %%F in (homerInstall.cmd installOllama.cmd buildTutorials.cmd buildTutorials.ps1 checkTutorial.cmd checkTutorial.py fixEncoding.cmd fixEncoding.py makeTutorials.py homerTidy.cmd homerTidy.py checkHomerApp.cmd checkHomerApp.py tagRelease.cmd tagRelease.ps1 gitPush.cmd gitUnpushed.cmd gitUnpushed.py) do (
+  for %%F in (buildTutorials.cmd buildTutorials.ps1 check.cmd check.py checkTutorial.cmd checkTutorial.py finish.cmd fixEncoding.cmd fixEncoding.py installCommon.cmd installOllama.cmd makeTutorials.cmd makeTutorials.py push.cmd release.cmd release.ps1 tidy.cmd tidy.py unpushed.cmd unpushed.py) do (
     if exist "!homerDev!\scripts\%%F" copy /y "!homerDev!\scripts\%%F" scripts\ >nul
   )
   echo Kit tools refreshed into scripts\.>> "%log%"
 )
 rem Retired kit scripts an app may still carry from an earlier refresh: gone.
-for %%F in (cleanDir.cmd cleanDir.py gitRelease.cmd homerPolicy.py installTools.cmd sayTutorial.cmd sayTutorial.py tidyRepo.cmd tidyRepo.py) do (
+rem Since kit 1.42 the kit's scripts have plain names -- checkHomerApp is
+rem check, gitPush is push, gitUnpushed is unpushed, homerFinish is finish,
+rem homerInstall is installCommon, homerTidy is tidy, tagRelease is release --
+rem and the old copies go too, so an old name typed from habit fails at once
+rem instead of running a stale tool.
+for %%F in (checkHomerApp.cmd checkHomerApp.py gitPush.cmd gitUnpushed.cmd gitUnpushed.py homerFinish.cmd homerInstall.cmd homerTidy.cmd homerTidy.py tagRelease.cmd tagRelease.ps1 cleanDir.cmd cleanDir.py gitRelease.cmd homerPolicy.py installTools.cmd sayTutorial.cmd sayTutorial.py tidyRepo.cmd tidyRepo.py) do (
   if exist "scripts\%%F" del /q "scripts\%%F" && echo Removed retired scripts\%%F>> "%log%"
+)
+rem A check report written beside the tool by an old kit belongs in logs.
+for %%F in (scripts\evidence-*.md) do del /q "%%F" && echo Removed the stray report %%F>> "%log%"
+rem THE KIT'S CLASSES ARE COMPILED FROM C:\HomerDev\CSharp, so a copy at the
+rem top of the project is a stale one, waiting to be read or shipped by mistake.
+for %%F in (Elevate.cs Inix.cs Lbc.cs Log.cs Ollama.cs Paths.cs PdfRead.cs Say.cs Util.cs Web.cs) do (
+  if exist "%%F" if exist "!homerDev!\CSharp\%%F" del /q "%%F" && echo Removed the old top-level %%F; the kit's is compiled instead>> "%log%"
+)
+rem The install scripts, getPdfPig and pagebreak.lua live in scripts; copies at
+rem the top are from the layout before, when scripts has its own.
+for %%F in (getPdfPig.ps1 installDocumentModel.cmd installExifTool.cmd installModels.cmd installOllama.cmd installPandoc.cmd installTesseract.cmd installTextModel.cmd installWhisper.cmd pagebreak.lua) do (
+  if exist "%%F" if exist "scripts\%%F" del /q "%%F" && echo Removed the old top-level %%F; scripts\%%F is the one used>> "%log%"
 )
 set "tutorialsMissing="
 for %%F in (help\Tutorial_*.inix) do if not exist "help\tutorials\%%~nF.mp3" set "tutorialsMissing=1"
@@ -628,10 +646,20 @@ if not defined iscc (
   goto :done
 )
 echo Inno Setup: !iscc!>> "%log%"
-"!iscc!" "%app%_setup.iss" >> "%log%" 2>&1
+rem The kit folder goes to Inno as HomerDev, so the installer's #include of
+rem HomerComponents.iss follows the kit wherever it is.
+"!iscc!" /DHomerDev="!homerDev!" "%app%_setup.iss" >> "%log%" 2>&1
 if errorlevel 1 (
   echo ERROR: the installer build failed. See %log%.
   echo ERROR: the installer build failed.>> "%log%"
+  goto :failed
+)
+rem THE INSTALLER IS WRITTEN TO THE TOP OF THE PROJECT (OutputDir=.), where
+rem scripts\release looks for it; a copy an older build left in exec goes.
+if exist "exec\%app%_setup.exe" del /q "exec\%app%_setup.exe" && echo Removed the old exec\%app%_setup.exe>> "%log%"
+if not exist "%app%_setup.exe" (
+  echo ERROR: Inno Setup returned 0 but wrote no %app%_setup.exe.
+  echo ERROR: no %app%_setup.exe after a successful ISCC run.>> "%log%"
   goto :failed
 )
 echo Built %app%_setup.exe version !ver!>> "%log%"
@@ -640,8 +668,8 @@ echo Built %app%_setup.exe version !ver!
 :done
 echo Build succeeded %DATE% %TIME%>> "%log%"
 echo(
-echo To publish: commit, then run tagRelease. It reads the version from
-echo the version resource of %app%_setup.exe and tags v!ver!.
+echo To publish: scripts\push "What changed.", then scripts\release. It reads the
+echo version from the version resource of %app%_setup.exe and tags v!ver!.
 endlocal
 exit /b 0
 

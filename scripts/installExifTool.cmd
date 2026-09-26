@@ -10,16 +10,16 @@ set "sCallerDir=%~dp0"
 rem IF THE SHARED HALF IS MISSING, SAY SO. It was left out of the installer
 rem once, and every script that calls it died at this line -- no message, no
 rem log folder, nothing to diagnose from. A missing file must announce itself.
-if not exist "%~dp0homerInstall.cmd" (
+if not exist "%~dp0installCommon.cmd" (
   echo(
-  echo homerInstall.cmd is missing from %~dp0
+  echo installCommon.cmd is missing from %~dp0
   echo That file is part of HomerScribe. Reinstall, or copy it from the
   echo HomerScribe zip into this folder, and run this again.
   echo(
   if not defined noPause pause
   exit /b 1
 )
-call "%~dp0homerInstall.cmd" setup "%~f0" %*
+call "%~dp0installCommon.cmd" setup "%~f0" %*
 rem ---- WHY THIS USES WINGET NOW -------------------------------------------
 rem
 rem The single-file exiftool.exe is DEPRECATED. Phil Harvey stopped releasing
@@ -47,7 +47,7 @@ if errorlevel 1 (
   echo winget was not found, so ExifTool cannot be fetched automatically.
   echo HomerScribe will still describe pictures; it just cannot write the
   echo descriptions into them.
-  call "%~dp0homerInstall.cmd" log "FAILED: winget is not on this machine"
+  call "%~dp0installCommon.cmd" log "FAILED: winget is not on this machine"
   if not defined noPause pause
   exit /b 1
 )
@@ -62,12 +62,12 @@ if not defined found if exist "%ProgramFiles%\ExifTool\exiftool.exe" set "found=
 if not defined found (
   echo(
   echo ExifTool did NOT install. The log has what winget said: %log%
-  call "%~dp0homerInstall.cmd" log "FAILED: exiftool.exe not found after winget"
+  call "%~dp0installCommon.cmd" log "FAILED: exiftool.exe not found after winget"
   if not defined noPause pause
   exit /b 1
 )
 echo   ExifTool is at %found%
-call "%~dp0homerInstall.cmd" log "OK: exiftool.exe at %found%"
+call "%~dp0installCommon.cmd" log "OK: exiftool.exe at %found%"
 echo(
 echo ExifTool is ready.
 if not defined noPause pause

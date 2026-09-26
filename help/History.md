@@ -9,6 +9,14 @@
 
 
 
+## 1.0.256, 26 September 2026 -- brought up to HomerDev 1.43.15
+
+Numbered as version.txt (1.0.255) plus one, the number this build stamps.
+
+- **The kit's scripts under their plain names.** The build refreshes check, push, release, tidy, unpushed, finish and installCommon into scripts and deletes the old checkHomerApp, gitPush, gitUnpushed, homerFinish, homerInstall, homerTidy and tagRelease copies. HomerScribe's own seven install scripts and the installer use installCommon.cmd, the shared half of every install script; under its old name it would soon have stopped being refreshed, and every install script would have stopped with "missing".
+- **The installer is written to the top of the project**, where the kit's release script looks for it, and finds the kit's HomerComponents.iss in the kit folder the build passes it rather than at a fixed C:\HomerDev.
+- **Tidier project.** The copies of the kit's classes, and the copies of the install scripts, getPdfPig.ps1 and pagebreak.lua left at the top from the layout before, are removed; a stray check report in scripts goes. What git carries follows RepoFiles.txt: version.txt, the notes and packages folders and the repository bootstrap stay on this disk, and `.gitattributes` keeps the Homer CRLF line endings as they are.
+
 ## 1.0.238, 24 September 2026
 
 Everything below is in ONE build. The entries had been numbered 1.0.275 to

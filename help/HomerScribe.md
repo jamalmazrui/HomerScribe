@@ -1369,13 +1369,13 @@ From there it flows outward:
 2. `HomerScribe_setup.iss` reads `version.txt` at compile time through
    `FileOpen` and `FileRead`, and writes it into the version resource of
    `HomerScribe_setup.exe` through `VersionInfoVersion` and
-   `VersionInfoTextVersion`. The text form is set explicitly because tagRelease
+   `VersionInfoTextVersion`. The text form is set explicitly because scripts\release
    reads the FileVersion *string*, and a tag of `v1.0.0` is wanted rather than
    `v1.0.0.0`.
-3. `tagRelease` reads that FileVersion, forms the tag, and posts
+3. `scripts\release` reads that FileVersion, forms the tag, and posts
    `HomerScribe_setup.exe`, whose name it takes from `OutputBaseFilename`.
 
-So a release is: run `buildHomerScribe.cmd`, commit, run `tagRelease`. The
+So a release is: run `buildHomerScribe`, then `scripts\push`, then `scripts\release`. The
 program, the installer, and the tag can never disagree.
 
 `Version.cs` is generated output. It is in `.gitignore` and should not be edited

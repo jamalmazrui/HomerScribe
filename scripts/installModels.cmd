@@ -25,16 +25,16 @@ set "sCallerDir=%~dp0"
 rem IF THE SHARED HALF IS MISSING, SAY SO. It was left out of the installer
 rem once, and every script that calls it died at this line -- no message, no
 rem log folder, nothing to diagnose from. A missing file must announce itself.
-if not exist "%~dp0homerInstall.cmd" (
+if not exist "%~dp0installCommon.cmd" (
   echo(
-  echo homerInstall.cmd is missing from %~dp0
+  echo installCommon.cmd is missing from %~dp0
   echo That file is part of HomerScribe. Reinstall, or copy it from the
   echo HomerScribe zip into this folder, and run this again.
   echo(
   if not defined noPause pause
   exit /b 1
 )
-call "%~dp0homerInstall.cmd" setup "%~f0" %*
+call "%~dp0installCommon.cmd" setup "%~f0" %*
 
 
 

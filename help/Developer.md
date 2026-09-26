@@ -405,7 +405,7 @@ the `.md` and ships beside it, so the build generates nothing.
 `version.txt` holds the version and nothing else. It is the single source: the
 build reads it into `Version.cs`, and `HomerScribe_setup.iss` reads the same
 file through `FileOpen` and `FileRead` and writes it into the version resource of
-the setup. `tagRelease` then reads the FileVersion string back out of the built
+the setup. `scripts\release` then reads the FileVersion string back out of the built
 setup and forms the tag.
 
 No version literal appears in any other file, which is the point: a stale copy of
@@ -420,19 +420,19 @@ describe versions nobody ever ran.
 Before it settles on a number, the build reads the release tags from the origin
 remote with one `git ls-remote --tags` and steps over any number already tagged.
 A working copy whose `version.txt` has fallen behind the repository would
-otherwise stamp a number that is already spent and be refused by `tagRelease`
+otherwise stamp a number that is already spent and be refused by `scripts\release`
 after the whole build had run, which is what happened on 17 August 2026. If the
-remote cannot be reached, the plain increment is used and `tagRelease` remains
+remote cannot be reached, the plain increment is used and `scripts\release` remains
 the check it has always been.
 
 ### Releasing
 
-    buildHomerScribe.cmd
-    git add -A && git commit -m "..."
-    tagRelease
+    buildHomerScribe
+    scripts\push "What changed."
+    scripts\release
 
 `createHomerScribeRepo.cmd` is the one-time bootstrap that creates the
-repository. It, `tagRelease`, and their logs are in `.gitignore`; they are
+repository. It, `scripts\release`, and their logs stay out of git; they are
 maintainer tools and not part of the distribution.
 
 ### Traps
@@ -606,16 +606,16 @@ Every tool the release needs is in `scripts`, refreshed from HomerDev on each
 build, so the commands are the same in every Homer app, run from the project
 folder:
 
-- `scripts\homerTidy --do-it` -- put stray files in place, delete fetched
+- `scripts\tidy` -- put stray files in place, delete fetched
   things, write the whitelist `.gitignore` from `RepoFiles.txt`, commit and
   push. It stages nothing unless `RepoFiles.txt` exists.
-- `scripts\tagRelease` -- run the checks, then tag the commit with the version
+- `scripts\release` -- run `scripts\check`, then tag the commit with the version
   stamped in `HomerScribe_setup.exe`, push the tag, and publish the installer
   as a GitHub release.
-- `scripts\gitPush "message"` -- the everyday commit: rewrites the whitelist
+- `scripts\push "message"` -- the everyday commit: rewrites the whitelist
   from `RepoFiles.txt`, adds what it names, refuses anything over 10 MB,
-  commits, pushes, shows the status. Run it after the build, before tagRelease.
-- `scripts\gitUnpushed` -- undo the commits not yet pushed, keeping every
+  commits, pushes, shows the status. Run it after the build, before release.
+- `scripts\unpushed` -- undo the commits not yet pushed, keeping every
   file, when something was committed that should not have been.
 
 `RepoFiles.txt` names what the repository carries; `LocalFiles.txt` names
