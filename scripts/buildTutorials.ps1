@@ -248,10 +248,17 @@ function runVoice([string] $sExe, [string[]] $lsArgs, [object] $oInput, [string]
   # its timings to standard error; PowerShell wraps the first such line as a
   # "NativeCommandError". None of it is an error. Of a Kokoro run only the
   # timing lines and anything that looks wrong are kept in the log.
+  # PowerShell wraps the first line a native program writes to standard error
+  # in a NativeCommandError record: five lines of "At C:\...", "+ ...",
+  # "CategoryInfo" and "FullyQualifiedErrorId" per piece, none of them from
+  # the program. piper's "[info]" lines are its progress. A seven-walk run
+  # logged 186 KB of this on 25 Sep 2026. Dropped; a real message survives.
   $bKokoroRun = $sLabel.StartsWith("kokoro")
   foreach ($sLine in ($sOut -split "`r?`n")) {
     $sTrim = $sLine.Trim()
     if ($sTrim -eq "") { continue }
+    if ($sTrim -match "^(At line:|At [A-Z]:\\|\+ |CategoryInfo|FullyQualifiedErrorId|~+$)") { continue }
+    if ($sTrim -match "\[info\]") { continue }
     if ($bKokoroRun -and -not ($sTrim -match "Elapsed seconds|RTF|error|fail|not found|cannot|unable")) { continue }
     note ("  " + $sLabel + " | " + $sTrim)
   }
@@ -825,8 +832,9 @@ function buildOne([string] $sScript) {
     $sEven = $sFile + ".even.wav"
     $sFilter = "loudnorm=I=-16:TP=-1.5:LRA=11"
     if ($dGain -ne 1.0) { $sFilter = $sFilter + ",volume=" + [string]::Format($sInv, "{0:0.00}", $dGain) }
-    runVoice $sFfmpeg @("-y", "-loglevel", "error", "-i", $sFile, "-af", $sFilter, "-ar", "22050", "-ac", "1", $sEven) $null "ffmpeg-loudness" | Out-Null
-    if (Test-Path -LiteralPath $sEven) { Move-Item -LiteralPath $sEven -Destination $sFile -Force }
+    $iEven = runVoice $sFfmpeg @("-y", "-loglevel", "error", "-i", $sFile, "-af", $sFilter, "-ar", "22050", "-ac", "1", $sEven) $null "ffmpeg-loudness"
+    if ($iEven -ne 0 -or -not (Test-Path -LiteralPath $sEven)) { note ("  loudness NOT evened for " + [System.IO.Path]::GetFileName($sFile) + ", exit " + $iEven + "; the piece is used as spoken"); return }
+    Move-Item -LiteralPath $sEven -Destination $sFile -Force
   }
 
   function speakNarrator([string] $sText) {
@@ -952,6 +960,7 @@ function buildOne([string] $sScript) {
   if ($lsSteps.Count -eq 0) { say ($sStem + " holds 0 steps."); return $false }
   note ($sStem + ": steps " + $lsSteps.Count)
   say ("Creating " + $sStem + ".mp3, " + $lsSteps.Count + " steps. A few minutes.")
+  note ("loudness: every piece to loudnorm I=-16 TP=-1.5 LRA=11; reader gain " + $dReaderGain.ToString([System.Globalization.CultureInfo]::InvariantCulture))
 
   # A BEAT BEFORE ANYTHING IS SAID.
   #

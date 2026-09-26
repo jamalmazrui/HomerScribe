@@ -1,4 +1,4 @@
-# checkConfig.ps1 -- does HomerScribe.exe.config name the versions actually here?
+﻿# checkConfig.ps1 -- does HomerScribe.exe.config name the versions actually here?
 #
 # Twice now a build has succeeded with a config that redirected System.Memory
 # to 4.0.2.0 while 4.0.5.0 sat beside the executable, and twice HomerScribe

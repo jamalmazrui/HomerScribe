@@ -1,4 +1,4 @@
---[[
+﻿--[[
 pagebreak - convert \pagebreak and \newpage into real page breaks
 
 The official pandoc-ext/pagebreak filter, shipped with HomerScribe because

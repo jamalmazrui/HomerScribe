@@ -73,7 +73,11 @@ import traceback
 # The standard document set. ReadMe and License sit at the top of the project;
 # everything else lives in help, which is where the Homer layout puts documents.
 c_lsDocumentsTop = ["License", "ReadMe"]
-c_lsDocumentsHelp = ["Announce", "Developer", "FAQ", "History", "Hotkeys", "Tutorials"]
+# THE DEFAULT DOCUMENT SET (22 Aug 2026): ReadMe and License at the top; the
+# app's own guide, Developer, History and Hotkeys in help. Tutorials only when
+# the app has tutorial scripts. Announce and FAQ are welcome, never required:
+# a check that demanded FAQ refused a release on 25 Sep 2026.
+c_lsDocumentsHelp = ["Developer", "History", "Hotkeys"]
 c_lsSkipFolders = [".git", ".venv", "__pycache__", "build", "dist", "notes", "venv"]
 c_lsGeneratedFiles = ["version.py", "version.cs"]   # written by every build
 c_lsTextExt = (".cs", ".py", ".ps1", ".md", ".htm", ".inix", ".txt", ".iss", ".cmd", ".bat")
@@ -208,9 +212,10 @@ def readText(sPath):
 
 def checkDocuments():
     sApp = appName()
+    lsHelp = sorted(c_lsDocumentsHelp + [sApp])
+    if glob.glob(os.path.join(sRoot, "help", "Tutorial_*.inix")): lsHelp.append("Tutorials")
     lsWanted = ([(sRoot, s) for s in c_lsDocumentsTop] +
-                [(os.path.join(sRoot, "help"), s)
-                 for s in sorted(c_lsDocumentsHelp + [sApp])])
+                [(os.path.join(sRoot, "help"), s) for s in lsHelp])
     lsMissing = [s for sFolder, s in lsWanted
                  if not os.path.exists(os.path.join(sFolder, s + ".md"))]
     lsNoHtm = [s for sFolder, s in lsWanted
@@ -224,7 +229,31 @@ def checkDocuments():
                    countNoun(len(lsWanted), "document"))
 
 
+def namedByProject():
+    """RepoFiles.txt entries, or None when there is no such file."""
+    sPath = os.path.join(sRoot, "RepoFiles.txt")
+    if not os.path.isfile(sPath): return None
+    lsNamed = []
+    for sLine in readText(sPath).splitlines():
+        sLine = sLine.strip()
+        if sLine and not sLine.startswith("#"): lsNamed.append(sLine.replace("\\", "/").lower())
+    return lsNamed
+
+
+def isNamed(sRelative, lsNamed):
+    sLower = sRelative.replace("\\", "/").lower()
+    for sNamed in lsNamed:
+        if sNamed == sLower: return True
+        if sNamed.endswith("/") and sLower.startswith(sNamed): return True
+        if "*" in sNamed and re.match("^" + re.escape(sNamed).replace(r"\*", ".*") + "$", sLower): return True
+    return False
+
+
 def checkEncoding():
+    # ONLY THE PROJECT'S OWN FILES, the ones RepoFiles.txt names. A stray in
+    # the folder is homerTidy's business; 54 of the 72 faults that refused a
+    # release on 25 Sep 2026 were strays the project never named.
+    lsNamed = namedByProject()
     lsWrong = []
     iChecked = 0
     for sDirPath, lsDirs, lsNames in os.walk(sRoot):
@@ -233,6 +262,7 @@ def checkEncoding():
             if sName.lower() in c_lsGeneratedFiles: continue
             if not sName.lower().endswith(c_lsTextExt): continue
             sPath = os.path.join(sDirPath, sName)
+            if lsNamed is not None and not isNamed(os.path.relpath(sPath, sRoot), lsNamed): continue
             sShown = os.path.relpath(sPath, sRoot).replace(os.sep, "/")
             try:
                 binData = open(sPath, "rb").read()
@@ -301,8 +331,12 @@ def checkPublish():
 
 
 def checkLogging():
+    # Evidence of a log: the kit's Log.start, or a program that opens a file
+    # under a logs folder itself -- HomerScribe writes its own, and was refused
+    # a release on 25 Sep 2026 for not calling the kit's.
     lsWith = [s for s in sourceFiles()
-              if re.search(r"\bLog\.start\s*\(|\blog\.start\s*\(", readText(s))]
+              if re.search(r"\bLog\.start\s*\(|\blog\.start\s*\(", readText(s))
+              or (re.search(r"[\"'][^\"']*logs[\"'\\/]", readText(s)) and re.search(r"\.log\b", readText(s)))]
     if not lsWith:
         return finding("logging", "fail",
                        "no source file calls Log.start or log.start, so a failure would leave no record")
