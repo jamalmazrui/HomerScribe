@@ -62,7 +62,7 @@ Say=Still working. When it finishes, it names the file, and then a results box t
 Key=
 Hear=Done. Introduction to Windows dot m p 3
 Hear=HomerScribe results dialog
-Hear=One source done. Took 19 minutes. Introduction to Windows dot m p 3: transcript of 1682 spoken stretches. C colon backslash Users backslash Jamal backslash Videos backslash Introduction_to_Windows backslash transcribed dot m d. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Introduction_to_Windows backslash HomerScribe dot log.
+Hear=One source done. Took 19 minutes. Introduction to Windows dot m p 3: transcript of 1682 spoken stretches. C colon backslash Users backslash Jamal backslash Videos backslash Introduction to Windows backslash transcribed dot m d. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Introduction to Windows backslash HomerScribe dot log.
 Hear=OK button
 Pause=1
 Note=The results box says what was done, how long it took, and where the document is, with a log beside it.
@@ -70,7 +70,9 @@ Note=The results box says what was done, how long it took, and where the documen
 [step]
 Say=Nineteen minutes for an hour of speech, and 1682 spoken stretches written into transcribed dot m d, in a folder named for the recording. Enter presses OK.
 Key=Enter
-Hear=
+Hear=HomerScribe dialog
+Hear=Source paths: edit
+Note=OK closes the results box and focus returns to the dialog, controls enabled again, ready for the next job.
 Note=After the results box, focus returns to the dialog with its controls enabled again, ready for the next job.
 
 [step]

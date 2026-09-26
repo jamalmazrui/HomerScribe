@@ -1,5 +1,5 @@
 @echo off
-rem installOllama.cmd -- install Ollama, the local AI service HomerScribe uses.
+rem installOllama.cmd -- install Ollama, the local AI service a Homer app uses.
 rem
 rem Run from the installer's final page, or on its own at any time.
 rem
@@ -28,8 +28,8 @@ rem log folder, nothing to diagnose from. A missing file must announce itself.
 if not exist "%~dp0homerInstall.cmd" (
   echo(
   echo homerInstall.cmd is missing from %~dp0
-  echo That file is part of HomerScribe. Reinstall, or copy it from the
-  echo HomerScribe zip into this folder, and run this again.
+  echo That file is part of this program. Reinstall, or copy it from the
+  echo program's zip into this folder, and run this again.
   echo(
   if not defined noPause pause
   exit /b 1

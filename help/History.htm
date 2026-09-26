@@ -173,6 +173,12 @@ id="toc-homerscribe-history">HomerScribe History</a>
 <li><a href="#september-2026" id="toc-september-2026">1.0.238, 24
 September 2026</a>
 <ul>
+<li><a href="#september-closing-one-tool-per-job"
+id="toc-september-closing-one-tool-per-job">25 September, closing: one
+tool per job</a></li>
+<li><a href="#september-last-the-context-folder-and-the-readers-voice"
+id="toc-september-last-the-context-folder-and-the-readers-voice">25
+September, last: the context folder, and the reader’s voice</a></li>
 <li><a href="#september-late-the-stopped-push-and-the-release-command"
 id="toc-september-late-the-stopped-push-and-the-release-command">25
 September, late: the stopped push, and the release command</a></li>
@@ -1319,6 +1325,33 @@ logs.</strong> Twice I saw “HomerScribe 1.0.237 starting”, compared it
 against a History claiming the 280s, and told him he was running a build
 that predated my work. He was running my work. The version number is the
 one thing that ties a log to a change, and I had made it fiction.</p>
+<h3 id="september-closing-one-tool-per-job">25 September, closing: one
+tool per job</h3>
+<p>The kit retired the scripts whose names sounded like another’s:
+<code>cleanDir</code> and <code>tidyRepo</code> are
+<code>homerTidy</code>; <code>gitRelease</code> is
+<code>tagRelease</code>, which runs the checks itself now;
+<code>sayTutorial</code> is <code>buildTutorials</code>;
+<code>installTools</code>, which put copies in <code>C:\bin</code> that
+went stale, is gone. The build removes any retired copy HomerScribe
+still carries. Kit 1.38.0.</p>
+<h3 id="september-last-the-context-folder-and-the-readers-voice">25
+September, last: the context folder, and the reader’s voice</h3>
+<p><strong><code>context</code> is <code>templates</code>.</strong> The
+worked example of a context file lives in <code>templates</code> now: a
+folder named context shared its first letter with configs, and the
+standard folders carry distinct first letters so a list of them can be
+walked by initial letter. The build moves what was in
+<code>context</code> into <code>templates</code> once and removes the
+empty folder.</p>
+<p><strong>The walks, faster and even.</strong> The reader speaks
+through piper while the narrator keeps Kokoro, which halves the minutes;
+long lines are cut at sentences and commas before Kokoro sees them;
+every piece is brought to one loudness, so the reader is no longer
+quieter than the narrator; and the build says “step N of M” every four
+steps while a walk is being spoken. <code>installOllama.cmd</code> and
+<code>homerInstall.cmd</code> are now refreshed from the kit on every
+build, like the other shared scripts.</p>
 <h3 id="september-late-the-stopped-push-and-the-release-command">25
 September, late: the stopped push, and the release command</h3>
 <p><strong>The push you stopped.</strong> The first tutorial build had

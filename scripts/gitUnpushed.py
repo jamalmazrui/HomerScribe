@@ -17,7 +17,19 @@ Run it in the project folder. It logs to logs\\<App>-unpushed-yyyyMMdd-HHmmss.lo
 import datetime, os, platform, subprocess, sys
 
 oLog = None
-sRoot = os.getcwd()
+
+
+def projectRoot(sStart):
+    """The current folder, or its parent when the current folder is the
+    project's scripts or exec folder -- the one rule every Homer tool follows."""
+    if os.path.basename(sStart).lower() in ("scripts", "exec", "tools"):
+        sParent = os.path.dirname(sStart)
+        if os.path.isfile(os.path.join(sParent, "version.txt")) or os.path.isfile(os.path.join(sParent, "RepoFiles.txt")):
+            return sParent
+    return sStart
+
+
+sRoot = projectRoot(os.getcwd())
 
 
 def logLine(sText):

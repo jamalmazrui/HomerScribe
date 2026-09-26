@@ -2,8 +2,8 @@
 r"""homerTidy.py -- tidy a Homer Tools project: the folder and the repository,
 in one pass.
 
-This replaces the two scripts that used to do it. cleanDir swept the working
-folder; tidyRepo swept the git repository. They asked the same question --
+This replaces the two scripts that used to do it. homerTidy swept the working
+folder; homerTidy swept the git repository. They asked the same question --
 "does this file belong to the project?" -- of two places, and keeping them apart
 meant two surveys, two plans, and two chances to disagree.
 

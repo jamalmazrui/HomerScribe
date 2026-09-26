@@ -430,7 +430,7 @@ def main():
                 "bytes": os.path.getsize(sAudio),
                 "seconds": secondsOf(sAudio)})
         else:
-            note("no audio yet for " + sStem + "; it will join the feed once sayTutorial has run")
+            note("no audio yet for " + sStem + "; it will join the feed once buildTutorials has run")
 
     try:
         sSection = c_sStartMark + "\n\n" + "\n\n".join(lsBlocks) + "\n\n" + c_sEndMark

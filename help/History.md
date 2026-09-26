@@ -28,6 +28,31 @@ change, and I had made it fiction.
 
 
 
+
+### 25 September, closing: one tool per job
+
+The kit retired the scripts whose names sounded like another's: `cleanDir`
+and `tidyRepo` are `homerTidy`; `gitRelease` is `tagRelease`, which runs the
+checks itself now; `sayTutorial` is `buildTutorials`; `installTools`, which
+put copies in `C:\bin` that went stale, is gone. The build removes any retired
+copy HomerScribe still carries. Kit 1.38.0.
+
+### 25 September, last: the context folder, and the reader's voice
+
+**`context` is `templates`.** The worked example of a context file lives in
+`templates` now: a folder named context shared its first letter with
+configs, and the standard folders carry distinct first letters so a list of
+them can be walked by initial letter. The build moves what was in `context`
+into `templates` once and removes the empty folder.
+
+**The walks, faster and even.** The reader speaks through piper while the
+narrator keeps Kokoro, which halves the minutes; long lines are cut at
+sentences and commas before Kokoro sees them; every piece is brought to one
+loudness, so the reader is no longer quieter than the narrator; and the
+build says "step N of M" every four steps while a walk is being spoken.
+`installOllama.cmd` and `homerInstall.cmd` are now refreshed from the kit on
+every build, like the other shared scripts.
+
 ### 25 September, late: the stopped push, and the release command
 
 **The push you stopped.** The first tutorial build had left the voices in

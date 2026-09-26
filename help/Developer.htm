@@ -882,13 +882,13 @@ app, run from the project folder:</p>
 delete fetched things, write the whitelist <code>.gitignore</code> from
 <code>RepoFiles.txt</code>, commit and push. It stages nothing unless
 <code>RepoFiles.txt</code> exists.</li>
-<li><code>scripts\gitRelease</code> – run the checks, then
-tagRelease.</li>
-<li><code>scripts\tagRelease</code> – tag the commit with the version
-stamped in <code>HomerScribe_setup.exe</code>, push the tag, and publish
-the installer as a GitHub release.</li>
-<li><code>scripts\gitPush "message"</code> – commit and push with a
-message.</li>
+<li><code>scripts\tagRelease</code> – run the checks, then tag the
+commit with the version stamped in <code>HomerScribe_setup.exe</code>,
+push the tag, and publish the installer as a GitHub release.</li>
+<li><code>scripts\gitPush "message"</code> – the everyday commit:
+rewrites the whitelist from <code>RepoFiles.txt</code>, adds what it
+names, refuses anything over 10 MB, commits, pushes, shows the status.
+Run it after the build, before tagRelease.</li>
 <li><code>scripts\gitUnpushed</code> – undo the commits not yet pushed,
 keeping every file, when something was committed that should not have
 been.</li>

@@ -235,7 +235,7 @@ is what lets one general purpose program describe any film properly. Nothing has
 to be passed on the command line and nothing has to be set in the dialog.
 
 `--context-file` overrides that when you want one file used for several videos.
-`context\The_Odyssey.md` is supplied as a worked example of what to write: who
+`templates\The_Odyssey.md` is supplied as a worked example of what to write: who
 the characters are, what they look like, where the story is set, and an
 instruction to describe by appearance rather than guess at a name.
 

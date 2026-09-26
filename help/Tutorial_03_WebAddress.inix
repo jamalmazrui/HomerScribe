@@ -61,11 +61,13 @@ Say=Describing seventeen of eighty eight. The title carries the progress, so Ins
 Key=
 Hear=Done. Introduction to Estate Planning, Lecture 4
 Hear=HomerScribe results dialog
-Hear=One source done. Took 22 minutes. Introduction to Estate Planning, Lecture 4: 88 descriptions, 58 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Introduction_to_Estate_Planning_Lecture_4. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Introduction_to_Estate_Planning_Lecture_4 backslash HomerScribe dot log.
+Hear=One source done. Took 22 minutes. Introduction to Estate Planning, Lecture 4: 88 descriptions, 58 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Introduction to Estate Planning Lecture 4. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Introduction to Estate Planning Lecture 4 backslash HomerScribe dot log.
 Hear=OK button
 Pause=1
 
 [step]
 Say=Enter presses OK. The folder holds described dot m p 3, one file with the lecture and its descriptions, and described dot m d to read.
 Key=Enter
-Hear=
+Hear=HomerScribe dialog
+Hear=Source paths: edit
+Note=OK closes the results box and focus returns to the dialog, controls enabled again, ready for the next job.

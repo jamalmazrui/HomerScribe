@@ -42,6 +42,9 @@ help/
 # Scripts the installer ships and the build uses, and the tutorial scripts
 scripts/
 
+# Worked examples of a context file, copied and edited for a film
+templates/
+
 # The project's own lists
 RepoFiles.txt
 LocalFiles.txt

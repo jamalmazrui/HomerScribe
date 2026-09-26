@@ -1,6 +1,6 @@
 @echo off
 rem homerTidy.cmd -- tidy a Homer Tools project: the folder and the repository,
-rem in one pass. It replaces cleanDir and tidyRepo, which asked the same
+rem in one pass. It replaces homerTidy and homerTidy, which asked the same
 rem question of two places and could disagree about the answer.
 rem
 rem Running it does nothing but look and report. Run it again with --do-it to

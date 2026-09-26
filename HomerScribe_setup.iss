@@ -122,7 +122,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "{#AppExeName}"; DestDir: "{app}\exec"; Flags: ignoreversion
 ; Every line below the program itself carries skipifsourcedoesntexist. Only
 ; HomerScribe.exe is genuinely required; a missing document or an empty
-; context folder must not abort a build, and a wildcard matching nothing is a
+; templates folder must not abort a build, and a wildcard matching nothing is a
 ; fatal error in Inno unless the line says otherwise.
 ;
 ; Both forms of the documentation travel: Markdown for reading in an editor or
@@ -231,8 +231,13 @@ Source: "scripts\pdfPages.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; route has not worked.
 Source: "scripts\getWhisper.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "scripts\installWhisper.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
-Source: "context\*.md"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "context\*.htm"; DestDir: "{app}\context"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+; THE WORKED EXAMPLES OF A CONTEXT FILE LIVE IN templates (25 Sep 2026). They
+; were in a folder named context, which shared its first letter with configs;
+; the standard folders carry distinct first letters so a list of them can be
+; walked by initial letter. A context file is something a person copies and
+; edits for their own film, which is what a template is.
+Source: "templates\*.md"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "templates\*.htm"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
 [Icons]
 ; WorkingDir is the user's Documents folder, so a run started from a shortcut
@@ -389,6 +394,7 @@ FileName: "{app}\help\ReadMe.htm"; \
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\context"
+Type: filesandordirs; Name: "{app}\templates"
 
 ; THIS LINE DESTROYED HIS WHISPER, and every reinstall did it again.
 ;

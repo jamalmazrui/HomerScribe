@@ -55,8 +55,9 @@ Run is a command, Expect its exit code, and Wants an optional string its output
 must contain. That is the whole language, on purpose: a criterion nobody can
 read is a criterion nobody writes.
 
-The report goes beside this script as evidence-<yyyymmdd-hhmmss>.md, and the
-detailed log as checkHomerApp.log.
+The report goes in the project's logs folder as <App>-evidence-<stamp>.md,
+and the detailed log beside it as <App>-check-<stamp>.log. Run it in the
+project folder or in its scripts folder; both mean the project.
 """
 
 import argparse
@@ -78,8 +79,25 @@ c_lsGeneratedFiles = ["version.py", "version.cs"]   # written by every build
 c_lsTextExt = (".cs", ".py", ".ps1", ".md", ".htm", ".inix", ".txt", ".iss", ".cmd", ".bat")
 
 sScriptDir = os.path.dirname(os.path.abspath(__file__))
-sLogPath = os.path.join(sScriptDir, "checkHomerApp.log")
-sRoot = os.getcwd()
+
+
+def projectRoot(sStart):
+    """The project is the current folder, or its parent when the current
+    folder is the project's scripts or exec folder. One rule for every tool;
+    on 25 Sep 2026 this check, run from scripts, judged the scripts folder."""
+    if os.path.basename(sStart).lower() in ("scripts", "exec", "tools"):
+        sParent = os.path.dirname(sStart)
+        if (os.path.isfile(os.path.join(sParent, "version.txt")) or os.path.isfile(os.path.join(sParent, "RepoFiles.txt"))
+                or glob.glob(os.path.join(sParent, "*_setup.iss"))):
+            return sParent
+    return sStart
+
+
+sRoot = projectRoot(os.getcwd())
+sLogDir = os.path.join(sRoot, "logs")
+os.makedirs(sLogDir, exist_ok=True)
+sStamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+sLogPath = os.path.join(sLogDir, "%s-check-%s.log" % (os.path.basename(sRoot), sStamp))
 oLog = None
 lsFindings = []          # (sName, sVerdict, sEvidence)
 
@@ -339,7 +357,12 @@ def checkKeys():
 def checkBuild(bBuild):
     if not bBuild:
         return finding("build", "skip", "not asked for; run with --build to make the build itself evidence")
-    lsBuild = glob.glob(os.path.join(sRoot, "build*.cmd"))
+    # THE APP'S OWN BUILD SCRIPT: build<App>.cmd, named after the folder. Any
+    # other build*.cmd -- buildTutorials.cmd, say -- is a tool, not the build;
+    # on 25 Sep 2026 this ran buildTutorials.cmd with "nobump" as a script name.
+    sOwn = os.path.join(sRoot, "build" + os.path.basename(sRoot) + ".cmd")
+    lsBuild = [sOwn] if os.path.isfile(sOwn) else [s for s in glob.glob(os.path.join(sRoot, "build*.cmd"))
+                                                     if os.path.basename(s).lower() not in ("buildtutorials.cmd",)]
     if not lsBuild:
         return finding("build", "skip", "no build script here")
     sScript = os.path.basename(lsBuild[0])
@@ -414,7 +437,7 @@ def checkAccept():
 def writeReport():
     """The evidence report: what was verified, what was not, what is uncertain."""
     sStamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    sPath = os.path.join(sScriptDir, "evidence-%s.md" % sStamp)
+    sPath = os.path.join(sLogDir, "%s-evidence-%s.md" % (os.path.basename(sRoot), sStamp))
     lsPassed = [t for t in lsFindings if t[1] == "pass"]
     lsFailed = [t for t in lsFindings if t[1] == "fail"]
     lsSkipped = [t for t in lsFindings if t[1] == "skip"]
@@ -428,7 +451,7 @@ def writeReport():
         "# Evidence report: %s" % appName(),
         "",
         "Written by checkHomerApp. Every line below rests on a command that ran,",
-        "and the command and its exit code are in checkHomerApp.log.",
+        "and the command and its exit code are in the check log beside this report.",
         "",
         "## What was verified",
         "",

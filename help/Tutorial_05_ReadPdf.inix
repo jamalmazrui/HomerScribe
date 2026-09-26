@@ -26,7 +26,7 @@ Hear=File name: edit
 Say=Annual underscore Report dot p d f, Enter.
 Key=Enter
 Hear=HomerScribe dialog
-Hear=Source paths: edit, C colon backslash Users backslash Jamal backslash Videos backslash Annual_Report dot p d f
+Hear=Source paths: edit, C colon backslash Users backslash Jamal backslash Videos backslash Annual Report dot p d f
 
 [step]
 Say=A PDF needs no box ticked: HomerScribe knows what to do with one. Enter.
@@ -53,12 +53,13 @@ Say=And the result.
 Key=
 Hear=Done. Annual Report dot p d f
 Hear=HomerScribe results dialog
-Hear=One source done. Took 11 minutes. Annual Report dot p d f: 40 pages read, 6 pictures described. C colon backslash Users backslash Jamal backslash Videos backslash Annual_Report backslash Annual_Report dot m d. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Annual_Report backslash HomerScribe dot log.
+Hear=One source done. Took 11 minutes. Annual Report dot p d f: 40 pages read, 6 pictures described. C colon backslash Users backslash Jamal backslash Videos backslash Annual Report backslash Annual Report dot m d. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Annual Report backslash HomerScribe dot log.
 Hear=OK button
 Pause=1
 
 [step]
 Say=Forty pages and six pictures, eleven minutes. Enter. The folder holds Annual underscore Report dot m d, and, because Pandoc is installed, Annual underscore Report dot d o c x with the same page breaks as the original.
 Key=Enter
-Hear=
+Hear=HomerScribe dialog
+Hear=Source paths: edit
 Note=Without Pandoc, only the Markdown is written. The installer offers Pandoc as a box on its last page.

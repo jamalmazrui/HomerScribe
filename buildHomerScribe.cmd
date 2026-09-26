@@ -375,7 +375,7 @@ rem installer includes the first from; an older kit has them elsewhere or not at
 rem An older kit compiles the C# and then fails the installer with "Invalid
 rem number of parameters" -- which is what happened when HomerDev.zip was
 rem delivered but not unpacked. Failing here says what is wrong.
-set "kitNeeded=1.35.0"
+set "kitNeeded=1.38.1"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
@@ -400,6 +400,23 @@ set "homerSources=!homerSources! "!homerDev!\CSharp\Util.cs""
 set "homerSources=!homerSources! "!homerDev!\CSharp\Web.cs""
 echo Homer modules: !homerSources! >> "%log%"
 
+rem ---- the context examples live in templates now -----------------------
+rem A folder named context shared its first letter with configs, and the
+rem standard folders carry distinct first letters. What was there -- the
+rem worked examples of a context file, which a person copies and edits --
+rem moves into templates, once, and the empty folder goes.
+if exist "context" (
+  if not exist "templates" mkdir "templates"
+  for %%F in (context\*.md context\*.htm) do (
+    if exist "%%F" (
+      move /y "%%F" "templates\" >nul
+      echo Moved %%F to templates\>> "%log%"
+    )
+  )
+  rd "context" 2>nul && echo Removed the empty context folder.>> "%log%"
+  if exist "context" echo WARN: context\ still holds something that is not .md or .htm; look and move it by hand.
+)
+
 rem ---- tutorials: spoken when their audio is missing -------------------
 rem The scripts are help\Tutorial_*.inix; the audio is help\tutorials\<name>.mp3,
 rem one file per walk, with Tutorials.m3u beside them. The three tools that
@@ -411,27 +428,36 @@ rem The voices live in C:\HomerDev\exec, fetched by buildHomerDev alone; when th
 rem missing, the tool says to run buildHomerDev and speaks nothing.
 rem THE KIT'S TOOLS THE APP CARRIES, refreshed on every build so there is one
 rem source of truth: the tutorial tools, homerTidy, and the release tools --
-rem tagRelease (tag, push, publish the installer), gitRelease (check first,
-rem then tagRelease), gitPush (commit and push with a message), gitUnpushed
+rem tagRelease (tag, push, publish the installer), gitPush (commit and push with a message), gitUnpushed
 rem (undo commits not yet pushed, keeping every file). Run them from the
 rem project folder: scripts\tagRelease, scripts\homerTidy --do-it, and so on.
 if exist "!homerDev!\scripts\buildTutorials.ps1" (
-  for %%F in (buildTutorials.cmd buildTutorials.ps1 makeTutorials.py homerTidy.cmd homerTidy.py checkHomerApp.cmd checkHomerApp.py tagRelease.cmd tagRelease.ps1 gitRelease.cmd gitPush.cmd gitUnpushed.cmd gitUnpushed.py) do (
+  for %%F in (homerInstall.cmd installOllama.cmd buildTutorials.cmd buildTutorials.ps1 checkTutorial.cmd checkTutorial.py makeTutorials.py homerTidy.cmd homerTidy.py checkHomerApp.cmd checkHomerApp.py tagRelease.cmd tagRelease.ps1 gitPush.cmd gitUnpushed.cmd gitUnpushed.py) do (
     if exist "!homerDev!\scripts\%%F" copy /y "!homerDev!\scripts\%%F" scripts\ >nul
   )
   echo Kit tools refreshed into scripts\.>> "%log%"
 )
+rem Retired kit scripts an app may still carry from an earlier refresh: gone.
+for %%F in (cleanDir.cmd cleanDir.py gitRelease.cmd homerPolicy.py installTools.cmd sayTutorial.cmd sayTutorial.py tidyRepo.cmd tidyRepo.py) do (
+  if exist "scripts\%%F" del /q "scripts\%%F" && echo Removed retired scripts\%%F>> "%log%"
+)
 set "tutorialsMissing="
 for %%F in (help\Tutorial_*.inix) do if not exist "help\tutorials\%%~nF.mp3" set "tutorialsMissing=1"
 if defined tutorialsMissing (
-  echo Speaking the tutorials that have no audio yet. The first time fetches the voices.
+  echo Speaking the tutorials that have no audio yet, with the voices in C:\HomerDev\exec.
   echo ---- tutorials ---->> "%log%"
-  call "scripts\buildTutorials.cmd" >> "%log%" 2>&1
+  rem THE TOOL'S OWN LINES GO TO THE SCREEN, NOT INTO THIS LOG. It names each
+  rem tutorial as it starts and as it finishes, and a few minutes of silence
+  rem between those two lines is speaking, not downloading. It keeps its own
+  rem log in logs\; this log gets the outcome.
+  rem -build: an argument of its own, because a bare call hands the tool THIS
+  rem script's arguments through %* (a cmd quirk): "nobump" arrived as a script name.
+  call "scripts\buildTutorials.cmd" -build
   if errorlevel 1 (
     echo WARN: not every tutorial could be spoken. The tutorials log in logs\ says why.
     echo WARN: not every tutorial could be spoken.>> "%log%"
   ) else (
-    echo Tutorials spoken.
+    echo Tutorials spoken.>> "%log%"
   )
 ) else (
   echo Tutorials: every walk already has its audio.>> "%log%"

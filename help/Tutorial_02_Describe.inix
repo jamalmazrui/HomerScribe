@@ -54,14 +54,16 @@ Key=
 Hear=Finalizing, writing described dot m k v
 Hear=Done. Perspectives colon Video Captions
 Hear=HomerScribe results dialog
-Hear=One source done. Took 9 minutes. Perspectives colon Video Captions: 42 descriptions, 7 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Perspectives_Video_Captions. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Perspectives_Video_Captions backslash HomerScribe dot log.
+Hear=One source done. Took 9 minutes. Perspectives colon Video Captions: 42 descriptions, 7 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Perspectives Video Captions. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Perspectives Video Captions backslash HomerScribe dot log.
 Hear=OK button
 Pause=1
 
 [step]
 Say=Forty two descriptions for a seven minute film, in nine minutes. Enter presses OK.
 Key=Enter
-Hear=
+Hear=HomerScribe dialog
+Hear=Source paths: edit
+Note=OK closes the results box and focus returns to the dialog, controls enabled again, ready for the next job.
 
 [step]
 Say=The folder holds described dot m k v, the film with the description as its first sound track; described dot m d, the descriptions as a document; described dot v t t, the same as timed captions; transcribed dot m d, the words; and scribed dot m d, words and descriptions together in the order they happen. Read scribed dot m d for the whole film in one document.

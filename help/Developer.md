@@ -609,11 +609,12 @@ folder:
 - `scripts\homerTidy --do-it` -- put stray files in place, delete fetched
   things, write the whitelist `.gitignore` from `RepoFiles.txt`, commit and
   push. It stages nothing unless `RepoFiles.txt` exists.
-- `scripts\gitRelease` -- run the checks, then tagRelease.
-- `scripts\tagRelease` -- tag the commit with the version stamped in
-  `HomerScribe_setup.exe`, push the tag, and publish the installer as a
-  GitHub release.
-- `scripts\gitPush "message"` -- commit and push with a message.
+- `scripts\tagRelease` -- run the checks, then tag the commit with the version
+  stamped in `HomerScribe_setup.exe`, push the tag, and publish the installer
+  as a GitHub release.
+- `scripts\gitPush "message"` -- the everyday commit: rewrites the whitelist
+  from `RepoFiles.txt`, adds what it names, refuses anything over 10 MB,
+  commits, pushes, shows the status. Run it after the build, before tagRelease.
 - `scripts\gitUnpushed` -- undo the commits not yet pushed, keeping every
   file, when something was committed that should not have been.
 
