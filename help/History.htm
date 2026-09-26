@@ -173,6 +173,9 @@ id="toc-homerscribe-history">HomerScribe History</a>
 <li><a href="#september-2026" id="toc-september-2026">1.0.238, 24
 September 2026</a>
 <ul>
+<li><a href="#september-closing-everything-built-goes-to-exec"
+id="toc-september-closing-everything-built-goes-to-exec">25 September,
+closing: everything built goes to exec</a></li>
 <li><a href="#september-closing-one-tool-per-job"
 id="toc-september-closing-one-tool-per-job">25 September, closing: one
 tool per job</a></li>
@@ -1325,6 +1328,15 @@ logs.</strong> Twice I saw “HomerScribe 1.0.237 starting”, compared it
 against a History claiming the 280s, and told him he was running a build
 that predated my work. He was running my work. The version number is the
 one thing that ties a log to a change, and I had made it fiction.</p>
+<h3 id="september-closing-everything-built-goes-to-exec">25 September,
+closing: everything built goes to exec</h3>
+<p>The program, its config file, the PdfPig assemblies and the installer
+are written to <code>exec</code> now, never to the project root, and the
+build no longer copies ffmpeg, ffprobe or yt-dlp into the project at
+all: they are shared, machine-wide components found on the PATH. Every
+tidy had been carrying the same five root files off again. The quick
+test after a build is <code>exec\HomerScribe.exe</code>.
+<code>RepoFiles.txt</code> names no binary.</p>
 <h3 id="september-closing-one-tool-per-job">25 September, closing: one
 tool per job</h3>
 <p>The kit retired the scripts whose names sounded like another’s:

@@ -32,6 +32,12 @@ $mainName = 'UglyToad.PdfPig.dll'
 $alsoNeeded = @()
 
 $pkg = Join-Path $PWD 'packages'
+# THE DLLs, THE CONFIG AND pdfpig.name GO IN exec, beside the executable the
+# build writes there (25 Sep 2026). They were written to the project root,
+# where every tidy found them as strays and where the DLLs had crept into the
+# repository; exec is the folder for built and fetched binaries, never in git.
+$out = Join-Path $PWD 'exec'
+if (-not (Test-Path $out)) { New-Item -ItemType Directory -Path $out | Out-Null }
 
 function WriteConfig {
   # CALLED ON EVERY PATH OUT, including the one that finds everything already
@@ -44,11 +50,11 @@ function WriteConfig {
   # Every managed dll beside the executable that is not PdfPig's own. Built
   # from what is THERE rather than from a list, so an assembly that arrives
   # later is redirected without anybody remembering to add it.
-  $these = @(Get-ChildItem -Path $PWD -Filter '*.dll' |
+  $these = @(Get-ChildItem -Path $out -Filter '*.dll' |
              Where-Object { $_.Name -notlike 'UglyToad.PdfPig*' } |
              ForEach-Object { $_.Name })
   foreach ($need in $these) {
-    $path = Join-Path $PWD $need
+    $path = Join-Path $out $need
     if (-not (Test-Path $path)) { continue }
     try {
       $an = [Reflection.AssemblyName]::GetAssemblyName($path)
@@ -78,13 +84,13 @@ $redirects    </assemblyBinding>
   </runtime>
 </configuration>
 "@
-  Set-Content -Path (Join-Path $PWD 'HomerScribe.exe.config') -Value $config -Encoding UTF8
+  Set-Content -Path (Join-Path $out 'HomerScribe.exe.config') -Value $config -Encoding UTF8
 
   # THE BUILD READS pdfpig.name TO LEARN WHICH DLL TO REFERENCE, and this
   # script never wrote it -- so the build always concluded PdfPig could not be
   # found, however many assemblies were sitting right there. The file holds the
   # main assembly's name and nothing else.
-  Set-Content -Path (Join-Path $PWD 'pdfpig.name') -Value $mainName -Encoding ASCII -NoNewline
+  Set-Content -Path (Join-Path $out 'pdfpig.name') -Value $mainName -Encoding ASCII -NoNewline
   Write-Host ("  [pdfpig] pdfpig.name written: " + $mainName)
   Say 'HomerScribe.exe.config written from the versions on disk'
 }
@@ -221,20 +227,38 @@ if ($mainForFolder) {
   }
 }
 
+# WHAT THE ASSEMBLY ITSELF REFERENCES (25 Sep 2026). PdfPig's nuspec names
+# one dependency for net462, yet the assembly references System.Memory and
+# the other shims that .NET Framework 4.8 does not ship. Old copies at the
+# project root had been covering for this; when the products moved to exec
+# they were left behind and the config check failed. So the references are
+# read from the assembly, and each shim it names is fetched and copied.
+if ($mainForFolder) {
+  try {
+    $asm = [System.Reflection.Assembly]::ReflectionOnlyLoadFrom($mainForFolder.FullName)
+    foreach ($ref in $asm.GetReferencedAssemblies()) {
+      $n = $ref.Name
+      if ($n -match '^(System\.Memory|System\.Buffers|System\.Numerics\.Vectors|System\.Runtime\.CompilerServices\.Unsafe|System\.Threading\.Tasks\.Extensions|System\.ValueTuple|Microsoft\.Bcl\.[A-Za-z]+)$') {
+        if ($alsoNeeded -notcontains ($n + '.dll')) { Say ('referenced by ' + $mainName + ': ' + $n); $alsoNeeded += ($n + '.dll') }
+      }
+    }
+  } catch { Say ('could not read the references of ' + $mainName + ': ' + $_.Exception.Message) }
+}
+
 $main = PickBest (FindUnder $pkg $mainName) $mainName
 if (-not $main) { Say ('no ' + $mainName + ' found anywhere under ' + $pkg); exit 1 }
 Say ('taking ' + $main.FullName)
 
 $copied = 0
 foreach ($f in Get-ChildItem -Path $main.Directory.FullName -Filter '*.dll') {
-  Copy-Item $f.FullName (Join-Path $PWD $f.Name) -Force
+  Copy-Item $f.FullName (Join-Path $out $f.Name) -Force
   Say ('copied ' + $f.Name)
   $copied = $copied + 1
 }
 
 # The dependencies, which live in their own packages.
 foreach ($need in $alsoNeeded) {
-  if (Test-Path (Join-Path $PWD $need)) { continue }
+  if (Test-Path (Join-Path $out $need)) { continue }
   # The package is named after the assembly: System.Memory.dll lives in the
   # System.Memory package. Fetch it if it is not already under packages.
   $pick = PickBest (FindUnder $pkg $need) $need
@@ -243,7 +267,7 @@ foreach ($need in $alsoNeeded) {
     if (FetchPackage $id) { $pick = PickBest (FindUnder $pkg $need) $need }
   }
   if ($pick) {
-    Copy-Item $pick.FullName (Join-Path $PWD $need) -Force
+    Copy-Item $pick.FullName (Join-Path $out $need) -Force
     Say ('copied dependency ' + $need)
     $copied = $copied + 1
   } else {
@@ -251,11 +275,11 @@ foreach ($need in $alsoNeeded) {
   }
 }
 
-Say ([string]$copied + ' file or files copied beside the script')
+Say ([string]$copied + ' file or files copied into exec')
 foreach ($need in $alsoNeeded) {
-  if (-not (Test-Path (Join-Path $PWD $need))) { Say ('still missing: ' + $need) }
+  if (-not (Test-Path (Join-Path $out $need))) { Say ('still missing: ' + $need) }
 }
 
-if (-not (Test-Path (Join-Path $PWD $mainName))) { Say 'the main assembly did not arrive'; exit 1 }
+if (-not (Test-Path (Join-Path $out $mainName))) { Say 'the main assembly did not arrive'; exit 1 }
 
 WriteConfig

@@ -330,6 +330,42 @@ def checkPublish():
     return finding("publish", "pass", "RepoFiles.txt names the whitelist and .gitignore was generated from it")
 
 
+c_lsDevTools = ["buildtutorials.cmd", "buildtutorials.ps1", "checkconfig.ps1", "checkhomerapp.cmd", "checkhomerapp.py",
+                "checktutorial.cmd", "checktutorial.py", "fixencoding.cmd", "fixencoding.py", "getpdfpig.ps1",
+                "gitpush.cmd", "gitunpushed.cmd", "gitunpushed.py", "homertidy.cmd", "homertidy.py",
+                "maketutorials.py", "tagrelease.cmd", "tagrelease.ps1"]
+
+
+def checkRuntime():
+    """HomerDev is a development-time dependency only (25 Sep 2026).
+
+    An app may lean on the kit to compile, to build its tutorials, to check
+    and release itself. The installed program must run with no kit on the
+    machine: no path into C:\\HomerDev in the program's own code, and none of
+    the kit's development tools shipped by the installer, where a user could
+    run one and be told to "run buildHomerDev".
+    """
+    lsProblems = []
+    # The program's own sources, not the kit's tools in scripts, which are
+    # development-time by definition and name the kit in their own text.
+    for sPath in sourceFiles():
+        if os.path.basename(os.path.dirname(sPath)).lower() == "scripts": continue
+        for iLine, sLine in enumerate(readText(sPath).splitlines(), 1):
+            sBare = re.sub(r"//.*$|#.*$", "", sLine)
+            if re.search(r"HomerDev|HOMER_VOICES", sBare):
+                lsProblems.append("%s line %d names the kit" % (os.path.basename(sPath), iLine))
+    for sIss in glob.glob(os.path.join(sRoot, "*_setup.iss")):
+        for sLine in readText(sIss).splitlines():
+            oMatch = re.match(r'\s*Source:\s*"([^"]+)"', sLine)
+            if not oMatch: continue
+            sName = os.path.basename(oMatch.group(1).replace("\\", "/")).lower()
+            if sName in c_lsDevTools:
+                lsProblems.append("%s ships %s, a development tool" % (os.path.basename(sIss), sName))
+    if lsProblems:
+        return finding("runtime", "fail", "the installed program would depend on the kit: " + "; ".join(lsProblems))
+    return finding("runtime", "pass", "no path into the kit in the program, and the installer ships no development tool")
+
+
 def checkLogging():
     # Evidence of a log: the kit's Log.start, or a program that opens a file
     # under a logs folder itself -- HomerScribe writes its own, and was refused
@@ -552,6 +588,7 @@ def main():
     checkVersion()
     checkPublish()
     checkLogging()
+    checkRuntime()
     checkNaming()
     checkKeys()
     checkBuild(dArguments.build)

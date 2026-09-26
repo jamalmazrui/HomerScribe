@@ -161,105 +161,46 @@ echo Speech: !speech!>> "%log%"
 echo UI Automation: !uiaProv!>> "%log%"
 
 rem ---- the installer's helper scripts --------------------------------
-if not exist "installOllama.cmd" echo WARN: installOllama.cmd is missing; the installer's Ollama checkbox will not work.>> "%log%"
-if not exist "installModels.cmd" echo WARN: installModels.cmd is missing; the installer's model checkbox will not work.>> "%log%"
-if not exist "context\*.md" echo NOTE: the context folder holds no .md example. The installer skips it.>> "%log%"
+if not exist "scripts\installOllama.cmd" echo WARN: scripts\installOllama.cmd is missing; the installer's Ollama checkbox will not work.>> "%log%"
+if not exist "scripts\installModels.cmd" echo WARN: scripts\installModels.cmd is missing; the installer's model checkbox will not work.>> "%log%"
+if not exist "templates\*.md" echo NOTE: the templates folder holds no .md example. The installer skips it.>> "%log%"
 
-rem ---- the companion programs the installer packages -------------------
-rem ffmpeg does the video and audio work; yt-dlp fetches video from a web
-rem address. Neither is committed to the repository -- ffmpeg alone is far past
-rem what a repository should carry -- so they are fetched here when missing.
-rem The downloads are idempotent: a file already present is left alone.
-rem
-rem ffmpeg comes from BtbN's LGPL build rather than a GPL one. Both work
-rem identically here, and the LGPL build carries lighter obligations when the
-rem installer is redistributed. See License.md.
-
-if exist "ffmpeg.exe" if exist "ffprobe.exe" goto :haveFfmpeg
-rem Already on this machine? A second working copy is the ordinary case, and
-rem these are a hundred megabytes that change rarely. Copying beats fetching.
-set "haveTools="
-if not defined haveTools if exist "C:\HomerScribe\ffmpeg.exe" set "haveTools=C:\HomerScribe"
-if not defined haveTools if exist "%LOCALAPPDATA%\Programs\HomerScribe\ffmpeg.exe" set "haveTools=%LOCALAPPDATA%\Programs\HomerScribe"
-if not defined haveTools if exist "%ProgramFiles%\HomerScribe\ffmpeg.exe" set "haveTools=%ProgramFiles%\HomerScribe"
-if defined haveTools echo Copying ffmpeg from %haveTools% rather than downloading it.
-if defined haveTools echo Copying ffmpeg from %haveTools%>> "%log%"
-if defined haveTools copy /y "%haveTools%\ffmpeg.exe" "ffmpeg.exe" >nul 2>&1
-if defined haveTools if exist "%haveTools%\ffprobe.exe" copy /y "%haveTools%\ffprobe.exe" "ffprobe.exe" >nul 2>&1
-if defined haveTools if exist "%haveTools%\yt-dlp.exe" if not exist "yt-dlp.exe" copy /y "%haveTools%\yt-dlp.exe" "yt-dlp.exe" >nul 2>&1
-if exist "ffmpeg.exe" if exist "ffprobe.exe" goto :haveFfmpeg
-
-echo Fetching ffmpeg and ffprobe. This is a large download and happens once.
-echo Fetching ffmpeg and ffprobe>> "%log%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue';" ^
-  "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;" ^
-  "$url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl.zip';" ^
-  "$tmpZip = Join-Path $env:TEMP 'homerFfmpeg.zip';" ^
-  "$tmpDir = Join-Path $env:TEMP 'homerFfmpeg';" ^
-  "if (Test-Path $tmpZip) { Remove-Item -Force $tmpZip };" ^
-  "if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir };" ^
-  "Invoke-WebRequest -Uri $url -OutFile $tmpZip -UseBasicParsing;" ^
-  "Expand-Archive -Path $tmpZip -DestinationPath $tmpDir;" ^
-  "foreach ($name in @('ffmpeg.exe','ffprobe.exe')) {" ^
-  "  $item = Get-ChildItem -Path $tmpDir -Recurse -Filter $name;" ^
-  "  if ($item -is [array]) { $item = $item[0] };" ^
-  "  $found = $null; if ($item -ne $null) { $found = $item.FullName };" ^
-  "  if ($null -eq $found) { throw ($name + ' was not in the archive') };" ^
-  "  Copy-Item -Path $found -Destination $name -Force;" ^
-  "}" ^
-  "Remove-Item -Force $tmpZip;" ^
-  "Remove-Item -Recurse -Force $tmpDir;" >> "%log%" 2>&1
+rem ---- ffmpeg and yt-dlp, machine-wide -------------------------------------
+rem Shared components install to their own default machine-wide directories
+rem (24 Sep 2026), so every Homer app finds one copy and no app's upgrade
+rem destroys it. Nothing is copied into this folder: until 25 Sep 2026 this
+rem step copied ffmpeg, ffprobe and yt-dlp into the project root, where every
+rem tidy found them as strays and carried them off again. The installer does
+rem not ship them either; HomerScribe finds them on the PATH.
+if exist "ffmpeg.exe" del /q "ffmpeg.exe" && echo Removed the old root copy of ffmpeg.exe>> "%log%"
+if exist "ffprobe.exe" del /q "ffprobe.exe" && echo Removed the old root copy of ffprobe.exe>> "%log%"
+if exist "yt-dlp.exe" del /q "yt-dlp.exe" && echo Removed the old root copy of yt-dlp.exe>> "%log%"
+where ffmpeg >nul 2>&1
 if errorlevel 1 (
-  echo WARNING: ffmpeg could not be downloaded; see %log%.
-  echo WARNING: ffmpeg could not be downloaded.>> "%log%"
-  echo   trying winget>> "%log%"
+  echo Installing ffmpeg machine-wide. Downloading; this happens once.
+  echo Installing ffmpeg with winget>> "%log%"
   winget install --id Gyan.FFmpeg --accept-source-agreements --accept-package-agreements --silent >> "%log%" 2>&1
-  rem NOT COPIED HERE. winget has just installed ffmpeg machine-wide, which is
-  rem where a shared component belongs — one copy, found by every Homer app, and
-  rem safe from any single app's upgrade. Copying it into this folder undid that.
-  rem HomerScribe finds it on the PATH and in the usual Program Files locations.
-  rem ffprobe likewise: left where winget put it.
-  if not exist "ffmpeg.exe" echo WARNING: ffmpeg is still absent; the log says what was tried.
+  where ffmpeg >nul 2>&1 || echo WARNING: ffmpeg is still not on the PATH; open a new console after winget, or see %log%.
 )
-:haveFfmpeg
-if exist "ffmpeg.exe" echo ffmpeg.exe is present>> "%log%"
-if not exist "ffmpeg.exe" echo WARN: ffmpeg.exe is absent; the installer will not package it.>> "%log%"
-
-if exist "yt-dlp.exe" goto :haveYtDlp
-echo Fetching yt-dlp.
-echo Fetching yt-dlp>> "%log%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue';" ^
-  "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;" ^
-  "$url = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe';" ^
-  "Invoke-WebRequest -Uri $url -OutFile 'yt-dlp.exe' -UseBasicParsing;" >> "%log%" 2>&1
+for /f "delims=" %%P in ('where ffmpeg 2^>nul') do echo ffmpeg: %%P>> "%log%"
+where yt-dlp >nul 2>&1
 if errorlevel 1 (
-  echo WARNING: yt-dlp could not be downloaded; see %log%.
-  echo WARNING: yt-dlp could not be downloaded.>> "%log%"
-  echo   trying winget>> "%log%"
+  echo Installing yt-dlp machine-wide. Downloading.
+  echo Installing yt-dlp with winget>> "%log%"
   winget install --id yt-dlp.yt-dlp --accept-source-agreements --accept-package-agreements --silent >> "%log%" 2>&1
-  rem yt-dlp likewise: left where winget put it.
-  if not exist "yt-dlp.exe" echo WARNING: yt-dlp is still absent; the log says what was tried.
+  where yt-dlp >nul 2>&1 || echo WARNING: yt-dlp is still not on the PATH; open a new console after winget, or see %log%.
 )
-:haveYtDlp
-if exist "yt-dlp.exe" echo yt-dlp.exe is present>> "%log%"
-
-rem ---- keep yt-dlp current ---------------------------------------------
-rem YouTube changes what it serves, sometimes deliberately to break
-rem downloaders, and yt-dlp ships the fixes within days. A copy a few weeks
-rem old is a copy from before several of those changes, and the symptom is a
-rem video that used to download being refused.
-rem
-rem So it is updated on EVERY build rather than left to age. yt-dlp updates
-rem itself: "-U" takes the newest stable, "--update-to nightly" the newest
-rem nightly. Nightly is what yt-dlp's own README recommends for regular users,
-rem and it is the channel to be on when something has just broken.
-rem
-rem This is one quick call that prints "yt-dlp is up to date" and stops when
-rem there is nothing to do. It never fails the build: no network, or a copy
-rem that cannot write to itself, and the build carries on with what is there.
-if not exist "yt-dlp.exe" goto :ytDlpDone
+for /f "delims=" %%P in ('where yt-dlp 2^>nul') do echo yt-dlp: %%P>> "%log%"
+where yt-dlp >nul 2>&1
+if not errorlevel 1 (
+  echo Making sure yt-dlp is current.
+  echo ---- yt-dlp update ---->> "%log%"
+  yt-dlp --version >> "%log%" 2>&1
+  yt-dlp --update-to nightly >> "%log%" 2>&1
+  if errorlevel 1 echo NOTE: yt-dlp did not update; the copy on the PATH is used.>> "%log%"
+  echo yt-dlp version after the update attempt:>> "%log%"
+  yt-dlp --version >> "%log%" 2>&1
+)
 echo Making sure yt-dlp is current.
 echo ---- yt-dlp update ---->> "%log%"
 "yt-dlp.exe" --version >> "%log%" 2>&1
@@ -375,7 +316,7 @@ rem installer includes the first from; an older kit has them elsewhere or not at
 rem An older kit compiles the C# and then fails the installer with "Invalid
 rem number of parameters" -- which is what happened when HomerDev.zip was
 rem delivered but not unpacked. Failing here says what is wrong.
-set "kitNeeded=1.39.1"
+set "kitNeeded=1.39.3"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
@@ -489,6 +430,15 @@ rem
 rem A plain .ps1 can be read, diffed and checked before it ships. Nothing is
 rem encoded and nothing is patched.
 
+rem Anything of the program's that an earlier build left at the root moves
+rem into exec first, so nothing stale is judged and nothing fetched is lost.
+if not exist "exec" mkdir "exec"
+for %%F in (*PdfPig*.dll System.*.dll Microsoft.Bcl.*.dll HomerScribe.exe.config pdfpig.name) do (
+  if exist "%%F" (
+    echo   root copy %%F was last written %%~tF, %%~zF bytes>> "%log%"
+    if not exist "exec\%%F" (move /y "%%F" "exec\" >nul && echo Moved %%F into exec>> "%log%") else (del /q "%%F" && echo Removed the old root copy of %%F>> "%log%")
+  )
+)
 echo Fetching PdfPig if needed>> "%log%"
 where nuget >nul 2>&1
 if not errorlevel 1 (
@@ -503,7 +453,7 @@ if exist "scripts\getPdfPig.ps1" (
 )
 
 set "pdfDll="
-if exist "pdfpig.name" set /p pdfDll=<pdfpig.name
+if exist "exec\pdfpig.name" set /p pdfDll=<exec\pdfpig.name
 if not defined pdfDll (
   echo(
   echo ERROR: PdfPig could not be found or fetched. The log says what was tried:
@@ -511,7 +461,7 @@ if not defined pdfDll (
   echo PdfPig could not be found or fetched>> "%log%"
   goto :failed
 )
-if not exist "%pdfDll%" (
+if not exist "exec\%pdfDll%" (
   echo(
   echo ERROR: %pdfDll% was named but is not here. The log says what happened:
   echo %log%
@@ -522,8 +472,8 @@ if not exist "%pdfDll%" (
 rem Every assembly the package brought, plus the ones its .NET Framework build
 rem needs for Span and ReadOnlyMemory.
 set "pdfRefs="
-for %%F in (*PdfPig*.dll) do set pdfRefs=!pdfRefs! /reference:"%%~fF"
-for %%F in (System.Memory.dll System.Buffers.dll System.Runtime.CompilerServices.Unsafe.dll System.Numerics.Vectors.dll System.Threading.Tasks.Extensions.dll System.ValueTuple.dll) do if exist "%%F" set pdfRefs=!pdfRefs! /reference:"%CD%\%%F"
+for %%F in (exec\*PdfPig*.dll) do set pdfRefs=!pdfRefs! /reference:"%%~fF"
+for %%F in (System.Memory.dll System.Buffers.dll System.Runtime.CompilerServices.Unsafe.dll System.Numerics.Vectors.dll System.Threading.Tasks.Extensions.dll System.ValueTuple.dll) do if exist "exec\%%F" set pdfRefs=!pdfRefs! /reference:"%CD%\exec\%%F"
 rem The runtime needs the binding redirects too, not just the compiler's
 rem assumption. Without HomerScribe.exe.config beside the executable, PdfPig
 rem asks for System.Memory 4.0.2.0, finds 4.0.5.0, and throws on the first PDF.
@@ -531,7 +481,7 @@ rem The config must not merely exist: it must name the version of System.Memory
 rem that is actually here. A config left by an earlier build redirected to
 rem 4.0.2.0 while 4.0.5.0 sat beside it, and HomerScribe threw on the first
 rem PDF. Checking presence alone let that through twice.
-if not exist "HomerScribe.exe.config" (
+if not exist "exec\HomerScribe.exe.config" (
   echo ERROR: HomerScribe.exe.config was not written. PDFs would fail at run time.
   echo HomerScribe.exe.config is missing>> "%log%"
   goto :failed
@@ -563,13 +513,13 @@ rem Two tests instead. Ask Windows whether the process is running, and try to
 rem open the file for writing, which is what the compiler is about to do and the
 rem only question that really matters.
 
-if not exist "%app%.exe" goto :notRunning
+if not exist "exec\%app%.exe" goto :notRunning
 
 rem Can THIS file be written? That is the only question, and it is the same
 rem operation the compiler is about to attempt. A HomerScribe running from
 rem another folder is a different file and no obstacle at all.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "try { $f=[IO.File]::Open('%cd%\%app%.exe','Open','Write','None'); $f.Close(); exit 0 } catch { exit 1 }" >nul 2>&1
+  "try { $f=[IO.File]::Open('%cd%\exec\%app%.exe','Open','Write','None'); $f.Close(); exit 0 } catch { exit 1 }" >nul 2>&1
 if not errorlevel 1 goto :notRunning
 
 rem It cannot. Is a HomerScribe running, so the message can say which case it is?
@@ -618,7 +568,8 @@ rem produced no new executable, and he kept running the same old one while I
 rem kept explaining why my changes should have taken effect. The version stayed
 rem at 1.0.237 in every log he sent, which was the evidence, in front of me,
 rem every time.
-"!csc!" /nologo /target:winexe /platform:x64 /out:"%app%.exe" ^
+if not exist "exec" mkdir "exec"
+"!csc!" /nologo /target:winexe /platform:x64 /out:"exec\%app%.exe" ^
   /reference:"!speech!" /reference:"!uiaProv!" /reference:"!uiaTypes!" ^
   /reference:"System.IO.Compression.dll" /reference:"System.IO.Compression.FileSystem.dll" ^
   /reference:"Microsoft.VisualBasic.dll" ^
@@ -636,27 +587,32 @@ rem than embedded. HomerScribe was never going to be one self-contained file
 rem anyway -- it leans on Ollama, Whisper, ffmpeg and ExifTool -- so a DLL on
 rem disk is the simpler and more reliable arrangement: the runtime loads it by
 rem path, with its identity and version intact, instead of from a byte array.
-if exist "%pdfDll%" (
-  echo %pdfDll% is beside the executable.>> "%log%"
+if exist "exec\%pdfDll%" (
+  echo %pdfDll% is beside the executable in exec.>> "%log%"
 )
 rem THE FILE, NOT THE EXIT CODE, AND ITS AGE. A build that compiles nothing
 rem once reported "Built HomerScribe.exe" for a week while the exe on disk was
 rem untouched. So: it must exist, and it must have been written just now.
-if not exist "%app%.exe" (
+if not exist "exec\%app%.exe" (
   echo(
-  echo ERROR: %app%.exe was not produced. Nothing was compiled.
+  echo ERROR: exec\%app%.exe was not produced. Nothing was compiled.
   echo ERROR: %app%.exe does not exist after the compile step.>> "%log%"
   goto :failed
 )
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$f=Get-Item '%cd%\%app%.exe'; if (((Get-Date) - $f.LastWriteTime).TotalMinutes -gt 5) { exit 1 } else { exit 0 }" >nul 2>&1
+  "$f=Get-Item '%cd%\exec\%app%.exe'; if (((Get-Date) - $f.LastWriteTime).TotalMinutes -gt 5) { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo(
   echo ERROR: %app%.exe is older than this build, so nothing was compiled.
   echo ERROR: %app%.exe was not rewritten by this build.>> "%log%"
   goto :failed
 )
-echo Built %app%.exe version !ver!>> "%log%"
+echo Built exec\%app%.exe version !ver!>> "%log%"
+if exist "%app%.exe" del /q "%app%.exe" && echo Removed the old root copy of %app%.exe>> "%log%"
+if exist "%app%_setup.exe" del /q "%app%_setup.exe" && echo Removed the old root copy of %app%_setup.exe>> "%log%"
+for %%F in (*PdfPig*.dll System.Memory.dll System.Buffers.dll System.Runtime.CompilerServices.Unsafe.dll System.Numerics.Vectors.dll System.Threading.Tasks.Extensions.dll System.ValueTuple.dll HomerScribe.exe.config pdfpig.name) do (
+  if exist "%%F" del /q "%%F" && echo Removed the old root copy of %%F>> "%log%"
+)
 echo(
 echo Built %app%.exe version !ver!
 

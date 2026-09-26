@@ -29,6 +29,15 @@ change, and I had made it fiction.
 
 
 
+### 25 September, closing: everything built goes to exec
+
+The program, its config file, the PdfPig assemblies and the installer are
+written to `exec` now, never to the project root, and the build no longer
+copies ffmpeg, ffprobe or yt-dlp into the project at all: they are shared,
+machine-wide components found on the PATH. Every tidy had been carrying the
+same five root files off again. The quick test after a build is
+`exec\HomerScribe.exe`. `RepoFiles.txt` names no binary.
+
 ### 25 September, closing: one tool per job
 
 The kit retired the scripts whose names sounded like another's: `cleanDir`

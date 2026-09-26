@@ -15,21 +15,7 @@ createHomerScribeRepo.cmd
 createHomerScribeRepo.ps1
 version.txt
 
-# The PdfPig assemblies the program links against, beside the executable
-Microsoft.Bcl.HashCode.dll
-System.Buffers.dll
-System.Memory.dll
-System.Numerics.Vectors.dll
-System.Runtime.CompilerServices.Unsafe.dll
-System.Threading.Tasks.Extensions.dll
-System.ValueTuple.dll
-UglyToad.PdfPig.Core.dll
-UglyToad.PdfPig.DocumentLayoutAnalysis.dll
-UglyToad.PdfPig.Fonts.dll
-UglyToad.PdfPig.Package.dll
-UglyToad.PdfPig.Tokenization.dll
-UglyToad.PdfPig.Tokens.dll
-UglyToad.PdfPig.dll
+# The PdfPig assemblies are fetched by the build into exec and never pushed.
 pdfpig.name
 
 # Documents

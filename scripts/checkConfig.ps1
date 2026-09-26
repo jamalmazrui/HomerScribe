@@ -10,7 +10,7 @@
 $ErrorActionPreference = 'Stop'
 function Say($m) { Write-Output ("  [config] " + $m) }
 
-$configPath = Join-Path $PWD 'HomerScribe.exe.config'
+$configPath = Join-Path $PWD 'exec\HomerScribe.exe.config'
 if (-not (Test-Path $configPath)) { Say 'HomerScribe.exe.config is missing'; exit 1 }
 
 try {
@@ -22,13 +22,13 @@ try {
 
 # Every managed dll here that is not PdfPig's own, taken from the folder rather
 # than from a list. A list is what missed Microsoft.Bcl.HashCode.
-$names = @(Get-ChildItem -Path $PWD -Filter '*.dll' |
+$names = @(Get-ChildItem -Path (Join-Path $PWD 'exec') -Filter '*.dll' |
            Where-Object { $_.Name -notlike 'UglyToad.PdfPig*' } |
            ForEach-Object { $_.BaseName })
 $wrong = 0
 $checked = 0
 foreach ($name in $names) {
-  $dll = Join-Path $PWD ($name + '.dll')
+  $dll = Join-Path $PWD ('exec\' + $name + '.dll')
   if (-not (Test-Path $dll)) { continue }
   $checked = $checked + 1
   $real = [Reflection.AssemblyName]::GetAssemblyName($dll).Version.ToString()

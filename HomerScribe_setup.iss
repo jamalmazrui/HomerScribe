@@ -76,7 +76,7 @@ UsePreviousAppDir=yes
 DisableDirPage=auto
 UsePreviousGroup=yes
 
-OutputDir=.
+OutputDir=exec
 OutputBaseFilename={#AppName}_setup
 SolidCompression=yes
 ; Empty on purpose: no license page. The license travels with the program
@@ -119,7 +119,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; Each is installed to its own default machine-wide directory by the scripts
 ; below, and HomerScribe looks there. The DLLs further down are different: a
 ; library the program links against belongs beside the executable.
-Source: "{#AppExeName}"; DestDir: "{app}\exec"; Flags: ignoreversion
+Source: "exec\{#AppExeName}"; DestDir: "{app}\exec"; Flags: ignoreversion
 ; Every line below the program itself carries skipifsourcedoesntexist. Only
 ; HomerScribe.exe is genuinely required; a missing document or an empty
 ; templates folder must not abort a build, and a wildcard matching nothing is a
@@ -208,22 +208,23 @@ Source: "scripts\pagebreak.lua"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; PdfPig, which reads PDF files. Referenced rather than embedded, so it has to
 ; be installed beside the executable.
 ; PdfPig's seven assemblies.
-Source: "*PdfPig*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "exec\*PdfPig*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
 ; AND WHATEVER THEY DEPEND ON. Naming six by hand missed a seventh
 ; (Microsoft.Bcl.HashCode) and HomerScribe threw on the first PDF. The build
 ; copies whatever the packages declare, so the installer takes what is there
 ; rather than what somebody remembered.
-Source: "System.*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "Microsoft.*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "HomerScribe.exe.config"; DestDir: "{app}\exec"; Flags: ignoreversion
+Source: "exec\System.*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "exec\Microsoft.*.dll"; DestDir: "{app}\exec"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "exec\HomerScribe.exe.config"; DestDir: "{app}\exec"; Flags: ignoreversion
 ; No Python is shipped and none is needed. HomerScribe reads a zip of page
 ; pictures; turning a PDF into those is a solved problem with many free tools,
 ; and carrying a PDF library to redo it would cost the single-file build.
 ; homerInstall.cmd is the half every other script CALLS. Not shipping it
 ; meant each one died at its first line, before it could even make a log
 ; folder -- which is exactly the symptom: a Results box and no logs.
-Source: "scripts\checkConfig.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
-Source: "scripts\getPdfPig.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+; checkConfig.ps1 and getPdfPig.ps1 are build-time scripts and are not
+; shipped: HomerDev is a development-time dependency only, and the installed
+; program must run with no kit on the machine (25 Sep 2026).
 Source: "scripts\homerInstall.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "scripts\pdfPages.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; A standalone Whisper installer that depends on nothing else and checks
