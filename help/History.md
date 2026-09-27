@@ -9,6 +9,12 @@
 
 
 
+## 1.0.257, 26 September 2026 -- built with HomerDev 1.43.19
+
+Numbered as version.txt (1.0.256) plus one, the number this build stamps.
+
+- **The kit's tools carry the day's fixes.** `scripts\tidy` keeps a file where the project says it lives and untracks only what RepoFiles.txt leaves out; `scripts\check` reads keys and access letters without false alarms, reads only the project's own files, and never waits for a key; and `scripts\release` publishes a draft and confirms the release is GitHub's latest before calling it published.
+
 ## 1.0.256, 26 September 2026 -- brought up to HomerDev 1.43.15
 
 Numbered as version.txt (1.0.255) plus one, the number this build stamps.
