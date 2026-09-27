@@ -388,12 +388,12 @@ FileName: "{app}\scripts\installWhisper.cmd"; \
 FileName: "{cmd}"; \
   Parameters: "/c echo launch > ""{localappdata}\{#AppName}\logs\{#AppName}_launch.flag"""; \
   WorkingDir: "{app}\exec"; \
-  Description: "Launch {#AppName} now (desktop hotkey: {#HotKeyDisplay})"; \
+  Description: "Launch {#AppName} (desktop hotkey {#HotKeyDisplay})"; \
   Flags: postinstall skipifsilent runhidden runasoriginaluser
 
 ; ---- 5. Open the user guide, unticked ----------------------------------------
 FileName: "{app}\help\ReadMe.htm"; \
-  Description: "Open the user guide (F1 opens it inside {#AppName})"; \
+  Description: "Open the user guide (F1 in {#AppName})"; \
   Flags: postinstall shellexec nowait skipifsilent skipifdoesntexist runasoriginaluser unchecked
 
 [UninstallDelete]
@@ -562,7 +562,7 @@ begin
   if sActions <> '' then sBody := sBody + #13#10 + #13#10 + sActions;
   sBody := sBody + #13#10 + #13#10
          + 'Logs are kept in ' + ExpandConstant('{localappdata}\{#AppName}\logs') + '.';
-  MsgBox(sBody, mbInformation, MB_OK);
+  homerResultsBox(sBody);
 
   (* THE BOX HAS BEEN READ AND CLOSED. Only now does the program start. *)
   startIfAsked();

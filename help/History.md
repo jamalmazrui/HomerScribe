@@ -9,6 +9,12 @@
 
 
 
+## 1.0.258, 27 September 2026 -- setup wording
+
+Numbered as version.txt (1.0.257) plus one.
+
+- **Setup.** The Results box at the end of setup is titled "HomerScribe Setup Results", and the finish page uses the Homer wording: the verb first, no "recommended", and "Launch HomerScribe (desktop hotkey ...)".
+
 ## 1.0.257, 26 September 2026 -- built with HomerDev 1.43.19
 
 Numbered as version.txt (1.0.256) plus one, the number this build stamps.
