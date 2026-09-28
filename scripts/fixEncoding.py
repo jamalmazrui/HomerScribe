@@ -40,10 +40,41 @@ oLog = None
 
 
 def logLine(sText):
-    if oLog is not None:
-        oLog.write(sText + "\n")
-        oLog.flush()
+    """One event in the Homer log format (1.43.21), as log.py and Log.cs write:
+    an ISO 8601 time with milliseconds and UTC offset, a five-character level,
+    then the text; a line continuing the one above starts "| ", and no line is
+    blank or unstamped. The level is ERROR or WARN when the text says so."""
+    if oLog is None: return True
+    import datetime as _datetime
+    sText = (sText or "").replace("\r\n", "\n").rstrip("\n")
+    if not sText.strip(): return True
+    import re as _re
+    sLevel = ("ERROR" if _re.search(r"\b(ERROR|FAIL|FAILED)\b", sText)
+              else "WARN" if _re.search(r"\bWARN(ING)?\b", sText) else "INFO")
+    sPrefix = "%s %-5s " % (_datetime.datetime.now().astimezone().isoformat(timespec="milliseconds"), sLevel)
+    lsOut = []
+    for iAt, sOne in enumerate(sText.split("\n")):
+        if iAt and not sOne.strip(): continue
+        lsOut.append(sPrefix + ("| " if iAt else "") + sOne.rstrip())
+    oLog.write("\n".join(lsOut) + "\n")
+    oLog.flush()
     return True
+
+def logValue(sValue):
+    """A value as the Homer log format writes it: bare when it can be, quoted
+    when it holds a space, a quote or an equals sign."""
+    import re as _re
+    s = "" if sValue is None else str(sValue)
+    if s and not _re.search(r'[\s"=]', s): return s
+    s = s.replace('"', '\\"')
+    if s.endswith("\\"): s += "\\"
+    return '"' + s + '"'
+
+
+def logFact(sKey, sValue):
+    """One environment fact: env key=value."""
+    return logLine("env %s=%s" % (sKey, logValue(sValue)))
+
 
 
 def projectRoot(sStart):
@@ -136,13 +167,13 @@ def main():
     os.makedirs(sLogDir, exist_ok=True)
     sLogPath = os.path.join(sLogDir, "%s-encoding-%s.log" % (os.path.basename(sRoot), datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
     oLog = io.open(sLogPath, "w", encoding="utf-8")
-    logLine("fixEncoding started %s" % datetime.datetime.now().isoformat(" ", "seconds"))
-    logLine("Script: %s" % os.path.abspath(__file__))
-    logLine("Python: %s" % sys.version.replace("\n", " "))
-    logLine("Platform: %s" % platform.platform())
-    logLine("Project: %s" % sRoot)
-    logLine("Command line: %s" % " ".join(sys.argv))
-    logLine("Mode: %s" % ("check only" if bCheck else "fix"))
+    logLine("fixEncoding start pid=%d" % os.getpid())
+    logFact("script", os.path.abspath(__file__))
+    logFact("python", platform.python_version())
+    logFact("windows", platform.platform())
+    logFact("project", sRoot)
+    logFact("arguments", " ".join(sys.argv[1:]))
+    logFact("mode", "check" if bCheck else "fix")
     lsNamed = readNamed(sRoot)
     if lsNamed is None:
         print("No RepoFiles.txt here, so nothing names the project's own files. Nothing was changed.")
@@ -179,7 +210,7 @@ def main():
         print("%d file%s checked, %d wrong." % (len(lsFiles), "" if len(lsFiles) == 1 else "s", iWrong))
         return 1 if iWrong else 0
     print("%d file%s checked, %d fixed." % (len(lsFiles), "" if len(lsFiles) == 1 else "s", iFixed))
-    logLine("Finished %s" % datetime.datetime.now().isoformat(" ", "seconds"))
+    logLine("fixEncoding end")
     return 0
 
 

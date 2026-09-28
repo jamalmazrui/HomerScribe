@@ -109,10 +109,41 @@ lsFindings = []          # (sName, sVerdict, sEvidence)
 # --- saying things ----------------------------------------------------------
 
 def logLine(sText):
+    """One event in the Homer log format (1.43.21), as log.py and Log.cs write:
+    an ISO 8601 time with milliseconds and UTC offset, a five-character level,
+    then the text; a line continuing the one above starts "| ", and no line is
+    blank or unstamped. The level is ERROR or WARN when the text says so."""
     if oLog is None: return True
-    oLog.write(sText + "\n")
+    import datetime as _datetime
+    sText = (sText or "").replace("\r\n", "\n").rstrip("\n")
+    if not sText.strip(): return True
+    import re as _re
+    sLevel = ("ERROR" if _re.search(r"\b(ERROR|FAIL|FAILED)\b", sText)
+              else "WARN" if _re.search(r"\bWARN(ING)?\b", sText) else "INFO")
+    sPrefix = "%s %-5s " % (_datetime.datetime.now().astimezone().isoformat(timespec="milliseconds"), sLevel)
+    lsOut = []
+    for iAt, sOne in enumerate(sText.split("\n")):
+        if iAt and not sOne.strip(): continue
+        lsOut.append(sPrefix + ("| " if iAt else "") + sOne.rstrip())
+    oLog.write("\n".join(lsOut) + "\n")
     oLog.flush()
     return True
+
+def logValue(sValue):
+    """A value as the Homer log format writes it: bare when it can be, quoted
+    when it holds a space, a quote or an equals sign."""
+    import re as _re
+    s = "" if sValue is None else str(sValue)
+    if s and not _re.search(r'[\s"=]', s): return s
+    s = s.replace('"', '\\"')
+    if s.endswith("\\"): s += "\\"
+    return '"' + s + '"'
+
+
+def logFact(sKey, sValue):
+    """One environment fact: env key=value."""
+    return logLine("env %s=%s" % (sKey, logValue(sValue)))
+
 
 
 def sayLine(sText=""):
@@ -739,13 +770,13 @@ def main():
     if dArguments.path: sRoot = os.path.abspath(dArguments.path)
 
     oLog = open(sLogPath, "w", encoding="utf-8")
-    logLine("check started %s" % datetime.datetime.now().isoformat(" ", "seconds"))
-    logLine("Script: %s" % os.path.abspath(__file__))
-    logLine("Python: %s" % sys.version.replace("\n", " "))
-    logLine("Platform: %s" % platform.platform())
-    logLine("App folder: %s" % sRoot)
-    logLine("Command line: %s" % " ".join(sys.argv))
-    logLine("Settings: build=%s quiet=%s" % (dArguments.build, dArguments.quiet))
+    logLine("check start pid=%d" % os.getpid())
+    logFact("script", os.path.abspath(__file__))
+    logFact("python", platform.python_version())
+    logFact("windows", platform.platform())
+    logFact("project", sRoot)
+    logFact("arguments", " ".join(sys.argv[1:]))
+    logLine("settings build=%s quiet=%s" % (dArguments.build, dArguments.quiet))
 
     if not dArguments.quiet: sayLine("Checking %s in %s" % (appName(), sRoot))
 
@@ -773,7 +804,7 @@ def main():
         for sName, sVerdict, sEvidence in lsFindings:
             if sVerdict == "fail": sayLine("  failed: %s -- %s" % (sName, sEvidence))
         sayLine("The report is %s." % os.path.basename(sReport))
-    logLine("Finished %s" % datetime.datetime.now().isoformat(" ", "seconds"))
+    logLine("check end")
     return 1 if iFailed else 0
 
 
