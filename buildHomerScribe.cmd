@@ -206,16 +206,6 @@ if not errorlevel 1 (
   echo yt-dlp version after the update attempt:>> "%log%"
   yt-dlp --version >> "%log%" 2>&1
 )
-echo Making sure yt-dlp is current.
-echo ---- yt-dlp update ---->> "%log%"
-"yt-dlp.exe" --version >> "%log%" 2>&1
-"yt-dlp.exe" --update-to nightly >> "%log%" 2>&1
-if errorlevel 1 (
-  echo yt-dlp could not update itself; the copy already here will be used.
-  echo NOTE: yt-dlp did not update. Carrying on with the copy already here.>> "%log%"
-)
-echo yt-dlp version after the update attempt:>> "%log%"
-"yt-dlp.exe" --version >> "%log%" 2>&1
 :ytDlpDone
 
 rem ---- ExifTool --------------------------------------------------------
@@ -295,14 +285,14 @@ rem
 rem Looked for in order: the HomerDev environment variable, C:\HomerDev, then
 rem this folder.
 set "homerDev="
-if defined HomerDev if exist "%HomerDev%\CSharp\Lbc.cs" set "homerDev=%HomerDev%"
-if not defined homerDev if exist "C:\HomerDev\CSharp\Lbc.cs" set "homerDev=C:\HomerDev"
-if not defined homerDev if exist "%CD%\CSharp\Lbc.cs" set "homerDev=%CD%"
+if defined HomerDev if exist "%HomerDev%\exec\CSharp\Lbc.cs" set "homerDev=%HomerDev%"
+if not defined homerDev if exist "C:\HomerDev\exec\CSharp\Lbc.cs" set "homerDev=C:\HomerDev"
+if not defined homerDev if exist "%CD%\exec\CSharp\Lbc.cs" set "homerDev=%CD%"
 if not defined homerDev (
   echo ERROR: The Homer Development Kit was not found.
   echo Unzip it into C:\HomerDev, or set the HomerDev environment variable.
   echo ERROR: kit not found >> "%log%"
-  exit /b 1
+  goto :failed
 )
 set "homerVer=unknown"
 rem READ WITH POWERSHELL, NOT set /p: on 25 Sep 2026 version.txt carried a byte
@@ -321,29 +311,29 @@ rem installer includes the first from; an older kit has them elsewhere or not at
 rem An older kit compiles the C# and then fails the installer with "Invalid
 rem number of parameters" -- which is what happened when HomerDev.zip was
 rem delivered but not unpacked. Failing here says what is wrong.
-set "kitNeeded=1.43.22"
+set "kitNeeded=1.43.29"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
   echo(
   echo HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!.
   echo Unzip HomerDev.zip into C:\HomerDev, then build again.
-  exit /b 1
+  goto :failed
 )
 
 rem The modules HomerScribe uses. PdfRead needs nothing else; Inix reads and
 rem writes .xlsx, so the compression assembly is referenced below.
 set "homerSources="
-set "homerSources=!homerSources! "!homerDev!\CSharp\Elevate.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\Inix.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\Lbc.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\Log.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\Ollama.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\Paths.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\PdfRead.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\Say.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\Util.cs""
-set "homerSources=!homerSources! "!homerDev!\CSharp\Web.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Elevate.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Inix.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Lbc.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Log.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Ollama.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Paths.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\PdfRead.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Say.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Util.cs""
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Web.cs""
 echo Homer modules: !homerSources! >> "%log%"
 
 rem ---- the context examples live in templates now -----------------------
@@ -395,10 +385,10 @@ for %%F in (checkHomerApp.cmd checkHomerApp.py gitPush.cmd gitUnpushed.cmd gitUn
 )
 rem A check report written beside the tool by an old kit belongs in logs.
 for %%F in (scripts\evidence-*.md) do del /q "%%F" && echo Removed the stray report %%F>> "%log%"
-rem THE KIT'S CLASSES ARE COMPILED FROM C:\HomerDev\CSharp, so a copy at the
+rem THE KIT'S CLASSES ARE COMPILED FROM C:\HomerDev\exec\CSharp, so a copy at the
 rem top of the project is a stale one, waiting to be read or shipped by mistake.
 for %%F in (Elevate.cs Inix.cs Lbc.cs Log.cs Ollama.cs Paths.cs PdfRead.cs Say.cs Util.cs Web.cs) do (
-  if exist "%%F" if exist "!homerDev!\CSharp\%%F" del /q "%%F" && echo Removed the old top-level %%F; the kit's is compiled instead>> "%log%"
+  if exist "%%F" if exist "!homerDev!\exec\CSharp\%%F" del /q "%%F" && echo Removed the old top-level %%F; the kit's is compiled instead>> "%log%"
 )
 rem The install scripts, getPdfPig and pagebreak.lua live in scripts; copies at
 rem the top are from the layout before, when scripts has its own.
@@ -582,7 +572,7 @@ rem Seven sources compiled together into ONE assembly, so the result is
 rem still a single self-contained executable:
 rem   Version.cs        -- generated from version.txt
 rem   HomerScribe.cs  -- the program
-rem   the Homer classes -- compiled from C:\HomerDev\CSharp, not from here
+rem   the Homer classes -- compiled from C:\HomerDev\exec\CSharp, not from here
 rem
 rem THIS LINE WAS DELETED BY AN EDIT OF MINE AND NOT REPLACED. The script went
 rem on finding the compiler, checking the exe was not locked, reporting "Built
@@ -680,6 +670,15 @@ endlocal
 exit /b 0
 
 :failed
+rem A FAILED BUILD TAKES NO NUMBER (HomerDev 1.43.29). version.txt is stepped
+rem when a build begins; when it fails, the number goes back, so the next build
+rem takes it again and the release never finds an installer one version behind
+rem version.txt (HomerScribe, 28 September 2026: 1.0.260 stepped, the kit not
+rem found, the release refused).
+if defined verOld if not "!ver!"=="!verOld!" (
+  > version.txt echo !verOld!
+  >> "%log%" echo Version: restored to !verOld!; a failed build takes no number
+)
 for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffzzz'"`) do set "sIso=%%i"
 >> "%log%" echo %sIso% ERROR build end result=failed
 endlocal

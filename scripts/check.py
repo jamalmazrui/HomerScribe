@@ -68,6 +68,7 @@ import platform
 import re
 import subprocess
 import sys
+import time
 import traceback
 
 # The standard document set. ReadMe and License sit at the top of the project;
@@ -120,6 +121,10 @@ def logLine(sText):
     import re as _re
     sLevel = ("ERROR" if _re.search(r"\b(ERROR|FAIL|FAILED)\b", sText)
               else "WARN" if _re.search(r"\bWARN(ING)?\b", sText) else "INFO")
+    # A LEADING LEVEL WORD IS THE LEVEL (1.43.33): "WARN: x" is written
+    # "WARN  x", not "WARN  WARN: x".
+    oLead = _re.match(r"(ERROR|WARN|WARNING)\b:?\s*", sText)
+    if oLead: sText = sText[oLead.end():] or sText
     sPrefix = "%s %-5s " % (_datetime.datetime.now().astimezone().isoformat(timespec="milliseconds"), sLevel)
     lsOut = []
     for iAt, sOne in enumerate(sText.split("\n")):
@@ -143,6 +148,23 @@ def logValue(sValue):
 def logFact(sKey, sValue):
     """One environment fact: env key=value."""
     return logLine("env %s=%s" % (sKey, logValue(sValue)))
+
+def logWindows():
+    """The Windows actually running, worded as Log.cs and log.py word it:
+    "Windows 11 25H2 (10.0.26200.9550)"."""
+    try:
+        import winreg as _winreg
+        with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as oKey:
+            def read(sName):
+                try: return str(_winreg.QueryValueEx(oKey, sName)[0])
+                except OSError: return ""
+            sBuild, sUbr, sDisplay = read("CurrentBuild"), read("UBR"), read("DisplayVersion")
+        sName = "Windows 11" if sBuild.isdigit() and int(sBuild) >= 22000 else "Windows 10"
+        return ("%s %s" % (sName, sDisplay)).strip() + " (10.0.%s%s)" % (sBuild, "." + sUbr if sUbr else "")
+    except Exception:
+        import platform as _platform
+        return _platform.platform()
+
 
 
 
@@ -189,7 +211,9 @@ def runCommand(lsArgs, sShell=""):
     by hand. The console names each command as it starts, so a long one is
     seen to be running.
     """
-    logLine("RUN: " + (sShell or " ".join(lsArgs)))
+    sCmd = sShell or " ".join(lsArgs)
+    nStarted = time.time()
+    logLine("run start cmd=" + logValue(sCmd))
     sayConsoleRunning(sShell or " ".join(lsArgs))
     try:
         if sShell:
@@ -220,9 +244,9 @@ def runCommand(lsArgs, sShell=""):
                                      capture_output=True, text=True, timeout=900,
                                          stdin=subprocess.DEVNULL)
     except Exception as oError:
-        logLine("RUN FAILED: %s" % oError)
+        logLine("ERROR run failed message=%s cmd=%s" % (logValue(str(oError)), logValue(sCmd)))
         return (1, str(oError))
-    logLine("EXIT: %d" % oResult.returncode)
+    logLine("run exit=%d ms=%d cmd=%s" % (oResult.returncode, (time.time() - nStarted) * 1000, logValue(sCmd)))
     sOut = (oResult.stdout or "") + (oResult.stderr or "")
     if sOut: logLine("OUTPUT:\n" + sOut[-4000:])
     return (oResult.returncode, sOut)
@@ -259,7 +283,7 @@ def isLibrary(sPath, sText):
     wolf is worse than none, because people learn to ignore it.
     """
     sShown = os.path.relpath(sPath, sRoot).replace(os.sep, "/").lower()
-    if sShown.startswith("csharp/") or sShown.startswith("homer/"): return True
+    if sShown.startswith(("exec/csharp/", "exec/python/", "csharp/", "homer/")): return True
     return "namespace Homer" in sText or "part of the shared Homer toolkit" in sText
 
 
@@ -372,9 +396,12 @@ def checkEncoding():
 
 
 def checkEmpty():
+    """Zero-byte files among the project's own. logs is passed over (1.43.22):
+    a run's record is not part of the project, and the kit's release was
+    refused over three empty logs; tidy deletes those."""
     lsEmpty = []
     for sDirPath, lsDirs, lsNames in os.walk(sRoot):
-        lsDirs[:] = [s for s in lsDirs if s.lower() not in c_lsSkipFolders]
+        lsDirs[:] = [s for s in lsDirs if s.lower() not in c_lsSkipFolders and s.lower() != "logs"]
         for sName in sorted(lsNames):
             sPath = os.path.join(sDirPath, sName)
             try:
@@ -773,7 +800,7 @@ def main():
     logLine("check start pid=%d" % os.getpid())
     logFact("script", os.path.abspath(__file__))
     logFact("python", platform.python_version())
-    logFact("windows", platform.platform())
+    logFact("windows", logWindows())
     logFact("project", sRoot)
     logFact("arguments", " ".join(sys.argv[1:]))
     logLine("settings build=%s quiet=%s" % (dArguments.build, dArguments.quiet))

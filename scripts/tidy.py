@@ -103,6 +103,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import traceback
 
 def homerProjectRoot(sScriptDir):
@@ -210,6 +211,10 @@ def logLine(sText):
     import re as _re
     sLevel = ("ERROR" if _re.search(r"\b(ERROR|FAIL|FAILED)\b", sText)
               else "WARN" if _re.search(r"\bWARN(ING)?\b", sText) else "INFO")
+    # A LEADING LEVEL WORD IS THE LEVEL (1.43.33): "WARN: x" is written
+    # "WARN  x", not "WARN  WARN: x".
+    oLead = _re.match(r"(ERROR|WARN|WARNING)\b:?\s*", sText)
+    if oLead: sText = sText[oLead.end():] or sText
     sPrefix = "%s %-5s " % (_datetime.datetime.now().astimezone().isoformat(timespec="milliseconds"), sLevel)
     lsOut = []
     for iAt, sOne in enumerate(sText.split("\n")):
@@ -234,6 +239,23 @@ def logFact(sKey, sValue):
     """One environment fact: env key=value."""
     return logLine("env %s=%s" % (sKey, logValue(sValue)))
 
+def logWindows():
+    """The Windows actually running, worded as Log.cs and log.py word it:
+    "Windows 11 25H2 (10.0.26200.9550)"."""
+    try:
+        import winreg as _winreg
+        with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as oKey:
+            def read(sName):
+                try: return str(_winreg.QueryValueEx(oKey, sName)[0])
+                except OSError: return ""
+            sBuild, sUbr, sDisplay = read("CurrentBuild"), read("UBR"), read("DisplayVersion")
+        sName = "Windows 11" if sBuild.isdigit() and int(sBuild) >= 22000 else "Windows 10"
+        return ("%s %s" % (sName, sDisplay)).strip() + " (10.0.%s%s)" % (sBuild, "." + sUbr if sUbr else "")
+    except Exception:
+        import platform as _platform
+        return _platform.platform()
+
+
 
 
 def sayLine(sText=""):
@@ -253,13 +275,15 @@ def countNoun(iCount, sSingular, sPlural=None):
 def runGit(lsArgs, bQuiet=False):
     """Run git and return (iCode, sOutput). Never raises."""
     lsFull = ["git"] + lsArgs
-    logLine("RUN: " + " ".join(lsFull))
+    sCmd = " ".join(lsFull)
+    nStarted = time.time()
+    logLine("run start cmd=" + logValue(sCmd))
     try:
         oResult = subprocess.run(lsFull, capture_output=True, text=True, cwd=sRoot)
     except Exception as oError:
-        logLine("RUN FAILED: %s" % oError)
+        logLine("ERROR run failed message=%s cmd=%s" % (logValue(str(oError)), logValue(sCmd)))
         return (1, "")
-    logLine("EXIT: %d" % oResult.returncode)
+    logLine("run exit=%d ms=%d cmd=%s" % (oResult.returncode, (time.time() - nStarted) * 1000, logValue(sCmd)))
     if oResult.stdout and not bQuiet: logLine("STDOUT:\n" + oResult.stdout.rstrip())
     if oResult.stderr: logLine("STDERR:\n" + oResult.stderr.rstrip())
     return (oResult.returncode, oResult.stdout or "")
@@ -428,6 +452,16 @@ def surveyFolder(lsNamed):
     ltPlace = []
     dByHash = {}
 
+    # AN EMPTY LOG IS DELETED TOO (1.43.22). logs is not surveyed -- every file
+    # there is a run's record -- but a zero-byte one records nothing, and the
+    # kit's release refused to publish over three of them in C:\\HomerDev\\logs.
+    sLogs = os.path.join(sRoot, "logs")
+    if os.path.isdir(sLogs):
+        for sName in sorted(os.listdir(sLogs)):
+            sFull = os.path.join(sLogs, sName)
+            if os.path.isfile(sFull) and os.path.getsize(sFull) == 0:
+                lsEmpty.append(os.path.relpath(sFull, sRoot))
+
     for sDirPath, lsDirs, lsFiles in os.walk(sRoot):
         lsDirs[:] = [s for s in lsDirs if s.lower() not in c_lsSkipFolders]
         for sName in sorted(lsFiles):
@@ -496,6 +530,26 @@ def exactNames(lsNames):
     return [s for s in lsNames if "*" not in s and not s.replace("\\", "/").endswith("/")]
 
 
+def carveOuts(lsRepo, lsLocal):
+    """RepoFiles.txt entries inside a folder kept off the repository.
+
+    exec is on no machine's repository -- it is what a build makes -- but the
+    kit's own libraries live there, exec\\CSharp and exec\\homer, because exec
+    is where the code that runs belongs (1.43.22). A RepoFiles.txt line that
+    lies inside a folder LocalFiles.txt or the never-pushed list keeps off is
+    a deliberate exception to that folder, and wins."""
+    lsFolders = [s.replace("\\", "/").strip("/").lower() + "/" for s in list(lsLocal) + c_lsNeverPushed
+                 if s.replace("\\", "/").endswith("/") and "*" not in s]
+    lsCarve = []
+    for sEntry in lsRepo:
+        sClean = sEntry.replace("\\", "/").lstrip("/")
+        for sFolder in lsFolders:
+            if sClean.lower().startswith(sFolder) and sClean.lower() != sFolder:
+                lsCarve.append(sClean)
+                break
+    return lsCarve
+
+
 def staysTracked(sRelative, lsRepo, lsLocal):
     """Does a tracked file belong in the repository?
 
@@ -508,6 +562,7 @@ def staysTracked(sRelative, lsRepo, lsLocal):
     RepoFiles.txt does not name at all.
     """
     if matchesAny(sRelative, exactNames(lsRepo)): return True
+    if matchesAny(sRelative, carveOuts(lsRepo, lsLocal)): return True
     if matchesAny(sRelative, c_lsNeverPushed): return False
     if matchesAny(sRelative, lsLocal): return False
     return matchesAny(sRelative, lsRepo)
@@ -641,6 +696,25 @@ def writeWhitelistGitignore():
         lsLines.append(sPattern)
     lsLines.append("")
 
+    # A FOLDER KEPT OFF THE REPOSITORY WITH NAMED EXCEPTIONS INSIDE (1.43.22).
+    # git never looks inside an ignored folder, so "exec/" would hide the kit's
+    # exec\\CSharp and exec\\homer whatever came after it. Such a folder is
+    # ignored by its contents instead ("/exec/*"), and the exceptions RepoFiles.txt
+    # names inside it are put back last, where the last match wins.
+    lsCarve = carveOuts(lsNamed, namedByLocalFiles())
+    if lsCarve:
+        setOuter = set()
+        for sCarve in lsCarve:
+            setOuter.add(sCarve.split("/")[0].lower())
+        for iAt, sLine in enumerate(lsLines):
+            sBare = sLine.strip().strip("/").lower()
+            if sLine.strip().endswith("/") and sBare in setOuter:
+                lsLines[iAt] = "/" + sLine.strip().strip("/") + "/*"
+        lsLines.append("# Named in RepoFiles.txt inside a folder kept off the repository.")
+        for sCarve in lsCarve:
+            lsLines.append("!/" + sCarve)
+        lsLines.append("")
+
     sPath = os.path.join(sRoot, ".gitignore")
     sText = "\r\n".join(lsLines)
     open(sPath, "wb").write(("\ufeff" + sText).encode("utf-8"))
@@ -705,7 +779,7 @@ def main():
     logLine("tidy start pid=%d" % os.getpid())
     logFact("script", os.path.abspath(__file__))
     logFact("python", platform.python_version())
-    logFact("windows", platform.platform())
+    logFact("windows", logWindows())
     logFact("project", sRoot)
     logFact("arguments", " ".join(sys.argv[1:]))
     logLine("settings no-push=%s folder-only=%s repo-only=%s" %
