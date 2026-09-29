@@ -57,7 +57,12 @@ for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss
 if not defined sNow for /f "tokens=2 delims==" %%T in ('wmic os get localdatetime /value 2^>nul') do set "sNow=%%T-"
 if not defined sNow set "sNow=unknown-time"
 set "log=%sLogDir%\HomerScribe-build-%sNow%.log"
-echo %app% build started %DATE% %TIME%> "%log%"
+rem THE START AND END LINES CARRY AN ISO 8601 TIME (HomerDev 1.43.21), with
+rem the UTC offset, from PowerShell rather than %DATE% %TIME%, whose form
+rem follows the regional settings; and they name the event and its result as
+rem every Homer log does.
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffzzz'"`) do set "sIso=%%i"
+> "%log%" echo %sIso% INFO  build start app=%app%
 echo Script: %~f0>> "%log%"
 echo Folder: %CD%>> "%log%"
 echo Command line: %0 %*>> "%log%"
@@ -316,7 +321,7 @@ rem installer includes the first from; an older kit has them elsewhere or not at
 rem An older kit compiles the C# and then fails the installer with "Invalid
 rem number of parameters" -- which is what happened when HomerDev.zip was
 rem delivered but not unpacked. Failing here says what is wrong.
-set "kitNeeded=1.43.20"
+set "kitNeeded=1.43.22"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
@@ -666,7 +671,8 @@ echo Built %app%_setup.exe version !ver!>> "%log%"
 echo Built %app%_setup.exe version !ver!
 
 :done
-echo Build succeeded %DATE% %TIME%>> "%log%"
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffzzz'"`) do set "sIso=%%i"
+>> "%log%" echo %sIso% INFO  build end result=succeeded
 echo(
 echo To publish: scripts\push "What changed.", then scripts\release. It reads the
 echo version from the version resource of %app%_setup.exe and tags v!ver!.
@@ -674,7 +680,8 @@ endlocal
 exit /b 0
 
 :failed
-echo Build FAILED %DATE% %TIME%>> "%log%"
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffzzz'"`) do set "sIso=%%i"
+>> "%log%" echo %sIso% ERROR build end result=failed
 endlocal
 exit /b 1
 
