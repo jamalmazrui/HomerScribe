@@ -257,7 +257,7 @@ none before.
 
 ## Keeping yt-dlp current
 
-`buildHomerScribe.cmd` runs `yt-dlp --update-to nightly` on every build, after
+`build.cmd` runs `yt-dlp --update-to nightly` on every build, after
 the fetch-if-missing step. It is deliberately not allowed to fail the build:
 no network, or a copy under Program Files that cannot rewrite itself, and the
 build carries on with what is there.
@@ -388,11 +388,11 @@ and the working files.
 
 ### Building
 
-    buildHomerScribe.cmd
+    build.cmd
 
-    buildHomerScribe.cmd nobump
+    build.cmd nobump
 
-It writes `buildHomerScribe.log` beside itself and prints it at the end. What
+It writes `build.log` beside itself and prints it at the end. What
 it does, in order: increments `version.txt` unless told not to, stepping over
 any number already released, generates
 `Version.cs`, finds a compiler, finds the three full-path reference assemblies,
@@ -427,7 +427,7 @@ the check it has always been.
 
 ### Releasing
 
-    buildHomerScribe
+    build
     scripts\push "What changed."
     scripts\release
 

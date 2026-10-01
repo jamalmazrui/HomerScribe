@@ -69,7 +69,7 @@ Transcribing is quicker and needs no such trial:
 
       ollama pull qwen2.5vl:7b
 
-`buildHomerScribe.cmd` downloads `ffmpeg.exe`, `ffprobe.exe`, and `yt-dlp.exe`
+`build.cmd` downloads `ffmpeg.exe`, `ffprobe.exe`, and `yt-dlp.exe`
 when they are not already in the folder, so a fresh clone builds a complete
 installer without anything being fetched by hand. Files already present are left
 alone, so the download happens once.

@@ -502,6 +502,105 @@ c_lsNotTypes = ("await", "case", "catch", "else", "for", "foreach", "if", "lock"
                 "sizeof", "switch", "throw", "typeof", "using", "while", "yield")
 
 
+def checkLocal():
+    r"""ONLY THE LOCAL TREE (1.43.49). A Homer app keeps its settings, data,
+    scripts and logs under %LOCALAPPDATA%\<App>, never under %APPDATA% (the
+    Roaming tree). Any use of the Roaming tree in the project's own code,
+    installer or scripts fails -- except where it names JAWS's or NVDA's own
+    folders, which live there and are theirs, not the app's. Comment-only lines
+    do not count."""
+    reRoaming = re.compile(r"SpecialFolder\.ApplicationData\b|\{userappdata\}|\$env:APPDATA\b|%APPDATA%|"
+                           r"environ(?:\.get)?\s*[\(\[]\s*[\"']APPDATA[\"']|getenv\s*\(\s*[\"']APPDATA[\"']", re.I)
+    reTheirs = re.compile(r"Freedom Scientific|\bJAWS\b|\bnvda\b", re.I)
+    lsNamed = namedByProject()
+    lsBad = []
+    for sDirPath, lsDirs, lsNames in os.walk(sRoot):
+        lsDirs[:] = [s for s in lsDirs if s.lower() not in c_lsSkipFolders]
+        for sName in sorted(lsNames):
+            if not sName.lower().endswith((".cs", ".py", ".iss", ".ps1", ".cmd", ".js")): continue
+            sPath = os.path.join(sDirPath, sName)
+            if lsNamed is not None and not isNamed(os.path.relpath(sPath, sRoot), lsNamed): continue
+            sText = readText(sPath)
+            if isLibrary(sPath, sText): continue
+            lsLines = sText.splitlines()
+            for iAt, sLine in enumerate(lsLines, 1):
+                if sLine.strip().startswith(("//", "#", ";", "rem ", "REM ", "'", "*", "(*", "{")): continue
+                # Exempt: JAWS's or NVDA's own folders, named on this line or the
+                # next (a path is often split across two), and the one-time move
+                # of an earlier version's files out of Roaming, whose code names
+                # the Roaming tree as what it is.
+                sNext = lsLines[iAt] if iAt < len(lsLines) else ""
+                if re.search(r"roaming", sLine, re.I) and "%APPDATA%" not in sLine: continue
+                if reRoaming.search(sLine) and not reTheirs.search(sLine) and not reTheirs.search(sNext):
+                    lsBad.append("%s line %d: %s" % (os.path.relpath(sPath, sRoot), iAt, sLine.strip()[:120]))
+    for sLine in lsBad: logLine("ROAMING: " + sLine)
+    if lsBad:
+        return finding("local", "fail", "%s use the Roaming tree (%%APPDATA%%); a Homer app keeps its files under %%LOCALAPPDATA%%" %
+                       countNoun(len(lsBad), "line"))
+    return finding("local", "pass", "0 lines use the Roaming tree")
+
+
+def finishEntries(sText):
+    """The finish page's entries in an installer script: each [Run] entry with
+    postinstall, its continued lines joined."""
+    oRun = re.search(r"(?mi)^\[Run\]\s*$", sText)
+    if not oRun: return []
+    oEnd = re.search(r"(?m)^\[[A-Za-z]+\]\s*$", sText[oRun.end():])
+    sRun = sText[oRun.end(): oRun.end() + oEnd.start()] if oEnd else sText[oRun.end():]
+    lsEntries = []
+    sCurrent = ""
+    for sLine in sRun.splitlines():
+        sStrip = sLine.strip()
+        if not sStrip or sStrip.startswith(";"):
+            if sCurrent and not sCurrent.rstrip().endswith("\\"): lsEntries.append(sCurrent); sCurrent = ""
+            continue
+        sCurrent += " " + sStrip.rstrip("\\")
+        if not sStrip.endswith("\\"): lsEntries.append(sCurrent); sCurrent = ""
+    if sCurrent: lsEntries.append(sCurrent)
+    return [s.strip() for s in lsEntries if "postinstall" in s.lower()]
+
+
+def checkFinishPage():
+    r"""THE FINISH PAGE'S RULES (1.43.51; help\FinishPage.md). In every installer
+    script: an Install or Update box is ticked, a Reinstall box never is, and
+    Launch is ticked; every component box says Install, Update or Reinstall;
+    nothing starts NVDA (opening an .nvda-addon or running nvda.exe), and no
+    label says NVDA must be running. EdSharp's and DbDo's installers broke the
+    first rule on 30 September after being called migrated."""
+    lsBad = []
+    # The installer the build compiles: <App>_setup.iss at the top of the project.
+    for sDirPath, lsNames in [(sRoot, os.listdir(sRoot))]:
+        for sName in sorted(lsNames):
+            if not sName.lower().endswith("_setup.iss"): continue
+            sPath = os.path.join(sDirPath, sName)
+            sRel = os.path.relpath(sPath, sRoot)
+            for sEntry in finishEntries(readText(sPath)):
+                def field(sName):
+                    oMatch = re.search(sName + r':\s*("(?:[^"]|"")*"|[^;]+)', sEntry, re.I)
+                    return oMatch.group(1).strip().strip('"') if oMatch else ""
+                sCheck = field("Check"); sFlags = field("Flags").lower(); sDesc = field("Description"); sFile = field("Filename")
+                bUnticked = "unchecked" in sFlags
+                oVerb = re.search(r"is(Install|Update|Reinstall)|(?:Needs?)(Install|Update)|(IsCurrent|AreCurrent)|isModel(Install|Reinstall)", sCheck)
+                sVerb = ""
+                if oVerb:
+                    lsGroups = oVerb.groups()
+                    sVerb = lsGroups[0] or lsGroups[1] or ("Reinstall" if lsGroups[2] else "") or lsGroups[3] or ""
+                elif re.match(r"^(Install|Update|Reinstall)\b", sDesc):
+                    sVerb = sDesc.split()[0]
+                sWhat = sDesc or sFile
+                if sVerb in ("Install", "Update") and bUnticked: lsBad.append("%s: %s box not ticked: %s" % (sRel, sVerb, sWhat))
+                if sVerb == "Reinstall" and not bUnticked: lsBad.append("%s: Reinstall box ticked: %s" % (sRel, sWhat))
+                if re.search(r"launch", sDesc, re.I) and bUnticked: lsBad.append("%s: Launch box not ticked" % sRel)
+                if not sVerb and not re.search(r"launch|open|guide|read|view", sDesc, re.I):
+                    lsBad.append("%s: box without Install, Update or Reinstall: %s" % (sRel, sWhat))
+                if re.search(r"nvda-addon|nvda\.exe|GetNvdaPath", sFile, re.I): lsBad.append("%s: box starts NVDA: %s" % (sRel, sFile))
+                if re.search(r"must be running", sDesc, re.I): lsBad.append("%s: label says NVDA must be running" % sRel)
+    for sLine in lsBad: logLine("FINISH PAGE: " + sLine)
+    if lsBad:
+        return finding("finish", "fail", "%s on the finish page" % countNoun(len(lsBad), "rule broken", "rules broken"))
+    return finding("finish", "pass", "every finish-page box follows the rules")
+
+
 def checkKeys():
     """Alt+Control is reserved, and one dialog must not claim a letter twice."""
     lsBad = []
@@ -626,13 +725,31 @@ def checkKeys():
     return finding("keys", "pass", "0 reserved combinations, 0 access keys claimed twice")
 
 
+def checkBuildName():
+    """THE BUILD SCRIPT IS build.cmd (1.43.55). The folder already names the
+    app, so build<App>.cmd said it twice. An old name fails the check and names
+    the kit's renameBuild, which renames it and every reference to it."""
+    sApp = os.path.basename(sRoot)
+    # The kit follows the same rule since 1.43.58: its build script is
+    # build.cmd too, and its build removes buildHomerDev.cmd and .py.
+    lsOld = [s for s in os.listdir(sRoot) if s.lower() in (("build" + sApp + ".cmd").lower(), ("build" + sApp + ".ps1").lower())]
+    if lsOld:
+        for sName in lsOld: logLine("BUILD NAME: %s should be %s" % (sName, "build" + os.path.splitext(sName)[1].lower()))
+        return finding("buildname", "fail", "%s still named after the app; run the kit's scripts\\renameBuild here" % " and ".join(lsOld))
+    if os.path.isfile(os.path.join(sRoot, "build.cmd")):
+        return finding("buildname", "pass", "the build script is build.cmd")
+    return finding("buildname", "skip", "no build script here")
+
+
 def checkBuild(bBuild):
     if not bBuild:
         return finding("build", "skip", "not asked for; run with --build to make the build itself evidence")
-    # THE APP'S OWN BUILD SCRIPT: build<App>.cmd, named after the folder. Any
-    # other build*.cmd -- buildTutorials.cmd, say -- is a tool, not the build;
-    # on 25 Sep 2026 this ran buildTutorials.cmd with "nobump" as a script name.
-    sOwn = os.path.join(sRoot, "build" + os.path.basename(sRoot) + ".cmd")
+    # THE APP'S OWN BUILD SCRIPT: build.cmd (1.43.55; before, build<App>.cmd,
+    # still run if not yet renamed). Any other build*.cmd -- buildTutorials.cmd,
+    # say -- is a tool, not the build; on 25 Sep 2026 this ran
+    # buildTutorials.cmd with "nobump" as a script name.
+    sOwn = os.path.join(sRoot, "build.cmd")
+    if not os.path.isfile(sOwn): sOwn = os.path.join(sRoot, "build" + os.path.basename(sRoot) + ".cmd")
     lsBuild = [sOwn] if os.path.isfile(sOwn) else [s for s in glob.glob(os.path.join(sRoot, "build*.cmd"))
                                                      if os.path.basename(s).lower() not in ("buildtutorials.cmd",)]
     if not lsBuild:
@@ -814,6 +931,9 @@ def main():
     checkPublish()
     checkLogging()
     checkNaming()
+    checkLocal()
+    checkFinishPage()
+    checkBuildName()
     checkKeys()
     checkBuild(dArguments.build)
     checkSmoke(dArguments.build)

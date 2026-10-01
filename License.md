@@ -60,7 +60,7 @@ I am not a lawyer, and this is a plain account rather than legal advice.
 ### Packaged in the installer
 
 - **[ffmpeg](https://ffmpeg.org)** does all the video and audio work.
-  `buildHomerScribe.cmd` fetches the **LGPL** build from
+  `build.cmd` fetches the **LGPL** build from
   [BtbN's FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds), never a GPL
   one, and this is deliberate: the widely used GPL builds would oblige anyone
   redistributing HomerScribe to supply ffmpeg's source as well. Under the

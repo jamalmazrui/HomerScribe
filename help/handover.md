@@ -2,7 +2,7 @@
 
 For picking this up in a new conversation. Upload this together with the source
 from `C:\HomerScribe`: `HomerScribe.cs`, `Lbc.cs`, `Say.cs`, `Inix.cs`,
-`Util.cs`, `Web.cs`, `buildHomerScribe.cmd`, `HomerScribe_setup.iss`,
+`Util.cs`, `Web.cs`, `build.cmd`, `HomerScribe_setup.iss`,
 `version.txt`, and the documents. Also `captions.py`, which is written and
 tested and waiting to be folded in.
 
@@ -100,7 +100,7 @@ captions matter: they would carry the sound effects and speaker names into it.
 - Orchestrates four programs and links to none: **ffmpeg**, **whisper.cpp**,
   **Ollama** (qwen2.5vl:7b over HTTP on localhost), **yt-dlp**. Windows speech
   voices speak; UI Automation carries the progress messages.
-- `buildHomerScribe.cmd` bumps `version.txt`, compiles, and runs ISCC. **The
+- `build.cmd` bumps `version.txt`, compiles, and runs ISCC. **The
   build increments version.txt BEFORE compiling**, so a History entry must be
   numbered `version.txt` plus one, or a version in a log cannot be looked up.
 

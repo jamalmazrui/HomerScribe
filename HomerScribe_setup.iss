@@ -7,7 +7,7 @@
 ;
 ; ---- Version -----------------------------------------------------------------
 ; The version number is NOT stored in this script. It lives in version.txt, one
-; line, which buildHomerScribe.cmd increments on every build. Inno reads it
+; line, which build.cmd increments on every build. Inno reads it
 ; here, and the build script also generates Version.cs from it, so the program,
 ; the installer, and the release tag always report the same number. Because no
 ; version literal appears in this file, a stale copy of it cannot rewind the
@@ -173,14 +173,14 @@ Source: "help\tutorials\*.mp3"; DestDir: "{app}\help\tutorials"; Flags: ignoreve
 Source: "help\tutorials\Tutorials.m3u"; DestDir: "{app}\help\tutorials"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; The companion programs, packaged when they are present in the build folder.
-; buildHomerScribe.cmd downloads them when they are missing, so normally they
+; build.cmd downloads them when they are missing, so normally they
 ; are here. skipifsourcedoesntexist means a build without them still succeeds;
 ; HomerScribe then looks on the PATH instead. Installing them beside
 ; HomerScribe.exe is what makes the program work with nothing else set up,
 ; since its own folder is the first place it looks.
 ; ExifTool writes the descriptions into the pictures. A SINGLE FILE only --
 ; no "exiftool_files" folder is packaged, deliberately. See License.md and
-; the ExifTool section of buildHomerScribe.cmd for why.
+; the ExifTool section of build.cmd for why.
 Source: "scripts\installExifTool.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion skipifsourcedoesntexist
 
 ; AND THE BINARY ITSELF, from exec\, which he put there by hand.

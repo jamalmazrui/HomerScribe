@@ -1492,11 +1492,11 @@ each source.</p>
 source into another folder and build there. The file being written is
 then a different file, and the running program is untouched.</p>
 <h2 id="building">Building</h2>
-<p>Everything is in one folder. <code>buildHomerScribe.cmd</code>
+<p>Everything is in one folder. <code>build.cmd</code>
 compiles every <code>.cs</code> file present into a single 64-bit
 executable, then builds the installer if Inno Setup is found:</p>
-<pre><code>buildHomerScribe.cmd</code></pre>
-<p>It writes <code>buildHomerScribe.log</code> beside itself, recording
+<pre><code>build.cmd</code></pre>
+<p>It writes <code>build.log</code> beside itself, recording
 the version, the compiler used, and the full compiler output.</p>
 <p>The shared Homer modules — <code>Lbc.cs</code>, <code>Say.cs</code>,
 <code>Inix.cs</code>, <code>Util.cs</code>, <code>Web.cs</code> — are
@@ -1524,7 +1524,7 @@ version literal appears in any other file and so a stale copy of a file
 cannot rewind the number.</p>
 <p>From there it flows outward:</p>
 <ol type="1">
-<li><code>buildHomerScribe.cmd</code> increments it, stepping over any
+<li><code>build.cmd</code> increments it, stepping over any
 number already released — which it learns from the repository’s own
 tags, so a working copy that has fallen behind cannot reuse a number —
 then generates <code>Version.cs</code> holding
@@ -1542,13 +1542,13 @@ The text form is set explicitly because scripts reads the FileVersion
 and posts <code>HomerScribe_setup.exe</code>, whose name it takes from
 <code>OutputBaseFilename</code>.</li>
 </ol>
-<p>So a release is: run <code>buildHomerScribe</code>, then
+<p>So a release is: run <code>build</code>, then
 <code>scripts\push</code>, then <code>scripts\release</code>. The
 program, the installer, and the tag can never disagree.</p>
 <p><code>Version.cs</code> is generated output. It is in
 <code>.gitignore</code> and should not be edited or committed.</p>
 <p>The first build increments 1.0.0 to 1.0.1. To release 1.0.0 itself,
-build once with <code>buildHomerScribe.cmd nobump</code>.</p>
+build once with <code>build.cmd nobump</code>.</p>
 <h2 id="the-prototype">The prototype</h2>
 <p><code>prototype\describeMovie.py</code> is the Python program this
 was grown from, and it still works. It is the reference implementation:

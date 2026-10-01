@@ -447,7 +447,7 @@ The name is seeded into the names carried between descriptions so it
 holds from the first. Measured effect: 53 of 94 descriptions named him,
 against none before.</p>
 <h2 id="keeping-yt-dlp-current">Keeping yt-dlp current</h2>
-<p><code>buildHomerScribe.cmd</code> runs
+<p><code>build.cmd</code> runs
 <code>yt-dlp --update-to nightly</code> on every build, after the
 fetch-if-missing step. It is deliberately not allowed to fail the build:
 no network, or a copy under Program Files that cannot rewrite itself,
@@ -585,10 +585,10 @@ UI Automation assemblies are not found.</li>
 without it the executable still builds.</li>
 </ul>
 <h3 id="building-1">Building</h3>
-<pre><code>buildHomerScribe.cmd
+<pre><code>build.cmd
 
-buildHomerScribe.cmd nobump</code></pre>
-<p>It writes <code>buildHomerScribe.log</code> beside itself and prints
+build.cmd nobump</code></pre>
+<p>It writes <code>build.log</code> beside itself and prints
 it at the end. What it does, in order: increments
 <code>version.txt</code> unless told not to, stepping over any number
 already released, generates <code>Version.cs</code>, finds a compiler,
@@ -623,7 +623,7 @@ what happened on 17 August 2026. If the remote cannot be reached, the
 plain increment is used and <code>scripts\release</code> remains the
 check it has always been.</p>
 <h3 id="releasing">Releasing</h3>
-<pre><code>buildHomerScribe
+<pre><code>build
 scripts\push &quot;What changed.&quot;
 scripts\release</code></pre>
 <p><code>createHomerScribeRepo.cmd</code> is the one-time bootstrap that

@@ -17,7 +17,7 @@ notes/
 packages/
 
 # The tutorial voices are NOT here: they live in C:\HomerDev\exec, fetched by
-# buildHomerDev and shared by every Homer app's build.
+# build and shared by every Homer app's build.
 
 # The version lives only on this machine; the build writes Version.cs from it.
 version.txt

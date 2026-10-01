@@ -10,7 +10,7 @@
 HomerScribe.cs
 HomerScribe.exe.config
 HomerScribe_setup.iss
-buildHomerScribe.cmd
+build.cmd
 
 # How git keeps the Homer CRLF line endings
 .gitattributes

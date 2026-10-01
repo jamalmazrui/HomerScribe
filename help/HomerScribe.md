@@ -1327,13 +1327,13 @@ program is untouched.
 
 ## Building
 
-Everything is in one folder. `buildHomerScribe.cmd` compiles every `.cs` file
+Everything is in one folder. `build.cmd` compiles every `.cs` file
 present into a single 64-bit executable, then builds the installer if Inno Setup
 is found:
 
-    buildHomerScribe.cmd
+    build.cmd
 
-It writes `buildHomerScribe.log` beside itself, recording the version, the
+It writes `build.log` beside itself, recording the version, the
 compiler used, and the full compiler output.
 
 The shared Homer modules — `Lbc.cs`, `Say.cs`, `Inix.cs`, `Util.cs`, `Web.cs` —
@@ -1362,7 +1362,7 @@ other file and so a stale copy of a file cannot rewind the number.
 
 From there it flows outward:
 
-1. `buildHomerScribe.cmd` increments it, stepping over any number already
+1. `build.cmd` increments it, stepping over any number already
    released — which it learns from the repository's own tags, so a working copy
    that has fallen behind cannot reuse a number — then generates `Version.cs`
    holding `BuildVersion.Version`, so the program reports it through `--help`.
@@ -1375,14 +1375,14 @@ From there it flows outward:
 3. `scripts\release` reads that FileVersion, forms the tag, and posts
    `HomerScribe_setup.exe`, whose name it takes from `OutputBaseFilename`.
 
-So a release is: run `buildHomerScribe`, then `scripts\push`, then `scripts\release`. The
+So a release is: run `build`, then `scripts\push`, then `scripts\release`. The
 program, the installer, and the tag can never disagree.
 
 `Version.cs` is generated output. It is in `.gitignore` and should not be edited
 or committed.
 
 The first build increments 1.0.0 to 1.0.1. To release 1.0.0 itself, build once
-with `buildHomerScribe.cmd nobump`.
+with `build.cmd nobump`.
 
 ## The prototype
 
