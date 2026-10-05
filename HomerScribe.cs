@@ -347,6 +347,12 @@ namespace Homer
             addParam("captions", "", "flag", "yes", "Use the film's own English captions as the transcript when it has them, instead of listening to it with Whisper");
             addParam("auto-captions", "", "flag", "no", "Also accept captions a machine made, such as YouTube's automatic ones. They carry no speaker names and none of the sounds that are not speech, so listening to the film usually gives a richer transcript");
             addParam("whisper-model", "", "string", "small", "Which Whisper model to hear the film with: tiny, base, small, medium or large-v3");
+            // THREADS. whisper-cli uses four unless told otherwise; a run of 122
+            // podcasts on 4 October 2026 spent 13.9 of its 14 hours in Whisper
+            // at a quarter of real time on those four. Half the logical
+            // processors, never fewer than four, uses the physical cores without
+            // pairing threads on the same core, which slows the model down.
+            addParam("whisper-threads", "", "integer", "0", "Threads Whisper runs on; 0 picks half the processors, at least four");
             // Whisper spells a name it has never read the way it sounds. A JAWS
             // training recording came back with "Joss" eight times. The initial
             // prompt is Whisper's own remedy: words in it are spelled as given.
@@ -1317,6 +1323,8 @@ namespace Homer
         static int iSourceCount = 0;
         static string sLastOutputFolder = "";
         static List<string> lResults = new List<string>();
+        static double nAudioDone = 0.0;      // seconds of source audio transcribed this run
+        static int iStretchesDone = 0;       // spoken stretches found this run
         static List<string> lFailures = new List<string>();
         static List<string> lListsRead = new List<string>();
         static string sLastFetchTrouble = "";
@@ -3006,7 +3014,10 @@ namespace Homer
             // it come out spelled as written rather than as they sound.
             string sVocabulary = text("vocabulary").Trim();
             string sPrompt = sVocabulary == "" ? "" : " --prompt " + quoted(sVocabulary.Replace("\"", ""));
-            runStreamed(sWhisper, "-m " + quoted(sModel) + " -f " + quoted(sWave) + " -l auto -oj -of " + quoted(sBase) + sPrompt, "Listening");
+            int iThreads = integer("whisper-threads");
+            if (iThreads <= 0) iThreads = Math.Max(4, Environment.ProcessorCount / 2);
+            logMessage("Whisper threads: " + iThreads.ToString() + " of " + Environment.ProcessorCount.ToString() + " logical processors", "INFO", "");
+            runStreamed(sWhisper, "-m " + quoted(sModel) + " -t " + iThreads.ToString() + " -f " + quoted(sWave) + " -l auto -oj -of " + quoted(sBase) + sPrompt, "Listening");
             waitingOn("");
             double nTook = DateTime.Now.Subtract(dtBegan).TotalSeconds;
             if (!File.Exists(sJson))
@@ -3037,6 +3048,8 @@ namespace Homer
                 announce("Initializing", -1.0, 1.0, sWrong);
                 bSpeechDoubtful = true;
             }
+            nAudioDone = nAudioDone + nDuration;
+            iStretchesDone = iStretchesDone + lSpeech.Count;
             logMessage("Speech: " + lSpeech.Count.ToString() + " stretches, " + formatClock(nSpoken) + " of " + formatClock(nDuration)
                        + ", " + num(nSpoken / Math.Max(nDuration, 1.0) * 100.0) + " percent of the film.",
                        "INFO", "Heard " + lSpeech.Count.ToString() + " stretches of speech, " + ((int)(nSpoken / Math.Max(nDuration, 1.0) * 100.0)).ToString() + " percent of the film.");
@@ -5665,7 +5678,9 @@ namespace Homer
                         string sWhen = int.Parse(oSaid.Groups[1].Value).ToString() + ":" + oSaid.Groups[2].Value + ":" + oSaid.Groups[3].Value;
                         dialogSays("transcribing, " + spokenPosition(nHeardTo, nWholeLength));
                         pumpDialog();
-                        logMessage("Transcribing  " + sWhen + "  " + oSaid.Groups[4].Value.Trim(), "INFO", "");
+                        // The stretch is already in the log, one line up, in
+                        // Whisper's own words; a second copy doubled a 14-hour
+                        // run's log to 12 MB for nothing.
                     }
                     if (DateTime.Now.Subtract(dtLast).TotalSeconds >= iDefaultScanReport)
                     {
@@ -5696,6 +5711,22 @@ namespace Homer
             // WHY it failed, and until now the reason was written down and
             // thrown away.
             sLastStreamedTrouble = oErr.ToString();
+            // Whisper tells its standard error how many threads it ran on, what
+            // language it detected and how long each stage took. Those lines
+            // are the evidence a slow run needs, so they go to the log.
+            if (sLabel == "Listening")
+            {
+                foreach (string sErrLine in oErr.ToString().Split('\n'))
+                {
+                    string sE = sErrLine.Trim();
+                    if (sE == "") continue;
+                    if (sE.IndexOf("n_threads", StringComparison.OrdinalIgnoreCase) >= 0
+                        || sE.IndexOf("auto-detected language", StringComparison.OrdinalIgnoreCase) >= 0
+                        || sE.IndexOf("total time", StringComparison.OrdinalIgnoreCase) >= 0
+                        || sE.IndexOf("encode time", StringComparison.OrdinalIgnoreCase) >= 0
+                        || sE.IndexOf("decode time", StringComparison.OrdinalIgnoreCase) >= 0) logMessage("  whisper: " + sE, "INFO", "");
+                }
+            }
             logMessage("Exit code " + oProcess.ExitCode.ToString() + " after " + num(DateTime.Now.Subtract(dtBegan).TotalSeconds) + " seconds", "CMD");
             if (oProcess.ExitCode != 0)
             {
@@ -11644,6 +11675,14 @@ namespace Homer
                 : "Nothing was done: none of the " + lFailures.Count.ToString() + " sources given could be used.");
             if (iSkipped > 0) oSaid.Append(" " + iSkipped.ToString() + " already done and skipped.");
             oSaid.Append(Environment.NewLine + "Took " + spokenLength(oTook.TotalSeconds) + ".");
+            // THE RUN IN ONE LINE. After 122 podcasts the list below is long;
+            // the totals come first, so the whole run is known before the
+            // first file is read.
+            if (iDone > 1 && nAudioDone > 0)
+            {
+                oSaid.Append(Environment.NewLine + spokenLength(nAudioDone) + " of audio, " + iStretchesDone.ToString("N0") + " spoken stretches"
+                           + (oTook.TotalSeconds > 0 ? ", " + Math.Round(100.0 * oTook.TotalSeconds / nAudioDone).ToString() + " percent of the audio's length." : "."));
+            }
             if (lFailures.Count > 0) oSaid.Append(" " + lFailures.Count.ToString() + (lFailures.Count == 1 ? " could not be used." : " could not be used."));
             if (lResults.Count > 0)
             {
@@ -11668,6 +11707,18 @@ namespace Homer
                 foreach (string sOne in lFailures) oSaid.Append(Environment.NewLine + sOne);
             }
             if (sLogPath != "") oSaid.Append(Environment.NewLine + Environment.NewLine + "Log of this run:" + Environment.NewLine + sLogPath);
+            // The same text as a file beside the log, so a long run's results
+            // can be read, searched and kept after the box is closed.
+            if (sLogPath != "" && iDone > 1)
+            {
+                try
+                {
+                    string sResultsPath = Path.Combine(Path.GetDirectoryName(sLogPath), Path.GetFileNameWithoutExtension(sLogPath) + "-results.md");
+                    File.WriteAllText(sResultsPath, "# HomerScribe results" + Environment.NewLine + Environment.NewLine + oSaid.ToString() + Environment.NewLine, new UTF8Encoding(true));
+                    oSaid.Append(Environment.NewLine + "Results file:" + Environment.NewLine + sResultsPath);
+                }
+                catch (Exception oError) { logMessage("The results file could not be written: " + oError.Message, "WARN", ""); }
+            }
             string sSaid = oSaid.ToString();
             logMessage("RESULTS: " + sSaid.Replace(Environment.NewLine, " | "), "INFO", sSaid);
             if (!bGuiMode) return;

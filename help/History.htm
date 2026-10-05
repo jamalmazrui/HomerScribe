@@ -165,10 +165,1186 @@
   </style>
 </head>
 <body>
-<header id="title-block-header">
-<h1 class="title">History</h1>
-</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#homerscribe-history"
+id="toc-homerscribe-history">HomerScribe History</a>
+<ul>
+<li><a href="#october-2026-what-122-podcasts-in-one-run-taught"
+id="toc-october-2026-what-122-podcasts-in-one-run-taught">1.0.266, 4
+October 2026 – what 122 podcasts in one run taught</a></li>
+<li><a href="#september-2026-setup-wording"
+id="toc-september-2026-setup-wording">1.0.258, 27 September 2026 – setup
+wording</a></li>
+<li><a href="#september-2026-built-with-homerdev-1.43.19"
+id="toc-september-2026-built-with-homerdev-1.43.19">1.0.257, 26
+September 2026 – built with HomerDev 1.43.19</a></li>
+<li><a href="#september-2026-brought-up-to-homerdev-1.43.15"
+id="toc-september-2026-brought-up-to-homerdev-1.43.15">1.0.256, 26
+September 2026 – brought up to HomerDev 1.43.15</a></li>
+<li><a href="#september-2026" id="toc-september-2026">1.0.238, 24
+September 2026</a>
+<ul>
+<li><a href="#september-closing-everything-built-goes-to-exec"
+id="toc-september-closing-everything-built-goes-to-exec">25 September,
+closing: everything built goes to exec</a></li>
+<li><a href="#september-closing-one-tool-per-job"
+id="toc-september-closing-one-tool-per-job">25 September, closing: one
+tool per job</a></li>
+<li><a href="#september-last-the-context-folder-and-the-readers-voice"
+id="toc-september-last-the-context-folder-and-the-readers-voice">25
+September, last: the context folder, and the reader’s voice</a></li>
+<li><a href="#september-late-the-stopped-push-and-the-release-command"
+id="toc-september-late-the-stopped-push-and-the-release-command">25
+September, late: the stopped push, and the release command</a></li>
+<li><a
+href="#september-night-the-tutorials-and-the-version-the-zip-clobbered"
+id="toc-september-night-the-tutorials-and-the-version-the-zip-clobbered">25
+September, night: the tutorials, and the version the zip
+clobbered</a></li>
+<li><a href="#september-evening-two-patterns-for-every-homer-app"
+id="toc-september-evening-two-patterns-for-every-homer-app">25
+September, evening: two patterns for every Homer app</a></li>
+<li><a
+href="#september-afternoon-three-things-from-the-first-successful-install"
+id="toc-september-afternoon-three-things-from-the-first-successful-install">25
+September, afternoon: three things from the first successful
+install</a></li>
+<li><a href="#september-a-bom-where-it-cannot-go-and-the-homerdev-logs"
+id="toc-september-a-bom-where-it-cannot-go-and-the-homerdev-logs">25
+September: a BOM where it cannot go, and the HomerDev logs</a></li>
+<li><a
+href="#the-regression-found-in-the-first-install-log-that-ever-got-written"
+id="toc-the-regression-found-in-the-first-install-log-that-ever-got-written">The
+regression, found in the first install log that ever got
+written</a></li>
+<li><a href="#three-more-from-the-same-logs"
+id="toc-three-more-from-the-same-logs">Three more from the same
+logs</a></li>
+<li><a
+href="#the-regression-that-stopped-transcription-found-by-tracing-the-whole-path"
+id="toc-the-regression-that-stopped-transcription-found-by-tracing-the-whole-path">The
+regression that stopped transcription, found by tracing the whole
+path</a></li>
+<li><a href="#three-more-from-reading-every-line-rather-than-patching"
+id="toc-three-more-from-reading-every-line-rather-than-patching">Three
+more, from reading every line rather than patching</a></li>
+<li><a href="#the-installer-writes-its-own-log-now"
+id="toc-the-installer-writes-its-own-log-now">The installer writes its
+own log now</a></li>
+<li><a href="#and-the-version-evidence"
+id="toc-and-the-version-evidence">And the version evidence</a></li>
+<li><a href="#a-stale-binary-should-say-so"
+id="toc-a-stale-binary-should-say-so">A stale binary should say
+so</a></li>
+<li><a
+href="#the-regression-found-at-last-the-uninstaller-deleted-whisper"
+id="toc-the-regression-found-at-last-the-uninstaller-deleted-whisper">The
+regression, found at last: the uninstaller deleted Whisper</a></li>
+<li><a href="#why-my-own-logs-did-not-resolve-it"
+id="toc-why-my-own-logs-did-not-resolve-it">Why my own logs did not
+resolve it</a></li>
+<li><a href="#the-file-that-was-never-shipped"
+id="toc-the-file-that-was-never-shipped">– the file that was never
+shipped</a></li>
+<li><a href="#the-check-that-should-have-caught-it"
+id="toc-the-check-that-should-have-caught-it">The check that should have
+caught it</a></li>
+<li><a href="#and-a-missing-file-now-says-so"
+id="toc-and-a-missing-file-now-says-so">And a missing file now says
+so</a></li>
+<li><a href="#checkboxes-grouped-and-sorted"
+id="toc-checkboxes-grouped-and-sorted">Checkboxes grouped and
+sorted</a></li>
+<li><a href="#audited-rather-than-assumed"
+id="toc-audited-rather-than-assumed">– audited rather than
+assumed</a></li>
+<li><a href="#what-the-audit-found-in-installwhisper.cmd"
+id="toc-what-the-audit-found-in-installwhisper.cmd">What the audit found
+in installWhisper.cmd</a></li>
+<li><a href="#the-same-audit-over-the-other-seven-scripts"
+id="toc-the-same-audit-over-the-other-seven-scripts">The same audit over
+the other seven scripts</a></li>
+<li><a href="#what-i-have-not-verified"
+id="toc-what-i-have-not-verified">What I have not verified</a></li>
+<li><a href="#what-the-finish-page-should-say"
+id="toc-what-the-finish-page-should-say">– what the finish page should
+say</a></li>
+<li><a href="#three-shapes-and-the-version-in-each"
+id="toc-three-shapes-and-the-version-in-each">Three shapes, and the
+version in each</a></li>
+<li><a href="#and-the-ticks-make-enter-mean-something"
+id="toc-and-the-ticks-make-enter-mean-something">And the ticks make
+Enter mean something</a></li>
+<li><a href="#the-install-scripts-move-into-the-kit"
+id="toc-the-install-scripts-move-into-the-kit">– the install scripts
+move into the kit</a></li>
+<li><a href="#homerinstall.cmd"
+id="toc-homerinstall.cmd">homerInstall.cmd</a></li>
+<li><a href="#homercomponents.iss"
+id="toc-homercomponents.iss">HomerComponents.iss</a></li>
+<li><a href="#what-that-buys-the-finish-page"
+id="toc-what-that-buys-the-finish-page">What that buys the finish
+page</a></li>
+<li><a href="#console-and-log-do-different-jobs"
+id="toc-console-and-log-do-different-jobs">– console and log do
+different jobs</a></li>
+<li><a href="#the-console-is-visible-again"
+id="toc-the-console-is-visible-again">The console is visible
+again</a></li>
+<li><a href="#and-the-logs-go-where-he-can-find-them"
+id="toc-and-the-logs-go-where-he-can-find-them">And the logs go where he
+can find them</a></li>
+<li><a href="#the-installer-properly" id="toc-the-installer-properly">–
+the installer, properly</a></li>
+<li><a href="#the-scripts-moved-and-the-run-lines-did-not"
+id="toc-the-scripts-moved-and-the-run-lines-did-not">The scripts moved
+and the Run lines did not</a></li>
+<li><a href="#the-program-belongs-in-exec"
+id="toc-the-program-belongs-in-exec">The program belongs in
+exec</a></li>
+<li><a href="#nothing-waits-for-a-key-any-more"
+id="toc-nothing-waits-for-a-key-any-more">Nothing waits for a key any
+more</a></li>
+<li><a href="#an-existing-component-was-invisible"
+id="toc-an-existing-component-was-invisible">An existing component was
+invisible</a></li>
+<li><a href="#and-there-was-no-results-box-because-there-was-no-code"
+id="toc-and-there-was-no-results-box-because-there-was-no-code">And
+there was no Results box because there was no code</a></li>
+<li><a href="#the-finish-page" id="toc-the-finish-page">The finish
+page</a></li>
+<li><a href="#the-homer-folder-layout"
+id="toc-the-homer-folder-layout">— the Homer folder layout</a></li>
+<li><a href="#moving-files-is-the-easy-half"
+id="toc-moving-files-is-the-easy-half">Moving files is the easy
+half</a></li>
+<li><a href="#and-the-links-between-documents"
+id="toc-and-the-links-between-documents">And the links between
+documents</a></li>
+<li><a href="#built-on-the-kit-like-dbdo"
+id="toc-built-on-the-kit-like-dbdo">— built on the kit, like
+DbDo</a></li>
+<li><a href="#what-changed" id="toc-what-changed">What changed</a></li>
+<li><a href="#one-thing-for-the-kit-not-for-homerscribe"
+id="toc-one-thing-for-the-kit-not-for-homerscribe">One thing for the
+kit, not for HomerScribe</a></li>
+<li><a href="#still-to-do" id="toc-still-to-do">Still to do</a></li>
+<li><a href="#shared-components-go-where-they-are-shared"
+id="toc-shared-components-go-where-they-are-shared">— shared components
+go where they are shared</a></li>
+<li><a href="#what-changed-1" id="toc-what-changed-1">What
+changed</a></li>
+<li><a href="#the-rule-plainly" id="toc-the-rule-plainly">The rule,
+plainly</a></li>
+<li><a href="#the-announcement" id="toc-the-announcement">— the
+announcement</a></li>
+<li><a href="#the-three-layer-claim-checked-before-it-was-written"
+id="toc-the-three-layer-claim-checked-before-it-was-written">The
+three-layer claim, checked before it was written</a></li>
+<li><a href="#the-release" id="toc-the-release">— the release</a></li>
+<li><a href="#the-announcement-rewritten-to-fit"
+id="toc-the-announcement-rewritten-to-fit">The announcement, rewritten
+to fit</a></li>
+<li><a href="#what-the-announcement-does-not-claim"
+id="toc-what-the-announcement-does-not-claim">What the announcement does
+not claim</a></li>
+<li><a href="#checked-not-assumed" id="toc-checked-not-assumed">Checked,
+not assumed</a></li>
+<li><a href="#lists-from-both-directions"
+id="toc-lists-from-both-directions">— lists, from both
+directions</a></li>
+<li><a href="#tagged-the-words-are-in-a-paragraph-inside-the-list"
+id="toc-tagged-the-words-are-in-a-paragraph-inside-the-list">Tagged: the
+words are in a paragraph inside the list</a></li>
+<li><a href="#untagged-the-bullet-is-its-own-line"
+id="toc-untagged-the-bullet-is-its-own-line">Untagged: the bullet is its
+own line</a></li>
+<li><a href="#what-the-pair-was-for" id="toc-what-the-pair-was-for">What
+the pair was for</a></li>
+<li><a href="#the-test-suite-earned-itself-in-one-run"
+id="toc-the-test-suite-earned-itself-in-one-run">— the test suite earned
+itself in one run</a></li>
+<li><a href="#a-document-made-entirely-of-pictures-yielded-nothing"
+id="toc-a-document-made-entirely-of-pictures-yielded-nothing">A document
+made entirely of pictures yielded nothing</a></li>
+<li><a href="#the-cause-a-filter-i-did-not-know-about"
+id="toc-the-cause-a-filter-i-did-not-know-about">The cause: a filter I
+did not know about</a></li>
+<li><a href="#and-this-is-exactly-the-case-the-feature-exists-for"
+id="toc-and-this-is-exactly-the-case-the-feature-exists-for">And this is
+exactly the case the feature exists for</a></li>
+<li><a href="#one-document-got-no-word-version-at-all"
+id="toc-one-document-got-no-word-version-at-all">— one document got no
+Word version at all</a></li>
+<li><a href="#two-fixes-because-one-is-not-enough"
+id="toc-two-fixes-because-one-is-not-enough">Two fixes, because one is
+not enough</a></li>
+</ul></li>
+<li><a href="#september-2026-almost-none-is-the-same-problem-as-none"
+id="toc-september-2026-almost-none-is-the-same-problem-as-none">1.0.269,
+13 September 2026 — almost none is the same problem as none</a>
+<ul>
+<li><a href="#moved-to-where-both-paths-pass"
+id="toc-moved-to-where-both-paths-pass">Moved to where both paths
+pass</a></li>
+<li><a href="#a-note-on-where-the-bar-sits"
+id="toc-a-note-on-where-the-bar-sits">A note on where the bar
+sits</a></li>
+</ul></li>
+<li><a href="#september-2026-1" id="toc-september-2026-1">1.0.268, 13
+September 2026</a>
+<ul>
+<li><a href="#but-some-documents-come-out-with-no-headings-at-all"
+id="toc-but-some-documents-come-out-with-no-headings-at-all">But some
+documents come out with no headings at all</a></li>
+<li><a href="#what-that-suggests-next"
+id="toc-what-that-suggests-next">What that suggests next</a></li>
+</ul></li>
+<li><a href="#september-2026-one-document-wearing-anothers-tags"
+id="toc-september-2026-one-document-wearing-anothers-tags">1.0.267, 13
+September 2026 — one document wearing another’s tags</a>
+<ul>
+<li><a href="#ten-static-fields-none-of-them-cleared"
+id="toc-ten-static-fields-none-of-them-cleared">Ten static fields, none
+of them cleared</a></li>
+<li><a href="#the-worst-kind-of-bug" id="toc-the-worst-kind-of-bug">The
+worst kind of bug</a></li>
+</ul></li>
+<li><a href="#september-2026-a-half-was-not-cautious-enough"
+id="toc-september-2026-a-half-was-not-cautious-enough">1.0.266, 13
+September 2026 — a half was not cautious enough</a>
+<ul>
+<li><a href="#but-three-documents-lost-words"
+id="toc-but-three-documents-lost-words">But three documents lost
+words</a></li>
+<li><a href="#where-the-tags-give-more"
+id="toc-where-the-tags-give-more">Where the tags give MORE</a></li>
+</ul></li>
+<li><a href="#september-2026-the-lookup-was-blind"
+id="toc-september-2026-the-lookup-was-blind">1.0.265, 13 September 2026
+— the lookup was blind</a>
+<ul>
+<li><a href="#the-page-search-never-got-past-page-three"
+id="toc-the-page-search-never-got-past-page-three">The page search never
+got past page three</a></li>
+<li><a href="#what-yesterdays-work-did-right"
+id="toc-what-yesterdays-work-did-right">What yesterday’s work did
+right</a></li>
+</ul></li>
+<li><a href="#september-2026-the-tags-must-earn-it"
+id="toc-september-2026-the-tags-must-earn-it">1.0.264, 13 September 2026
+— the tags must earn it</a>
+<ul>
+<li><a href="#able-gamers-guidelines-25995-words-became-515"
+id="toc-able-gamers-guidelines-25995-words-became-515">Able Gamers
+Guidelines: 25,995 words became 515</a></li>
+<li><a href="#two-tests-now-and-both-measured"
+id="toc-two-tests-now-and-both-measured">Two tests now, and both
+measured</a></li>
+<li><a href="#what-this-says-about-the-feature"
+id="toc-what-this-says-about-the-feature">What this says about the
+feature</a></li>
+</ul></li>
+<li><a href="#september-2026-2" id="toc-september-2026-2">1.0.263, 13
+September 2026</a></li>
+<li><a href="#september-2026-the-tag-reader"
+id="toc-september-2026-the-tag-reader">1.0.262, 13 September 2026 — the
+tag reader</a>
+<ul>
+<li><a href="#how-a-tag-finds-its-words"
+id="toc-how-a-tag-finds-its-words">How a tag finds its words</a></li>
+<li><a href="#what-the-document-then-becomes"
+id="toc-what-the-document-then-becomes">What the document then
+becomes</a></li>
+<li><a href="#judged-by-what-came-back-not-by-what-it-claims"
+id="toc-judged-by-what-came-back-not-by-what-it-claims">Judged by what
+came back, not by what it claims</a></li>
+<li><a href="#and-a-patch-i-had-to-throw-away"
+id="toc-and-a-patch-i-had-to-throw-away">And a patch I had to throw
+away</a></li>
+</ul></li>
+<li><a href="#september-2026-a-text-layer-can-be-worthless"
+id="toc-september-2026-a-text-layer-can-be-worthless">1.0.261, 13
+September 2026 — a text layer can be worthless</a>
+<ul>
+<li><a href="#the-false-positive-i-nearly-shipped"
+id="toc-the-false-positive-i-nearly-shipped">The false positive I nearly
+shipped</a></li>
+<li><a href="#the-rest-of-pacs-list" id="toc-the-rest-of-pacs-list">The
+rest of PAC’s list</a></li>
+</ul></li>
+<li><a href="#september-2026-the-tags-are-used-not-merely-noticed"
+id="toc-september-2026-the-tags-are-used-not-merely-noticed">1.0.260, 13
+September 2026 — the tags are used, not merely noticed</a>
+<ul>
+<li><a href="#the-authors-own-description-instead-of-the-models"
+id="toc-the-authors-own-description-instead-of-the-models">The author’s
+own description, instead of the model’s</a></li>
+<li><a href="#the-documents-language"
+id="toc-the-documents-language">The document’s language</a></li>
+<li><a href="#the-tags-set-the-depth"
+id="toc-the-tags-set-the-depth">The tags set the depth</a></li>
+<li><a href="#and-the-count-still-audits-the-inference"
+id="toc-and-the-count-still-audits-the-inference">And the count still
+audits the inference</a></li>
+<li><a href="#a-stub-i-wrote-and-threw-away"
+id="toc-a-stub-i-wrote-and-threw-away">A stub I wrote and threw
+away</a></li>
+</ul></li>
+<li><a href="#september-2026-reliability-before-an-announcement"
+id="toc-september-2026-reliability-before-an-announcement">1.0.259, 13
+September 2026 — reliability before an announcement</a>
+<ul>
+<li><a href="#what-is-sound" id="toc-what-is-sound">What is
+sound</a></li>
+<li><a href="#what-was-not-sound" id="toc-what-was-not-sound">What was
+not sound</a></li>
+<li><a href="#my-view-on-announcing" id="toc-my-view-on-announcing">My
+view on announcing</a></li>
+</ul></li>
+<li><a href="#september-2026-3" id="toc-september-2026-3">1.0.258, 13
+September 2026</a>
+<ul>
+<li><a
+href="#the-tree-walker-found-nothing-in-a-document-that-plainly-has-tags"
+id="toc-the-tree-walker-found-nothing-in-a-document-that-plainly-has-tags">The
+tree walker found nothing in a document that plainly has tags</a></li>
+<li><a href="#and-the-journals-headings-tighten-themselves-now"
+id="toc-and-the-journals-headings-tighten-themselves-now">And the
+journal’s headings tighten themselves now</a></li>
+</ul></li>
+<li><a href="#september-2026-4" id="toc-september-2026-4">1.0.257, 13
+September 2026</a>
+<ul>
+<li><a href="#the-role-map-is-keyed-by-string"
+id="toc-the-role-map-is-keyed-by-string">The role map is keyed by
+string</a></li>
+<li><a href="#two-counters-with-one-name"
+id="toc-two-counters-with-one-name">Two counters with one name</a></li>
+<li><a href="#and-letter.font-is-obsolete-again"
+id="toc-and-letter.font-is-obsolete-again">And <code>Letter.Font</code>
+is obsolete, again</a></li>
+<li><a href="#one-caught-before-it-shipped"
+id="toc-one-caught-before-it-shipped">One caught before it
+shipped</a></li>
+</ul></li>
+<li><a href="#september-2026-5" id="toc-september-2026-5">1.0.256, 13
+September 2026</a></li>
+<li><a href="#september-2026-the-tags-audit-the-inference"
+id="toc-september-2026-the-tags-audit-the-inference">1.0.255, 13
+September 2026 — the tags audit the inference</a>
+<ul>
+<li><a href="#what-the-tags-are-used-for-now"
+id="toc-what-the-tags-are-used-for-now">What the tags are used for
+now</a></li>
+<li><a href="#and-the-threshold-is-a-setting-now"
+id="toc-and-the-threshold-is-a-setting-now">And the threshold is a
+setting now</a></li>
+</ul></li>
+<li><a href="#september-2026-6" id="toc-september-2026-6">1.0.254, 13
+September 2026</a>
+<ul>
+<li><a href="#level-6-headings" id="toc-level-6-headings">2,416 level-6
+headings</a></li>
+<li><a
+href="#and-the-28-level-1-headings-were-not-what-i-said-they-were"
+id="toc-and-the-28-level-1-headings-were-not-what-i-said-they-were">And
+the 28 level-1 headings were not what I said they were</a></li>
+</ul></li>
+<li><a href="#september-2026-reading-the-structure-tree"
+id="toc-september-2026-reading-the-structure-tree">1.0.253, 13 September
+2026 — reading the structure tree</a>
+<ul>
+<li><a href="#role-mapping-first" id="toc-role-mapping-first">Role
+mapping first</a></li>
+<li><a href="#what-it-reports" id="toc-what-it-reports">What it
+reports</a></li>
+<li><a href="#guards-because-a-pdf-may-be-malformed"
+id="toc-guards-because-a-pdf-may-be-malformed">Guards, because a PDF may
+be malformed</a></li>
+<li><a href="#still-inferred-rather-than-used"
+id="toc-still-inferred-rather-than-used">Still inferred rather than
+used</a></li>
+</ul></li>
+<li><a href="#september-2026-a-tagged-pdf-says-what-it-is"
+id="toc-september-2026-a-tagged-pdf-says-what-it-is">1.0.252, 13
+September 2026 — a tagged PDF says what it is</a>
+<ul>
+<li><a href="#what-is-built-and-what-is-not"
+id="toc-what-is-built-and-what-is-not">What is built, and what is
+not</a></li>
+<li><a href="#why-reporting-is-worth-having-on-its-own"
+id="toc-why-reporting-is-worth-having-on-its-own">Why reporting is worth
+having on its own</a></li>
+</ul></li>
+<li><a href="#september-2026-the-picture-layer-is-unproven"
+id="toc-september-2026-the-picture-layer-is-unproven">1.0.251, 13
+September 2026 — the picture layer is unproven</a>
+<ul>
+<li><a href="#the-text-layer-is-working"
+id="toc-the-text-layer-is-working">The text layer is working</a></li>
+<li><a href="#the-picture-layer-has-described-nothing-in-any-document"
+id="toc-the-picture-layer-has-described-nothing-in-any-document">The
+picture layer has described nothing, in any document</a></li>
+</ul></li>
+<li><a href="#september-2026-7" id="toc-september-2026-7">1.0.250, 13
+September 2026</a>
+<ul>
+<li><a href="#five-places-taken-by-outliers"
+id="toc-five-places-taken-by-outliers">Five places, taken by
+outliers</a></li>
+<li><a href="#and-28-of-those-headings-were-not-headings-at-all"
+id="toc-and-28-of-those-headings-were-not-headings-at-all">And 28 of
+those headings were not headings at all</a></li>
+</ul></li>
+<li><a href="#september-2026-8" id="toc-september-2026-8">1.0.249, 13
+September 2026</a>
+<ul>
+<li><a href="#the-journal-still-had-32-headings-in-112-pages"
+id="toc-the-journal-still-had-32-headings-in-112-pages">The journal
+still had 32 headings in 112 pages</a></li>
+<li><a href="#and-the-other-document-had-130-headings-in-six-pages"
+id="toc-and-the-other-document-had-130-headings-in-six-pages">And the
+other document had 130 headings in six pages</a></li>
+<li><a href="#what-the-three-documents-together-showed"
+id="toc-what-the-three-documents-together-showed">What the three
+documents together showed</a></li>
+</ul></li>
+<li><a href="#september-2026-the-second-view"
+id="toc-september-2026-the-second-view">1.0.248, 13 September 2026 — the
+second view</a>
+<ul>
+<li><a href="#what-it-does" id="toc-what-it-does">What it does</a></li>
+<li><a href="#where-it-departs-from-iris-and-why"
+id="toc-where-it-departs-from-iris-and-why">Where it departs from Iris,
+and why</a></li>
+</ul></li>
+<li><a href="#september-2026-9" id="toc-september-2026-9">1.0.247, 13
+September 2026</a>
+<ul>
+<li><a href="#the-one-real-risk-now-fixed"
+id="toc-the-one-real-risk-now-fixed">The one real risk, now
+fixed</a></li>
+<li><a href="#what-is-genuinely-untouched"
+id="toc-what-is-genuinely-untouched">What is genuinely
+untouched</a></li>
+</ul></li>
+<li><a href="#september-2026-10" id="toc-september-2026-10">1.0.246, 13
+September 2026</a>
+<ul>
+<li><a href="#the-words-were-mangled-on-the-way-in"
+id="toc-the-words-were-mangled-on-the-way-in">The words were mangled on
+the way in</a></li>
+<li><a href="#and-the-document-had-no-shape"
+id="toc-and-the-document-had-no-shape">And the document had no
+shape</a></li>
+<li><a href="#the-redundant-model-is-gone-from-the-installer"
+id="toc-the-redundant-model-is-gone-from-the-installer">The redundant
+model is gone from the installer</a></li>
+</ul></li>
+<li><a href="#september-2026-11" id="toc-september-2026-11">1.0.245, 13
+September 2026</a>
+<ul>
+<li><a href="#the-documentation-is-already-in-both-formats"
+id="toc-the-documentation-is-already-in-both-formats">The documentation
+is already in both formats</a></li>
+<li><a href="#pdfpig-is-pinned-now-the-way-edsharp-pins-everything"
+id="toc-pdfpig-is-pinned-now-the-way-edsharp-pins-everything">PdfPig is
+pinned now, the way EdSharp pins everything</a></li>
+</ul></li>
+<li><a href="#september-2026-12" id="toc-september-2026-12">1.0.244, 13
+September 2026</a>
+<ul>
+<li><a href="#but-nothing-fetched-pandoc"
+id="toc-but-nothing-fetched-pandoc">But nothing fetched Pandoc</a></li>
+</ul></li>
+<li><a href="#september-2026-13" id="toc-september-2026-13">1.0.243, 12
+September 2026</a>
+<ul>
+<li><a href="#tesseract-5-writes-confidence-as-a-float"
+id="toc-tesseract-5-writes-confidence-as-a-float">Tesseract 5 writes
+confidence as a float</a></li>
+<li><a href="#what-he-should-see" id="toc-what-he-should-see">What he
+should see</a></li>
+</ul></li>
+<li><a href="#september-2026-14" id="toc-september-2026-14">1.0.242, 12
+September 2026</a>
+<ul>
+<li><a href="#but-the-results-box-told-him-something-untrue"
+id="toc-but-the-results-box-told-him-something-untrue">But the results
+box told him something untrue</a></li>
+<li><a href="#and-127-says-tesseract-did-not-run"
+id="toc-and-127-says-tesseract-did-not-run">And 1:27 says Tesseract did
+not run</a></li>
+<li><a href="#settings-move-to-.inix"
+id="toc-settings-move-to-.inix">Settings move to .inix</a></li>
+</ul></li>
+<li><a href="#september-2026-15" id="toc-september-2026-15">1.0.241, 12
+September 2026</a></li>
+<li><a href="#september-2026-reading-order"
+id="toc-september-2026-reading-order">1.0.240, 12 September 2026 —
+reading order</a>
+<ul>
+<li><a href="#what-remains-before-the-claim-is-fully-true"
+id="toc-what-remains-before-the-claim-is-fully-true">What remains before
+the claim is fully true</a></li>
+</ul></li>
+<li><a href="#september-2026-tesseract-reads-the-words"
+id="toc-september-2026-tesseract-reads-the-words">1.0.239, 12 September
+2026 — Tesseract reads the words</a>
+<ul>
+<li><a href="#what-this-changes-for-his-112-page-journal"
+id="toc-what-this-changes-for-his-112-page-journal">What this changes
+for his 112-page journal</a></li>
+</ul></li>
+<li><a href="#september-2026-16" id="toc-september-2026-16">1.0.238, 12
+September 2026</a></li>
+<li><a href="#september-2026-17" id="toc-september-2026-17">1.0.237, 12
+September 2026</a></li>
+<li><a href="#september-2026-a-word-version-that-paginates-like-the-pdf"
+id="toc-september-2026-a-word-version-that-paginates-like-the-pdf">1.0.236,
+12 September 2026 — a Word version that paginates like the PDF</a>
+<ul>
+<li><a href="#pandoc-still-has-no-page-break"
+id="toc-pandoc-still-has-no-page-break">Pandoc still has no page
+break</a></li>
+<li><a href="#the-pictures-are-not-embedded-and-that-was-measured"
+id="toc-the-pictures-are-not-embedded-and-that-was-measured">The
+pictures are not embedded, and that was measured</a></li>
+</ul></li>
+<li><a href="#september-2026-18" id="toc-september-2026-18">1.0.235, 12
+September 2026</a>
+<ul>
+<li><a href="#bold-and-italic-are-now-kept"
+id="toc-bold-and-italic-are-now-kept">Bold and italic are now
+kept</a></li>
+<li><a href="#where-this-stands-against-his-list"
+id="toc-where-this-stands-against-his-list">Where this stands against
+his list</a></li>
+<li><a href="#and-the-logging-convention"
+id="toc-and-the-logging-convention">And the logging convention</a></li>
+</ul></li>
+<li><a href="#september-2026-19" id="toc-september-2026-19">1.0.234, 12
+September 2026</a>
+<ul>
+<li><a href="#the-two-fixes-landed" id="toc-the-two-fixes-landed">The
+two fixes landed</a></li>
+<li><a href="#but-it-asked-about-1286-pictures"
+id="toc-but-it-asked-about-1286-pictures">But it asked about 1,286
+pictures</a></li>
+<li><a href="#and-the-runtime-log-goes-back-where-it-belongs"
+id="toc-and-the-runtime-log-goes-back-where-it-belongs">And the runtime
+log goes back where it belongs</a></li>
+</ul></li>
+<li><a href="#september-2026-20" id="toc-september-2026-20">1.0.233, 12
+September 2026</a></li>
+<li><a href="#september-2026-21" id="toc-september-2026-21">1.0.232, 12
+September 2026</a>
+<ul>
+<li><a href="#why-a-jpeg-that-does-not-look-like-one-yet"
+id="toc-why-a-jpeg-that-does-not-look-like-one-yet">Why: a JPEG that
+does not look like one yet</a></li>
+</ul></li>
+<li><a href="#september-2026-22" id="toc-september-2026-22">1.0.231, 12
+September 2026</a>
+<ul>
+<li><a href="#what-the-research-says"
+id="toc-what-the-research-says">What the research says</a></li>
+<li><a href="#seeded-and-still-walked"
+id="toc-seeded-and-still-walked">Seeded, and still walked</a></li>
+<li><a href="#and-every-fetch-now-reports-its-outcome"
+id="toc-and-every-fetch-now-reports-its-outcome">And every fetch now
+reports its outcome</a></li>
+</ul></li>
+<li><a href="#september-2026-23" id="toc-september-2026-23">1.0.230, 12
+September 2026</a>
+<ul>
+<li><a href="#a-load-failure-now-lists-what-is-actually-there"
+id="toc-a-load-failure-now-lists-what-is-actually-there">A load failure
+now lists what is actually there</a></li>
+<li><a
+href="#and-a-sweep-that-does-not-depend-on-reading-the-nuspec-correctly"
+id="toc-and-a-sweep-that-does-not-depend-on-reading-the-nuspec-correctly">And
+a sweep that does not depend on reading the nuspec correctly</a></li>
+</ul></li>
+<li><a href="#september-2026-24" id="toc-september-2026-24">1.0.229, 12
+September 2026</a>
+<ul>
+<li><a href="#the-list-was-the-wrong-idea"
+id="toc-the-list-was-the-wrong-idea">The list was the wrong
+idea</a></li>
+<li><a href="#the-early-exit-is-gone-entirely"
+id="toc-the-early-exit-is-gone-entirely">The early exit is gone
+entirely</a></li>
+</ul></li>
+<li><a href="#september-2026-25" id="toc-september-2026-25">1.0.228, 12
+September 2026</a></li>
+<li><a href="#september-2026-26" id="toc-september-2026-26">1.0.227, 12
+September 2026</a></li>
+<li><a href="#september-2026-27" id="toc-september-2026-27">1.0.226, 12
+September 2026</a>
+<ul>
+<li><a href="#the-redirect-pointed-at-a-version-that-was-not-there"
+id="toc-the-redirect-pointed-at-a-version-that-was-not-there">The
+redirect pointed at a version that was not there</a></li>
+<li><a href="#working-folders-left-behind"
+id="toc-working-folders-left-behind">260 working folders left
+behind</a></li>
+<li><a href="#and-the-log-was-not-where-he-looked"
+id="toc-and-the-log-was-not-where-he-looked">And the log was not where
+he looked</a></li>
+</ul></li>
+<li><a href="#september-2026-28" id="toc-september-2026-28">1.0.225, 12
+September 2026</a>
+<ul>
+<li><a href="#what-this-does-that-edsharp-and-filedir-do-not"
+id="toc-what-this-does-that-edsharp-and-filedir-do-not">What this does
+that EdSharp and FileDir do not</a></li>
+</ul></li>
+<li><a href="#september-2026-29" id="toc-september-2026-29">1.0.224, 12
+September 2026</a>
+<ul>
+<li><a href="#the-compiler-assumed-the-runtime-will-not"
+id="toc-the-compiler-assumed-the-runtime-will-not">The compiler assumed;
+the runtime will not</a></li>
+<li><a href="#the-installer-shipped-none-of-the-dependencies"
+id="toc-the-installer-shipped-none-of-the-dependencies">The installer
+shipped none of the dependencies</a></li>
+<li><a href="#worth-noting-about-the-checking"
+id="toc-worth-noting-about-the-checking">Worth noting about the
+checking</a></li>
+</ul></li>
+<li><a href="#september-2026-30" id="toc-september-2026-30">1.0.223, 12
+September 2026</a>
+<ul>
+<li><a href="#so-each-dependency-is-fetched-by-name"
+id="toc-so-each-dependency-is-fetched-by-name">So each dependency is
+fetched by name</a></li>
+</ul></li>
+<li><a href="#september-2026-31" id="toc-september-2026-31">1.0.222, 12
+September 2026</a>
+<ul>
+<li><a href="#the-real-cause-which-is-a-process-fault"
+id="toc-the-real-cause-which-is-a-process-fault">The real cause, which
+is a process fault</a></li>
+<li><a href="#so-the-powershell-is-a-file-now"
+id="toc-so-the-powershell-is-a-file-now">So the PowerShell is a file
+now</a></li>
+</ul></li>
+<li><a href="#september-2026-32" id="toc-september-2026-32">1.0.221, 12
+September 2026</a></li>
+<li><a href="#september-2026-33" id="toc-september-2026-33">1.0.220, 12
+September 2026</a>
+<ul>
+<li><a href="#system.memory-was-missing"
+id="toc-system.memory-was-missing">System.Memory was missing</a></li>
+<li><a href="#trygetbytes-does-not-exist"
+id="toc-trygetbytes-does-not-exist">TryGetBytes does not exist</a></li>
+<li><a href="#glyphrectangle-is-obsolete"
+id="toc-glyphrectangle-is-obsolete">GlyphRectangle is obsolete</a></li>
+</ul></li>
+<li><a href="#september-2026-34" id="toc-september-2026-34">1.0.219, 12
+September 2026</a>
+<ul>
+<li><a href="#it-referenced-the-wrong-assembly"
+id="toc-it-referenced-the-wrong-assembly">It referenced the wrong
+assembly</a></li>
+<li><a href="#and-one-reference-was-never-going-to-be-enough"
+id="toc-and-one-reference-was-never-going-to-be-enough">And one
+reference was never going to be enough</a></li>
+<li><a href="#a-trap-avoided-rather-than-sprung-for-once"
+id="toc-a-trap-avoided-rather-than-sprung-for-once">A trap avoided
+rather than sprung, for once</a></li>
+</ul></li>
+<li><a href="#september-2026-35" id="toc-september-2026-35">1.0.218, 12
+September 2026</a>
+<ul>
+<li><a href="#what-this-cost-and-what-actually-fixed-it"
+id="toc-what-this-cost-and-what-actually-fixed-it">What this cost, and
+what actually fixed it</a></li>
+</ul></li>
+<li><a href="#september-2026-36" id="toc-september-2026-36">1.0.217, 12
+September 2026</a>
+<ul>
+<li><a href="#so-the-batch-searching-is-gone-entirely"
+id="toc-so-the-batch-searching-is-gone-entirely">So the batch searching
+is gone entirely</a></li>
+</ul></li>
+<li><a href="#september-2026-37" id="toc-september-2026-37">1.0.216, 12
+September 2026</a>
+<ul>
+<li><a
+href="#both-replacements-avoid-cmds-parser-rather-than-satisfying-it"
+id="toc-both-replacements-avoid-cmds-parser-rather-than-satisfying-it">Both
+replacements avoid cmd’s parser rather than satisfying it</a></li>
+</ul></li>
+<li><a href="#september-2026-38" id="toc-september-2026-38">1.0.215, 12
+September 2026</a>
+<ul>
+<li><a href="#and-no-more-instructions-to-go-and-fetch-things"
+id="toc-and-no-more-instructions-to-go-and-fetch-things">And no more
+instructions to go and fetch things</a></li>
+</ul></li>
+<li><a href="#september-2026-39" id="toc-september-2026-39">1.0.214, 12
+September 2026</a></li>
+<li><a href="#september-2026-40" id="toc-september-2026-40">1.0.213, 12
+September 2026</a>
+<ul>
+<li><a href="#what-that-told-me" id="toc-what-that-told-me">What that
+told me</a></li>
+<li><a href="#what-cannot-be-copied" id="toc-what-cannot-be-copied">What
+cannot be copied</a></li>
+</ul></li>
+<li><a href="#september-2026-41" id="toc-september-2026-41">1.0.212, 10
+September 2026</a></li>
+<li><a href="#september-2026-pdf-reading-wired-up-properly"
+id="toc-september-2026-pdf-reading-wired-up-properly">1.0.211, 10
+September 2026 — PDF reading, wired up properly</a>
+<ul>
+<li><a href="#what-it-does-with-a-page"
+id="toc-what-it-does-with-a-page">What it does with a page</a></li>
+<li><a href="#and-the-furniture-is-dropped"
+id="toc-and-the-furniture-is-dropped">And the furniture is
+dropped</a></li>
+<li><a href="#what-is-still-not-done"
+id="toc-what-is-still-not-done">What is still not done</a></li>
+</ul></li>
+<li><a href="#september-2026-pdf-reading-a-pilot"
+id="toc-september-2026-pdf-reading-a-pilot">1.0.210, 10 September 2026 —
+PDF reading, a pilot</a>
+<ul>
+<li><a href="#what-the-research-says-1"
+id="toc-what-the-research-says-1">What the research says</a></li>
+<li><a href="#what-is-built" id="toc-what-is-built">What is
+built</a></li>
+<li><a href="#what-is-honest-about-this-pilot"
+id="toc-what-is-honest-about-this-pilot">What is honest about this
+pilot</a></li>
+<li><a href="#still-to-come" id="toc-still-to-come">Still to
+come</a></li>
+</ul></li>
+<li><a href="#september-2026-42" id="toc-september-2026-42">1.0.209, 10
+September 2026</a></li>
+<li><a href="#september-2026-43" id="toc-september-2026-43">1.0.208, 10
+September 2026</a>
+<ul>
+<li><a href="#the-runs" id="toc-the-runs">The runs</a></li>
+<li><a href="#instead-was-the-wrong-word"
+id="toc-instead-was-the-wrong-word">“Instead” was the wrong
+word</a></li>
+<li><a href="#initializing-was-labelling-the-whole-run"
+id="toc-initializing-was-labelling-the-whole-run">“Initializing” was
+labelling the whole run</a></li>
+<li><a href="#starting.-is-gone" id="toc-starting.-is-gone">“Starting.”
+is gone</a></li>
+</ul></li>
+<li><a href="#september-2026-44" id="toc-september-2026-44">1.0.207, 10
+September 2026</a>
+<ul>
+<li><a href="#what-a-personal-endorsement-cannot-omit"
+id="toc-what-a-personal-endorsement-cannot-omit">What a personal
+endorsement cannot omit</a></li>
+</ul></li>
+<li><a href="#september-2026-45" id="toc-september-2026-45">1.0.206, 10
+September 2026</a>
+<ul>
+<li><a href="#the-advertisement-memory-is-working"
+id="toc-the-advertisement-memory-is-working">The advertisement memory is
+working</a></li>
+<li><a href="#the-playlist-names-the-folder"
+id="toc-the-playlist-names-the-folder">The playlist names the
+folder</a></li>
+<li><a href="#and-the-false-errors-are-gone-at-last"
+id="toc-and-the-false-errors-are-gone-at-last">And the false errors are
+gone at last</a></li>
+</ul></li>
+<li><a href="#september-2026-46" id="toc-september-2026-46">1.0.205, 10
+September 2026</a></li>
+<li><a href="#september-2026-47" id="toc-september-2026-47">1.0.204, 10
+September 2026</a>
+<ul>
+<li><a href="#a-web-page-was-not-recognised-as-a-playlist"
+id="toc-a-web-page-was-not-recognised-as-a-playlist">A web page was not
+recognised as a playlist</a></li>
+<li><a href="#it-was-not-hanging" id="toc-it-was-not-hanging">It was not
+hanging</a></li>
+<li><a href="#the-advertisements" id="toc-the-advertisements">The
+advertisements</a></li>
+</ul></li>
+<li><a href="#september-2026-48" id="toc-september-2026-48">1.0.203, 10
+September 2026</a>
+<ul>
+<li><a href="#the-installer-did-not-offer-the-reading-model"
+id="toc-the-installer-did-not-offer-the-reading-model">The installer did
+not offer the reading model</a></li>
+<li><a href="#describing-and-transcribing-cannot-be-affected"
+id="toc-describing-and-transcribing-cannot-be-affected">Describing and
+transcribing cannot be affected</a></li>
+</ul></li>
+<li><a href="#september-2026-49" id="toc-september-2026-49">1.0.202, 10
+September 2026</a>
+<ul>
+<li><a href="#split-breaks-are-rejoined"
+id="toc-split-breaks-are-rejoined">Split breaks are rejoined</a></li>
+</ul></li>
+<li><a href="#september-2026-50" id="toc-september-2026-50">1.0.201, 10
+September 2026</a>
+<ul>
+<li><a href="#why-this-rather-than-more-prompt-wording"
+id="toc-why-this-rather-than-more-prompt-wording">Why this rather than
+more prompt wording</a></li>
+<li><a href="#and-a-caution-about-comparing-runs"
+id="toc-and-a-caution-about-comparing-runs">And a caution about
+comparing runs</a></li>
+</ul></li>
+<li><a href="#september-2026-51" id="toc-september-2026-51">1.0.200, 10
+September 2026</a>
+<ul>
+<li><a href="#but-the-spans-are-slivers"
+id="toc-but-the-spans-are-slivers">But the spans are slivers</a></li>
+</ul></li>
+<li><a href="#september-2026-52" id="toc-september-2026-52">1.0.199, 10
+September 2026</a>
+<ul>
+<li><a href="#the-phrases-were-being-counted-at-the-wrong-moment"
+id="toc-the-phrases-were-being-counted-at-the-wrong-moment">The phrases
+were being counted at the wrong moment</a></li>
+</ul></li>
+<li><a href="#september-2026-53" id="toc-september-2026-53">1.0.198, 10
+September 2026</a>
+<ul>
+<li><a href="#on-the-missing-documents"
+id="toc-on-the-missing-documents">On the missing documents</a></li>
+</ul></li>
+<li><a href="#september-2026-54" id="toc-september-2026-54">1.0.197, 10
+September 2026</a>
+<ul>
+<li><a href="#an-answer-was-found-and-silently-dropped"
+id="toc-an-answer-was-found-and-silently-dropped">An answer was found
+and silently dropped</a></li>
+<li><a href="#recall-is-a-separate-problem"
+id="toc-recall-is-a-separate-problem">Recall is a separate
+problem</a></li>
+<li><a href="#the-output-folder-is-a-guid"
+id="toc-the-output-folder-is-a-guid">The output folder is a
+GUID</a></li>
+</ul></li>
+<li><a href="#september-2026-55" id="toc-september-2026-55">1.0.196, 10
+September 2026</a>
+<ul>
+<li><a href="#the-checkbox-never-reached-the-settings"
+id="toc-the-checkbox-never-reached-the-settings">The checkbox never
+reached the settings</a></li>
+<li><a href="#advertisements-are-remembered-between-episodes"
+id="toc-advertisements-are-remembered-between-episodes">Advertisements
+are remembered between episodes</a></li>
+</ul></li>
+<li><a href="#august-2026" id="toc-august-2026">1.0.195, 24 August
+2026</a>
+<ul>
+<li><a href="#traced-against-his-test"
+id="toc-traced-against-his-test">Traced against his test</a></li>
+</ul></li>
+<li><a href="#august-2026-1" id="toc-august-2026-1">1.0.194, 24 August
+2026</a>
+<ul>
+<li><a href="#four-ways-it-could-have-been-done"
+id="toc-four-ways-it-could-have-been-done">Four ways it could have been
+done</a></li>
+<li><a href="#how-it-decides" id="toc-how-it-decides">How it
+decides</a></li>
+<li><a href="#what-it-writes" id="toc-what-it-writes">What it
+writes</a></li>
+<li><a href="#other-notes" id="toc-other-notes">Other notes</a></li>
+</ul></li>
+<li><a href="#the-rollback-point-and-why-it-is-no-longer-needed"
+id="toc-the-rollback-point-and-why-it-is-no-longer-needed">The rollback
+point, and why it is no longer needed</a></li>
+<li><a href="#august-2026-2" id="toc-august-2026-2">1.0.193, 24 August
+2026</a></li>
+<li><a href="#august-2026-3" id="toc-august-2026-3">1.0.192, 24 August
+2026</a></li>
+<li><a href="#august-2026-4" id="toc-august-2026-4">1.0.191, 23 August
+2026</a></li>
+<li><a href="#august-2026-5" id="toc-august-2026-5">1.0.190, 23 August
+2026</a></li>
+<li><a href="#august-2026-6" id="toc-august-2026-6">1.0.189, 23 August
+2026</a>
+<ul>
+<li><a href="#what-that-run-also-confirmed"
+id="toc-what-that-run-also-confirmed">What that run also
+confirmed</a></li>
+</ul></li>
+<li><a href="#august-2026-7" id="toc-august-2026-7">1.0.188, 23 August
+2026</a></li>
+<li><a href="#august-2026-8" id="toc-august-2026-8">1.0.187, 23 August
+2026</a>
+<ul>
+<li><a href="#the-scanned-journal-came-out"
+id="toc-the-scanned-journal-came-out">The scanned journal came
+out</a></li>
+<li><a href="#but-not-one-picture-was-described"
+id="toc-but-not-one-picture-was-described">But not one picture was
+described</a></li>
+<li><a href="#thirty-eight-per-cent-of-the-error-lines-were-not-errors"
+id="toc-thirty-eight-per-cent-of-the-error-lines-were-not-errors">Thirty-eight
+per cent of the error lines were not errors</a></li>
+<li><a
+href="#a-named-model-that-is-not-installed-no-longer-loses-the-work"
+id="toc-a-named-model-that-is-not-installed-no-longer-loses-the-work">A
+named model that is not installed no longer loses the work</a></li>
+</ul></li>
+<li><a href="#august-2026-9" id="toc-august-2026-9">1.0.186, 23 August
+2026</a></li>
+<li><a href="#august-2026-10" id="toc-august-2026-10">1.0.185, 23 August
+2026</a></li>
+<li><a href="#august-2026-11" id="toc-august-2026-11">1.0.184, 23 August
+2026</a></li>
+<li><a href="#august-2026-12" id="toc-august-2026-12">1.0.183, 23 August
+2026</a></li>
+<li><a href="#august-2026-13" id="toc-august-2026-13">1.0.182, 22 August
+2026</a></li>
+<li><a href="#august-2026-14" id="toc-august-2026-14">1.0.181, 22 August
+2026</a></li>
+<li><a href="#august-2026-15" id="toc-august-2026-15">1.0.180, 22 August
+2026</a></li>
+<li><a href="#august-2026-16" id="toc-august-2026-16">1.0.179, 22 August
+2026</a></li>
+<li><a href="#august-2026-17" id="toc-august-2026-17">1.0.178, 22 August
+2026</a></li>
+<li><a href="#august-2026-18" id="toc-august-2026-18">1.0.177, 22 August
+2026</a></li>
+<li><a href="#august-2026-19" id="toc-august-2026-19">1.0.176, 22 August
+2026</a></li>
+<li><a href="#august-2026-20" id="toc-august-2026-20">1.0.175, 22 August
+2026</a></li>
+<li><a href="#august-2026-21" id="toc-august-2026-21">1.0.174, 22 August
+2026</a></li>
+<li><a href="#august-2026-22" id="toc-august-2026-22">1.0.173, 22 August
+2026</a></li>
+<li><a href="#august-2026-23" id="toc-august-2026-23">1.0.172, 22 August
+2026</a></li>
+<li><a href="#august-2026-24" id="toc-august-2026-24">1.0.171, 21 August
+2026</a></li>
+<li><a href="#august-2026-25" id="toc-august-2026-25">1.0.170, 21 August
+2026</a></li>
+<li><a href="#august-2026-26" id="toc-august-2026-26">1.0.169, 21 August
+2026</a></li>
+<li><a href="#august-2026-27" id="toc-august-2026-27">1.0.168, 21 August
+2026</a></li>
+<li><a href="#august-2026-28" id="toc-august-2026-28">1.0.167, 21 August
+2026</a></li>
+<li><a href="#august-2026-29" id="toc-august-2026-29">1.0.166, 21 August
+2026</a></li>
+<li><a href="#august-2026-30" id="toc-august-2026-30">1.0.165, 21 August
+2026</a></li>
+<li><a href="#august-2026-31" id="toc-august-2026-31">1.0.164, 21 August
+2026</a>
+<ul>
+<li><a href="#what-rentitle-taught" id="toc-what-rentitle-taught">What
+Rentitle taught</a></li>
+</ul></li>
+<li><a href="#august-2026-32" id="toc-august-2026-32">1.0.163, 21 August
+2026</a></li>
+<li><a href="#august-2026-33" id="toc-august-2026-33">1.0.162, 21 August
+2026</a></li>
+<li><a href="#august-2026-34" id="toc-august-2026-34">1.0.161, 21 August
+2026</a></li>
+<li><a href="#august-2026-35" id="toc-august-2026-35">1.0.160, 21 August
+2026</a></li>
+<li><a href="#august-2026-36" id="toc-august-2026-36">1.0.159, 21 August
+2026</a></li>
+<li><a href="#august-2026-37" id="toc-august-2026-37">1.0.158, 21 August
+2026</a></li>
+<li><a href="#august-2026-38" id="toc-august-2026-38">1.0.157, 21 August
+2026</a></li>
+<li><a href="#august-2026-39" id="toc-august-2026-39">1.0.156, 21 August
+2026</a></li>
+<li><a href="#august-2026-40" id="toc-august-2026-40">1.0.155, 21 August
+2026</a></li>
+<li><a href="#august-2026-41" id="toc-august-2026-41">1.0.154, 21 August
+2026</a></li>
+<li><a href="#august-2026-42" id="toc-august-2026-42">1.0.153, 21 August
+2026</a></li>
+<li><a href="#august-2026-43" id="toc-august-2026-43">1.0.152, 21 August
+2026</a></li>
+<li><a href="#august-2026-44" id="toc-august-2026-44">1.0.151, 21 August
+2026</a></li>
+<li><a href="#august-2026-45" id="toc-august-2026-45">1.0.150, 21 August
+2026</a></li>
+<li><a href="#august-2026-46" id="toc-august-2026-46">1.0.149, 21 August
+2026</a></li>
+<li><a href="#august-2026-47" id="toc-august-2026-47">1.0.148, 21 August
+2026</a></li>
+<li><a href="#august-2026-48" id="toc-august-2026-48">1.0.147, 21 August
+2026</a></li>
+<li><a href="#august-2026-49" id="toc-august-2026-49">1.0.146, 17 August
+2026</a></li>
+<li><a href="#august-2026-50" id="toc-august-2026-50">1.0.145, 17 August
+2026</a></li>
+<li><a href="#august-2026-51" id="toc-august-2026-51">1.0.144, 13 August
+2026</a></li>
+<li><a href="#august-2026-52" id="toc-august-2026-52">1.0.143, 13 August
+2026</a></li>
+<li><a href="#august-2026-53" id="toc-august-2026-53">1.0.143, 13 August
+2026</a></li>
+<li><a href="#august-2026-54" id="toc-august-2026-54">1.0.142, 13 August
+2026</a></li>
+<li><a href="#august-2026-55" id="toc-august-2026-55">1.0.141, 13 August
+2026</a></li>
+<li><a href="#august-2026-56" id="toc-august-2026-56">1.0.140, 13 August
+2026</a></li>
+<li><a href="#august-2026-57" id="toc-august-2026-57">1.0.139, 13 August
+2026</a></li>
+<li><a href="#august-2026-58" id="toc-august-2026-58">1.0.138, 13 August
+2026</a></li>
+<li><a href="#august-2026-59" id="toc-august-2026-59">1.0.137, 13 August
+2026</a></li>
+<li><a href="#august-2026-60" id="toc-august-2026-60">1.0.137, 13 August
+2026</a></li>
+<li><a href="#august-2026-61" id="toc-august-2026-61">1.0.136, 13 August
+2026</a></li>
+<li><a href="#august-2026-62" id="toc-august-2026-62">1.0.135, 12 August
+2026</a></li>
+<li><a href="#august-2026-63" id="toc-august-2026-63">1.0.134, 12 August
+2026</a></li>
+<li><a href="#august-2026-64" id="toc-august-2026-64">1.0.133, 12 August
+2026</a></li>
+<li><a href="#august-2026-65" id="toc-august-2026-65">1.0.132, 12 August
+2026</a></li>
+<li><a href="#august-2026-66" id="toc-august-2026-66">1.0.131, 12 August
+2026</a></li>
+<li><a href="#august-2026-67" id="toc-august-2026-67">1.0.130, 12 August
+2026</a></li>
+<li><a href="#august-2026-68" id="toc-august-2026-68">1.0.129, 12 August
+2026</a></li>
+<li><a href="#august-2026-69" id="toc-august-2026-69">1.0.128, 12 August
+2026</a></li>
+<li><a href="#august-2026-70" id="toc-august-2026-70">1.0.127, 12 August
+2026</a></li>
+<li><a href="#august-2026-71" id="toc-august-2026-71">1.0.126, 12 August
+2026</a></li>
+<li><a href="#august-2026-72" id="toc-august-2026-72">1.0.125, 12 August
+2026</a></li>
+<li><a href="#august-2026-73" id="toc-august-2026-73">1.0.124, 12 August
+2026</a></li>
+<li><a href="#august-2026-74" id="toc-august-2026-74">1.0.123, 12 August
+2026</a></li>
+<li><a href="#august-2026-75" id="toc-august-2026-75">1.0.122, 12 August
+2026</a></li>
+<li><a href="#august-2026-76" id="toc-august-2026-76">1.0.121, 12 August
+2026</a></li>
+<li><a href="#august-2026-77" id="toc-august-2026-77">1.0.120, 11 August
+2026</a></li>
+<li><a href="#august-2026-78" id="toc-august-2026-78">1.0.119, 11 August
+2026</a></li>
+<li><a href="#august-2026-79" id="toc-august-2026-79">1.0.118, 11 August
+2026</a></li>
+<li><a href="#august-2026-80" id="toc-august-2026-80">1.0.117, 11 August
+2026</a></li>
+<li><a href="#august-2026-81" id="toc-august-2026-81">1.0.116, 11 August
+2026</a></li>
+<li><a href="#august-2026-82" id="toc-august-2026-82">1.0.115, 11 August
+2026</a></li>
+<li><a href="#august-2026-83" id="toc-august-2026-83">1.0.114, 11 August
+2026</a></li>
+<li><a href="#august-2026-84" id="toc-august-2026-84">1.0.113, 10 August
+2026</a></li>
+<li><a href="#august-2026-85" id="toc-august-2026-85">1.0.112, 10 August
+2026</a></li>
+<li><a href="#august-2026-86" id="toc-august-2026-86">1.0.111, 10 August
+2026</a></li>
+<li><a href="#august-2026-87" id="toc-august-2026-87">1.0.110, 10 August
+2026</a></li>
+<li><a href="#august-2026-88" id="toc-august-2026-88">1.0.109, 10 August
+2026</a></li>
+<li><a href="#august-2026-89" id="toc-august-2026-89">1.0.108, 10 August
+2026</a></li>
+<li><a href="#august-2026-90" id="toc-august-2026-90">1.0.107, 10 August
+2026</a></li>
+<li><a href="#august-2026-91" id="toc-august-2026-91">1.0.106, 10 August
+2026</a></li>
+<li><a href="#august-2026-92" id="toc-august-2026-92">1.0.105, 10 August
+2026</a></li>
+<li><a href="#august-2026-93" id="toc-august-2026-93">1.0.104, 10 August
+2026</a></li>
+<li><a href="#august-2026-94" id="toc-august-2026-94">1.0.103, 10 August
+2026</a></li>
+<li><a href="#august-2026-95" id="toc-august-2026-95">1.0.102, 10 August
+2026</a></li>
+<li><a href="#august-2026-96" id="toc-august-2026-96">1.0.38, 4 August
+2026</a></li>
+<li><a href="#august-2026-97" id="toc-august-2026-97">1.0.37, 4 August
+2026</a></li>
+<li><a href="#august-2026-98" id="toc-august-2026-98">1.0.36, 4 August
+2026</a></li>
+<li><a href="#august-2026-99" id="toc-august-2026-99">1.0.35, 4 August
+2026</a></li>
+<li><a href="#august-2026-100" id="toc-august-2026-100">1.0.34, 4 August
+2026</a></li>
+<li><a href="#august-2026-101" id="toc-august-2026-101">1.0.33, 4 August
+2026</a></li>
+<li><a href="#august-2026-102" id="toc-august-2026-102">1.0.32, 4 August
+2026</a></li>
+<li><a href="#to-1.0.31-4-august-2026"
+id="toc-to-1.0.31-4-august-2026">1.0.22 to 1.0.31, 4 August
+2026</a></li>
+<li><a href="#august-2026-103" id="toc-august-2026-103">1.0.21, 4 August
+2026</a></li>
+<li><a href="#august-2026-104" id="toc-august-2026-104">1.0.20, 4 August
+2026</a></li>
+<li><a href="#august-2026-105" id="toc-august-2026-105">1.0.19, 4 August
+2026</a></li>
+<li><a href="#august-2026-106" id="toc-august-2026-106">1.0.18, 4 August
+2026</a></li>
+<li><a href="#august-2026-107" id="toc-august-2026-107">1.0.17, 4 August
+2026</a></li>
+<li><a href="#august-2026-108" id="toc-august-2026-108">1.0.16, 4 August
+2026</a></li>
+<li><a href="#august-2026-109" id="toc-august-2026-109">1.0.15, 4 August
+2026</a></li>
+<li><a href="#august-2026-110" id="toc-august-2026-110">1.0.14, 4 August
+2026</a></li>
+<li><a href="#august-2026-111" id="toc-august-2026-111">1.0.13, 4 August
+2026</a></li>
+<li><a href="#august-2026-112" id="toc-august-2026-112">1.0.12, 4 August
+2026</a></li>
+<li><a href="#august-2026-113" id="toc-august-2026-113">1.0.11, 4 August
+2026</a></li>
+<li><a href="#august-2026-114" id="toc-august-2026-114">1.0.10, 4 August
+2026</a></li>
+<li><a href="#august-2026-115" id="toc-august-2026-115">1.0.9, 4 August
+2026</a></li>
+<li><a href="#august-2026-116" id="toc-august-2026-116">1.0.8, 4 August
+2026</a></li>
+<li><a href="#august-2026-117" id="toc-august-2026-117">1.0.7, 4 August
+2026</a></li>
+<li><a href="#august-2026-118" id="toc-august-2026-118">1.0.6, 4 August
+2026</a></li>
+<li><a href="#august-2026-119" id="toc-august-2026-119">1.0.5, 4 August
+2026</a></li>
+<li><a href="#august-2026-120" id="toc-august-2026-120">1.0.0, 4 August
+2026</a></li>
+</ul></li>
+</ul>
+</nav>
 <h1 id="homerscribe-history">HomerScribe History</h1>
+<h2 id="october-2026-what-122-podcasts-in-one-run-taught">1.0.266, 4
+October 2026 – what 122 podcasts in one run taught</h2>
+<p>The run – 54 hours of audio, 122 files, 14 hours – finished with no
+warning and no error, and the program’s own overhead between files was
+three seconds in all: the time was Whisper’s, at a quarter of real time
+on the four threads it uses unless told otherwise. So Whisper now runs
+on half the machine’s logical processors, never fewer than four (the new
+<code>whisper-threads</code> setting overrides), and its own account of
+each file – threads, detected language, encode and decode time – goes to
+the log. Each spoken stretch is logged once, not twice, which halves a
+long run’s log. The results box leads with the run in one line – hours
+of audio, spoken stretches, the time as a percentage of the audio –
+before the list of files, and the same text is written beside the log as
+a results file so a long list can be read and kept after the box is
+closed.</p>
 <h2 id="september-2026-setup-wording">1.0.258, 27 September 2026 – setup
 wording</h2>
 <p>Numbered as version.txt (1.0.257) plus one.</p>

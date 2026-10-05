@@ -463,6 +463,17 @@ the order they happen. Whisper reads the whole film before a single description
 is made, so the words are held and played out in step with the descriptions
 during the pass that follows.
 
+### The results box
+
+When the run ends, a results box says what was done. One source gives one
+report. Many sources give the run in one line first — how many were done,
+how long it took, how many hours of audio and spoken stretches that was,
+and the time as a percentage of the audio's length — and then one entry per
+source. The same text is written beside the log as a results file, named
+after the log with `-results` on the end, so a long list can be read,
+searched and kept after the box is closed. The box ends with the path of
+the log.
+
 ## Configuration
 
 `--use-configuration` loads settings from `HomerScribe.ini` beside the program
@@ -523,8 +534,12 @@ the listener has just heard; and the model can tell who is present from what was
 said.
 
 Transcribing happens once and is kept, so a resumed run never pays for it twice.
-Reckon on roughly one minute per six minutes of film on a processor, much less
-with a graphics card.
+Reckon on roughly one minute per four minutes of film on a processor, much less
+with a graphics card. Whisper runs on half the machine's processors, never
+fewer than four, which is faster than the four it would pick for itself;
+`--whisper-threads` sets the number if you want another. The log records how
+many threads each file ran on and how long Whisper took to hear and to write
+it, so a slow run can be understood.
 
 `--speech no` turns it off. `--whisper-model` chooses a different size —
 `small` is the default and is the right size for this: the question is only where

@@ -1,13 +1,19 @@
 ﻿# HomerScribe History
 
+## 1.0.266, 4 October 2026 -- what 122 podcasts in one run taught
 
-
-
-
-
-
-
-
+The run -- 54 hours of audio, 122 files, 14 hours -- finished with no
+warning and no error, and the program's own overhead between files was
+three seconds in all: the time was Whisper's, at a quarter of real time
+on the four threads it uses unless told otherwise. So Whisper now runs on
+half the machine's logical processors, never fewer than four (the new
+`whisper-threads` setting overrides), and its own account of each file --
+threads, detected language, encode and decode time -- goes to the log.
+Each spoken stretch is logged once, not twice, which halves a long run's
+log. The results box leads with the run in one line -- hours of audio,
+spoken stretches, the time as a percentage of the audio -- before the list
+of files, and the same text is written beside the log as a results file
+so a long list can be read and kept after the box is closed.
 
 ## 1.0.258, 27 September 2026 -- setup wording
 
