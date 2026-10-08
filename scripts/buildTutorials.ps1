@@ -207,6 +207,18 @@ note ("docs only: " + $bDocsOnly + ", Windows voices: " + $bSapi + ", live: " + 
 
 # ---- the scripts to build ----
 
+# THE PATTERN OF TEN REPLACES TWO-DIGIT WALKS (kit 1.62.4): an app moving to
+# one-digit walks gets them by unarchiving its zip, which adds files and deletes
+# none, so its old Tutorial_00_... walks would be checked and spoken beside the
+# new. Once the folder holds one-digit walks, the two-digit ones are retired
+# here, on every app's build, as the kit's own build does for the kit.
+$lsOneDigit = @(Get-ChildItem -LiteralPath $sHere -Filter "Tutorial_*.inix" -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^Tutorial_\d_' })
+if ($lsOneDigit.Count -gt 0) {
+  foreach ($f in @(Get-ChildItem -LiteralPath $sHere -Filter "Tutorial_*.inix" -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^Tutorial_\d\d_' })) {
+    try { Remove-Item -LiteralPath $f.FullName -Force; say ("Retired " + $f.Name + ", a walk of the old two-digit pattern.") } catch { note ("could not retire " + $f.Name + ": " + $_) }
+  }
+}
+
 $lsScripts = @()
 if ($sOnly -ne "") {
   $sOne = Join-Path $sHere ($sOnly + ".inix")
@@ -812,9 +824,93 @@ function applyGlobal($dGlobal) {
   }
 }
 
+# THE AUDIO IS NAMED LIKE A CHAPTER, NOT LIKE A SCRIPT (5 October 2026):
+# Tutorial_04_Open_and_Move.inix speaks to 04_Open_and_Move.mp3. The number
+# and the title are what a listener reads in a folder or a player; the word
+# Tutorial is the script's, and the folder is already called tutorials.
+# AUDIO UNDER THE OLD NAMES -- Tutorial_04_X.mp3 -- is retired by the tool
+# itself, so no app's build script has to know the naming changed.
+# AUDIO NO WALK MAKES IS RETIRED TOO (kit 1.62.0, the pattern of ten): when the
+# set moved from two-digit numbers (00_Overview_and_Table_of_Contents) to one
+# digit (0_Overview), the old files would have stayed in the folder and the
+# playlist. On a full run -- never when one walk is named, since then the list
+# holds only that walk -- every mp3 and fingerprint whose name no current walk
+# produces is retired, so the folder always holds exactly the set.
+function retireOldAudio() {
+  if (-not (Test-Path -LiteralPath $sAudioDir)) { return }
+  foreach ($f in @(Get-ChildItem -LiteralPath $sAudioDir -Filter "Tutorial_*.mp3" -ErrorAction SilentlyContinue)) {
+    try { Remove-Item -LiteralPath $f.FullName -Force; note ("  retired " + $f.Name + ", an old-style name") } catch { }
+  }
+  if ($sOnly -ne "") { return }
+  $lsWanted = @($lsScripts | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension((audioName $_)).ToLower() })
+  foreach ($f in @(Get-ChildItem -LiteralPath $sAudioDir -ErrorAction SilentlyContinue | Where-Object { $_.Extension -eq ".mp3" -or $_.Extension -eq ".sha256" })) {
+    if ($lsWanted -notcontains $f.BaseName.ToLower()) {
+      try { Remove-Item -LiteralPath $f.FullName -Force; note ("  retired " + $f.Name + ", which no current walk makes") } catch { note ("  could not retire " + $f.Name) }
+    }
+  }
+}
+
+# Minutes and seconds as text, used by the progress line and the playlist.
+function minutesText([int] $iSeconds) {
+  if ($iSeconds -lt 0) { return "length unknown" }
+  return ("" + [int][Math]::Floor($iSeconds / 60) + ":" + ("" + ($iSeconds % 60)).PadLeft(2, "0"))
+}
+
+function audioName([string] $sScript) {
+  $sStem = [System.IO.Path]::GetFileNameWithoutExtension($sScript)
+  if ($sStem -match '^Tutorial_(.+)$') { $sStem = $matches[1] }
+  return ($sStem + ".mp3")
+}
+
+# WHETHER A WALK'S AUDIO IS CURRENT IS DECIDED BY ITS CONTENT, NOT ITS DATE
+# (7 October 2026). The kit arrives in a zip, and a zip stores each file's time
+# with no time zone: a kit zipped on a computer seven hours ahead unzips with
+# every walk dated seven hours in the future, newer than any mp3, and the
+# 14:08 build re-spoke all twelve walks for nothing. So each mp3 now has a
+# fingerprint beside it, <name>.sha256, holding the SHA-256 of the walk it was
+# spoken from; the walk is spoken again only when that changes. Audio without a
+# fingerprint, from before this rule, is trusted once and its fingerprint
+# recorded: no date test can settle it, since an unzipped walk can look newer
+# than audio spoken from the very same text.
+function walkFingerprint([string] $sScript) {
+  try { return (Get-FileHash -LiteralPath $sScript -Algorithm SHA256).Hash.ToLower() } catch { return "" }
+}
+
+function markSpoken([string] $sScript, [string] $sOut) {
+  $sMark = [System.IO.Path]::ChangeExtension($sOut, ".sha256")
+  try { [System.IO.File]::WriteAllText($sMark, (walkFingerprint $sScript) + "`r`n") } catch { note ("  could not write " + $sMark + ": " + $_) }
+}
+
+function spokenCurrent([string] $sScript, [string] $sOut) {
+  if (-not (Test-Path -LiteralPath $sOut)) { return $false }
+  $sMark = [System.IO.Path]::ChangeExtension($sOut, ".sha256")
+  $sNow = walkFingerprint $sScript
+  if (Test-Path -LiteralPath $sMark) {
+    $sWas = ""
+    try { $sWas = ([System.IO.File]::ReadAllText($sMark)).Trim().ToLower() } catch { }
+    if ($sWas -ne "" -and $sWas -eq $sNow) { note ("  " + [System.IO.Path]::GetFileName($sOut) + ": the walk is unchanged since it was spoken (same fingerprint)"); return $true }
+    note ("  " + [System.IO.Path]::GetFileName($sOut) + ": the walk has changed since it was spoken (fingerprint " + $sWas.Substring(0, [Math]::Min(12, $sWas.Length)) + " now " + $sNow.Substring(0, [Math]::Min(12, $sNow.Length)) + ")")
+    return $false
+  }
+  # Audio from before fingerprints is trusted once and its fingerprint recorded: dates cannot settle it, since an
+  # unzipped walk can look newer than audio spoken from that same text. Delete an mp3 to have its walk spoken again.
+  note ("  " + [System.IO.Path]::GetFileName($sOut) + ": spoken before fingerprints were kept; trusted once, and its fingerprint recorded (delete the mp3 to speak the walk again)")
+  markSpoken $sScript $sOut
+  return $true
+}
+
 function buildOne([string] $sScript) {
   $sStem = [System.IO.Path]::GetFileNameWithoutExtension($sScript)
-  $sOut = Join-Path $sAudioDir ($sStem + ".mp3")
+  $sOut = Join-Path $sAudioDir (audioName $sScript)
+  # SPEAK ONLY WHAT IS MISSING OR STALE. A walk whose mp3 is newer than the
+  # walk itself is already spoken; re-speaking nineteen walks because four new
+  # ones arrived would cost twenty minutes for nothing (5 October 2026). -live
+  # performs regardless, since nothing is written.
+  if (-not $bLive -and (spokenCurrent $sScript $sOut)) {
+    note ("  " + $sStem + " is already spoken and current; skipped")
+    say ("  " + $sStem + ": already spoken")
+    return
+  }
   $sWork = Join-Path $env:TEMP ("buildTutorial_" + [Guid]::NewGuid().ToString("N"))
   $script:iPiece = 0
   $script:lsPieces = New-Object System.Collections.Generic.List[string]
@@ -1069,7 +1165,7 @@ function buildOne([string] $sScript) {
   $lsSteps = @($lsSections | Where-Object { $_["_name"] -eq "step" })
   if ($lsSteps.Count -eq 0) { say ($sStem + " holds 0 steps."); return $false }
   note ($sStem + ": steps " + $lsSteps.Count)
-  say ("Creating " + $sStem + ".mp3, " + $lsSteps.Count + " steps. A few minutes.")
+  say ("Creating " + (audioName $sScript) + ", " + $lsSteps.Count + " steps. A few minutes.")
   note ("loudness: every piece to loudnorm I=-16 TP=-1.5 LRA=11; reader gain " + $dReaderGain.ToString([System.Globalization.CultureInfo]::InvariantCulture))
 
   # A BEAT BEFORE ANYTHING IS SAID.
@@ -1091,9 +1187,20 @@ function buildOne([string] $sScript) {
   # and the starting state is in the transcript for anybody who wants it.
 
   $iStepAt = 0
+  $dtWalkStart = Get-Date
+  $bSaidBusy = $false
   foreach ($dStep in $lsSteps) {
     $iStepAt = $iStepAt + 1
-    if ($iStepAt -gt 1 -and (($iStepAt - 1) % 4) -eq 0) { say ("  step " + $iStepAt + " of " + $lsSteps.Count) }
+    if ($iStepAt -gt 1 -and (($iStepAt - 1) % 4) -eq 0) {
+      # THE PROGRESS LINE CARRIES THE CLOCK, so a slow run is seen to be slow
+      # and not taken for a hang: on 6 October 2026 four builds spoke at once
+      # and each step took twenty seconds instead of five.
+      $tsSoFar = (Get-Date) - $dtWalkStart
+      $dPerStep = $tsSoFar.TotalSeconds / [Math]::Max(1, $iStepAt - 1)
+      $iLeft = [int][Math]::Round($dPerStep * ($lsSteps.Count - $iStepAt + 1))
+      say ("  step " + $iStepAt + " of " + $lsSteps.Count + ", " + (minutesText ([int]$tsSoFar.TotalSeconds)) + " elapsed, about " + (minutesText $iLeft) + " to go")
+      if ($dPerStep -gt 12 -and -not $bSaidBusy) { say "  Slower than usual: the computer is busy, perhaps with another build speaking its tutorials."; $bSaidBusy = $true }
+    }
     # Pause= is the one piece of timing a script can set for itself: seconds of
     # silence before the step is spoken. SSML calls this <break time="2s"/>; our
     # key is the same idea with the angle brackets left off. Everything else --
@@ -1131,6 +1238,7 @@ function buildOne([string] $sScript) {
   $dTook = ((Get-Date) - $dtStarted).TotalSeconds
   $sTook = $(if ($dTook -lt 90) { ([int]$dTook).ToString() + " seconds" } else { ([int][Math]::Round($dTook / 60.0)).ToString() + " minutes" })
   say ("Created " + [System.IO.Path]::GetFileName($sOut) + " in " + $sTook + ".")
+  markSpoken $sScript $sOut
   return $true
 }
 
@@ -1175,18 +1283,38 @@ if (-not $bSapi -and -not $bLive -and -not $bDocsOnly) {
 # script named on the command line always speak.
 $iDone = 0
 $iKept = 0
+# ONE BUILD SPEAKS AT A TIME, MACHINE-WIDE. Kokoro takes the whole processor;
+# two builds speaking together each crawl and both look hung. A named mutex
+# serializes them, and the one that waits says so, and for how long.
+$oMutex = $null
+try {
+  # The two-argument constructor: New-Object cannot bind an out parameter.
+  $oMutex = New-Object System.Threading.Mutex($false, "Global\HomerTutorialsSpeaking")
+  $iWaited = 0
+  while (-not $oMutex.WaitOne(60000)) {
+    $iWaited = $iWaited + 1
+    if ($iWaited -eq 1) { say "Another Homer build is speaking its tutorials. Waiting for it to finish, so neither crawls." }
+    else { say ("  still waiting, " + $iWaited + " minutes") }
+  }
+  if ($iWaited -gt 0) { say "The other build has finished; speaking now." }
+} catch { note ("tutorial mutex not available: " + $_); $oMutex = $null }
+retireOldAudio
 foreach ($sScript in $lsScripts) {
-  $sHave = Join-Path $sAudioDir ([System.IO.Path]::GetFileNameWithoutExtension($sScript) + ".mp3")
-  if (-not $bLive -and $sOnly -eq "" -and (Test-Path -LiteralPath $sHave)) {
-    note ("kept " + $sHave + ", already spoken")
+  $sHave = Join-Path $sAudioDir (audioName $sScript)
+  # KEPT ONLY WHEN CURRENT: audio older than its walk is spoken again. The
+  # earlier test kept any file that existed, so a changed walk kept its old
+  # voice until someone deleted the folder (5 October 2026).
+  if (-not $bLive -and $sOnly -eq "" -and (spokenCurrent $sScript $sHave)) {
+    note ("kept " + $sHave + ", already spoken and current")
     $iKept = $iKept + 1
     $iDone = $iDone + 1
     continue
   }
   if (buildOne $sScript) { $iDone = $iDone + 1 }
 }
+if ($oMutex -ne $null) { try { $oMutex.ReleaseMutex() } catch { } ; try { $oMutex.Dispose() } catch { } }
 if ($iKept -gt 0) { say ("Kept " + $iKept + " tutorial" + $(if ($iKept -eq 1) { "" } else { "s" }) + " already spoken.") }
-$oSpeaker.Dispose()
+if ($oSpeaker -ne $null) { try { $oSpeaker.Dispose() } catch { } }
 
 # ---- step 4 of 5: the playlist ----
 #
@@ -1195,25 +1323,51 @@ $oSpeaker.Dispose()
 # opens it as one track per tutorial, named for the tutorial. No Tutorials.mkv
 # any more: see the note at the top.
 
+# HOW LONG EACH WALK RUNS is read from the file with ffprobe, which comes with
+# ffmpeg. The playlist carries it, the log names it, and a walk over the five
+# minutes the guideline allows is said aloud, so the author hears which walk
+# to cut before anyone else does (6 October 2026).
+function audioSeconds([string] $sMp3) {
+  try {
+    $sProbe = Join-Path (Split-Path -Parent $sFfmpeg) "ffprobe.exe"
+    if (-not (Test-Path -LiteralPath $sProbe)) { $oFound = Get-Command ffprobe.exe -ErrorAction SilentlyContinue; if ($oFound) { $sProbe = $oFound.Source } else { return -1 } }
+    $sOut = & $sProbe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $sMp3 2>$null
+    $d = 0.0
+    if ([double]::TryParse(("" + $sOut).Trim(), [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref] $d)) { return [int][Math]::Round($d) }
+  } catch { }
+  return -1
+}
+
 function writePlaylist() {
   $lsM3u = @("#EXTM3U")
   $iListed = 0
+  $iTotal = 0
+  $lsLong = @()
+  $lsShort = @()
   foreach ($sScript in $lsScripts) {
     $sStem = [System.IO.Path]::GetFileNameWithoutExtension($sScript)
-    $sMp3 = Join-Path $sAudioDir ($sStem + ".mp3")
+    $sMp3 = Join-Path $sAudioDir (audioName $sScript)
     if (-not (Test-Path -LiteralPath $sMp3)) { continue }
     $sTitle = $sStem
     foreach ($sLine in (Get-Content -LiteralPath $sScript)) {
       if ($sLine -match "^\s*Title\s*=\s*(.+?)\s*$") { $sTitle = $matches[1]; break }
     }
-    $lsM3u += ("#EXTINF:-1," + $sTitle)
-    $lsM3u += ($sStem + ".mp3")
+    $iSeconds = audioSeconds $sMp3
+    if ($iSeconds -ge 0) { $iTotal = $iTotal + $iSeconds }
+    note ("  " + (audioName $sScript) + " runs " + (minutesText $iSeconds))
+    if ($iSeconds -gt 300) { $lsLong += ((audioName $sScript) + " at " + (minutesText $iSeconds)) }
+    # PARTS 01 TO 10 WANT THREE TO FIVE MINUTES; 00 and 11 may be short.
+    if ($iSeconds -ge 0 -and $iSeconds -lt 180 -and $sStem -match "^Tutorial_(0[1-9]|10)_") { $lsShort += ((audioName $sScript) + " at " + (minutesText $iSeconds)) }
+    $lsM3u += ("#EXTINF:" + $(if ($iSeconds -ge 0) { $iSeconds } else { -1 }) + "," + $sTitle)
+    $lsM3u += (audioName $sScript)
     $iListed = $iListed + 1
   }
   if ($iListed -eq 0) { say "No audio to list."; return $false }
   $sM3u = Join-Path $sAudioDir "Tutorials.m3u"
   [System.IO.File]::WriteAllLines($sM3u, $lsM3u, (New-Object System.Text.UTF8Encoding($false)))
-  say ("Wrote Tutorials.m3u naming " + $iListed + " tutorial" + $(if ($iListed -eq 1) { "" } else { "s" }) + ".")
+  say ("Wrote Tutorials.m3u naming " + $iListed + " tutorial" + $(if ($iListed -eq 1) { "" } else { "s" }) + ", " + (minutesText $iTotal) + " in all.")
+  foreach ($s in $lsLong) { say ("  Over five minutes: " + $s + ". The guideline says cut what an earlier walk taught, or split it.") }
+  foreach ($s in $lsShort) { say ("  Under three minutes: " + $s + ". The guideline wants three to five for parts 01 to 10; give it more substance, not padding.") }
   return $true
 }
 
@@ -1226,6 +1380,6 @@ if (-not $bLive -and $iDone -gt 0) {
   runMake | Out-Null
 }
 
-say ($iDone.ToString() + " of " + $lsScripts.Count + " tutorials built.")
+say ("" + $iDone + " of " + $lsScripts.Count + " tutorials built.")
 if ($iDone -lt $lsScripts.Count) { exit 1 }
 exit 0

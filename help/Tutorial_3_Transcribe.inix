@@ -1,6 +1,6 @@
-﻿; Tutorial_01_Transcribe.inix -- write down what is said in a recording.
+﻿; Tutorial_3_Transcribe.inix -- write down what is said in a recording.
 [about]
-Title=01 - Transcribe a Recording
+Title=3 - Transcribe a Recording
 Intro=A one-hour MP3 of a screen reader class becomes a document of what was said.
 Setup=A recording named Introduction_to_Windows.mp3 is in the Videos folder. HomerScribe is installed.
 Homework=Transcribe a podcast episode of your own. Read the transcript's first heading: it names the recording and how long it runs.

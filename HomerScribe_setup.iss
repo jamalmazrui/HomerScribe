@@ -240,8 +240,8 @@ Source: "scripts\installWhisper.cmd"; DestDir: "{app}\scripts"; Flags: ignorever
 ; the standard folders carry distinct first letters so a list of them can be
 ; walked by initial letter. A context file is something a person copies and
 ; edits for their own film, which is what a template is.
-Source: "templates\*.md"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "templates\*.htm"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "templates\*.md"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist; Excludes: ".git,.venv,__pycache__,*.pyc,venv"
+Source: "templates\*.htm"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist; Excludes: ".git,.venv,__pycache__,*.pyc,venv"
 
 [Icons]
 ; WorkingDir is the user's Documents folder, so a run started from a shortcut

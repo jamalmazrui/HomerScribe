@@ -1,5 +1,9 @@
 ﻿# HomerScribe History
 
+## 8 October 2026 -- tutorials in the pattern of ten
+
+The tutorials follow the Homer pattern of ten: 0 Overview, now teaching Insert plus Tab; 1 User Interface, new, the dialog, its Alt letters, the keys that read a field, progress keys and help; 2 Install and Launch, new, the installer's tool boxes; the five task walks as 3 to 7; 8 Stay Current, the help and newer-version walk; and 9 Conclusion, new. The tutorials' audio is no longer kept local: LocalFiles.txt no longer names help/tutorials, so the repository carries it as the installer does.
+
 ## 1.0.266, 4 October 2026 -- what 122 podcasts in one run taught
 
 The run -- 54 hours of audio, 122 files, 14 hours -- finished with no

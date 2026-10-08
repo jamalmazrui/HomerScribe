@@ -3,9 +3,7 @@
 # scripts\tidy keeps these where they are, and writes each line into .gitignore
 # as never pushed. One path or pattern a line; a trailing slash means a folder.
 
-# The spoken tutorials and their playlist: made by the build whenever a walk
-# has no audio, from the scripts in help, which are in the repository.
-help/tutorials/
+# The spoken tutorials are in the repository and the installer (8 October 2026): users never wait for them.
 
 # Logs, one file per run
 logs/

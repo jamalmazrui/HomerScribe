@@ -32,6 +32,22 @@ import datetime, glob, io, os, platform, re, sys
 c_lsReaderNames = ["JAWS", "NVDA", "Narrator", "VoiceOver", "Fusion", "ZoomText"]
 c_lsSilenceWords = ["nothing", "silent", "silence", "did not say", "says nothing"]
 c_lsModifierOrder = ["Alt", "Control", "Shift", "Windows"]
+# SHOW, THEN TELL (1.58.0). In a Homer walk the host names a concept and the
+# screen reader then shows it: the control that takes focus, read as name,
+# role, value and state, with the hint after; or the window that comes
+# forward, read by its title. The author heard the user-interface walk run on
+# with the host alone and found it far less instructive than an exchange. So in
+# that walk, 1_User_Interface (it was 02 and 03 before the pattern of ten), no
+# more than c_iMaxHostRun steps in a row may pass without the reader, and at
+# least c_nMinReaderShare of the steps must carry the reader. Other walks get a
+# notice for a longer run. 0 is prose and a table of contents by design, so it
+# is not measured.
+c_dConceptWalks = {"1": "User Interface"}
+c_iLongSay = 60
+c_iMaxHostRun = 2
+c_iNoticeHostRun = 3
+c_lsUnmeasuredWalks = ["0"]
+c_nMinReaderShare = 0.5
 
 lsProblems = []
 oLog = None
@@ -101,6 +117,12 @@ def say(sText):
     logLine("CONSOLE: " + sText)
     return True
 
+
+lsNotices = []
+
+def notice(sText):
+    lsNotices.append(sText)
+    logLine("NOTICE: " + sText)
 
 def problem(sScript, iStep, sText):
     sWhere = os.path.basename(sScript) + (", step %d" % iStep if iStep else "")
@@ -189,8 +211,36 @@ def checkOne(sScript, bFirst):
             if not any(w in sText for w in c_lsSilenceWords):
                 problem(sScript, iAt, "Key %s has no Hear line and nothing names the silence" % sKey)
         for sHear in lsHear: checkHear(sScript, iAt, sHear)
+    oNumber = re.match(r"Tutorial_(\d)_", os.path.basename(sScript))
+    sNumber = oNumber.group(1) if oNumber else ""
+    if sNumber and sNumber not in c_lsUnmeasuredWalks and lsSteps:
+        iRun, iLongest, iAtLongest, iWithReader = 0, 0, 0, 0
+        for iAt, dStep in enumerate(lsSteps, 1):
+            if [s for s in dStep.get("Hear", []) if s]:
+                iWithReader += 1
+                iRun = 0
+                continue
+            iRun += 1
+            if iRun > iLongest: iLongest, iAtLongest = iRun, iAt
+        nShare = float(iWithReader) / len(lsSteps)
+        logLine("%s: the reader speaks in %d of %d steps; the longest stretch of the host alone is %d step%s" % (os.path.basename(sScript), iWithReader, len(lsSteps), iLongest, "" if iLongest == 1 else "s"))
+        if sNumber in c_dConceptWalks:
+            if iLongest > c_iMaxHostRun: problem(sScript, iAtLongest, "%d steps in a row with the host alone; in the %s walk each concept is shown by the reader, its name, role, value, state and hint, right after it is named" % (iLongest, c_dConceptWalks[sNumber]))
+            if nShare < c_nMinReaderShare: problem(sScript, 0, "the reader speaks in only %d of %d steps; in the %s walk at least half the steps show a concept in the reader's voice" % (iWithReader, len(lsSteps), c_dConceptWalks[sNumber]))
+        elif iLongest > c_iNoticeHostRun:
+            notice("%s: %d steps in a row with the host alone, ending at step %d; let the reader show what the host has named" % (os.path.basename(sScript), iLongest, iAtLongest))
+    for iAt, dStep in enumerate(lsSteps, 1):
+        iWords = len(firstOf(dStep, "Say").split())
+        if iWords > c_iLongSay: notice("%s step %d: a Say line of %d words; say less, then let the reader show it" % (os.path.basename(sScript), iAt, iWords))
     if bFirst and not re.search(r"Insert (plus )?Up Arrow", sWhole):
         problem(sScript, 0, "the first script does not teach the repeat key, Insert plus Up Arrow")
+    # The orientation key goes with the repeat key: the trainers teach both in
+    # their first module, and a listener who can repeat a line but cannot ask
+    # "where am I" is half equipped.
+    if bFirst and not re.search(r"Insert (plus )?Tab", sWhole):
+        # A notice, as the pattern is: a set written before the orientation key
+        # joined the first walk (5 October 2026) is still spoken, and told.
+        notice(os.path.basename(sScript) + ": the first walk should teach the orientation key, Insert plus Tab")
     logLine("%s: %d steps, %d Hear lines" % (os.path.basename(sScript), len(lsSteps), sum(len([h for h in d.get("Hear", []) if h]) for d in lsSteps)))
     return True
 
@@ -258,7 +308,61 @@ def main():
         return 0
     for iAt, sScript in enumerate(lsScripts):
         checkOne(sScript, bFirst=(iAt == 0 and len(sys.argv) == 1))
+    # FIVE MINUTES IS THE CEILING (5 October 2026): at the voices' pace about
+    # twenty-five steps. Twenty-eight is the line here, so a walk a little over
+    # passes and one plainly over is sent back to be cut or split.
+    # BETWEEN THREE AND FIVE MINUTES for parts 01 to 10 (6 October 2026): under
+    # three is usually too thin to be worth a listener's start; 00 and 11 may
+    # be short. A glossary's steps are two short lines each, so its count is
+    # not a measure of its length and it is exempt from the ceiling; the tool
+    # measures the audio itself and says what runs under or over.
+    for sScript in lsScripts:
+        sBase = os.path.basename(sScript)
+        iSteps = readText(sScript).count("[step]") if "readText" in globals() else open(sScript, "rb").read().decode("utf-8-sig").count("[step]")
+        mNum = re.match(r"Tutorial_(\d)_", sBase)
+        sNum = mNum.group(1) if mNum else ""
+        # Step counts are a guess at length; the tool's measurement of the
+        # audio is the fact. A high count is a notice, so a walk of many short
+        # two-voice exchanges is not refused for being brisk. The conclusion,
+        # 9, holds the glossary, whose steps are two short lines each, so its
+        # count is no measure of its length.
+        if iSteps > 32 and sNum != "9":
+            notice(sBase + ": %d steps is likely over five minutes; the tool will measure it -- cut what an earlier walk taught, or split it, if it is" % iSteps)
+        if sNum and sNum not in ("0", "9") and iSteps < 12:
+            notice(sBase + ": %d steps is likely under three minutes; the guideline wants three to five for parts 1 to 8" % iSteps)
+    # THE PATTERN OF TEN (7 October 2026, replacing the twelve of 5 October):
+    # one digit sorts the set. 0_Overview, 1_User_Interface (the concepts and
+    # the key patterns together), seven task walks numbered 2 to 8 (usually
+    # 2_Install_and_Launch first), and 9_Conclusion (the conclusion and
+    # summary, the glossary, and more information, help built in among it).
+    # Every set is the full ten. Reported as NOTICES, not problems: a program whose set is not
+    # yet the pattern still has its clean walks spoken and still releases, and
+    # hears on every build what the set lacks -- including a set still named
+    # with two digits, which is told what each old walk becomes.
+    if len(sys.argv) == 1:
+        c_dFixed = {"0": "Overview", "1": "User_Interface", "9": "Conclusion"}
+        c_dOld = {"00": "0_Overview", "01": "2_Install_and_Launch, the first task", "02": "1_User_Interface, with 03", "03": "1_User_Interface, with 02",
+                  "09": "9_Conclusion, with 10 and 11", "10": "9_Conclusion, with 09 and 11", "11": "9_Conclusion, with 09 and 10"}
+        dHave, lsOld = {}, []
+        for sScript in lsScripts:
+            sName = os.path.basename(sScript)
+            m = re.match(r"Tutorial_(\d)_(.+)\.inix$", sName)
+            if m: dHave[m.group(1)] = m.group(2)
+            m2 = re.match(r"Tutorial_(\d\d)_(.+)\.inix$", sName)
+            if m2: lsOld.append((m2.group(1), sName))
+        for sNum, sName in lsOld:
+            notice("%s uses the old two-digit numbering; it becomes %s" % (sName, c_dOld.get(sNum, ("task walk %d, after 2_Install_and_Launch" % (int(sNum) - 1)) if 4 <= int(sNum) <= 8 else "part of the pattern of ten")))
+        for sNum, sName in sorted(c_dFixed.items()):
+            if dHave.get(sNum) != sName:
+                notice("the pattern wants Tutorial_%s_%s.inix%s" % (sNum, sName, (", not " + dHave[sNum]) if sNum in dHave else ""))
+        # Tasks are 2 to 8: seven of them, every number used, so every set is
+        # the full ten and walk 9 is always the conclusion.
+        for sNum in ("2", "3", "4", "5", "6", "7", "8"):
+            if sNum not in dHave: notice("the pattern wants task walk %s; the seven tasks are numbered 2 to 8" % sNum)
     for sText in lsProblems: say("  " + sText)
+    if lsNotices:
+        say("  Notices -- work to do, never a reason to stop the build:")
+        for sText in lsNotices: say("    " + sText)
     say("%d script%s checked, %d problem%s." % (len(lsScripts), "" if len(lsScripts) == 1 else "s",
         len(lsProblems), "" if len(lsProblems) == 1 else "s"))
     logLine("checkTutorial end")

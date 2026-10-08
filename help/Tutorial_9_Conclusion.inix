@@ -1,0 +1,123 @@
+﻿; Tutorial_9_Conclusion.inix -- what to carry away, the words HomerScribe uses, and where to learn more.
+
+[about]
+Title=9 - Conclusion
+Intro=The conclusion and summary of the walks; the words HomerScribe uses, in two voices; then more information: the help built into the dialog and where to learn more.
+Setup=Nothing is needed; this walk is listened to.
+Homework=Describe five minutes of a film you know well, and read the description beside the film.
+
+[step]
+
+Say=To finish: what to carry away, the words HomerScribe uses, and where to get help. First, the summary. Everything runs on this computer, and everything it makes is a document a screen reader reads well: headings to jump by, in the order things happen.
+Key=
+Hear=
+
+[step]
+
+Say=One dialog does every job, and one box says which: tick what you want, and Enter. The window stays while it works, and its title says how far it is.
+Key=
+Hear=Alt plus T, Transcribe audio
+Hear=Alt plus D, Describe video
+
+[step]
+
+Say=Every run ends in a results box naming what it made and where, with a log beside it; when something is wrong, that log is what to send. And before committing to a feature film, describe five minutes of it.
+Key=
+Hear=
+
+[step]
+
+Say=Now the words, in alphabetical order. I say the term; the reader says what it means.
+Key=
+Hear=
+
+[step]
+
+Say=Audio only.
+Key=
+Hear=The box that fetches only the sound from a web address, for a transcript without the pictures.
+
+[step]
+
+Say=description.
+Key=
+Hear=A sentence about what can be seen, written for a gap in the speech of a film.
+
+[step]
+
+Say=gap.
+Key=
+Hear=A stretch of a film without speech, long enough for a description to be read in.
+
+[step]
+
+Say=Ollama.
+Key=
+Hear=The service that runs the vision and text models on this computer.
+
+[step]
+
+Say=Remove ads.
+Key=
+Hear=The box that finds a podcast's advertisements and cuts them from the sound.
+
+[step]
+
+Say=results box.
+Key=
+Hear=The box at the end of every run: what was done, how long it took, and where the documents are.
+
+[step]
+
+Say=Source paths.
+Key=
+Hear=The box for what to work on: files, wildcard patterns, folders or web addresses.
+
+[step]
+
+Say=transcript.
+Key=
+Hear=The document of what was said, in order, with a heading every ten minutes.
+
+[step]
+
+Say=vision model.
+Key=
+Hear=The model that looks at a film's pictures and writes the descriptions.
+
+[step]
+
+Say=vocabulary.
+Key=
+Hear=The setting of names Whisper should spell right, separated by commas.
+
+[step]
+
+Say=Whisper.
+Key=
+Hear=The speech recognizer that writes down what is said.
+
+[step]
+
+Say=yt-dlp.
+Key=
+Hear=The program that fetches a film or its sound from a web address.
+
+[step]
+
+Say=Last, more information. Help is built into the dialog. The help box, with every field, every key, and the version.
+Key=
+Hear=F1, the help box
+
+[step]
+
+Say=The tip for one field, and a list of every control.
+Key=
+Hear=Shift plus F1
+Hear=F7
+
+[step]
+
+Say=The guide, HomerScribe dot md, explains every choice the program makes; Hotkeys dot md lists every key three ways; and the ReadMe gets you started. All three are in the Start menu, under HomerScribe documentation, and on the HomerScribe page on GitHub, at github dot com slash JamalMazrui slash HomerScribe.
+Key=
+Hear=

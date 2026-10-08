@@ -1,6 +1,6 @@
-﻿; Tutorial_06_NewerVersion.inix -- the Help box, and updating to a newer version.
+﻿; Tutorial_8_Stay_Current.inix -- the Help box, and updating to a newer version.
 [about]
-Title=06 - Help, and a Newer Version
+Title=8 - Stay Current
 Intro=F1 in the dialog lists every field and key, checks the web for a newer HomerScribe, and offers to install it.
 Setup=HomerScribe is installed and its dialog is open. The computer is online.
 Homework=Press F1 when there is no newer version. The box ends with "the newest on the web", and No is the default.

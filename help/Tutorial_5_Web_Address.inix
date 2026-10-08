@@ -1,6 +1,6 @@
-﻿; Tutorial_03_WebAddress.inix -- a web address, sound only, with context from the page.
+﻿; Tutorial_5_Web_Address.inix -- a web address, sound only, with context from the page.
 [about]
-Title=03 - A Web Address, Sound Only
+Title=5 - A Web Address, Sound Only
 Intro=A lecture on YouTube becomes one described MP3, a quarter the size of the video, with the page's own title guiding the descriptions.
 Setup=HomerScribe is installed, with Ollama. A YouTube address is on the clipboard.
 Homework=Give HomerScribe the address of a playlist. It says "Processing 3 of 9" as it goes, and each film gets its own folder.

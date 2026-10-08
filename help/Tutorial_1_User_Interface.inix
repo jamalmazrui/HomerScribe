@@ -1,0 +1,142 @@
+﻿; Tutorial_1_User_Interface.inix -- what HomerScribe is made of, and the rules its keys follow.
+
+[about]
+Title=1 - User Interface
+Intro=HomerScribe is one dialog. Each part is named by the narrator and then shown by the screen reader: the boxes for what to work on and where to write, the boxes that say what to do, the keys that read a field, the keys that report progress, and the four kinds of help.
+Setup=HomerScribe is installed.
+Homework=Open HomerScribe, Tab through every control once, and press Shift plus F1 on each to hear its tip.
+
+[step]
+
+Say=HomerScribe is one dialog, built the way every Homer dialog is: a label, then the control it names. I name each part; the reader shows it, as it would on your machine.
+Key=
+Hear=
+
+[step]
+
+Say=Alt plus Control plus H, H for HomerScribe, opens it from anywhere.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+
+Say=The window's name, then where focus is: Source paths, an edit box, holding the sample film's address. Here go the files, folders, wildcard patterns or web addresses to work on. Shift plus F1 reads any field's tip.
+Key=Shift+F1
+Hear=One or more files, wildcard patterns, or web addresses to download from, separated by spaces. Put double quotes around any item containing a space.
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Every field has a tip, in the same words the help box uses. Alt plus F8 reads the whole field aloud, or says Blank.
+Key=Alt+F8
+Hear=https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Tab moves in the order the controls were added: Browse source, then the output folder, then the boxes that say what to do.
+Key=Tab
+Hear=Browse source... button, Alt plus B
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Now the rule behind every key here: the word gives the letter. Alt plus a letter goes straight to its control, and for a check box it ticks or clears it. Alt plus T, T for Transcribe.
+Key=Alt+T
+Hear=Transcribe audio check box, checked, Alt plus T
+
+[step]
+
+Say=Checked. Again, and it is cleared.
+Key=Alt+T
+Hear=Transcribe audio check box, not checked, Alt plus T
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=D for Describe, A for Audio only, W for Web context, R for Remove ads, F for Force overwrite, L for Log session. Alt plus O goes to the Output directory box, O for Output.
+Key=Alt+O
+Hear=Output directory: edit
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Where the documents are written; blank means beside each source. A dialog this size has many controls, so F7 lists them all; a letter jumps to one and Enter goes to it.
+Key=F7
+Hear=Controls list box
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Escape closes the list and returns where I was. In the dialog itself, Enter presses OK from anywhere, Control plus Enter from inside a box of many lines, and Escape cancels.
+Key=Escape
+Hear=Output directory: edit
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=While the work runs, the dialog stays, its controls resting, and its title says what is happening. Two keys ask how it goes: Shift plus F6 says how far through the current file; Control plus Page Down and Page Up move between its stages. And Insert plus T, the reader's own key, reads the title.
+Key=Insert+T
+Hear=HomerScribe dialog
+
+[step]
+
+Say=Help is in four places, the same in every Homer program. I say which; the reader says the key. The help box, listing every field and key, and the version.
+Key=
+Hear=F1, the help box
+
+[step]
+
+Say=The tip for the field you are on.
+Key=
+Hear=Shift plus F1
+
+[step]
+
+Say=A list of the controls, to reach any one.
+Key=
+Hear=F7
+
+[step]
+
+Say=And the guide and the hotkeys, as documents in the Start menu.
+Key=
+Hear=HomerScribe documentation
+
+[step]
+
+Say=A planned misstep: Alt plus O is the Output box, so pressing it to accept does not press OK. I press it, and the reader shows where I landed.
+Key=Alt+O
+Hear=Output directory: edit
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=The answer is Enter, which presses OK from anywhere. What this walk taught. I name the part; the reader gives the key.
+Key=
+Hear=
+
+[step]
+
+Say=Tick Transcribe audio.
+Key=
+Hear=Alt plus T
+
+[step]
+
+Say=Hear a field's tip.
+Key=
+Hear=Shift plus F1
+
+[step]
+
+Say=Hear a whole field.
+Key=
+Hear=Alt plus F8
+
+[step]
+
+Say=Accept from anywhere.
+Key=
+Hear=Enter

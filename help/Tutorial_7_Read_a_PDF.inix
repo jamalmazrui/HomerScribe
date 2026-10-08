@@ -1,6 +1,6 @@
-﻿; Tutorial_05_ReadPdf.inix -- read a PDF, scanned pages and all.
+﻿; Tutorial_7_Read_a_PDF.inix -- read a PDF, scanned pages and all.
 [about]
-Title=05 - Read a PDF
+Title=7 - Read a PDF
 Intro=A PDF of a scanned report becomes a Markdown document, and a Word document beside it.
 Setup=HomerScribe is installed, with Ollama, Tesseract and Pandoc. A file named Annual_Report.pdf is in the Videos folder.
 Homework=Give it a PDF with pictures in it. Each picture gets a description where it sits in the text.

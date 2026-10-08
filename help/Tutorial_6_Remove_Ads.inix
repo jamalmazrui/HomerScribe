@@ -1,6 +1,6 @@
-﻿; Tutorial_04_RemoveAds.inix -- take the advertisements out of a podcast.
+﻿; Tutorial_6_Remove_Ads.inix -- take the advertisements out of a podcast.
 [about]
-Title=04 - Remove the Advertisements
+Title=6 - Remove the Advertisements
 Intro=A podcast episode loses its advertisements and keeps everything else, with the original untouched.
 Setup=HomerScribe is installed, with Ollama and its reading model. An episode named Episode_212.mp3 is in the Videos folder.
 Homework=Run it on an episode with a mid-roll break. Read the summary line at the top of the document it writes: it says how much was cut and from where.

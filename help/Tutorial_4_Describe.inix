@@ -1,6 +1,6 @@
-﻿; Tutorial_02_Describe.inix -- describe what can be seen in a video.
+﻿; Tutorial_4_Describe.inix -- describe what can be seen in a video.
 [about]
-Title=02 - Describe a Video
+Title=4 - Describe a Video
 Intro=The sample film in the Source paths box gets descriptions of every shot, as a document and as a described copy.
 Setup=HomerScribe is installed, with Ollama and its picture model. The dialog still holds the sample address.
 Homework=Open described dot m d and read the first three descriptions. Then play described dot m k v and listen to the same three.

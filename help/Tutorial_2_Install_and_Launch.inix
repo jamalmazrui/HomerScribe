@@ -1,0 +1,100 @@
+﻿; Tutorial_2_Install_and_Launch.inix -- installing HomerScribe and the tools it uses, then opening it.
+
+[about]
+Title=2 - Install and Launch
+Intro=HomerScribe_setup.exe installs HomerScribe and, on its last page, offers the tools it uses: Whisper for transcribing, Ollama and a vision model for describing, and the rest. Then the desktop key opens it.
+Setup=HomerScribe_setup.exe is downloaded from the HomerScribe page on GitHub.
+Homework=Run the setup a second time. Every box on the last page should now say Update or Reinstall, not Install.
+
+[step]
+
+Say=One want: HomerScribe on this computer, with the tools it needs, in one sitting. Everything it uses runs here; once installed, nothing is uploaded.
+Key=
+Hear=
+
+[step]
+
+Say=I open the downloaded setup program. Windows asks for administrator rights; I say yes.
+Key=Enter
+Hear=Setup - HomerScribe dialog
+Hear=Welcome to the HomerScribe Setup Wizard
+
+[step]
+
+Say=The ordinary installer: Enter takes Next on each page, and the defaults are right.
+Key=Enter
+Hear=Select Destination Location
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=I take the defaults to the end, where it copies the program and its documents.
+Key=Enter
+Hear=Installing
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=The last page is the one that matters. It offers each tool HomerScribe uses, as a box saying what it does and its size, already ticked when it is missing.
+Key=Tab
+Hear=Install Whisper check box, checked
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Each box's first word is the machine's state read for you: Install when it is missing, Update when a newer one is out, Reinstall when it is current. Transcribing needs Whisper alone, about half a gigabyte.
+Key=Down Arrow
+Hear=Install Ollama check box, checked
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Describing needs more: Ollama, the service that runs the model, and the vision model itself, about five and a half gigabytes, downloaded once.
+Key=Down Arrow
+Hear=Install qwen2.5vl 7b check box, checked, describes video and pictures, about 5.5 GB
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=The text model, about four point seven gigabytes, is only for removing advertisements. A planned misstep: if you will never do that, clear it. Space clears a box.
+Key=Space
+Hear=not checked
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Leave the rest as they are. Enter starts them, one after another, each in a window that says what it is fetching.
+Key=Enter
+Hear=Finish button
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=When they finish, a results box says what was installed and where. Then the key that opens HomerScribe from anywhere: Alt plus Control plus H.
+Key=Alt+Control+H
+Hear=HomerScribe dialog
+Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
+
+[step]
+
+Say=Installed and open, with the sample film ready. If a tool was left out, run the setup again and tick its box; a tool already present costs nothing. What this walk taught. I name the step; the reader gives the answer.
+Key=
+Hear=
+
+[step]
+
+Say=What a box's first word tells you.
+Key=
+Hear=Install, Update or Reinstall
+
+[step]
+
+Say=What transcribing needs.
+Key=
+Hear=Whisper
+
+[step]
+
+Say=The key that opens HomerScribe.
+Key=
+Hear=Alt plus Control plus H
