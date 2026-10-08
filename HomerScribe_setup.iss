@@ -230,6 +230,7 @@ Source: "exec\HomerScribe.exe.config"; DestDir: "{app}\exec"; Flags: ignoreversi
 ; program must run with no kit on the machine (25 Sep 2026).
 Source: "scripts\installCommon.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "scripts\pdfPages.cmd"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "scripts\pagebreak.lua"; DestDir: "{app}\scripts"; Flags: ignoreversion
 ; A standalone Whisper installer that depends on nothing else and checks
 ; the files rather than the exit codes. Run it by hand when the ordinary
 ; route has not worked.
@@ -578,7 +579,7 @@ begin
   sLogs := ExpandConstant('{localappdata}\{#AppName}\logs');
   if not DirExists(sLogs) then ForceDirectories(sLogs);
   sTo := sLogs + '\{#AppName}-setup-' + GetDateTimeString('yyyymmdd-hhnnss', #0, #0) + '.log';
-  if not FileCopy(ExpandConstant('{log}'), sTo, False) then
+  if not CopyFile(ExpandConstant('{log}'), sTo, False) then
     MsgBox('The setup log could not be copied to ' + sLogs + '.', mbInformation, MB_OK);
 end;
 

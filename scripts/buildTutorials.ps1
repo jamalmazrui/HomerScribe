@@ -877,8 +877,14 @@ function walkFingerprint([string] $sScript) {
 }
 
 function markSpoken([string] $sScript, [string] $sOut) {
+  # The fingerprint, then "quotes safe": spoken since straight quotes stopped breaking Kokoro (kit 1.63.1).
   $sMark = [System.IO.Path]::ChangeExtension($sOut, ".sha256")
-  try { [System.IO.File]::WriteAllText($sMark, (walkFingerprint $sScript) + "`r`n") } catch { note ("  could not write " + $sMark + ": " + $_) }
+  try { [System.IO.File]::WriteAllText($sMark, (walkFingerprint $sScript) + "`r`nquotes safe`r`n") } catch { note ("  could not write " + $sMark + ": " + $_) }
+}
+
+function hasStraightQuote([string] $sScript) {
+  # Whether any line of the walk holds a straight double quote, which Kokoro could not speak before kit 1.63.1.
+  try { return ([System.IO.File]::ReadAllText($sScript).IndexOf([char]34) -ge 0) } catch { return $false }
 }
 
 function spokenCurrent([string] $sScript, [string] $sOut) {
@@ -887,7 +893,14 @@ function spokenCurrent([string] $sScript, [string] $sOut) {
   $sNow = walkFingerprint $sScript
   if (Test-Path -LiteralPath $sMark) {
     $sWas = ""
-    try { $sWas = ([System.IO.File]::ReadAllText($sMark)).Trim().ToLower() } catch { }
+    $sMarkText = ""
+    try { $sMarkText = [System.IO.File]::ReadAllText($sMark); $sWas = ($sMarkText -split "`n")[0].Trim().ToLower() } catch { }
+    # SPOKEN BEFORE QUOTES WERE SAFE (kit 1.63.1): a walk with a straight double quote, spoken before the fix, may lack the
+    # sentence Kokoro refused, as two HomerScribe walks did; it is spoken once more.
+    if ($sWas -ne "" -and $sWas -eq $sNow -and $sMarkText.IndexOf("quotes safe") -lt 0 -and (hasStraightQuote $sScript)) {
+      note ("  " + [System.IO.Path]::GetFileName($sOut) + ": spoken before straight quotes were safe, and the walk has some; speaking it again")
+      return $false
+    }
     if ($sWas -ne "" -and $sWas -eq $sNow) { note ("  " + [System.IO.Path]::GetFileName($sOut) + ": the walk is unchanged since it was spoken (same fingerprint)"); return $true }
     note ("  " + [System.IO.Path]::GetFileName($sOut) + ": the walk has changed since it was spoken (fingerprint " + $sWas.Substring(0, [Math]::Min(12, $sWas.Length)) + " now " + $sNow.Substring(0, [Math]::Min(12, $sNow.Length)) + ")")
     return $false
@@ -899,7 +912,19 @@ function spokenCurrent([string] $sScript, [string] $sOut) {
   return $true
 }
 
+function typographicQuotes([string] $sText) {
+  # Each straight double quote becomes an opening or closing curly one, in turn.
+  $oBuilder = New-Object System.Text.StringBuilder
+  $bOpen = $true
+  foreach ($c in $sText.ToCharArray()) {
+    if ($c -eq [char]34) { [void]$oBuilder.Append($(if ($bOpen) { [char]0x201C } else { [char]0x201D })); $bOpen = -not $bOpen }
+    else { [void]$oBuilder.Append($c) }
+  }
+  return $oBuilder.ToString()
+}
+
 function buildOne([string] $sScript) {
+  $script:iLostPieces = 0
   $sStem = [System.IO.Path]::GetFileNameWithoutExtension($sScript)
   $sOut = Join-Path $sAudioDir (audioName $sScript)
   # SPEAK ONLY WHAT IS MISSING OR STALE. A walk whose mp3 is newer than the
@@ -958,8 +983,14 @@ function buildOne([string] $sScript) {
     $sInv = [System.Globalization.CultureInfo]::InvariantCulture
     $lsParts = New-Object System.Collections.Generic.List[string]
     $iChunk = 0
-    foreach ($sChunk in (kokoroChunks $sText)) {
+    foreach ($sChunkIn in (kokoroChunks $sText)) {
       $iChunk = $iChunk + 1
+      # STRAIGHT QUOTES BROKE THE ARGUMENT (8 October 2026): Windows PowerShell
+      # does not escape a double quote inside an argument to a program, so
+      # 'It says "Processing 3 of 9"' reached the engine as several arguments,
+      # it refused, and the sentence was left out of the walk without a word.
+      # Typographic quotes are spoken the same and cannot break the argument.
+      $sChunk = typographicQuotes $sChunkIn
       $sRaw = $sFile + ".k" + $iChunk + ".wav"
       runVoice $sSherpa @(("--kokoro-model=" + $sKokoroModel),
                           ("--kokoro-voices=" + (Join-Path $sKokoroDir "voices.bin")),
@@ -968,6 +999,12 @@ function buildOne([string] $sScript) {
                           ("--kokoro-length-scale=" + [string]::Format($sInv, "{0:0.00}", $dScale)),
                           "--num-threads=2", ("--sid=" + $iSpeaker), ("--output-filename=" + $sRaw), $sChunk) $null $sLabel | Out-Null
       if (Test-Path -LiteralPath $sRaw) { $lsParts.Add($sRaw) }
+      else {
+        # A PIECE THAT MAKES NO AUDIO IS COUNTED, never skipped silently: the walk
+        # is then not marked spoken, so the next build speaks it again.
+        $script:iLostPieces = $script:iLostPieces + 1
+        note ("  LOST: no audio for '" + $sChunk + "'")
+      }
     }
     if ($lsParts.Count -eq 0) { return }
     if ($lsParts.Count -eq 1) {
@@ -1237,6 +1274,13 @@ function buildOne([string] $sScript) {
   if ($iExit -ne 0 -or -not (Test-Path -LiteralPath $sOut)) { say ($sStem + " could not be joined."); return $false }
   $dTook = ((Get-Date) - $dtStarted).TotalSeconds
   $sTook = $(if ($dTook -lt 90) { ([int]$dTook).ToString() + " seconds" } else { ([int][Math]::Round($dTook / 60.0)).ToString() + " minutes" })
+  if ($script:iLostPieces -gt 0) {
+    # Not marked spoken, and its audio removed, so the next build speaks it again
+    # rather than keeping a walk with sentences missing.
+    say ([System.IO.Path]::GetFileName($sOut) + ": " + $script:iLostPieces + " piece" + $(if ($script:iLostPieces -eq 1) { "" } else { "s" }) + " could not be spoken, so it will be spoken again next build; the log names " + $(if ($script:iLostPieces -eq 1) { "it" } else { "them" }) + ".")
+    try { Remove-Item -LiteralPath $sOut -Force } catch { }
+    return $false
+  }
   say ("Created " + [System.IO.Path]::GetFileName($sOut) + " in " + $sTook + ".")
   markSpoken $sScript $sOut
   return $true
@@ -1287,19 +1331,36 @@ $iKept = 0
 # two builds speaking together each crawl and both look hung. A named mutex
 # serializes them, and the one that waits says so, and for how long.
 $oMutex = $null
+# WHO IS SPEAKING, AND HOW FAR (8 October 2026): four builds started within three
+# minutes, and three waited up to 108 minutes hearing only "Another Homer build
+# is speaking". The build holding the lock now writes its project and walk to a
+# status file in the temporary folder, and a waiting build says what it read.
+$sSpeakingFile = Join-Path ([System.IO.Path]::GetTempPath()) "HomerTutorialsSpeaking.txt"
+$sThisProject = Split-Path -Leaf (Split-Path -Parent $sTool)
+function speakingStatus([string] $sWhat) {
+  try { [System.IO.File]::WriteAllText($sSpeakingFile, $sThisProject + " is speaking " + $sWhat + ", since " + (Get-Date -Format "h:mm")) } catch { }
+}
+function speakingNow() {
+  try { if (Test-Path -LiteralPath $sSpeakingFile) { return ([System.IO.File]::ReadAllText($sSpeakingFile)).Trim() } } catch { }
+  return ""
+}
 try {
   # The two-argument constructor: New-Object cannot bind an out parameter.
   $oMutex = New-Object System.Threading.Mutex($false, "Global\HomerTutorialsSpeaking")
   $iWaited = 0
   while (-not $oMutex.WaitOne(60000)) {
     $iWaited = $iWaited + 1
-    if ($iWaited -eq 1) { say "Another Homer build is speaking its tutorials. Waiting for it to finish, so neither crawls." }
-    else { say ("  still waiting, " + $iWaited + " minutes") }
+    $sNow = speakingNow
+    if ($iWaited -eq 1) { say ("Another Homer build is speaking its tutorials" + $(if ($sNow) { ": " + $sNow } else { "" }) + ". Waiting for it to finish, so neither crawls.") }
+    else { say ("  still waiting, " + $iWaited + " minutes" + $(if ($sNow) { "; " + $sNow } else { "" })) }
   }
   if ($iWaited -gt 0) { say "The other build has finished; speaking now." }
 } catch { note ("tutorial mutex not available: " + $_); $oMutex = $null }
 retireOldAudio
+$iWalk = 0
 foreach ($sScript in $lsScripts) {
+  $iWalk = $iWalk + 1
+  speakingStatus ("walk " + $iWalk + " of " + $lsScripts.Count)
   $sHave = Join-Path $sAudioDir (audioName $sScript)
   # KEPT ONLY WHEN CURRENT: audio older than its walk is spoken again. The
   # earlier test kept any file that existed, so a changed walk kept its old
@@ -1312,6 +1373,7 @@ foreach ($sScript in $lsScripts) {
   }
   if (buildOne $sScript) { $iDone = $iDone + 1 }
 }
+try { if (Test-Path -LiteralPath $sSpeakingFile) { Remove-Item -LiteralPath $sSpeakingFile -Force } } catch { }
 if ($oMutex -ne $null) { try { $oMutex.ReleaseMutex() } catch { } ; try { $oMutex.Dispose() } catch { } }
 if ($iKept -gt 0) { say ("Kept " + $iKept + " tutorial" + $(if ($iKept -eq 1) { "" } else { "s" }) + " already spoken.") }
 if ($oSpeaker -ne $null) { try { $oSpeaker.Dispose() } catch { } }

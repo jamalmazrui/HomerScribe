@@ -18,11 +18,18 @@ Two checkboxes decide what it does:
   interleaved in the order they happen. For someone who can neither see nor hear
   the film, that one document is the whole of it.
 
-Once installed, nothing leaves your machine. No part of the video is uploaded,
-no request reaches anyone's server, and there is no account, no subscription and
-no key. That also means no tokens: describing a two hour film asks an AI model
-several hundred questions and shows it several hundred pictures, and the count
-here is zero. You can describe material you would not send anywhere at all.
+Once installed, the describing and transcribing happen on your computer. No
+part of a video, recording or document is uploaded, and there is no account, no
+subscription and no key. That also means no tokens: describing a two hour film
+asks an AI model several hundred questions and shows it several hundred
+pictures, and the count here is zero. You can describe material you would not
+send anywhere at all.
+
+HomerScribe uses the internet only when you ask it to: to download a video from
+a web address you give it; to install or update its parts and models; and, if
+you turn on Web context, which is off unless you choose it, to send the video's
+title -- never the video -- to the page it came from or to Wikipedia, to learn
+what it shows.
 
 The vision model runs locally through Ollama, the speech recognition through
 Whisper, the voice comes from Windows, and the only other programs involved are

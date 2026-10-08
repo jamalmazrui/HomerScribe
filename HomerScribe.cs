@@ -765,6 +765,20 @@ namespace Homer
             return Path.Combine(appDataFolder(), "work", sName + "-" + iHash.ToString("x8"));
         }
 
+        // STAGES THAT FAILED while runOne reported success (8 October 2026, from an
+        // audit by another AI): a failed ad edit or Word version was logged, but the
+        // source still counted as done. The caller turns any into a failure.
+        static int iStageFailures = 0;
+
+        // PUBLISH WITHOUT A GAP (8 October 2026, from an audit by another AI): the
+        // finished file was deleted and the new one then moved in, so a failure
+        // between the two left neither. File.Replace swaps it in one step.
+        static void publishFile(string sStaged, string sFinal)
+        {
+            if (File.Exists(sFinal)) File.Replace(sStaged, sFinal, null);
+            else File.Move(sStaged, sFinal);
+        }
+
         static string exeFolder()
         {
             return Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -4679,8 +4693,7 @@ namespace Homer
                 }
                 try
                 {
-                    if (File.Exists(sOutPath)) File.Delete(sOutPath);
-                    File.Move(sPartAudio, sOutPath);
+                    publishFile(sPartAudio, sOutPath);
                 }
                 catch (Exception oError)
                 {
@@ -4728,8 +4741,7 @@ namespace Homer
             }
             try
             {
-                if (File.Exists(sOutPath)) File.Delete(sOutPath);
-                File.Move(sPartPath, sOutPath);
+                publishFile(sPartPath, sOutPath);
             }
             catch (Exception oError)
             {
@@ -7460,7 +7472,11 @@ namespace Homer
                     // The Homer layout puts helper scripts in their own folder, both in
                     // the development tree and in the installed one, so a program
                     // folder holds the program and not a heap of everything.
-                    string sFilter = Path.Combine(exeFolder(), "scripts", "pagebreak.lua");
+                    // Installed, the program is in {app}\\exec and the filter in {app}\\scripts,
+                    // a sibling folder, where it was never looked for (8 October 2026, from an
+                    // audit by another AI); and the installer had not carried it at all.
+                    string sFilter = Path.GetFullPath(Path.Combine(exeFolder(), "..", "scripts", "pagebreak.lua"));
+                    if (!File.Exists(sFilter)) sFilter = Path.Combine(exeFolder(), "scripts", "pagebreak.lua");
                     if (!File.Exists(sFilter)) sFilter = Path.Combine(exeFolder(), "pagebreak.lua");
                     // THE LANGUAGE GOES TO PANDOC DIRECTLY, not through a YAML
                     // block in the Markdown.
@@ -7489,7 +7505,14 @@ namespace Homer
                                    "INFO", "A Word version was made as well.");
                         lResults.Add("    " + sDocx);
                     }
-                    else logMessage("Pandoc could not make the Word version: " + tail(sErr, 200), "ERROR");
+                    else
+                    {
+                        // A Word version asked for and not made is a failed part of the job, not
+                        // a quiet note (8 October 2026, from an audit by another AI).
+                        logMessage("Pandoc could not make the Word version: " + tail(sErr, 200), "ERROR");
+                        lResults.Add("    The Word version could not be made; the log has the reason.");
+                        iStageFailures = iStageFailures + 1;
+                    }
                 }
                 // iDescribed, not iFigures. His results box said "112 pictures
                 // described" for a document where NONE were: every page was a
@@ -9257,7 +9280,12 @@ namespace Homer
                 {
                     logMessage("  The piece from " + formatClock(lKeep[iAt][0]) + " to "
                                + formatClock(lKeep[iAt][1]) + " could not be cut: " + tail(sErr, 160), "ERROR");
-                    continue;
+                    // EVERY KEPT PIECE OR NONE (8 October 2026, from an audit by another AI):
+                    // a failed piece was skipped and the rest joined, which quietly dropped
+                    // part of the programme. The edit stops; the earlier copy is untouched.
+                    logMessage("  So the copy without advertisements was not made: part of the programme would be missing.", "ERROR");
+                    foreach (string sMade in lParts) { try { File.Delete(sMade); } catch (Exception) { } }
+                    return false;
                 }
                 lParts.Add(sPart);
             }
@@ -9590,6 +9618,17 @@ namespace Homer
                              + ", " + spokenLength(nGone) + " of " + spokenLength(nDuration)
                              + Environment.NewLine + "    " + sTo
                              + Environment.NewLine + "    " + sPage);
+            else if (iCut > 0)
+            {
+                // A FAILED WRITE IS NOT "NOTHING TO REMOVE" (8 October 2026, from an audit
+                // by another AI): advertisements were chosen but the copy could not be
+                // written, and the result used to say none was certain enough.
+                lResults.Add(Path.GetFileName(sInput) + ": " + counted(iCut, "advertisement was", "advertisements were")
+                             + " found, but the copy without them could not be written; the log has the reason"
+                             + Environment.NewLine + "    " + sPage);
+                iStageFailures = iStageFailures + 1;
+                return 1;
+            }
             else
                 lResults.Add(Path.GetFileName(sInput) + ": no advertisement was certain enough to remove"
                              + Environment.NewLine + "    " + sPage);
@@ -10788,6 +10827,15 @@ namespace Homer
                             continue;
                         }
                         string sHere = Path.Combine(sWorkDir, Path.GetFileName(oEntry.Name));
+                        // TWO PICTURES, ONE NAME (8 October 2026, from an audit by another AI):
+                        // a/photo.jpg and b/photo.jpg became one file, and both descriptions
+                        // described the second. A later one takes its folders into its name.
+                        string sTaken = sHere;
+                        if (lInside.Exists(s => string.Equals(s, sTaken, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            sHere = Path.Combine(sWorkDir, Regex.Replace(oEntry.FullName, @"[\\/:*?""<>|]", "_"));
+                            logMessage("  " + oEntry.FullName + " has the same name as an earlier picture, so it is read as " + Path.GetFileName(sHere), "INFO", "");
+                        }
                         oEntry.ExtractToFile(sHere, true);
                         lInside.Add(sHere);
                     }
@@ -11463,7 +11511,13 @@ namespace Homer
                     iWorst = 1;
                     continue;
                 }
+                iStageFailures = 0;
                 int iOne = runOne(sFull, sSource.StartsWith("http") ? sSource : "");
+                if (iOne == 0 && iStageFailures > 0)
+                {
+                    lFailures.Add(sFull + Environment.NewLine + "    " + counted(iStageFailures, "part of the work", "parts of the work") + " could not be done; the log names each.");
+                    iOne = 1;
+                }
                 if (iOne == iAlreadyDone)
                 {
                     announce("Skipped", -1.0, 1.0, "Already done: " + Path.GetFileName(sFull));
@@ -12946,11 +13000,22 @@ namespace Homer
                 return 1;
             }
             saveReadable(lDone, sOutputDir, sWorkDir, Path.GetFileName(sInput), nDuration);
-            buildTrack(lDone, nDuration, Path.Combine(sWorkDir, sDefaultWaveName));
+            bool bTrack = buildTrack(lDone, nDuration, Path.Combine(sWorkDir, sDefaultWaveName));
             // Any background copy is finished with before the real one is written,
             // so two ffmpeg processes never write the same file.
             waitForMux();
-            muxOutput(sFfmpeg, sInput, Path.Combine(sWorkDir, sDefaultWaveName), Path.Combine(sOutputDir, outputName(sInput)), nDuration, false);
+            bool bMuxed = bTrack && muxOutput(sFfmpeg, sInput, Path.Combine(sWorkDir, sDefaultWaveName), Path.Combine(sOutputDir, outputName(sInput)), nDuration, false);
+            // FINISHED ONLY WHEN THE FILM IS (8 October 2026, from an audit by another
+            // AI): both results were ignored, and the work was marked finished and the
+            // film announced even when the track or the film could not be written. Now
+            // the descriptions are kept as unfinished, so a rerun only rebuilds the film.
+            if (!bMuxed)
+            {
+                writeCache(lDone, Path.Combine(sWorkDir, sDefaultJsonName), false, lLastGaps, dLastSignature);
+                logMessage((bTrack ? "The described film could not be written" : "The description track could not be written")
+                           + "; the descriptions are kept, so running again only rebuilds the film. The log has the reason.", "ERROR");
+                return 1;
+            }
             writeCache(lDone, Path.Combine(sWorkDir, sDefaultJsonName), true, lLastGaps, dLastSignature);
             // Both jobs done, so the film can be given whole: what was said and
             // what was there to be seen, in one sequence.

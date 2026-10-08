@@ -874,6 +874,34 @@ def removeStrayKitFiles(bRepo):
     return iRemoved
 
 
+def removeKitSampleLeftovers(bRepo):
+    """The kit's samples, unarchived into an app, leave what their build made beside the files removeStrayKitFiles
+    takes away: the sample programs, PyInstaller's build and dist folders, their logs, the generated version files.
+    None is in the kit's RepoFiles, so none is a stray by that test, and DbDo's installer shipped them -- 30 files,
+    among them six sample programs (8 October 2026). An app's templates\\samples folder holding nothing but the kit's
+    sample leftovers is removed whole, and logged; one holding anything else is left alone, with the reason logged.
+    The kit itself is never tidied this way."""
+    sKit = findKitFolder()
+    if not sKit or os.path.abspath(sRoot).lower() == sKit.lower(): return 0
+    sSamples = os.path.join(sRoot, "templates", "samples")
+    if not os.path.isdir(sSamples): return 0
+    c_lsLeftovers = ["FruitBasket*", "build", "dist", "logs", ".venv", "venv", "__pycache__", "Version.cs", "version.py",
+                     "version.txt", "accept.inix", "*.spec", "*.pyc", "evidence-*.md"]
+    lsOther = [s for s in os.listdir(sSamples) if not any(fnmatch.fnmatch(s.lower(), sPattern.lower()) for sPattern in c_lsLeftovers)]
+    if lsOther:
+        logLine("kit sample leftovers: templates\\samples kept, since it holds " + ", ".join(sorted(lsOther)[:5]) + ", not the kit's")
+        return 0
+    iFiles = sum(len(lsNames) for _, _, lsNames in os.walk(sSamples))
+    shutil.rmtree(sSamples, ignore_errors=True)
+    logLine("kit sample leftovers: templates\\samples removed, %d files the kit's samples had built" % iFiles)
+    if bRepo: runGit(["rm", "-r", "-q", "--cached", "--ignore-unmatch", "templates/samples"], bQuiet=True)
+    sTemplates = os.path.join(sRoot, "templates")
+    if os.path.isdir(sTemplates) and not os.listdir(sTemplates):
+        os.rmdir(sTemplates)
+        logLine("empty folder removed: templates")
+    sayLine("The kit's sample programs, left in templates\\samples by an earlier unarchive, removed: %s." % countNoun(iFiles, "file", "files"))
+    return iFiles
+
 
 # --- the plan ---------------------------------------------------------------
 
@@ -958,6 +986,8 @@ def main():
         # is not trusted here, since the strays are what mislead it.
         try: removeStrayKitFiles(isGitRepo() and not dArguments.folder_only)
         except Exception as oError: logLine("stray kit files: skipped, " + str(oError))
+        try: removeKitSampleLeftovers(isGitRepo() and not dArguments.folder_only)
+        except Exception as oError: logLine("kit sample leftovers: skipped, " + str(oError))
 
     # THE BUILD SCRIPT TAKES ITS SHORT NAME HERE (1.43.56). Since 1.43.55 an
     # app's build script is build.cmd, and check fails build<App>.cmd. Tidy runs

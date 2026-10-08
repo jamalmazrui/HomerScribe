@@ -1,5 +1,20 @@
 ﻿# HomerScribe History
 
+## 8 October 2026 -- an audit by another AI
+
+ChatGPT audited HomerScribe and reported 41 findings. Checked against the code, these held and are fixed:
+
+- **A film is finished only when it is written.** The description track and the final film each report success or failure, and both were ignored: the work was marked finished and the film announced even when either failed. Now a failure keeps the descriptions as unfinished, says so, and fails the job; running again only rebuilds the film.
+- **No gap when a film is replaced.** The finished file was deleted before the new one was moved in, so a failure between the two left neither. The new one now replaces the old in one step.
+- **Removing advertisements never drops programme.** A kept piece that could not be cut was skipped and the rest joined, quietly losing part of the programme; now the edit stops and the earlier copy stays. A copy that could not be written no longer says "no advertisement was certain enough"; it says it could not be written, and the job fails.
+- **The Word version of a PDF.** Its page-break filter was looked for beside the program, in exec, while it belongs in scripts -- and the installer had not carried it at all. Both are fixed. A Word version Pandoc cannot make now fails that part of the job instead of passing quietly.
+- **Two pictures with one name.** In an archive, a/photo.jpg and b/photo.jpg became one file, and both descriptions described the second. A later picture with an earlier one's name now takes its folders into its name.
+- **What reaches the internet.** The ReadMe said nothing leaves the machine. It now says exactly what does, and when: a download from a web address you give, installing and updating parts, and, only with Web context on, a video's title to its page or Wikipedia.
+- **The installer** uses CopyFile, the current name for FileCopy.
+- **Kit tools** updated from HomerDev 1.63.3: a straight quote no longer silently drops a tutorial sentence, and walks 5 and 8, which lost one each, are spoken again at the next build; push stops when its whitelist cannot be rewritten, and reports a failed commit as a failure.
+
+Left for later, as larger changes: a manifest that ties cached work and outputs to their exact source; building a forced rerun beside the earlier output rather than over it; locks for simultaneous runs; a check of every advertisement boundary; page provenance for tagged PDFs; and longer task walks, six of which run under three minutes.
+
 ## 8 October 2026 -- tutorials in the pattern of ten
 
 The tutorials follow the Homer pattern of ten: 0 Overview, now teaching Insert plus Tab; 1 User Interface, new, the dialog, its Alt letters, the keys that read a field, progress keys and help; 2 Install and Launch, new, the installer's tool boxes; the five task walks as 3 to 7; 8 Stay Current, the help and newer-version walk; and 9 Conclusion, new. The tutorials' audio is no longer kept local: LocalFiles.txt no longer names help/tutorials, so the repository carries it as the installer does.

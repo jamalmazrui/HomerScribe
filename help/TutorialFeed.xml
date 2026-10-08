@@ -5,7 +5,7 @@
     <link>Tutorials.htm</link>
     <description>Short simulated walks through HomerScribe. Each one is a real job done from start to finish, about three minutes, with something to try at the end.</description>
     <language>en-us</language>
-    <lastBuildDate>Thu, 08 Oct 2026 17:47:01 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 08 Oct 2026 21:19:22 +0000</lastBuildDate>
     <itunes:author>Jamal Mazrui</itunes:author>
     <itunes:explicit>false</itunes:explicit>
     <itunes:category text="Technology"/>
@@ -15,7 +15,7 @@
       <description>Nothing yet. This one is two minutes of what to expect. Full transcript: Tutorials.htm#0-0-overview</description>
       <link>Tutorials.htm#0-0-overview</link>
       <guid isPermaLink="false">homer-tutorial_0_overview</guid>
-      <enclosure url="tutorials/0_Overview.mp3" length="1220774" type="audio/mpeg"/>
+      <enclosure url="tutorials/0_Overview.mp3" length="1218158" type="audio/mpeg"/>
       <itunes:duration>00:02:52</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
@@ -60,8 +60,8 @@
       <description>HomerScribe is installed, with Ollama. A YouTube address is on the clipboard. Full transcript: Tutorials.htm#0e-5-a-web-address-sound-only</description>
       <link>Tutorials.htm#0e-5-a-web-address-sound-only</link>
       <guid isPermaLink="false">homer-tutorial_5_web_address</guid>
-      <enclosure url="tutorials/5_Web_Address.mp3" length="1000582" type="audio/mpeg"/>
-      <itunes:duration>00:02:25</itunes:duration>
+      <enclosure url="tutorials/5_Web_Address.mp3" length="1039427" type="audio/mpeg"/>
+      <itunes:duration>00:02:29</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>
@@ -87,8 +87,8 @@
       <description>HomerScribe is installed and its dialog is open. The computer is online. Full transcript: Tutorials.htm#0h-8-stay-current</description>
       <link>Tutorials.htm#0h-8-stay-current</link>
       <guid isPermaLink="false">homer-tutorial_8_stay_current</guid>
-      <enclosure url="tutorials/8_Stay_Current.mp3" length="820203" type="audio/mpeg"/>
-      <itunes:duration>00:01:57</itunes:duration>
+      <enclosure url="tutorials/8_Stay_Current.mp3" length="843336" type="audio/mpeg"/>
+      <itunes:duration>00:02:00</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>

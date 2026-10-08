@@ -165,44 +165,9 @@
   </style>
 </head>
 <body>
-<nav id="TOC" role="doc-toc">
-<ul>
-<li><a href="#homerscribe" id="toc-homerscribe">HomerScribe</a>
-<ul>
-<li><a href="#quick-start" id="toc-quick-start">Quick start</a></li>
-<li><a href="#what-you-need" id="toc-what-you-need">What you
-need</a></li>
-<li><a href="#turning-a-pdf-into-a-word-document"
-id="toc-turning-a-pdf-into-a-word-document">Turning a PDF into a Word
-document</a>
-<ul>
-<li><a href="#it-reads-the-pdf-whichever-way-it-can"
-id="toc-it-reads-the-pdf-whichever-way-it-can">It reads the PDF
-whichever way it can</a></li>
-<li><a href="#what-it-tells-you-about-the-original"
-id="toc-what-it-tells-you-about-the-original">What it tells you about
-the original</a></li>
-<li><a href="#what-it-does-not-do-yet"
-id="toc-what-it-does-not-do-yet">What it does not do yet</a></li>
-<li><a href="#what-you-need-1" id="toc-what-you-need-1">What you
-need</a></li>
-</ul></li>
-<li><a href="#reading-a-scanned-document"
-id="toc-reading-a-scanned-document">Reading a scanned document</a></li>
-<li><a href="#taking-the-advertisements-out"
-id="toc-taking-the-advertisements-out">Taking the advertisements out</a>
-<ul>
-<li><a href="#it-needs-the-reading-model"
-id="toc-it-needs-the-reading-model">It needs the reading model</a></li>
-<li><a href="#what-it-will-not-do" id="toc-what-it-will-not-do">What it
-will not do</a></li>
-</ul></li>
-<li><a href="#the-rest-of-the-documentation"
-id="toc-the-rest-of-the-documentation">The rest of the
-documentation</a></li>
-</ul></li>
-</ul>
-</nav>
+<header id="title-block-header">
+<h1 class="title">ReadMe</h1>
+</header>
 <h1 id="homerscribe">HomerScribe</h1>
 <p>Describes video and transcribes speech, on your own machine.</p>
 <p>Blind and low vision viewers miss what happens on screen when a film
@@ -223,12 +188,17 @@ the words and the descriptions interleaved in the order they happen. For
 someone who can neither see nor hear the film, that one document is the
 whole of it.</li>
 </ul>
-<p>Once installed, nothing leaves your machine. No part of the video is
-uploaded, no request reaches anyone’s server, and there is no account,
-no subscription and no key. That also means no tokens: describing a two
-hour film asks an AI model several hundred questions and shows it
-several hundred pictures, and the count here is zero. You can describe
-material you would not send anywhere at all.</p>
+<p>Once installed, the describing and transcribing happen on your
+computer. No part of a video, recording or document is uploaded, and
+there is no account, no subscription and no key. That also means no
+tokens: describing a two hour film asks an AI model several hundred
+questions and shows it several hundred pictures, and the count here is
+zero. You can describe material you would not send anywhere at all.</p>
+<p>HomerScribe uses the internet only when you ask it to: to download a
+video from a web address you give it; to install or update its parts and
+models; and, if you turn on Web context, which is off unless you choose
+it, to send the video’s title – never the video – to the page it came
+from or to Wikipedia, to learn what it shows.</p>
 <p>The vision model runs locally through Ollama, the speech recognition
 through Whisper, the voice comes from Windows, and the only other
 programs involved are ffmpeg and, for web addresses, yt-dlp.

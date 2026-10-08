@@ -53,6 +53,9 @@ lsProblems = []
 oLog = None
 
 
+# Spoken words a minute in a Homer walk, both voices together, measured on the kit's ten walks (8 October 2026).
+c_dWordsPerMinute = 186
+
 def logLine(sText):
     """One event in the Homer log format (1.43.21), as log.py and Log.cs write:
     an ISO 8601 time with milliseconds and UTC offset, a five-character level,
@@ -326,10 +329,19 @@ def main():
         # two-voice exchanges is not refused for being brisk. The conclusion,
         # 9, holds the glossary, whose steps are two short lines each, so its
         # count is no measure of its length.
-        if iSteps > 32 and sNum != "9":
-            notice(sBase + ": %d steps is likely over five minutes; the tool will measure it -- cut what an earlier walk taught, or split it, if it is" % iSteps)
-        if sNum and sNum not in ("0", "9") and iSteps < 12:
-            notice(sBase + ": %d steps is likely under three minutes; the guideline wants three to five for parts 1 to 8" % iSteps)
+        # WORDS, NOT STEPS (kit 1.63.1): DbDo's walks had 12 to 14 steps, passed
+        # the step rule, and ran 1:26 to 1:55, because their lines were short.
+        # The kit's own walks are spoken at about 186 words a minute (155 to 204,
+        # measured 8 October 2026), so the spoken words -- every Say and Hear
+        # line -- give the estimate: about 560 for three minutes, 930 for five.
+        iWords = sum(len(sLine.split()) for sLine in re.findall(r"(?mi)^\s*(?:Say|Hear)\s*=\s*(.*)$", open(sScript, "rb").read().decode("utf-8-sig")))
+        dMinutes = iWords / c_dWordsPerMinute
+        # A notice only when clearly short, under 2.5 minutes: rates run 155 to 204 words a minute, and the kit's walk 8,
+        # 504 words, measured 3:02. The tool's measurement after speaking settles the borderline ones.
+        if sNum and sNum not in ("0", "9") and dMinutes < 2.5:
+            notice(sBase + ": %d spoken words, about %.1f minutes, likely under three; the guideline wants three to five for parts 1 to 8, about %d to %d words" % (iWords, dMinutes, 3 * c_dWordsPerMinute, 5 * c_dWordsPerMinute))
+        elif sNum and sNum != "9" and dMinutes > 5:
+            notice(sBase + ": %d spoken words, about %.1f minutes; the tool will measure it -- cut what an earlier walk taught, or split it, if it is over five" % (iWords, dMinutes))
     # THE PATTERN OF TEN (7 October 2026, replacing the twelve of 5 October):
     # one digit sorts the set. 0_Overview, 1_User_Interface (the concepts and
     # the key patterns together), seven task walks numbered 2 to 8 (usually
