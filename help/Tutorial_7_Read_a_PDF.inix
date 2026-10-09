@@ -58,6 +58,58 @@ Hear=OK button
 Pause=1
 
 [step]
+
+Say=A PDF whose pages carry text needs no recognition; it is read directly, which is much quicker.
+Key=
+
+[step]
+
+Say=The check happens page by page, so a PDF that is part typed and part scanned is handled page by page as well.
+Key=
+
+[step]
+
+Say=Recognition is done by Tesseract, on this computer, so a private document stays private.
+Key=
+
+[step]
+
+Say=Pictures on a page are described by the same model that describes films, and the descriptions sit in the document where the pictures were.
+Key=
+
+[step]
+
+Say=The Markdown document reads by heading in any editor or browser, and EdSharp's preview shows it formatted.
+Key=
+
+[step]
+
+Say=The Word copy keeps the original's page breaks, so a page number someone mentions can still be found.
+Key=
+
+[step]
+
+Say=The Word copy needs Pandoc, which the installer offers; without it, the Markdown document alone is written.
+Key=
+
+[step]
+
+Say=A long report runs for a while; the window's title carries the page count, so Insert plus T checks on it.
+Key=Insert+T
+Hear=Page 12 of 40
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=The folder can be zipped and shared with someone who needs the text, rather than the pictures of pages.
+Key=
+
+[step]
+
+Say=The document's name follows the PDF's, so Annual Report dot p d f gives Annual Report dot m d, easy to find beside it.
+Key=
+
+[step]
 Say=Forty pages and six pictures, eleven minutes. Enter. The folder holds Annual underscore Report dot m d, and, because Pandoc is installed, Annual underscore Report dot d o c x with the same page breaks as the original.
 Key=Enter
 Hear=HomerScribe dialog

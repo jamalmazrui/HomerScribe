@@ -95,6 +95,33 @@ Hear=Whisper
 
 [step]
 
+Say=The installer's last page reads the machine for you: each tool's box begins with Install, Update or Reinstall, so its state is known before anything is ticked.
+Key=Tab
+Hear=Install Whisper check box, checked
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Running the setup a second time is safe; boxes for tools that are current say Reinstall, and leaving them clear costs nothing.
+Key=
+
+[step]
+
+Say=The tools are installed once for the whole computer, not inside HomerScribe's folder, so an update of HomerScribe never removes them.
+Key=
+
+[step]
+
+Say=Everything runs on this computer once installed; transcribing and describing send nothing away.
+Key=
+
+[step]
+
+Say=Your settings live in your own application data, so a reinstall keeps them.
+Key=
+
+[step]
+
 Say=The key that opens HomerScribe.
 Key=
 Hear=Alt plus Control plus H

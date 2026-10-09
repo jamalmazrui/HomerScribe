@@ -66,6 +66,52 @@ Hear=OK button
 Pause=1
 
 [step]
+
+Say=A playlist's address works too: it is expanded into the videos it holds, each described in turn.
+Key=
+
+[step]
+
+Say=A playlist of more than a dozen videos asks first, since describing them all may take days.
+Key=
+Hear=This playlist holds 40 videos. Continue?
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Audio only, A, makes one sound file rather than a film, which is a quarter of the size and suits a phone or a walk.
+Key=
+
+[step]
+
+Say=Web context, W, gives the model the page's own title, so descriptions name what the lecture is about rather than guessing.
+Key=
+
+[step]
+
+Say=The dialog stays open while it works, and the window's title carries the progress, so Insert plus T checks on it from anywhere.
+Key=Insert+T
+Hear=Describing 40 of 88, Lecture
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Transcribe audio, T, can be added to the same run, for the lecture's words as a document beside its descriptions.
+Key=Alt+T
+Hear=Transcribe audio check box, not checked
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Several addresses, one to a line in Source paths or in a list file, are worked through in one run.
+Key=
+
+[step]
+
+Say=A video that will not download is named in the results with the reason, and the guide's section on downloads says what to try.
+Key=
+
+[step]
 Say=Enter presses OK. The folder holds described dot m p 3, one file with the lecture and its descriptions, and described dot m d to read.
 Key=Enter
 Hear=HomerScribe dialog

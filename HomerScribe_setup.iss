@@ -99,6 +99,12 @@ SetupIconFile={#AppName}.ico
 ; users" page that Inno shows first when the choice is offered.
 PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=
+; PER-USER WRITES ARE DELIBERATE (9 October 2026). Setup writes small per-user markers -- the launch flag the
+; finish page uses, the logs folder, and the like -- and looks for Ollama where it installs per user. On the usual
+; computer the person installing is the person using the app; when an administrator installs for someone else,
+; these land in the administrator's profile and the app makes its own at first run. Inno's warning about it is
+; therefore acknowledged here rather than left in every build log.
+UsedUserAreasWarning=no
 
 ; 64-bit Windows only.
 ArchitecturesAllowed=x64compatible

@@ -1,6 +1,12 @@
 ﻿# HomerScribe History
 
 
+
+## 9 October 2026 -- from the build and release logs
+
+- **Ten walks of about three minutes.** Walks 2 to 8 were lengthened on 8 October with what each feature writes and how it decides -- transcripts' sources, list files and playlists, the files a description writes, how advertisements are judged, scanned and text PDFs, reading Help -- but those files never reached the project; they come now. Each predicts three minutes or more.
+- **The installer's per-user writes are acknowledged,** as for DbDo: the launch flag and logs folder are written for the person running setup, on purpose, and UsedUserAreasWarning=no now says so.
+
 ## Unreleased -- 9 October 2026
 
 - **PdfRead.cs is HomerScribe's own again.** The file that reads a PDF with PdfPig, a partial class of HomerScribe, had been kept in the kit's exec\CSharp as though it were a shared class, though no other program could use it. It now sits beside HomerScribe.cs, is compiled from this folder and is named in RepoFiles; the build no longer looks for it in the kit, and its clean-up of old top-level kit classes no longer names it. The kit retires its copy from version 1.65.3. Nothing changes in how a PDF is read.

@@ -66,6 +66,38 @@ Hear=Source paths: edit
 Note=OK closes the results box and focus returns to the dialog, controls enabled again, ready for the next job.
 
 [step]
+
+Say=Each video gets a folder of its own, named after the video, beside it or in the output directory when one is given.
+Key=
+
+[step]
+
+Say=The described film keeps two audio tracks: the description first, so any player picks it by default, and the original second.
+Key=
+Hear=described dot m k v
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=described dot m d is what can be seen, as a document to read at your own pace, by heading.
+Key=
+
+[step]
+
+Say=described dot v t t is the same text as timed captions, for a player that shows or speaks captions.
+Key=
+
+[step]
+
+Say=described dot w a v is the description track alone, to play alongside the original in a player such as mpv.
+Key=
+
+[step]
+
+Say=A run interrupted partway resumes from what it had finished, since described dot j s o n records its progress.
+Key=
+
+[step]
 Say=The folder holds described dot m k v, the film with the description as its first sound track; described dot m d, the descriptions as a document; described dot v t t, the same as timed captions; transcribed dot m d, the words; and scribed dot m d, words and descriptions together in the order they happen. Read scribed dot m d for the whole film in one document.
 Key=
 Hear=

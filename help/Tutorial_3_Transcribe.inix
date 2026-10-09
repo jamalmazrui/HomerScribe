@@ -76,6 +76,28 @@ Note=OK closes the results box and focus returns to the dialog, controls enabled
 Note=After the results box, focus returns to the dialog with its controls enabled again, ready for the next job.
 
 [step]
+
+Say=The transcript's first line says where the words came from: the film's own captions when it has them, or Whisper, listening.
+Key=
+Hear=Words from the film's captions
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Source paths takes more than one file: several separated by spaces, one to a line, or a pattern such as star dot mp4.
+Key=
+
+[step]
+
+Say=A text file listing sources, one to a line, works too; lines beginning with a number sign or a semicolon are notes, and skipped.
+Key=
+
+[step]
+
+Say=A source shorter than a minute is flagged in the results as possibly damaged, since a broken download can look like a very short film.
+Key=
+
+[step]
 Say=The transcript is a Markdown document. Its first heading names the recording; then comes what was said, in order, with a heading every ten minutes so you can jump by heading. Names that Whisper has never read are spelled as written in the vocabulary setting, so the names of screen readers and programs come out spelled right rather than as they sound.
 Key=
 Hear=

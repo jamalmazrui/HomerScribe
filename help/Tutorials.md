@@ -480,7 +480,33 @@ Screen reader:
 
 - Whisper
 
-### Step 14
+### Step 14: Tab
+
+The installer's last page reads the machine for you: each tool's box begins with Install, Update or Reinstall, so its state is known before anything is ticked.
+
+Screen reader:
+
+- Install Whisper check box, checked
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 15
+
+Running the setup a second time is safe; boxes for tools that are current say Reinstall, and leaving them clear costs nothing.
+
+### Step 16
+
+The tools are installed once for the whole computer, not inside HomerScribe's folder, so an update of HomerScribe never removes them.
+
+### Step 17
+
+Everything runs on this computer once installed; transcribing and describing send nothing away.
+
+### Step 18
+
+Your settings live in your own application data, so a reinstall keeps them.
+
+### Step 19
 
 The key that opens HomerScribe.
 
@@ -592,6 +618,28 @@ OK closes the results box and focus returns to the dialog, controls enabled agai
 
 ### Step 12
 
+The transcript's first line says where the words came from: the film's own captions when it has them, or Whisper, listening.
+
+Screen reader:
+
+- Words from the film's captions
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 13
+
+Source paths takes more than one file: several separated by spaces, one to a line, or a pattern such as star dot mp4.
+
+### Step 14
+
+A text file listing sources, one to a line, works too; lines beginning with a number sign or a semicolon are notes, and skipped.
+
+### Step 15
+
+A source shorter than a minute is flagged in the results as possibly damaged, since a broken download can look like a very short film.
+
+### Step 16
+
 The transcript is a Markdown document. Its first heading names the recording; then comes what was said, in order, with a heading every ten minutes so you can jump by heading. Names that Whisper has never read are spelled as written in the vocabulary setting, so the names of screen readers and programs come out spelled right rather than as they sound.
 
 If a recording is full of names it gets wrong, add them to the vocabulary setting in the configuration, separated by commas.
@@ -690,6 +738,36 @@ OK closes the results box and focus returns to the dialog, controls enabled agai
 
 ### Step 10
 
+Each video gets a folder of its own, named after the video, beside it or in the output directory when one is given.
+
+### Step 11
+
+The described film keeps two audio tracks: the description first, so any player picks it by default, and the original second.
+
+Screen reader:
+
+- described dot m k v
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 12
+
+described dot m d is what can be seen, as a document to read at your own pace, by heading.
+
+### Step 13
+
+described dot v t t is the same text as timed captions, for a player that shows or speaks captions.
+
+### Step 14
+
+described dot w a v is the description track alone, to play alongside the original in a player such as mpv.
+
+### Step 15
+
+A run interrupted partway resumes from what it had finished, since described dot j s o n records its progress.
+
+### Step 16
+
 The folder holds described dot m k v, the film with the description as its first sound track; described dot m d, the descriptions as a document; described dot v t t, the same as timed captions; transcribed dot m d, the words; and scribed dot m d, words and descriptions together in the order they happen. Read scribed dot m d for the whole film in one document.
 
 described dot m k v opens in any media player. In FileDir, Control plus Shift plus H plays it in the Homer Player.
@@ -785,7 +863,57 @@ Screen reader:
 - One source done. Took 22 minutes. Introduction to Estate Planning, Lecture 4: 88 descriptions, 58 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Introduction to Estate Planning Lecture 4. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Introduction to Estate Planning Lecture 4 backslash HomerScribe dot log.
 - OK button
 
-### Step 11: Enter
+### Step 11
+
+A playlist's address works too: it is expanded into the videos it holds, each described in turn.
+
+### Step 12
+
+A playlist of more than a dozen videos asks first, since describing them all may take days.
+
+Screen reader:
+
+- This playlist holds 40 videos. Continue?
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 13
+
+Audio only, A, makes one sound file rather than a film, which is a quarter of the size and suits a phone or a walk.
+
+### Step 14
+
+Web context, W, gives the model the page's own title, so descriptions name what the lecture is about rather than guessing.
+
+### Step 15: Insert+T
+
+The dialog stays open while it works, and the window's title carries the progress, so Insert plus T checks on it from anywhere.
+
+Screen reader:
+
+- Describing 40 of 88, Lecture
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 16: Alt+T
+
+Transcribe audio, T, can be added to the same run, for the lecture's words as a document beside its descriptions.
+
+Screen reader:
+
+- Transcribe audio check box, not checked
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 17
+
+Several addresses, one to a line in Source paths or in a list file, are worked through in one run.
+
+### Step 18
+
+A video that will not download is named in the results with the reason, and the guide's section on downloads says what to try.
+
+### Step 19: Enter
 
 Enter presses OK. The folder holds described dot m p 3, one file with the lecture and its descriptions, and described dot m d to read.
 
@@ -887,6 +1015,38 @@ OK closes the results box and focus returns to the dialog.
 
 ### Step 10
 
+It decides with care. The episode is transcribed first, because finding a break needs the words and the time each was said.
+
+### Step 11
+
+The transcript is read in overlapping pieces, so a break that falls across two pieces is seen whole.
+
+### Step 12
+
+Each break the model finds comes with a confidence out of a hundred, and nothing is cut below ninety five.
+
+### Step 13
+
+The phrases sponsors use, such as brought to you by and promo code, raise that confidence when two or more are heard.
+
+### Step 14
+
+It remembers each show: every sentence of every advertisement removed is kept for that show, so later episodes are recognized sooner.
+
+### Step 15
+
+A host reading for a sponsor in their own voice avoids the sponsor phrases, but cannot leave out where to go; such reads are recognized too.
+
+### Step 16
+
+Missing an advertisement costs a minute of listening; cutting part of the show costs more, which is why the threshold is high.
+
+### Step 17
+
+The settings for this are in the guide, under taking the advertisements out, for anyone who wants it stricter or looser.
+
+### Step 18
+
 Beside the new file is a document saying what was cut, where each cut was, and what the model heard that made it sure. If it cut something it should not have, that document is how you would know.
 
 If nothing was ninety five percent certain, nothing is cut, and the document says so.
@@ -968,7 +1128,53 @@ Screen reader:
 - One source done. Took 11 minutes. Annual Report dot p d f: 40 pages read, 6 pictures described. C colon backslash Users backslash Jamal backslash Videos backslash Annual Report backslash Annual Report dot m d. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Annual Report backslash HomerScribe dot log.
 - OK button
 
-### Step 9: Enter
+### Step 9
+
+A PDF whose pages carry text needs no recognition; it is read directly, which is much quicker.
+
+### Step 10
+
+The check happens page by page, so a PDF that is part typed and part scanned is handled page by page as well.
+
+### Step 11
+
+Recognition is done by Tesseract, on this computer, so a private document stays private.
+
+### Step 12
+
+Pictures on a page are described by the same model that describes films, and the descriptions sit in the document where the pictures were.
+
+### Step 13
+
+The Markdown document reads by heading in any editor or browser, and EdSharp's preview shows it formatted.
+
+### Step 14
+
+The Word copy keeps the original's page breaks, so a page number someone mentions can still be found.
+
+### Step 15
+
+The Word copy needs Pandoc, which the installer offers; without it, the Markdown document alone is written.
+
+### Step 16: Insert+T
+
+A long report runs for a while; the window's title carries the page count, so Insert plus T checks on it.
+
+Screen reader:
+
+- Page 12 of 40
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 17
+
+The folder can be zipped and shared with someone who needs the text, rather than the pictures of pages.
+
+### Step 18
+
+The document's name follows the PDF's, so Annual Report dot p d f gives Annual Report dot m d, easy to find beside it.
+
+### Step 19: Enter
 
 Forty pages and six pictures, eleven minutes. Enter. The folder holds Annual underscore Report dot m d, and, because Pandoc is installed, Annual underscore Report dot d o c x with the same page breaks as the original.
 
@@ -1058,6 +1264,54 @@ Screen reader:
 Yes fetches HomerScribe_setup.exe from the latest release and starts it. The installer asks for administrator rights, closes HomerScribe when it needs to, and its last page offers the same boxes as a first install.
 
 ### Step 9
+
+Help ends with the version, so Control plus End finds it in one key.
+
+### Step 10
+
+The same F1 works in every Homer dialog, so learning to read it here teaches every other Homer program.
+
+### Step 11: Shift+F1
+
+Shift plus F1, on any field, reads just that field's tip, without opening Help.
+
+Screen reader:
+
+- Source paths: files, folders, patterns or web addresses
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 12: Alt+Y
+
+Alt plus F8 reads a whole field aloud, and Alt plus Y says how many lines it holds, handy for a long list of sources.
+
+Screen reader:
+
+- 3 lines
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 13
+
+When the newer version installs, its last page again offers the tools, each with Install, Update or Reinstall, so the tools can be brought up to date in the same sitting.
+
+### Step 14
+
+Use configuration, U, keeps your boxes and folders across versions, so an update starts where you left off.
+
+### Step 15
+
+If a run ever seems to have stopped, the guide's last section says how to tell a long step from a stuck one.
+
+### Step 16
+
+The History document, in the help folder of the installation, says what each version changed, in plain words.
+
+### Step 17
+
+Staying current takes a minute, and brings the improvements made since the last time.
+
+### Step 18
 
 The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already ticked.
 

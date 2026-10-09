@@ -65,6 +65,46 @@ Hear=Source paths: edit
 Note=OK closes the results box and focus returns to the dialog.
 
 [step]
+
+Say=It decides with care. The episode is transcribed first, because finding a break needs the words and the time each was said.
+Key=
+
+[step]
+
+Say=The transcript is read in overlapping pieces, so a break that falls across two pieces is seen whole.
+Key=
+
+[step]
+
+Say=Each break the model finds comes with a confidence out of a hundred, and nothing is cut below ninety five.
+Key=
+
+[step]
+
+Say=The phrases sponsors use, such as brought to you by and promo code, raise that confidence when two or more are heard.
+Key=
+
+[step]
+
+Say=It remembers each show: every sentence of every advertisement removed is kept for that show, so later episodes are recognized sooner.
+Key=
+
+[step]
+
+Say=A host reading for a sponsor in their own voice avoids the sponsor phrases, but cannot leave out where to go; such reads are recognized too.
+Key=
+
+[step]
+
+Say=Missing an advertisement costs a minute of listening; cutting part of the show costs more, which is why the threshold is high.
+Key=
+
+[step]
+
+Say=The settings for this are in the guide, under taking the advertisements out, for anyone who wants it stricter or looser.
+Key=
+
+[step]
 Say=Beside the new file is a document saying what was cut, where each cut was, and what the model heard that made it sure. If it cut something it should not have, that document is how you would know.
 Key=
 Hear=

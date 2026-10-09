@@ -54,6 +54,55 @@ Hear=Welcome to the HomerScribe Setup Wizard
 Note=Yes fetches HomerScribe_setup.exe from the latest release and starts it. The installer asks for administrator rights, closes HomerScribe when it needs to, and its last page offers the same boxes as a first install.
 
 [step]
+
+Say=Help ends with the version, so Control plus End finds it in one key.
+Key=
+
+[step]
+
+Say=The same F1 works in every Homer dialog, so learning to read it here teaches every other Homer program.
+Key=
+
+[step]
+
+Say=Shift plus F1, on any field, reads just that field's tip, without opening Help.
+Key=Shift+F1
+Hear=Source paths: files, folders, patterns or web addresses
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=Alt plus F8 reads a whole field aloud, and Alt plus Y says how many lines it holds, handy for a long list of sources.
+Key=Alt+Y
+Hear=3 lines
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
+
+Say=When the newer version installs, its last page again offers the tools, each with Install, Update or Reinstall, so the tools can be brought up to date in the same sitting.
+Key=
+
+[step]
+
+Say=Use configuration, U, keeps your boxes and folders across versions, so an update starts where you left off.
+Key=
+
+[step]
+
+Say=If a run ever seems to have stopped, the guide's last section says how to tell a long step from a stuck one.
+Key=
+
+[step]
+
+Say=The History document, in the help folder of the installation, says what each version changed, in plain words.
+Key=
+
+[step]
+
+Say=Staying current takes a minute, and brings the improvements made since the last time.
+Key=
+
+[step]
 Say=The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already ticked.
 Key=
 Hear=
