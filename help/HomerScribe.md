@@ -1401,7 +1401,7 @@ with `build.cmd nobump`.
 
 ## The prototype
 
-`prototype\describeMovie.py` is the Python program this was grown from, and it
+`notes\prototype\describeMovie.py` is the Python program this was grown from, and it
 still works. It is the reference implementation: quicker to change when trying a
 new prompt, and useful for checking that a change in behaviour is deliberate. It
 is not needed to run HomerScribe.

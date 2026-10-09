@@ -4,6 +4,8 @@
 
 ## 9 October 2026 -- from the build and release logs
 
+- **The prototype moved into notes (9 October 2026).** prototype\\describeMovie.py, the Python program HomerScribe grew from, is kept but never published, so the build moves it into notes\\prototype, and the guides name its new place.
+
 - **Ten walks of about three minutes.** Walks 2 to 8 were lengthened on 8 October with what each feature writes and how it decides -- transcripts' sources, list files and playlists, the files a description writes, how advertisements are judged, scanned and text PDFs, reading Help -- but those files never reached the project; they come now. Each predicts three minutes or more.
 - **The installer's per-user writes are acknowledged,** as for DbDo: the launch flag and logs folder are written for the person running setup, on purpose, and UsedUserAreasWarning=no now says so.
 

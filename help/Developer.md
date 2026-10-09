@@ -487,7 +487,7 @@ going to take hours, because otherwise it is indistinguishable from a hang.
 
 ## The prototype
 
-`prototype\describeMovie.py` is the Python program this grew from, and it still
+`notes\prototype\describeMovie.py` is the Python program this grew from, and it still
 runs. It is the reference implementation, quicker to change when trying a new
 prompt, and useful for checking whether a change in behaviour was deliberate. It
 is behind the C# in several respects and is not needed to build or run

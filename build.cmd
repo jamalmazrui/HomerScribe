@@ -375,6 +375,14 @@ if exist "!homerDev!\scripts\buildTutorials.ps1" (
   )
   echo Kit tools refreshed into scripts\.>> "%log%"
 )
+rem THE PROTOTYPE IS KEPT IN NOTES (9 October 2026): prototype\describeMovie.py,
+rem the Python program HomerScribe grew from, is kept but never published, which
+rem is what notes is for; a top-level prototype folder is outside the Homer tree.
+rem It is moved, not deleted, and the guides name its new place.
+if exist "prototype\" (
+  robocopy "prototype" "notes\prototype" /E /MOVE /NFL /NDL /NJH /NJS /NP >nul
+  if exist "prototype\" (echo WARNING: the prototype folder could not be fully moved into notes\prototype>> "%log%") else (echo Moved the prototype folder into notes\prototype>> "%log%")
+)
 rem Retired kit scripts an app may still carry from an earlier refresh: gone.
 rem Since kit 1.42 the kit's scripts have plain names -- checkHomerApp is
 rem check, gitPush is push, gitUnpushed is unpushed, homerFinish is finish,

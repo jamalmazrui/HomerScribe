@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>Developer</title>
+  <title>HomerScribe Developer</title>
   <style>
     html {
       color: #1a1a1a;
@@ -166,7 +166,7 @@
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">Developer</h1>
+<h1 class="title">HomerScribe Developer</h1>
 </header>
 <h1 id="homerscribe-for-developers">HomerScribe for Developers</h1>
 <p>What the program is made of, how the pieces fit together, and how to
@@ -447,11 +447,11 @@ The name is seeded into the names carried between descriptions so it
 holds from the first. Measured effect: 53 of 94 descriptions named him,
 against none before.</p>
 <h2 id="keeping-yt-dlp-current">Keeping yt-dlp current</h2>
-<p><code>build.cmd</code> runs
-<code>yt-dlp --update-to nightly</code> on every build, after the
-fetch-if-missing step. It is deliberately not allowed to fail the build:
-no network, or a copy under Program Files that cannot rewrite itself,
-and the build carries on with what is there.</p>
+<p><code>build.cmd</code> runs <code>yt-dlp --update-to nightly</code>
+on every build, after the fetch-if-missing step. It is deliberately not
+allowed to fail the build: no network, or a copy under Program Files
+that cannot rewrite itself, and the build carries on with what is
+there.</p>
 <p>Nightly rather than stable because yt-dlp says so — it is the channel
 it recommends for regular users, and the one it asks people to be on
 before reporting a fault. YouTube breaks downloaders on its own schedule
@@ -588,15 +588,14 @@ without it the executable still builds.</li>
 <pre><code>build.cmd
 
 build.cmd nobump</code></pre>
-<p>It writes <code>build.log</code> beside itself and prints
-it at the end. What it does, in order: increments
-<code>version.txt</code> unless told not to, stepping over any number
-already released, generates <code>Version.cs</code>, finds a compiler,
-finds the three full-path reference assemblies, downloads ffmpeg and
-yt-dlp if they are missing or stale, compiles seven sources into one
-assembly, and runs Inno Setup. The <code>.htm</code> documentation is
-built with the <code>.md</code> and ships beside it, so the build
-generates nothing.</p>
+<p>It writes <code>build.log</code> beside itself and prints it at the
+end. What it does, in order: increments <code>version.txt</code> unless
+told not to, stepping over any number already released, generates
+<code>Version.cs</code>, finds a compiler, finds the three full-path
+reference assemblies, downloads ffmpeg and yt-dlp if they are missing or
+stale, compiles seven sources into one assembly, and runs Inno Setup.
+The <code>.htm</code> documentation is built with the <code>.md</code>
+and ships beside it, so the build generates nothing.</p>
 <h3 id="versioning">Versioning</h3>
 <p><code>version.txt</code> holds the version and nothing else. It is
 the single source: the build reads it into <code>Version.cs</code>, and
@@ -686,8 +685,8 @@ takes hours. The program reports its pace from the second description
 onward and says so when a run is going to take hours, because otherwise
 it is indistinguishable from a hang.</p>
 <h2 id="the-prototype">The prototype</h2>
-<p><code>prototype\describeMovie.py</code> is the Python program this
-grew from, and it still runs. It is the reference implementation,
+<p><code>notes\prototype\describeMovie.py</code> is the Python program
+this grew from, and it still runs. It is the reference implementation,
 quicker to change when trying a new prompt, and useful for checking
 whether a change in behaviour was deliberate. It is behind the C# in
 several respects and is not needed to build or run HomerScribe.</p>
