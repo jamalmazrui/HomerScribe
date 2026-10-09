@@ -7,6 +7,9 @@
   <title>Tutorials</title>
   <style>
     html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
       color: #1a1a1a;
       background-color: #fdfdfd;
     }
@@ -25,16 +28,13 @@
     @media (max-width: 600px) {
       body {
         font-size: 0.9em;
-        padding: 12px;
+        padding: 1em;
       }
       h1 {
         font-size: 1.8em;
       }
     }
     @media print {
-      html {
-        background-color: white;
-      }
       body {
         background-color: transparent;
         color: black;
@@ -84,10 +84,9 @@
       color: #606060;
     }
     code {
-      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
       font-size: 85%;
       margin: 0;
-      hyphens: manual;
     }
     pre {
       margin: 1em 0;
@@ -152,22 +151,19 @@
     div.columns{display: flex; gap: min(4vw, 1.5em);}
     div.column{flex: auto; overflow-x: auto;}
     div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-    /* The extra [class] is a hack that increases specificity enough to
-       override a similar rule in reveal.js */
-    ul.task-list[class]{list-style: none;}
+    ul.task-list{list-style: none;}
     ul.task-list li input[type="checkbox"] {
-      font-size: inherit;
       width: 0.8em;
       margin: 0 0.8em 0.2em -1.6em;
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
 </head>
 <body>
-<header id="title-block-header">
-<h1 class="title">Tutorials</h1>
-</header>
 <h1 id="homerscribe-tutorials">HomerScribe – Tutorials</h1>
 <p><strong>Version 1.0</strong><br />
 September 2026<br />
@@ -195,6 +191,1334 @@ Control+Page Up move between them.</p>
 <code>TutorialFeed.xml</code> beside this file is a podcast feed of the
 same audio.</p>
 <!-- walkthrough: written by makeTutorials.py, do not edit between the markers -->
+<h2 id="overview">0 - Overview</h2>
+<p>A simulated walk through HomerScribe, made with AI: a person working,
+and a screen reader answering.</p>
+<p><strong>Before you start:</strong> Nothing yet. This one is two
+minutes of what to expect.</p>
+<h3 id="step-1">Step 1</h3>
+<p>HomerScribe listens to a film or a recording and writes down what is
+said, and looks at a film and writes down what can be seen. It runs on
+your own computer. Nothing is uploaded.</p>
+<p>Everything it makes is a document you can read with any screen
+reader.</p>
+<h3 id="step-2">Step 2</h3>
+<p>Two voices take these walks. I am the narrator, the person doing the
+work. The other voice is the screen reader, and it says only what a
+screen reader would say. You always know which of us is talking.</p>
+<p>The reader’s lines are written the way a screen reader speaks at its
+middle verbosity setting: name, kind of control, state, then the access
+key.</p>
+<h3 id="step-3">Step 3</h3>
+<p>The walks are numbered from zero to nine. I say the number and the
+title; the reader says what the walk covers.</p>
+<h3 id="step-4">Step 4</h3>
+<p>One, User Interface.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The dialog and its parts, the Alt letters that tick each box, the
+keys that read a field, and where help lives.</li>
+</ul>
+<h3 id="step-5">Step 5</h3>
+<p>Two, Install and Launch.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The installer, the boxes on its last page for the tools HomerScribe
+needs, and the key that opens it.</li>
+</ul>
+<h3 id="step-6">Step 6</h3>
+<p>Three, Transcribe a Recording.</p>
+<p>Screen reader:</p>
+<ul>
+<li>An hour of speech becomes a document you can search.</li>
+</ul>
+<h3 id="step-7">Step 7</h3>
+<p>Four, Describe a Video.</p>
+<p>Screen reader:</p>
+<ul>
+<li>A film gets a written description of what can be seen.</li>
+</ul>
+<h3 id="step-8">Step 8</h3>
+<p>Five, A Web Address, Sound Only.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Work from a web address, fetching only the sound.</li>
+</ul>
+<h3 id="step-9">Step 9</h3>
+<p>Six, Remove the Advertisements.</p>
+<p>Screen reader:</p>
+<ul>
+<li>A podcast episode without its advertisements.</li>
+</ul>
+<h3 id="step-10">Step 10</h3>
+<p>Seven, Read a PDF.</p>
+<p>Screen reader:</p>
+<ul>
+<li>A PDF becomes a document a screen reader reads well.</li>
+</ul>
+<h3 id="step-11">Step 11</h3>
+<p>Eight, Stay Current.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The help box, and updating to a newer version.</li>
+</ul>
+<h3 id="step-12">Step 12</h3>
+<p>Nine, Conclusion.</p>
+<p>Screen reader:</p>
+<ul>
+<li>What to carry away, the words HomerScribe uses, and where to learn
+more.</li>
+</ul>
+<h3 id="step-13">Step 13</h3>
+<p>Ten walks, about three minutes each. Take one and two first; the
+tasks go in any order.</p>
+<h3 id="step-14">Step 14</h3>
+<p>Every key is named with the word it comes from, so the key and the
+command stay together in memory. Alt plus T is Transcribe, T for
+Transcribe. Alt plus D is Describe, D for Describe.</p>
+<p>In a Homer dialog, the Alt key for a control is the underlined letter
+of its label, and the reader says it after the control’s name.</p>
+<h3 id="step-15">Step 15</h3>
+<p>One key before anything else. If the reader says something and you
+miss it, Insert Up Arrow says the current line again. That is the screen
+reader’s own key, not HomerScribe’s. Use it freely; nothing in these
+walks depends on catching a line the first time.</p>
+<p>Insert plus Up Arrow is Say Line in most screen readers; some use
+their own modifier key in place of Insert.</p>
+<h3 id="step-16-inserttab">Step 16: Insert+Tab</h3>
+<p>Its partner: Insert Tab says where focus is, the control’s name, kind
+and state. When you are not sure where you are, it answers without
+moving you.</p>
+<p>Insert plus Tab is Say Focus in most screen readers. Here, with
+nothing open yet, it reads whatever the desktop has in focus.</p>
+<h3 id="step-17">Step 17</h3>
+<p>And one habit. When a window changes, I press Insert T to read its
+title, to verify where I am. You will hear me do it in every walk. It
+costs a second and it has saved me an hour.</p>
+<p>Insert plus T is Say Window Title in most screen readers.</p>
+<h3 id="step-18-altcontrolh">Step 18: Alt+Control+H</h3>
+<p>HomerScribe opens from the desktop with Alt plus Control plus H, H
+for HomerScribe. Let me press it, so you hear what the start of every
+walk sounds like.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<p>The Source paths box starts with a sample video already in it: the
+W3C’s Perspectives films, seven and a half minutes, freely licensed and
+published with professional descriptions, so a first run can be compared
+with how it should be done.</p>
+<h3 id="step-19-escape">Step 19: Escape</h3>
+<p>The reader said the window is a dialog, and focus is in the Source
+paths edit box, which already holds a web address. That address is a
+sample film, and it is what walk four uses. I will close the dialog now
+with Escape.</p>
+<p>Escape is Cancel in every Homer dialog. The reader says nothing,
+because the desktop that focus returns to is where it was before.</p>
+<h3 id="step-20">Step 20</h3>
+<p>The reader did not say anything, and that is right. Escape closed the
+dialog and focus went back to where it was. Silence after a key is
+information too, and I will always tell you when it is the correct
+answer.</p>
+<p>When nothing is announced after a key, verify with Insert T if you
+are unsure.</p>
+<p><strong>Something to try:</strong> Take walks one and two first; then
+pick the task that matches what you want to do today.</p>
+<h2 id="user-interface">1 - User Interface</h2>
+<p>HomerScribe is one dialog. Each part is named by the narrator and
+then shown by the screen reader: the boxes for what to work on and where
+to write, the boxes that say what to do, the keys that read a field, the
+keys that report progress, and the four kinds of help.</p>
+<p><strong>Before you start:</strong> HomerScribe is installed.</p>
+<h3 id="step-1-1">Step 1</h3>
+<p>HomerScribe is one dialog, built the way every Homer dialog is: a
+label, then the control it names. I name each part; the reader shows it,
+as it would on your machine.</p>
+<h3 id="step-2-altcontrolh">Step 2: Alt+Control+H</h3>
+<p>Alt plus Control plus H, H for HomerScribe, opens it from
+anywhere.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-3-shiftf1">Step 3: Shift+F1</h3>
+<p>The window’s name, then where focus is: Source paths, an edit box,
+holding the sample film’s address. Here go the files, folders, wildcard
+patterns or web addresses to work on. Shift plus F1 reads any field’s
+tip.</p>
+<p>Screen reader:</p>
+<ul>
+<li>One or more files, wildcard patterns, or web addresses to download
+from, separated by spaces. Put double quotes around any item containing
+a space.</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-4-altf8">Step 4: Alt+F8</h3>
+<p>Every field has a tip, in the same words the help box uses. Alt plus
+F8 reads the whole field aloud, or says Blank.</p>
+<p>Screen reader:</p>
+<ul>
+<li>https colon slash slash www dot youtube dot com slash watch question
+mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-5-tab">Step 5: Tab</h3>
+<p>Tab moves in the order the controls were added: Browse source, then
+the output folder, then the boxes that say what to do.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Browse source… button, Alt plus B</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-6-altt">Step 6: Alt+T</h3>
+<p>Now the rule behind every key here: the word gives the letter. Alt
+plus a letter goes straight to its control, and for a check box it ticks
+or clears it. Alt plus T, T for Transcribe.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Transcribe audio check box, checked, Alt plus T</li>
+</ul>
+<h3 id="step-7-altt">Step 7: Alt+T</h3>
+<p>Checked. Again, and it is cleared.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Transcribe audio check box, not checked, Alt plus T</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-8-alto">Step 8: Alt+O</h3>
+<p>D for Describe, A for Audio only, W for Web context, R for Remove
+ads, F for Force overwrite, L for Log session. Alt plus O goes to the
+Output directory box, O for Output.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Output directory: edit</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-9-f7">Step 9: F7</h3>
+<p>Where the documents are written; blank means beside each source. A
+dialog this size has many controls, so F7 lists them all; a letter jumps
+to one and Enter goes to it.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Controls list box</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-10-escape">Step 10: Escape</h3>
+<p>Escape closes the list and returns where I was. In the dialog itself,
+Enter presses OK from anywhere, Control plus Enter from inside a box of
+many lines, and Escape cancels.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Output directory: edit</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-11-insertt">Step 11: Insert+T</h3>
+<p>While the work runs, the dialog stays, its controls resting, and its
+title says what is happening. Two keys ask how it goes: Shift plus F6
+says how far through the current file; Control plus Page Down and Page
+Up move between its stages. And Insert plus T, the reader’s own key,
+reads the title.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+</ul>
+<h3 id="step-12-1">Step 12</h3>
+<p>Help is in four places, the same in every Homer program. I say which;
+the reader says the key. The help box, listing every field and key, and
+the version.</p>
+<p>Screen reader:</p>
+<ul>
+<li>F1, the help box</li>
+</ul>
+<h3 id="step-13-1">Step 13</h3>
+<p>The tip for the field you are on.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Shift plus F1</li>
+</ul>
+<h3 id="step-14-1">Step 14</h3>
+<p>A list of the controls, to reach any one.</p>
+<p>Screen reader:</p>
+<ul>
+<li>F7</li>
+</ul>
+<h3 id="step-15-1">Step 15</h3>
+<p>And the guide and the hotkeys, as documents in the Start menu.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe documentation</li>
+</ul>
+<h3 id="step-16-alto">Step 16: Alt+O</h3>
+<p>A planned misstep: Alt plus O is the Output box, so pressing it to
+accept does not press OK. I press it, and the reader shows where I
+landed.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Output directory: edit</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-17-1">Step 17</h3>
+<p>The answer is Enter, which presses OK from anywhere. What this walk
+taught. I name the part; the reader gives the key.</p>
+<h3 id="step-18">Step 18</h3>
+<p>Tick Transcribe audio.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Alt plus T</li>
+</ul>
+<h3 id="step-19">Step 19</h3>
+<p>Hear a field’s tip.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Shift plus F1</li>
+</ul>
+<h3 id="step-20-1">Step 20</h3>
+<p>Hear a whole field.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Alt plus F8</li>
+</ul>
+<h3 id="step-21">Step 21</h3>
+<p>Accept from anywhere.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Enter</li>
+</ul>
+<p><strong>Something to try:</strong> Open HomerScribe, Tab through
+every control once, and press Shift plus F1 on each to hear its tip.</p>
+<h2 id="install-and-launch">2 - Install and Launch</h2>
+<p>HomerScribe_setup.exe installs HomerScribe and, on its last page,
+offers the tools it uses: Whisper for transcribing, Ollama and a vision
+model for describing, and the rest. Then the desktop key opens it.</p>
+<p><strong>Before you start:</strong> HomerScribe_setup.exe is
+downloaded from the HomerScribe page on GitHub.</p>
+<h3 id="step-1-2">Step 1</h3>
+<p>One want: HomerScribe on this computer, with the tools it needs, in
+one sitting. Everything it uses runs here; once installed, nothing is
+uploaded.</p>
+<h3 id="step-2-enter">Step 2: Enter</h3>
+<p>I open the downloaded setup program. Windows asks for administrator
+rights; I say yes.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Setup - HomerScribe dialog</li>
+<li>Welcome to the HomerScribe Setup Wizard</li>
+</ul>
+<h3 id="step-3-enter">Step 3: Enter</h3>
+<p>The ordinary installer: Enter takes Next on each page, and the
+defaults are right.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Select Destination Location</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-4-enter">Step 4: Enter</h3>
+<p>I take the defaults to the end, where it copies the program and its
+documents.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Installing</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-5-tab-1">Step 5: Tab</h3>
+<p>The last page is the one that matters. It offers each tool
+HomerScribe uses, as a box saying what it does and its size, already
+ticked when it is missing.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Install Whisper check box, checked</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-6-down-arrow">Step 6: Down Arrow</h3>
+<p>Each box’s first word is the machine’s state read for you: Install
+when it is missing, Update when a newer one is out, Reinstall when it is
+current. Transcribing needs Whisper alone, about half a gigabyte.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Install Ollama check box, checked</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-7-down-arrow">Step 7: Down Arrow</h3>
+<p>Describing needs more: Ollama, the service that runs the model, and
+the vision model itself, about five and a half gigabytes, downloaded
+once.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Install qwen2.5vl 7b check box, checked, describes video and
+pictures, about 5.5 GB</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-8-space">Step 8: Space</h3>
+<p>The text model, about four point seven gigabytes, is only for
+removing advertisements. A planned misstep: if you will never do that,
+clear it. Space clears a box.</p>
+<p>Screen reader:</p>
+<ul>
+<li>not checked</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-9-enter">Step 9: Enter</h3>
+<p>Leave the rest as they are. Enter starts them, one after another,
+each in a window that says what it is fetching.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Finish button</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-10-altcontrolh">Step 10: Alt+Control+H</h3>
+<p>When they finish, a results box says what was installed and where.
+Then the key that opens HomerScribe from anywhere: Alt plus Control plus
+H.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-11-1">Step 11</h3>
+<p>Installed and open, with the sample film ready. If a tool was left
+out, run the setup again and tick its box; a tool already present costs
+nothing. What this walk taught. I name the step; the reader gives the
+answer.</p>
+<h3 id="step-12-2">Step 12</h3>
+<p>What a box’s first word tells you.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Install, Update or Reinstall</li>
+</ul>
+<h3 id="step-13-2">Step 13</h3>
+<p>What transcribing needs.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Whisper</li>
+</ul>
+<h3 id="step-14-tab">Step 14: Tab</h3>
+<p>The installer’s last page reads the machine for you: each tool’s box
+begins with Install, Update or Reinstall, so its state is known before
+anything is ticked.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Install Whisper check box, checked</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-15-2">Step 15</h3>
+<p>Running the setup a second time is safe; boxes for tools that are
+current say Reinstall, and leaving them clear costs nothing.</p>
+<h3 id="step-16">Step 16</h3>
+<p>The tools are installed once for the whole computer, not inside
+HomerScribe’s folder, so an update of HomerScribe never removes
+them.</p>
+<h3 id="step-17-2">Step 17</h3>
+<p>Everything runs on this computer once installed; transcribing and
+describing send nothing away.</p>
+<h3 id="step-18-1">Step 18</h3>
+<p>Your settings live in your own application data, so a reinstall keeps
+them.</p>
+<h3 id="step-19-1">Step 19</h3>
+<p>The key that opens HomerScribe.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Alt plus Control plus H</li>
+</ul>
+<p><strong>Something to try:</strong> Run the setup a second time. Every
+box on the last page should now say Update or Reinstall, not
+Install.</p>
+<h2 id="transcribe-a-recording">3 - Transcribe a Recording</h2>
+<p>A one-hour MP3 of a screen reader class becomes a document of what
+was said.</p>
+<p><strong>Before you start:</strong> A recording named
+Introduction_to_Windows.mp3 is in the Videos folder. HomerScribe is
+installed.</p>
+<h3 id="step-1-3">Step 1</h3>
+<p>A friend sent me a recording of a screen reader class, an hour long,
+and I want it as text I can search. That is a transcription, and it is
+HomerScribe’s simplest job.</p>
+<h3 id="step-2-altcontrolh-1">Step 2: Alt+Control+H</h3>
+<p>Alt plus Control plus H, H for HomerScribe, opens the dialog from
+anywhere.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-3-controla">Step 3: Control+A</h3>
+<p>Focus is in Source paths, holding the sample address. I will select
+it all and type my own file’s path over it.</p>
+<p>Screen reader:</p>
+<ul>
+<li>selected https colon slash slash www dot youtube dot com slash watch
+question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-4-1">Step 4</h3>
+<p>Now the path. I type it, and the reader echoes as I go, so I will say
+it plainly instead: C colon, backslash Users, backslash Jamal, backslash
+Videos, backslash Introduction underscore to underscore Windows dot m p
+3.</p>
+<p>Type the full path, or press Alt plus B, B for Browse source, and
+pick the file from a standard Open dialog instead.</p>
+<h3 id="step-5-altt">Step 5: Alt+T</h3>
+<p>Next, say what to do with it. Alt plus T is Transcribe audio, T for
+Transcribe.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Transcribe audio check box, checked, Alt plus T</li>
+</ul>
+<p>Alt plus a letter toggles a check box directly; you do not have to
+Tab to it first.</p>
+<h3 id="step-6-enter">Step 6: Enter</h3>
+<p>The reader said checked. That is the whole request: one file, one
+box. The output goes to the Videos folder unless I change it, and I will
+not. Enter presses OK from anywhere in the dialog.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe, working</li>
+<li>Initializing, 1 hour and 6 minutes long.</li>
+</ul>
+<p>The dialog stays on screen for the whole run with its controls
+disabled, and its title says what is happening. Alt plus Tab always
+finds it.</p>
+<h3 id="step-7-1">Step 7</h3>
+<p>Two things happened. The window’s title changed to HomerScribe,
+working, and an announcement said how long the recording is: an hour and
+six minutes. Hearing the length first is how you know it opened the
+right file.</p>
+<h3 id="step-8-1">Step 8</h3>
+<p>Now it listens. Every so often it says how far it has got, as a place
+in the recording and a percentage. I will let one go by.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Initializing, 30 min, 45%</li>
+</ul>
+<p>On a processor without a graphics card, transcribing takes about a
+quarter of the recording’s own length. An hour of speech is a quarter of
+an hour of waiting.</p>
+<h3 id="step-9-insertt">Step 9: Insert+T</h3>
+<p>Thirty minutes into the recording, forty five percent done. If I am
+doing something else and miss one of these, Insert Up Arrow repeats the
+last line the reader said. Let me verify where I am with Insert T.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe, working</li>
+</ul>
+<h3 id="step-10-1">Step 10</h3>
+<p>Still working. When it finishes, it names the file, and then a
+results box tells me what it made.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Done. Introduction to Windows dot m p 3</li>
+<li>HomerScribe results dialog</li>
+<li>One source done. Took 19 minutes. Introduction to Windows dot m p 3:
+transcript of 1682 spoken stretches. C colon backslash Users backslash
+Jamal backslash Videos backslash Introduction to Windows backslash
+transcribed dot m d. Log of this run: C colon backslash Users backslash
+Jamal backslash Videos backslash Introduction to Windows backslash
+HomerScribe dot log.</li>
+<li>OK button</li>
+</ul>
+<p>The results box says what was done, how long it took, and where the
+document is, with a log beside it.</p>
+<h3 id="step-11-enter">Step 11: Enter</h3>
+<p>Nineteen minutes for an hour of speech, and 1682 spoken stretches
+written into transcribed dot m d, in a folder named for the recording.
+Enter presses OK.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit</li>
+</ul>
+<p>OK closes the results box and focus returns to the dialog, controls
+enabled again, ready for the next job.</p>
+<h3 id="step-12-3">Step 12</h3>
+<p>The transcript’s first line says where the words came from: the
+film’s own captions when it has them, or Whisper, listening.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Words from the film’s captions</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-13-3">Step 13</h3>
+<p>Source paths takes more than one file: several separated by spaces,
+one to a line, or a pattern such as star dot mp4.</p>
+<h3 id="step-14-2">Step 14</h3>
+<p>A text file listing sources, one to a line, works too; lines
+beginning with a number sign or a semicolon are notes, and skipped.</p>
+<h3 id="step-15-3">Step 15</h3>
+<p>A source shorter than a minute is flagged in the results as possibly
+damaged, since a broken download can look like a very short film.</p>
+<h3 id="step-16-1">Step 16</h3>
+<p>The transcript is a Markdown document. Its first heading names the
+recording; then comes what was said, in order, with a heading every ten
+minutes so you can jump by heading. Names that Whisper has never read
+are spelled as written in the vocabulary setting, so the names of screen
+readers and programs come out spelled right rather than as they
+sound.</p>
+<p>If a recording is full of names it gets wrong, add them to the
+vocabulary setting in the configuration, separated by commas.</p>
+<p><strong>Something to try:</strong> Transcribe a podcast episode of
+your own. Read the transcript’s first heading: it names the recording
+and how long it runs.</p>
+<h2 id="describe-a-video">4 - Describe a Video</h2>
+<p>The sample film in the Source paths box gets descriptions of every
+shot, as a document and as a described copy.</p>
+<p><strong>Before you start:</strong> HomerScribe is installed, with
+Ollama and its picture model. The dialog still holds the sample
+address.</p>
+<h3 id="step-1-4">Step 1</h3>
+<p>This time I want to know what is on screen. HomerScribe looks at the
+film, one moment at a time, and writes a description for each, using a
+picture model on my own machine.</p>
+<h3 id="step-2-altcontrolh-2">Step 2: Alt+Control+H</h3>
+<p>Alt plus Control plus H opens the dialog.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-3-altd">Step 3: Alt+D</h3>
+<p>I will leave the sample address as it is. It is the W3C’s
+Perspectives film, seven and a half minutes, published with professional
+descriptions, so I can judge the result against the real thing. Alt plus
+D is Describe video, D for Describe.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Describe video check box, checked, Alt plus D</li>
+</ul>
+<p>Alt plus D is shared with Default settings. Windows cycles between
+the two; if the reader names Default settings, press Alt plus D once
+more.</p>
+<h3 id="step-4-altt">Step 4: Alt+T</h3>
+<p>Checked. I also want the words that are spoken, woven in with the
+descriptions, so Alt plus T as well.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Transcribe audio check box, checked, Alt plus T</li>
+</ul>
+<h3 id="step-5-enter">Step 5: Enter</h3>
+<p>Both boxes are checked. Enter presses OK.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe, working</li>
+<li>Initializing, Downloading Perspectives colon Video Captions</li>
+</ul>
+<p>A web address is downloaded first. HomerScribe fetches yt-dlp and
+ffmpeg itself when it needs them.</p>
+<h3 id="step-6-1">Step 6</h3>
+<p>It is downloading the film, and it named it from the page. Next it
+listens for where the speech is, then it looks. The announcements change
+their first word as the job changes.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Initializing, 7 min, 100%</li>
+<li>Describing, 1 of 42</li>
+</ul>
+<h3 id="step-7-2">Step 7</h3>
+<p>Describing one of forty two. Each description is spoken as it is
+made, so you can follow along or go and do something else. Here is
+one.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Describing, 12 of 42, A woman with short grey hair sits at a kitchen
+table, a laptop open in front of her, morning light from a window on her
+left.</li>
+</ul>
+<p>Every description is also written into the document, so nothing
+depends on hearing it now.</p>
+<h3 id="step-8-2">Step 8</h3>
+<p>When the last description is written, it puts the film back together
+with the descriptions as a spoken track, and says so.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Finalizing, writing described dot m k v</li>
+<li>Done. Perspectives colon Video Captions</li>
+<li>HomerScribe results dialog</li>
+<li>One source done. Took 9 minutes. Perspectives colon Video Captions:
+42 descriptions, 7 minutes. C colon backslash Users backslash Jamal
+backslash Videos backslash Perspectives Video Captions. Log of this run:
+C colon backslash Users backslash Jamal backslash Videos backslash
+Perspectives Video Captions backslash HomerScribe dot log.</li>
+<li>OK button</li>
+</ul>
+<h3 id="step-9-enter-1">Step 9: Enter</h3>
+<p>Forty two descriptions for a seven minute film, in nine minutes.
+Enter presses OK.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit</li>
+</ul>
+<p>OK closes the results box and focus returns to the dialog, controls
+enabled again, ready for the next job.</p>
+<h3 id="step-10-2">Step 10</h3>
+<p>Each video gets a folder of its own, named after the video, beside it
+or in the output directory when one is given.</p>
+<h3 id="step-11-2">Step 11</h3>
+<p>The described film keeps two audio tracks: the description first, so
+any player picks it by default, and the original second.</p>
+<p>Screen reader:</p>
+<ul>
+<li>described dot m k v</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-12-4">Step 12</h3>
+<p>described dot m d is what can be seen, as a document to read at your
+own pace, by heading.</p>
+<h3 id="step-13-4">Step 13</h3>
+<p>described dot v t t is the same text as timed captions, for a player
+that shows or speaks captions.</p>
+<h3 id="step-14-3">Step 14</h3>
+<p>described dot w a v is the description track alone, to play alongside
+the original in a player such as mpv.</p>
+<h3 id="step-15-4">Step 15</h3>
+<p>A run interrupted partway resumes from what it had finished, since
+described dot j s o n records its progress.</p>
+<h3 id="step-16-2">Step 16</h3>
+<p>The folder holds described dot m k v, the film with the description
+as its first sound track; described dot m d, the descriptions as a
+document; described dot v t t, the same as timed captions; transcribed
+dot m d, the words; and scribed dot m d, words and descriptions together
+in the order they happen. Read scribed dot m d for the whole film in one
+document.</p>
+<p>described dot m k v opens in any media player. In FileDir, Control
+plus Shift plus H plays it in the Homer Player.</p>
+<p><strong>Something to try:</strong> Open described dot m d and read
+the first three descriptions. Then play described dot m k v and listen
+to the same three.</p>
+<h2 id="a-web-address-sound-only">5 - A Web Address, Sound Only</h2>
+<p>A lecture on YouTube becomes one described MP3, a quarter the size of
+the video, with the page’s own title guiding the descriptions.</p>
+<p><strong>Before you start:</strong> HomerScribe is installed, with
+Ollama. A YouTube address is on the clipboard.</p>
+<h3 id="step-1-5">Step 1</h3>
+<p>A lecture on YouTube, an hour of slides and a speaker. I do not need
+the video; I need to know what the slides say, and I want one file I can
+put on my phone.</p>
+<h3 id="step-2-altcontrolh-3">Step 2: Alt+Control+H</h3>
+<p>Alt plus Control plus H opens the dialog, in Source paths as
+always.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-3-controla-1">Step 3: Control+A</h3>
+<p>Control plus A selects the sample address, and Control plus V pastes
+mine over it.</p>
+<p>Screen reader:</p>
+<ul>
+<li>selected https colon slash slash www dot youtube dot com slash watch
+question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-4-controlv">Step 4: Control+V</h3>
+<p>Control plus V.</p>
+<p>The reader is silent on a paste. Press Insert plus Up Arrow to read
+the line if you want to check it.</p>
+<h3 id="step-5-altd">Step 5: Alt+D</h3>
+<p>Silence on a paste is normal. Now the boxes. Alt plus D, Describe.
+Alt plus A, Audio only, A for Audio. Alt plus W, Web context, W for
+Web.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Describe video check box, checked, Alt plus D</li>
+</ul>
+<h3 id="step-6-alta">Step 6: Alt+A</h3>
+<p>Alt plus A.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Audio only check box, checked, Alt plus A</li>
+</ul>
+<p>Audio only produces one described dot m p 3: the film’s own sound
+with the descriptions mixed in, and no video. It is quicker to make and
+a quarter the size.</p>
+<h3 id="step-7-altw">Step 7: Alt+W</h3>
+<p>Alt plus W.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Web context check box, checked, Alt plus W</li>
+</ul>
+<p>Web context reads the page’s title and description first, so the
+model knows it is looking at a lecture on, say, tax law, and describes
+the slides as slides rather than guessing.</p>
+<h3 id="step-8-enter">Step 8: Enter</h3>
+<p>Three boxes checked. Enter.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe, working</li>
+<li>Initializing, Downloading Introduction to Estate Planning, Lecture
+4</li>
+</ul>
+<h3 id="step-9-insertt-1">Step 9: Insert+T</h3>
+<p>It named the lecture from the page. That title is what Web context
+gives the model. Let me verify the window while it works, with Insert
+T.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe, describing 17 of 88</li>
+</ul>
+<h3 id="step-10-3">Step 10</h3>
+<p>Describing seventeen of eighty eight. The title carries the progress,
+so Insert T is all it takes to check on a long run from another window.
+I will let it finish.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Done. Introduction to Estate Planning, Lecture 4</li>
+<li>HomerScribe results dialog</li>
+<li>One source done. Took 22 minutes. Introduction to Estate Planning,
+Lecture 4: 88 descriptions, 58 minutes. C colon backslash Users
+backslash Jamal backslash Videos backslash Introduction to Estate
+Planning Lecture 4. Log of this run: C colon backslash Users backslash
+Jamal backslash Videos backslash Introduction to Estate Planning Lecture
+4 backslash HomerScribe dot log.</li>
+<li>OK button</li>
+</ul>
+<h3 id="step-11-3">Step 11</h3>
+<p>A playlist’s address works too: it is expanded into the videos it
+holds, each described in turn.</p>
+<h3 id="step-12-5">Step 12</h3>
+<p>A playlist of more than a dozen videos asks first, since describing
+them all may take days.</p>
+<p>Screen reader:</p>
+<ul>
+<li>This playlist holds 40 videos. Continue?</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-13-5">Step 13</h3>
+<p>Audio only, A, makes one sound file rather than a film, which is a
+quarter of the size and suits a phone or a walk.</p>
+<h3 id="step-14-4">Step 14</h3>
+<p>Web context, W, gives the model the page’s own title, so descriptions
+name what the lecture is about rather than guessing.</p>
+<h3 id="step-15-insertt">Step 15: Insert+T</h3>
+<p>The dialog stays open while it works, and the window’s title carries
+the progress, so Insert plus T checks on it from anywhere.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Describing 40 of 88, Lecture</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-16-altt">Step 16: Alt+T</h3>
+<p>Transcribe audio, T, can be added to the same run, for the lecture’s
+words as a document beside its descriptions.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Transcribe audio check box, not checked</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-17-3">Step 17</h3>
+<p>Several addresses, one to a line in Source paths or in a list file,
+are worked through in one run.</p>
+<h3 id="step-18-2">Step 18</h3>
+<p>A video that will not download is named in the results with the
+reason, and the guide’s section on downloads says what to try.</p>
+<h3 id="step-19-enter">Step 19: Enter</h3>
+<p>Enter presses OK. The folder holds described dot m p 3, one file with
+the lecture and its descriptions, and described dot m d to read.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit</li>
+</ul>
+<p>OK closes the results box and focus returns to the dialog, controls
+enabled again, ready for the next job.</p>
+<p><strong>Something to try:</strong> Give HomerScribe the address of a
+playlist. It says “Processing 3 of 9” as it goes, and each film gets its
+own folder.</p>
+<h2 id="remove-the-advertisements">6 - Remove the Advertisements</h2>
+<p>A podcast episode loses its advertisements and keeps everything else,
+with the original untouched.</p>
+<p><strong>Before you start:</strong> HomerScribe is installed, with
+Ollama and its reading model. An episode named Episode_212.mp3 is in the
+Videos folder.</p>
+<h3 id="step-1-6">Step 1</h3>
+<p>A podcast I like carries four minutes of advertisements in every
+hour. HomerScribe can find them and cut them, and it is careful about
+it: nothing is cut unless the model is at least ninety five out of a
+hundred sure.</p>
+<h3 id="step-2-altcontrolh-4">Step 2: Alt+Control+H</h3>
+<p>Alt plus Control plus H.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-3-altb">Step 3: Alt+B</h3>
+<p>Alt plus B, B for Browse source, opens a standard Open dialog, which
+is easier than typing a path.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Choose a file to work on dialog</li>
+<li>File name: edit</li>
+</ul>
+<h3 id="step-4-enter-1">Step 4: Enter</h3>
+<p>I type Episode underscore 212 dot m p 3 and press Enter. The Videos
+folder is where the dialog starts.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, C colon backslash Users backslash Jamal
+backslash Videos backslash Episode 212 dot m p 3</li>
+</ul>
+<p>Browse puts the chosen path into Source paths and returns focus
+there.</p>
+<h3 id="step-5-altr">Step 5: Alt+R</h3>
+<p>The path is in the box, and focus came back to it. Alt plus R is
+Remove ads, R for Remove.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Remove ads check box, checked, Alt plus R</li>
+</ul>
+<h3 id="step-6-enter-1">Step 6: Enter</h3>
+<p>Checked. Enter.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe, working</li>
+<li>Initializing, 58 minutes long.</li>
+</ul>
+<h3 id="step-7-3">Step 7</h3>
+<p>Fifty eight minutes. It listens to the whole episode first, then
+reads what was said and asks the model where the advertisements are.
+That reading is the slow part.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Initializing, 58 min, 100%</li>
+<li>Reading, where the advertisements are</li>
+</ul>
+<h3 id="step-8-3">Step 8</h3>
+<p>And the result.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Done. Episode 212 dot m p 3</li>
+<li>HomerScribe results dialog</li>
+<li>One source done. Took 16 minutes. Episode 212 dot m p 3: 3
+advertisements removed, 4 minutes of 58 minutes. C colon backslash Users
+backslash Jamal backslash Videos backslash Episode 212 backslash
+stripped dot m p 3. Log of this run: C colon backslash Users backslash
+Jamal backslash Videos backslash Episode 212 backslash HomerScribe dot
+log.</li>
+<li>OK button</li>
+</ul>
+<h3 id="step-9-enter-2">Step 9: Enter</h3>
+<p>Three advertisements, four minutes of fifty eight, written as a new
+file named stripped, in the episode’s own folder. The original is
+untouched. Enter.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit</li>
+</ul>
+<p>OK closes the results box and focus returns to the dialog.</p>
+<h3 id="step-10-4">Step 10</h3>
+<p>It decides with care. The episode is transcribed first, because
+finding a break needs the words and the time each was said.</p>
+<h3 id="step-11-4">Step 11</h3>
+<p>The transcript is read in overlapping pieces, so a break that falls
+across two pieces is seen whole.</p>
+<h3 id="step-12-6">Step 12</h3>
+<p>Each break the model finds comes with a confidence out of a hundred,
+and nothing is cut below ninety five.</p>
+<h3 id="step-13-6">Step 13</h3>
+<p>The phrases sponsors use, such as brought to you by and promo code,
+raise that confidence when two or more are heard.</p>
+<h3 id="step-14-5">Step 14</h3>
+<p>It remembers each show: every sentence of every advertisement removed
+is kept for that show, so later episodes are recognized sooner.</p>
+<h3 id="step-15-5">Step 15</h3>
+<p>A host reading for a sponsor in their own voice avoids the sponsor
+phrases, but cannot leave out where to go; such reads are recognized
+too.</p>
+<h3 id="step-16-3">Step 16</h3>
+<p>Missing an advertisement costs a minute of listening; cutting part of
+the show costs more, which is why the threshold is high.</p>
+<h3 id="step-17-4">Step 17</h3>
+<p>The settings for this are in the guide, under taking the
+advertisements out, for anyone who wants it stricter or looser.</p>
+<h3 id="step-18-3">Step 18</h3>
+<p>Beside the new file is a document saying what was cut, where each cut
+was, and what the model heard that made it sure. If it cut something it
+should not have, that document is how you would know.</p>
+<p>If nothing was ninety five percent certain, nothing is cut, and the
+document says so.</p>
+<p><strong>Something to try:</strong> Run it on an episode with a
+mid-roll break. Read the summary line at the top of the document it
+writes: it says how much was cut and from where.</p>
+<h2 id="read-a-pdf">7 - Read a PDF</h2>
+<p>A PDF of a scanned report becomes a Markdown document, and a Word
+document beside it.</p>
+<p><strong>Before you start:</strong> HomerScribe is installed, with
+Ollama, Tesseract and Pandoc. A file named Annual_Report.pdf is in the
+Videos folder.</p>
+<h3 id="step-1-7">Step 1</h3>
+<p>A scanned report came as a PDF with no text in it, just pictures of
+pages. HomerScribe reads the pages, recognises the text, describes any
+pictures, and writes a document.</p>
+<h3 id="step-2-altcontrolh-5">Step 2: Alt+Control+H</h3>
+<p>Alt plus Control plus H. Then Alt plus B to browse.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-3-altb-1">Step 3: Alt+B</h3>
+<p>Alt plus B.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Choose a file to work on dialog</li>
+<li>File name: edit</li>
+</ul>
+<h3 id="step-4-enter-2">Step 4: Enter</h3>
+<p>Annual underscore Report dot p d f, Enter.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, C colon backslash Users backslash Jamal
+backslash Videos backslash Annual Report dot p d f</li>
+</ul>
+<h3 id="step-5-enter-1">Step 5: Enter</h3>
+<p>A PDF needs no box ticked: HomerScribe knows what to do with one.
+Enter.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe, working</li>
+<li>Preparing, Opening Annual Report dot p d f</li>
+</ul>
+<h3 id="step-6-2">Step 6</h3>
+<p>Preparing. It counts the pages and checks whether they carry text.
+These do not, so it reads them with Tesseract, page by page.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Reading, Page 12 of 40</li>
+</ul>
+<p>A PDF that already has text is read directly and is much quicker.
+Only scanned pages go through recognition.</p>
+<h3 id="step-7-4">Step 7</h3>
+<p>Page twelve of forty. Pictures on a page get described as it
+goes.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Describing, Page 15, a bar chart of revenue by region, five bars,
+the tallest labelled North America</li>
+</ul>
+<h3 id="step-8-4">Step 8</h3>
+<p>And the result.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Done. Annual Report dot p d f</li>
+<li>HomerScribe results dialog</li>
+<li>One source done. Took 11 minutes. Annual Report dot p d f: 40 pages
+read, 6 pictures described. C colon backslash Users backslash Jamal
+backslash Videos backslash Annual Report backslash Annual Report dot m
+d. Log of this run: C colon backslash Users backslash Jamal backslash
+Videos backslash Annual Report backslash HomerScribe dot log.</li>
+<li>OK button</li>
+</ul>
+<h3 id="step-9-1">Step 9</h3>
+<p>A PDF whose pages carry text needs no recognition; it is read
+directly, which is much quicker.</p>
+<h3 id="step-10-5">Step 10</h3>
+<p>The check happens page by page, so a PDF that is part typed and part
+scanned is handled page by page as well.</p>
+<h3 id="step-11-5">Step 11</h3>
+<p>Recognition is done by Tesseract, on this computer, so a private
+document stays private.</p>
+<h3 id="step-12-7">Step 12</h3>
+<p>Pictures on a page are described by the same model that describes
+films, and the descriptions sit in the document where the pictures
+were.</p>
+<h3 id="step-13-7">Step 13</h3>
+<p>The Markdown document reads by heading in any editor or browser, and
+EdSharp’s preview shows it formatted.</p>
+<h3 id="step-14-6">Step 14</h3>
+<p>The Word copy keeps the original’s page breaks, so a page number
+someone mentions can still be found.</p>
+<h3 id="step-15-6">Step 15</h3>
+<p>The Word copy needs Pandoc, which the installer offers; without it,
+the Markdown document alone is written.</p>
+<h3 id="step-16-insertt">Step 16: Insert+T</h3>
+<p>A long report runs for a while; the window’s title carries the page
+count, so Insert plus T checks on it.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Page 12 of 40</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-17-5">Step 17</h3>
+<p>The folder can be zipped and shared with someone who needs the text,
+rather than the pictures of pages.</p>
+<h3 id="step-18-4">Step 18</h3>
+<p>The document’s name follows the PDF’s, so Annual Report dot p d f
+gives Annual Report dot m d, easy to find beside it.</p>
+<h3 id="step-19-enter-1">Step 19: Enter</h3>
+<p>Forty pages and six pictures, eleven minutes. Enter. The folder holds
+Annual underscore Report dot m d, and, because Pandoc is installed,
+Annual underscore Report dot d o c x with the same page breaks as the
+original.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit</li>
+</ul>
+<p>Without Pandoc, only the Markdown is written. The installer offers
+Pandoc as a box on its last page.</p>
+<p><strong>Something to try:</strong> Give it a PDF with pictures in it.
+Each picture gets a description where it sits in the text.</p>
+<h2 id="stay-current">8 - Stay Current</h2>
+<p>F1 in the dialog lists every field and key, checks the web for a
+newer HomerScribe, and offers to install it.</p>
+<p><strong>Before you start:</strong> HomerScribe is installed and its
+dialog is open. The computer is online.</p>
+<h3 id="step-1-8">Step 1</h3>
+<p>Every Homer dialog answers F1 with the same kind of help: the fields,
+what each is for, the keys that work anywhere in the dialog, and, at the
+end, which version this is and whether a newer one is out.</p>
+<h3 id="step-2-altcontrolh-6">Step 2: Alt+Control+H</h3>
+<p>Alt plus Control plus H opens the dialog. Then F1.</p>
+<p>Screen reader:</p>
+<ul>
+<li>HomerScribe dialog</li>
+<li>Source paths: edit, https colon slash slash www dot youtube dot com
+slash watch question mark v equals 3 f 31 o u f q F S M</li>
+</ul>
+<h3 id="step-3-f1">Step 3: F1</h3>
+<p>F1.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Help: HomerScribe dialog</li>
+<li>Help text edit, read only, Fields in this dialog:</li>
+</ul>
+<p>The help is a read-only text box, so you can arrow through it line by
+line, and Control plus F8 copies all of it.</p>
+<h3 id="step-4-downarrow">Step 4: DownArrow</h3>
+<p>Focus is in a read-only text box. Down Arrow reads it a line at a
+time. The first lines are the fields.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Source paths: edit, One or more files, wildcard patterns, or web
+addresses to download from, separated by spaces. Put double quotes
+around any item containing a space.</li>
+</ul>
+<h3 id="step-5-1">Step 5</h3>
+<p>Each field, with its tip. Further down, the dialog keys.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Control plus Enter presses the accept button from anywhere.</li>
+<li>F7 lists the dialog’s controls in navigation order; choose one and
+press OK to focus it.</li>
+</ul>
+<p>F7 is the answer when a dialog has more controls than you want to Tab
+through: a list, a letter, Enter.</p>
+<h3 id="step-6-controlend">Step 6: Control+End</h3>
+<p>And at the end, the version. Control plus End goes to the last
+line.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Update to the version on the web now? Yes fetches it and starts its
+setup program.</li>
+</ul>
+<h3 id="step-7-uparrow">Step 7: UpArrow</h3>
+<p>Up Arrow for the line before it.</p>
+<p>Screen reader:</p>
+<ul>
+<li>This is version 1.0.239. Version 1.0.240 is on the web.</li>
+</ul>
+<h3 id="step-8-enter-1">Step 8: Enter</h3>
+<p>A newer version is out. The box’s buttons are Yes and No, and because
+a newer version exists, Yes is the default: Enter takes it. If this were
+already the newest, No would be the default, and if the web could not be
+reached, there would be an OK button and nothing to decide.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Setup - HomerScribe dialog</li>
+<li>Welcome to the HomerScribe Setup Wizard</li>
+</ul>
+<p>Yes fetches HomerScribe_setup.exe from the latest release and starts
+it. The installer asks for administrator rights, closes HomerScribe when
+it needs to, and its last page offers the same boxes as a first
+install.</p>
+<h3 id="step-9-2">Step 9</h3>
+<p>Help ends with the version, so Control plus End finds it in one
+key.</p>
+<h3 id="step-10-6">Step 10</h3>
+<p>The same F1 works in every Homer dialog, so learning to read it here
+teaches every other Homer program.</p>
+<h3 id="step-11-shiftf1">Step 11: Shift+F1</h3>
+<p>Shift plus F1, on any field, reads just that field’s tip, without
+opening Help.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Source paths: files, folders, patterns or web addresses</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-12-alty">Step 12: Alt+Y</h3>
+<p>Alt plus F8 reads a whole field aloud, and Alt plus Y says how many
+lines it holds, handy for a long list of sources.</p>
+<p>Screen reader:</p>
+<ul>
+<li>3 lines</li>
+</ul>
+<p>Confirm the wording with a live run: buildTutorials -live.</p>
+<h3 id="step-13-8">Step 13</h3>
+<p>When the newer version installs, its last page again offers the
+tools, each with Install, Update or Reinstall, so the tools can be
+brought up to date in the same sitting.</p>
+<h3 id="step-14-7">Step 14</h3>
+<p>Use configuration, U, keeps your boxes and folders across versions,
+so an update starts where you left off.</p>
+<h3 id="step-15-7">Step 15</h3>
+<p>If a run ever seems to have stopped, the guide’s last section says
+how to tell a long step from a stuck one.</p>
+<h3 id="step-16-4">Step 16</h3>
+<p>The History document, in the help folder of the installation, says
+what each version changed, in plain words.</p>
+<h3 id="step-17-6">Step 17</h3>
+<p>Staying current takes a minute, and brings the improvements made
+since the last time.</p>
+<h3 id="step-18-5">Step 18</h3>
+<p>The setup program is running. From here it is the ordinary installer:
+Enter for Next, and on the last page the boxes for anything that needs
+installing or updating are already ticked.</p>
+<p><strong>Something to try:</strong> Press F1 when there is no newer
+version. The box ends with “the newest on the web”, and No is the
+default.</p>
+<h2 id="conclusion">9 - Conclusion</h2>
+<p>The conclusion and summary of the walks; the words HomerScribe uses,
+in two voices; then more information: the help built into the dialog and
+where to learn more.</p>
+<p><strong>Before you start:</strong> Nothing is needed; this walk is
+listened to.</p>
+<h3 id="step-1-9">Step 1</h3>
+<p>To finish: what to carry away, the words HomerScribe uses, and where
+to get help. First, the summary. Everything runs on this computer, and
+everything it makes is a document a screen reader reads well: headings
+to jump by, in the order things happen.</p>
+<h3 id="step-2-1">Step 2</h3>
+<p>One dialog does every job, and one box says which: tick what you
+want, and Enter. The window stays while it works, and its title says how
+far it is.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Alt plus T, Transcribe audio</li>
+<li>Alt plus D, Describe video</li>
+</ul>
+<h3 id="step-3-1">Step 3</h3>
+<p>Every run ends in a results box naming what it made and where, with a
+log beside it; when something is wrong, that log is what to send. And
+before committing to a feature film, describe five minutes of it.</p>
+<h3 id="step-4-2">Step 4</h3>
+<p>Now the words, in alphabetical order. I say the term; the reader says
+what it means.</p>
+<h3 id="step-5-2">Step 5</h3>
+<p>Audio only.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The box that fetches only the sound from a web address, for a
+transcript without the pictures.</li>
+</ul>
+<h3 id="step-6-3">Step 6</h3>
+<p>description.</p>
+<p>Screen reader:</p>
+<ul>
+<li>A sentence about what can be seen, written for a gap in the speech
+of a film.</li>
+</ul>
+<h3 id="step-7-5">Step 7</h3>
+<p>gap.</p>
+<p>Screen reader:</p>
+<ul>
+<li>A stretch of a film without speech, long enough for a description to
+be read in.</li>
+</ul>
+<h3 id="step-8-5">Step 8</h3>
+<p>Ollama.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The service that runs the vision and text models on this
+computer.</li>
+</ul>
+<h3 id="step-9-3">Step 9</h3>
+<p>Remove ads.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The box that finds a podcast’s advertisements and cuts them from the
+sound.</li>
+</ul>
+<h3 id="step-10-7">Step 10</h3>
+<p>results box.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The box at the end of every run: what was done, how long it took,
+and where the documents are.</li>
+</ul>
+<h3 id="step-11-6">Step 11</h3>
+<p>Source paths.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The box for what to work on: files, wildcard patterns, folders or
+web addresses.</li>
+</ul>
+<h3 id="step-12-8">Step 12</h3>
+<p>transcript.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The document of what was said, in order, with a heading every ten
+minutes.</li>
+</ul>
+<h3 id="step-13-9">Step 13</h3>
+<p>vision model.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The model that looks at a film’s pictures and writes the
+descriptions.</li>
+</ul>
+<h3 id="step-14-8">Step 14</h3>
+<p>vocabulary.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The setting of names Whisper should spell right, separated by
+commas.</li>
+</ul>
+<h3 id="step-15-8">Step 15</h3>
+<p>Whisper.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The speech recognizer that writes down what is said.</li>
+</ul>
+<h3 id="step-16-5">Step 16</h3>
+<p>yt-dlp.</p>
+<p>Screen reader:</p>
+<ul>
+<li>The program that fetches a film or its sound from a web
+address.</li>
+</ul>
+<h3 id="step-17-7">Step 17</h3>
+<p>Last, more information. Help is built into the dialog. The help box,
+with every field, every key, and the version.</p>
+<p>Screen reader:</p>
+<ul>
+<li>F1, the help box</li>
+</ul>
+<h3 id="step-18-6">Step 18</h3>
+<p>The tip for one field, and a list of every control.</p>
+<p>Screen reader:</p>
+<ul>
+<li>Shift plus F1</li>
+<li>F7</li>
+</ul>
+<h3 id="step-19-2">Step 19</h3>
+<p>The guide, HomerScribe dot md, explains every choice the program
+makes; Hotkeys dot md lists every key three ways; and the ReadMe gets
+you started. All three are in the Start menu, under HomerScribe
+documentation, and on the HomerScribe page on GitHub, at github dot com
+slash JamalMazrui slash HomerScribe.</p>
+<p><strong>Something to try:</strong> Describe five minutes of a film
+you know well, and read the description beside the film.</p>
 <!-- walkthrough ends -->
 </body>
 </html>

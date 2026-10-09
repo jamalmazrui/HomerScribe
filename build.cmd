@@ -370,7 +370,7 @@ rem publish the installer), push (commit and push with a message), unpushed
 rem (undo commits not yet pushed, keeping every file). Run them from the
 rem project folder: scripts\release, scripts\tidy, and so on.
 if exist "!homerDev!\scripts\buildTutorials.ps1" (
-  for %%F in (buildTutorials.cmd buildTutorials.ps1 check.cmd check.py checkTutorial.cmd checkTutorial.py finish.cmd fixEncoding.cmd fixEncoding.py installCommon.cmd installOllama.cmd makeTutorials.cmd makeTutorials.py push.cmd release.cmd release.ps1 tidy.cmd tidy.py unpushed.cmd unpushed.py) do (
+  for %%F in (buildTutorials.cmd buildTutorials.ps1 check.cmd check.py checkTutorial.cmd checkTutorial.py finish.cmd fixEncoding.cmd fixEncoding.py installCommon.cmd installOllama.cmd kind.cmd kind.py makeTutorials.cmd makeTutorials.py push.cmd release.cmd release.ps1 tidy.cmd tidy.py unpushed.cmd unpushed.py) do (
     if exist "!homerDev!\scripts\%%F" copy /y "!homerDev!\scripts\%%F" scripts\ >nul
   )
   echo Kit tools refreshed into scripts\.>> "%log%"
