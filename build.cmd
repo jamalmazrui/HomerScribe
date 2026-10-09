@@ -330,7 +330,8 @@ set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Lbc.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Log.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Ollama.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Paths.cs""
-set "homerSources=!homerSources! "!homerDev!\exec\CSharp\PdfRead.cs""
+rem PdfRead.cs is HomerScribe's own (9 October 2026), compiled from this folder.
+set "homerSources=!homerSources! "PdfRead.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Say.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Util.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Web.cs""
@@ -387,7 +388,7 @@ rem A check report written beside the tool by an old kit belongs in logs.
 for %%F in (scripts\evidence-*.md) do del /q "%%F" && echo Removed the stray report %%F>> "%log%"
 rem THE KIT'S CLASSES ARE COMPILED FROM C:\HomerDev\exec\CSharp, so a copy at the
 rem top of the project is a stale one, waiting to be read or shipped by mistake.
-for %%F in (Elevate.cs Inix.cs Lbc.cs Log.cs Ollama.cs Paths.cs PdfRead.cs Say.cs Util.cs Web.cs) do (
+for %%F in (Elevate.cs Inix.cs Lbc.cs Log.cs Ollama.cs Paths.cs Say.cs Util.cs Web.cs) do (
   if exist "%%F" if exist "!homerDev!\exec\CSharp\%%F" del /q "%%F" && echo Removed the old top-level %%F; the kit's is compiled instead>> "%log%"
 )
 rem The install scripts, getPdfPig and pagebreak.lua live in scripts; copies at

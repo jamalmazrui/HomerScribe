@@ -8,6 +8,7 @@
 
 # Sources and build files at the top
 HomerScribe.cs
+PdfRead.cs
 HomerScribe.exe.config
 HomerScribe_setup.iss
 build.cmd

@@ -1,5 +1,10 @@
 ﻿# HomerScribe History
 
+
+## Unreleased -- 9 October 2026
+
+- **PdfRead.cs is HomerScribe's own again.** The file that reads a PDF with PdfPig, a partial class of HomerScribe, had been kept in the kit's exec\CSharp as though it were a shared class, though no other program could use it. It now sits beside HomerScribe.cs, is compiled from this folder and is named in RepoFiles; the build no longer looks for it in the kit, and its clean-up of old top-level kit classes no longer names it. The kit retires its copy from version 1.65.3. Nothing changes in how a PDF is read.
+
 ## 8 October 2026 -- an audit by another AI
 
 ChatGPT audited HomerScribe and reported 41 findings. Checked against the code, these held and are fixed:
