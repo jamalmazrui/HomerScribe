@@ -393,7 +393,7 @@ FileName: "{app}\scripts\installWhisper.cmd"; \
 
 ; ---- 4. Launch, ticked -------------------------------------------------------
 FileName: "{cmd}"; \
-  Parameters: "/c echo launch > ""{localappdata}\{#AppName}\logs\{#AppName}_launch.flag"""; \
+  Parameters: "/c md ""{localappdata}\{#AppName}\logs"" 2>nul & echo launch > ""{localappdata}\{#AppName}\logs\{#AppName}_launch.flag"""; \
   WorkingDir: "{app}\exec"; \
   Description: "Launch {#AppName} (desktop hotkey {#HotKeyDisplay})"; \
   Flags: postinstall skipifsilent runhidden runasoriginaluser

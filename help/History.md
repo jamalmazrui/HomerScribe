@@ -2,6 +2,10 @@
 
 
 
+## 11 October 2026 -- from an audit and a report
+
+- **Launch after setup works on a first install.** The installer's Launch box writes a marker file into %LOCALAPPDATA%\\<App>\\logs, but on a first install that folder did not exist yet -- it was made later, when setup kept its log -- so the marker could not be written, and the program did not start after setup. The marker line now makes the folder first. Found by an audit of bookFido by another AI, and fixed in every Homer installer.
+
 ## 9 October 2026 -- from the build and release logs
 
 - **The prototype moved into notes (9 October 2026).** prototype\\describeMovie.py, the Python program HomerScribe grew from, is kept but never published, so the build moves it into notes\\prototype, and the guides name its new place.
