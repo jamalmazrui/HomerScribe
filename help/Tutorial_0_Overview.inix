@@ -113,8 +113,19 @@ Note=Insert plus Up Arrow is Say Line in most screen readers; some use their own
 
 Say=Its partner: Insert Tab says where focus is, the control's name, kind and state. When you are not sure where you are, it answers without moving you.
 Key=Insert+Tab
+Hear=Start button
+
+[step]
+
+Say=And Insert plus T says the title of the window: with nothing open yet, the desktop's.
+Key=Insert+T
+Hear=Program Manager
+
+[step]
+
+Say=If you set your screen reader to use Caps Lock in place of Insert, Caps Lock works the same way for all three.
+Key=
 Hear=
-Note=Insert plus Tab is Say Focus in most screen readers. Here, with nothing open yet, it reads whatever the desktop has in focus.
 
 [step]
 Say=And one habit. When a window changes, I press Insert T to read its title, to verify where I am. You will hear me do it in every walk. It costs a second and it has saved me an hour.

@@ -144,15 +144,29 @@ Insert plus Up Arrow is Say Line in most screen readers; some use their own modi
 
 Its partner: Insert Tab says where focus is, the control's name, kind and state. When you are not sure where you are, it answers without moving you.
 
-Insert plus Tab is Say Focus in most screen readers. Here, with nothing open yet, it reads whatever the desktop has in focus.
+Screen reader:
 
-### Step 17
+- Start button
+
+### Step 17: Insert+T
+
+And Insert plus T says the title of the window: with nothing open yet, the desktop's.
+
+Screen reader:
+
+- Program Manager
+
+### Step 18
+
+If you set your screen reader to use Caps Lock in place of Insert, Caps Lock works the same way for all three.
+
+### Step 19
 
 And one habit. When a window changes, I press Insert T to read its title, to verify where I am. You will hear me do it in every walk. It costs a second and it has saved me an hour.
 
 Insert plus T is Say Window Title in most screen readers.
 
-### Step 18: Alt+Control+H
+### Step 20: Alt+Control+H
 
 HomerScribe opens from the desktop with Alt plus Control plus H, H for HomerScribe. Let me press it, so you hear what the start of every walk sounds like.
 
@@ -163,13 +177,13 @@ Screen reader:
 
 The Source paths box starts with a sample video already in it: the W3C's Perspectives films, seven and a half minutes, freely licensed and published with professional descriptions, so a first run can be compared with how it should be done.
 
-### Step 19: Escape
+### Step 21: Escape
 
 The reader said the window is a dialog, and focus is in the Source paths edit box, which already holds a web address. That address is a sample film, and it is what walk four uses. I will close the dialog now with Escape.
 
 Escape is Cancel in every Homer dialog. The reader says nothing, because the desktop that focus returns to is where it was before.
 
-### Step 20
+### Step 22
 
 The reader did not say anything, and that is right. Escape closed the dialog and focus went back to where it was. Silence after a key is information too, and I will always tell you when it is the correct answer.
 
