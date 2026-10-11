@@ -105,8 +105,8 @@ Note=In a Homer dialog, the Alt key for a control is the underlined letter of it
 
 [step]
 Say=One key before anything else. If the reader says something and you miss it, Insert Up Arrow says the current line again. That is the screen reader's own key, not HomerScribe's. Use it freely; nothing in these walks depends on catching a line the first time.
-Key=
-Hear=
+Key=Insert+UpArrow
+Hear=Start button
 Note=Insert plus Up Arrow is Say Line in most screen readers; some use their own modifier key in place of Insert.
 
 [step]

@@ -418,9 +418,13 @@ if defined tutorialsMissing (
   call "scripts\buildTutorials.cmd" -build
   set "iTutorials=!errorlevel!"
   echo Tutorials: buildTutorials exit code !iTutorials! at !time!>> "%log%"
+  rem A TUTORIAL THAT FAILS FAILS THE BUILD (11 October 2026, from an audit). This was a warning, so HomerScribe
+  rem 1.0.279 was released with buildTutorials exit code 1 in its own log: the Overview walk failed its check for a
+  rem missing Insert+Up Arrow reminder. Tutorials ship with the app, so a release must not go out without them.
   if !iTutorials! neq 0 (
-    echo WARN: not every tutorial could be spoken. The tutorials log in logs\ says why.
-    echo WARN: not every tutorial could be spoken.>> "%log%"
+    echo The tutorials could not all be made or checked, so the build stops. The tutorials log in logs\ says why.
+    echo FAILED: buildTutorials exit code !iTutorials!; the build stops.>> "%log%"
+    goto :failed
   ) else (
     echo Tutorials spoken.>> "%log%"
   )

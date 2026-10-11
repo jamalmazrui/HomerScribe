@@ -4,6 +4,8 @@
 
 ## 11 October 2026 -- from an audit and a report
 
+- **A tutorial that fails fails the build.** A failed tutorial build was a warning, so 1.0.279 was released with buildTutorials exit code 1 in its own log. The build now stops there, through its own failure path, which also restores the version number.
+- **The Overview reminds of Insert plus Up Arrow as the check asks.** Its step said the key but had no Key line or reader line, so the check failed it every build. The step now names Insert+UpArrow, and the reader says what is under focus, Start button.
 - **Launch after setup works on a first install.** The installer's Launch box writes a marker file into %LOCALAPPDATA%\\<App>\\logs, but on a first install that folder did not exist yet -- it was made later, when setup kept its log -- so the marker could not be written, and the program did not start after setup. The marker line now makes the folder first. Found by an audit of bookFido by another AI, and fixed in every Homer installer.
 
 ## 9 October 2026 -- from the build and release logs

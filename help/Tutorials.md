@@ -134,9 +134,13 @@ Every key is named with the word it comes from, so the key and the command stay 
 
 In a Homer dialog, the Alt key for a control is the underlined letter of its label, and the reader says it after the control's name.
 
-### Step 15
+### Step 15: Insert+UpArrow
 
 One key before anything else. If the reader says something and you miss it, Insert Up Arrow says the current line again. That is the screen reader's own key, not HomerScribe's. Use it freely; nothing in these walks depends on catching a line the first time.
+
+Screen reader:
+
+- Start button
 
 Insert plus Up Arrow is Say Line in most screen readers; some use their own modifier key in place of Insert.
 

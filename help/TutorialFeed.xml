@@ -5,7 +5,7 @@
     <link>Tutorials.htm</link>
     <description>Short simulated walks through HomerScribe. Each one is a real job done from start to finish, about three minutes, with something to try at the end.</description>
     <language>en-us</language>
-    <lastBuildDate>Sun, 11 Oct 2026 19:06:10 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 11 Oct 2026 20:50:19 +0000</lastBuildDate>
     <itunes:author>Jamal Mazrui</itunes:author>
     <itunes:explicit>false</itunes:explicit>
     <itunes:category text="Technology"/>
@@ -15,8 +15,8 @@
       <description>Nothing yet. This one is two minutes of what to expect. Full transcript: Tutorials.htm#0-0-overview</description>
       <link>Tutorials.htm#0-0-overview</link>
       <guid isPermaLink="false">homer-tutorial_0_overview</guid>
-      <enclosure url="tutorials/0_Overview.mp3" length="1214830" type="audio/mpeg"/>
-      <itunes:duration>00:02:51</itunes:duration>
+      <enclosure url="tutorials/0_Overview.mp3" length="1346692" type="audio/mpeg"/>
+      <itunes:duration>00:03:09</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>
