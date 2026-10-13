@@ -19,7 +19,7 @@ function Say($m) { Write-Output ("  [pdfpig] " + $m) }
 #
 # Raise it deliberately, having read the release notes, and change this comment
 # when you do.
-$c_sPdfPigVersion = '0.1.16'
+$sPdfPigVersion = '0.1.16'
 $mainName = 'UglyToad.PdfPig.dll'
 # NOT A HAND-WRITTEN LIST ANY MORE.
 #
@@ -134,7 +134,7 @@ function FetchPackage($id) {
   try {
     # The pinned version for PdfPig itself; whatever it asks for, for the rest.
     $url = 'https://www.nuget.org/api/v2/package/' + $id
-    if ($id -eq 'PdfPig') { $url = $url + '/' + $c_sPdfPigVersion }
+    if ($id -eq 'PdfPig') { $url = $url + '/' + $sPdfPigVersion }
     Say ('  from ' + $url)
     Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
     if (Test-Path $out) { Remove-Item -Recurse -Force $out }

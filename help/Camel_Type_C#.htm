@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
 <head>
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
@@ -229,7 +229,7 @@
   </style>
 </head>
 <body>
-<nav id="TOC" role="doc-toc">
+<nav id="TOC" role="doc-toc" aria-label="Contents">
 <ul>
 <li><a href="#camel-type-c-coding-guidelines"
 id="toc-camel-type-c-coding-guidelines">Camel Type: C# Coding
@@ -277,6 +277,7 @@ Conventions</a></li>
 </ul></li>
 </ul>
 </nav>
+<main>
 <h1 id="camel-type-c-coding-guidelines">Camel Type: C# Coding
 Guidelines</h1>
 <p>Camel Type is a coding style designed for systematic readability,
@@ -365,32 +366,32 @@ only one instance of that class in scope, the class name prefix is the
 entire variable name — no additional suffix needed.</p>
 <p>Examples:</p>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">string</span> sFilePath <span class="op">=</span> <span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">data</span><span class="sc">\\</span><span class="st">report.docx&quot;</span><span class="op">;</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> iRowCount <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dt">bool</span> bFound <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>List<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> lsErrors <span class="op">=</span> <span class="kw">new</span> List<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;();</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>Dictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;</span> dCounts <span class="op">=</span> <span class="kw">new</span> Dictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;();</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="dt">byte</span><span class="op">[]</span> binFileBytes <span class="op">=</span> File<span class="op">.</span><span class="fu">ReadAllBytes</span><span class="op">(</span>sFilePath<span class="op">);</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">// One instance of each class → class-name prefix alone</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>StreamWriter writer <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamWriter</span><span class="op">(</span>sFilePath<span class="op">);</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>StringBuilder sb <span class="op">=</span> <span class="kw">new</span> <span class="fu">StringBuilder</span><span class="op">();</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>HttpClient httpClient <span class="op">=</span> <span class="kw">new</span> <span class="fu">HttpClient</span><span class="op">();</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co">// Two instances of the same class → distinguishing suffix</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>StreamWriter writerLog <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamWriter</span><span class="op">(</span>sLogPath<span class="op">);</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>StreamWriter writerOut <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamWriter</span><span class="op">(</span>sOutPath<span class="op">);</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co">// COM objects use the o-prefix (the ONLY use of o in Camel Type)</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>dynamic oWord <span class="op">=</span> com<span class="op">.</span><span class="fu">createApp</span><span class="op">(</span><span class="st">&quot;Word.Application&quot;</span><span class="op">);</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>dynamic oDocument <span class="op">=</span> oWord<span class="op">.</span><span class="fu">Documents</span><span class="op">.</span><span class="fu">Open</span><span class="op">(</span>sFilePath<span class="op">);</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>dynamic oRange <span class="op">=</span> oDocument<span class="op">.</span><span class="fu">Content</span><span class="op">;</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co">// Managed equivalents use the class-name prefix, NOT o</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>Form form <span class="op">=</span> <span class="kw">new</span> <span class="fu">Form</span><span class="op">();</span>              <span class="co">// not oForm</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>Button btnOk <span class="op">=</span> <span class="kw">new</span> <span class="fu">Button</span><span class="op">();</span>         <span class="co">// not oBtn</span></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>OpenFileDialog dialog <span class="op">=</span> <span class="kw">new</span> <span class="fu">OpenFileDialog</span><span class="op">();</span>  <span class="co">// not oDlg</span></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>Exception ex <span class="op">=</span> caughtException<span class="op">;</span>     <span class="co">// not oError</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><span class="dt">string</span> sFilePath <span class="op">=</span> <span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">data</span><span class="sc">\\</span><span class="st">report.docx&quot;</span><span class="op">;</span></span>
+<span id="cb1-2"><span class="dt">int</span> iRowCount <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb1-3"><span class="dt">bool</span> bFound <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb1-4">List<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> lsErrors <span class="op">=</span> <span class="kw">new</span> List<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;();</span></span>
+<span id="cb1-5">Dictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;</span> dCounts <span class="op">=</span> <span class="kw">new</span> Dictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;();</span></span>
+<span id="cb1-6"><span class="dt">byte</span><span class="op">[]</span> binFileBytes <span class="op">=</span> File<span class="op">.</span><span class="fu">ReadAllBytes</span><span class="op">(</span>sFilePath<span class="op">);</span></span>
+<span id="cb1-7"></span>
+<span id="cb1-8"><span class="co">// One instance of each class → class-name prefix alone</span></span>
+<span id="cb1-9">StreamWriter writer <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamWriter</span><span class="op">(</span>sFilePath<span class="op">);</span></span>
+<span id="cb1-10">StringBuilder sb <span class="op">=</span> <span class="kw">new</span> <span class="fu">StringBuilder</span><span class="op">();</span></span>
+<span id="cb1-11">HttpClient httpClient <span class="op">=</span> <span class="kw">new</span> <span class="fu">HttpClient</span><span class="op">();</span></span>
+<span id="cb1-12"></span>
+<span id="cb1-13"><span class="co">// Two instances of the same class → distinguishing suffix</span></span>
+<span id="cb1-14">StreamWriter writerLog <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamWriter</span><span class="op">(</span>sLogPath<span class="op">);</span></span>
+<span id="cb1-15">StreamWriter writerOut <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamWriter</span><span class="op">(</span>sOutPath<span class="op">);</span></span>
+<span id="cb1-16"></span>
+<span id="cb1-17"><span class="co">// COM objects use the o-prefix (the ONLY use of o in Camel Type)</span></span>
+<span id="cb1-18">dynamic oWord <span class="op">=</span> com<span class="op">.</span><span class="fu">createApp</span><span class="op">(</span><span class="st">&quot;Word.Application&quot;</span><span class="op">);</span></span>
+<span id="cb1-19">dynamic oDocument <span class="op">=</span> oWord<span class="op">.</span><span class="fu">Documents</span><span class="op">.</span><span class="fu">Open</span><span class="op">(</span>sFilePath<span class="op">);</span></span>
+<span id="cb1-20">dynamic oRange <span class="op">=</span> oDocument<span class="op">.</span><span class="fu">Content</span><span class="op">;</span></span>
+<span id="cb1-21"></span>
+<span id="cb1-22"><span class="co">// Managed equivalents use the class-name prefix, NOT o</span></span>
+<span id="cb1-23">Form form <span class="op">=</span> <span class="kw">new</span> <span class="fu">Form</span><span class="op">();</span>              <span class="co">// not oForm</span></span>
+<span id="cb1-24">Button btnOk <span class="op">=</span> <span class="kw">new</span> <span class="fu">Button</span><span class="op">();</span>         <span class="co">// not oBtn</span></span>
+<span id="cb1-25">OpenFileDialog dialog <span class="op">=</span> <span class="kw">new</span> <span class="fu">OpenFileDialog</span><span class="op">();</span>  <span class="co">// not oDlg</span></span>
+<span id="cb1-26">Exception ex <span class="op">=</span> caughtException<span class="op">;</span>     <span class="co">// not oError</span></span></code></pre></div>
 <p>Common class abbreviations are acceptable when they are universally
 understood: <code>sb</code> for <code>StringBuilder</code>,
 <code>ex</code> for <code>Exception</code>, <code>args</code> for method
@@ -403,11 +404,11 @@ distinguished only by being declared with <code>const</code> or
 <code>static readonly</code>, not by any difference in capitalization or
 formatting.</p>
 <div class="sourceCode" id="cb2"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">const</span> <span class="dt">string</span> sDefaultEncoding <span class="op">=</span> <span class="st">&quot;utf-8&quot;</span><span class="op">;</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">const</span> <span class="dt">int</span> iTimeoutMs <span class="op">=</span> <span class="dv">60000</span><span class="op">;</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">const</span> <span class="dt">int</span> iMinDataRows <span class="op">=</span> <span class="dv">2</span><span class="op">;</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">static</span> <span class="kw">readonly</span> HashSet<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> hsSupportedExts <span class="op">=</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">new</span> HashSet<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> <span class="op">{</span> <span class="st">&quot;.docx&quot;</span><span class="op">,</span> <span class="st">&quot;.xlsx&quot;</span><span class="op">,</span> <span class="st">&quot;.pdf&quot;</span> <span class="op">};</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><span class="dt">const</span> <span class="dt">string</span> sDefaultEncoding <span class="op">=</span> <span class="st">&quot;utf-8&quot;</span><span class="op">;</span></span>
+<span id="cb2-2"><span class="dt">const</span> <span class="dt">int</span> iTimeoutMs <span class="op">=</span> <span class="dv">60000</span><span class="op">;</span></span>
+<span id="cb2-3"><span class="dt">const</span> <span class="dt">int</span> iMinDataRows <span class="op">=</span> <span class="dv">2</span><span class="op">;</span></span>
+<span id="cb2-4"><span class="kw">static</span> <span class="kw">readonly</span> HashSet<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> hsSupportedExts <span class="op">=</span></span>
+<span id="cb2-5">    <span class="kw">new</span> HashSet<span class="op">&lt;</span><span class="dt">string</span><span class="op">&gt;</span> <span class="op">{</span> <span class="st">&quot;.docx&quot;</span><span class="op">,</span> <span class="st">&quot;.xlsx&quot;</span><span class="op">,</span> <span class="st">&quot;.pdf&quot;</span> <span class="op">};</span></span></code></pre></div>
 <p><strong>Note on PascalCase constants</strong>: C# convention often
 uses <code>PascalCase</code> for <code>public const</code> and
 <code>public static readonly</code> fields (<code>int.MaxValue</code>,
@@ -456,24 +457,24 @@ or inline when the declaration itself specifies an initial value.</li>
 </ul>
 <p>Example inside a method:</p>
 <div class="sourceCode" id="cb3"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">static</span> <span class="dt">int</span> <span class="fu">processFolder</span><span class="op">(</span><span class="dt">string</span> sInputDir<span class="op">,</span> <span class="dt">string</span> sOutputDir<span class="op">)</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">const</span> <span class="dt">int</span> iMaxFiles <span class="op">=</span> <span class="dv">1000</span><span class="op">;</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">const</span> <span class="dt">string</span> sLogSuffix <span class="op">=</span> <span class="st">&quot;.log&quot;</span><span class="op">;</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span> bAnyFailed<span class="op">,</span> bAnySucceeded<span class="op">;</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> iFailed<span class="op">,</span> iProcessed<span class="op">;</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">string</span> sBaseName<span class="op">,</span> sCurrentPath<span class="op">;</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    bAnyFailed <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    bAnySucceeded <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    iFailed <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    iProcessed <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    sBaseName <span class="op">=</span> <span class="st">&quot;&quot;</span><span class="op">;</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    sCurrentPath <span class="op">=</span> <span class="st">&quot;&quot;</span><span class="op">;</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ... logic ...</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><span class="kw">private</span> <span class="kw">static</span> <span class="dt">int</span> <span class="fu">processFolder</span><span class="op">(</span><span class="dt">string</span> sInputDir<span class="op">,</span> <span class="dt">string</span> sOutputDir<span class="op">)</span></span>
+<span id="cb3-2"><span class="op">{</span></span>
+<span id="cb3-3">    <span class="dt">const</span> <span class="dt">int</span> iMaxFiles <span class="op">=</span> <span class="dv">1000</span><span class="op">;</span></span>
+<span id="cb3-4">    <span class="dt">const</span> <span class="dt">string</span> sLogSuffix <span class="op">=</span> <span class="st">&quot;.log&quot;</span><span class="op">;</span></span>
+<span id="cb3-5"></span>
+<span id="cb3-6">    <span class="dt">bool</span> bAnyFailed<span class="op">,</span> bAnySucceeded<span class="op">;</span></span>
+<span id="cb3-7">    <span class="dt">int</span> iFailed<span class="op">,</span> iProcessed<span class="op">;</span></span>
+<span id="cb3-8">    <span class="dt">string</span> sBaseName<span class="op">,</span> sCurrentPath<span class="op">;</span></span>
+<span id="cb3-9"></span>
+<span id="cb3-10">    bAnyFailed <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb3-11">    bAnySucceeded <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb3-12">    iFailed <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb3-13">    iProcessed <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb3-14">    sBaseName <span class="op">=</span> <span class="st">&quot;&quot;</span><span class="op">;</span></span>
+<span id="cb3-15">    sCurrentPath <span class="op">=</span> <span class="st">&quot;&quot;</span><span class="op">;</span></span>
+<span id="cb3-16"></span>
+<span id="cb3-17">    <span class="co">// ... logic ...</span></span>
+<span id="cb3-18"><span class="op">}</span></span></code></pre></div>
 <p>For class-level fields, the same rules apply: group by type,
 alphabetize within and between groups, declare constants above
 variables.</p>
@@ -510,8 +511,8 @@ handlers, disposable operations), <code>void</code> is fine.</p></li>
 <li><p>Use <strong>single-line syntax</strong> for simple
 one-consequence conditionals:</p>
 <div class="sourceCode" id="cb4"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> <span class="op">(</span>sPath <span class="op">==</span> <span class="kw">null</span><span class="op">)</span> <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentNullException</span><span class="op">(</span><span class="fu">nameof</span><span class="op">(</span>sPath<span class="op">));</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> <span class="op">(</span>bReady<span class="op">)</span> <span class="kw">return</span> <span class="kw">true</span><span class="op">;</span></span></code></pre></div></li>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><span class="kw">if</span> <span class="op">(</span>sPath <span class="op">==</span> <span class="kw">null</span><span class="op">)</span> <span class="kw">throw</span> <span class="kw">new</span> <span class="fu">ArgumentNullException</span><span class="op">(</span><span class="fu">nameof</span><span class="op">(</span>sPath<span class="op">));</span></span>
+<span id="cb4-2"><span class="kw">if</span> <span class="op">(</span>bReady<span class="op">)</span> <span class="kw">return</span> <span class="kw">true</span><span class="op">;</span></span></code></pre></div></li>
 <li><p>Method names follow the same lower camel case rule as variables,
 with no Hungarian type prefix: <code>convertOne</code>,
 <code>splitSourceField</code>, <code>deriveOutputDir</code>. (See the
@@ -523,7 +524,7 @@ judgment call.)</p></li>
 <p>Prefer <strong>foreach</strong> loops over index-based
 <code>for</code> loops whenever iterating a collection.</p>
 <div class="sourceCode" id="cb5"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> sFile <span class="kw">in</span> lsFiles<span class="op">)</span> <span class="fu">processFile</span><span class="op">(</span>sFile<span class="op">);</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> sFile <span class="kw">in</span> lsFiles<span class="op">)</span> <span class="fu">processFile</span><span class="op">(</span>sFile<span class="op">);</span></span></code></pre></div>
 <p>Use index-based <code>for</code> only when the index itself is needed
 — for example, when processing pairs of adjacent elements, or when
 modifying the collection by position.</p>
@@ -539,13 +540,13 @@ declaration from C# 8+) for any <code>IDisposable</code> resource. Place
 right after the variable declarations, so the scope of the disposable is
 clear.</p>
 <div class="sourceCode" id="cb6"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> reader <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamReader</span><span class="op">(</span>sPath<span class="op">))</span> <span class="op">{</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ... use reader ...</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> reader <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamReader</span><span class="op">(</span>sPath<span class="op">))</span> <span class="op">{</span></span>
+<span id="cb6-2">    <span class="co">// ... use reader ...</span></span>
+<span id="cb6-3"><span class="op">}</span></span></code></pre></div>
 <p>or, in C# 8+ block-bodied methods:</p>
 <div class="sourceCode" id="cb7"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> <span class="dt">var</span> reader <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamReader</span><span class="op">(</span>sPath<span class="op">);</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">// reader is disposed at end of enclosing scope</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><span class="kw">using</span> <span class="dt">var</span> reader <span class="op">=</span> <span class="kw">new</span> <span class="fu">StreamReader</span><span class="op">(</span>sPath<span class="op">);</span></span>
+<span id="cb7-2"><span class="co">// reader is disposed at end of enclosing scope</span></span></code></pre></div>
 <hr />
 <h2 id="imports-using-directives">10. Imports (<code>using</code>
 Directives)</h2>
@@ -559,13 +560,13 @@ alphabetized.</li>
 </ol>
 <p>Each <code>using</code> directive on its own line.</p>
 <div class="sourceCode" id="cb8"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> System<span class="op">;</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> System<span class="op">.</span><span class="fu">Collections</span><span class="op">.</span><span class="fu">Generic</span><span class="op">;</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> System<span class="op">.</span><span class="fu">IO</span><span class="op">;</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> System<span class="op">.</span><span class="fu">Text</span><span class="op">;</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> System<span class="op">.</span><span class="fu">Xml</span><span class="op">;</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> Markdig<span class="op">;</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><span class="kw">using</span> System<span class="op">;</span></span>
+<span id="cb8-2"><span class="kw">using</span> System<span class="op">.</span><span class="fu">Collections</span><span class="op">.</span><span class="fu">Generic</span><span class="op">;</span></span>
+<span id="cb8-3"><span class="kw">using</span> System<span class="op">.</span><span class="fu">IO</span><span class="op">;</span></span>
+<span id="cb8-4"><span class="kw">using</span> System<span class="op">.</span><span class="fu">Text</span><span class="op">;</span></span>
+<span id="cb8-5"><span class="kw">using</span> System<span class="op">.</span><span class="fu">Xml</span><span class="op">;</span></span>
+<span id="cb8-6"></span>
+<span id="cb8-7"><span class="kw">using</span> Markdig<span class="op">;</span></span></code></pre></div>
 <hr />
 <h2 id="string-delimiters">11. String Delimiters</h2>
 <p>Use <strong>double quotes</strong> for all strings (C# has no
@@ -594,14 +595,14 @@ Initializers</h2>
 multiple lines only when the line would otherwise exceed a reasonable
 width (typically ~100 characters).</p>
 <div class="sourceCode" id="cb9"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> d <span class="op">=</span> <span class="kw">new</span> Dictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;</span> <span class="op">{</span> <span class="op">{</span> <span class="st">&quot;alpha&quot;</span><span class="op">,</span> <span class="dv">1</span> <span class="op">},</span> <span class="op">{</span> <span class="st">&quot;beta&quot;</span><span class="op">,</span> <span class="dv">2</span> <span class="op">}</span> <span class="op">};</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> dFields <span class="op">=</span> <span class="kw">new</span> Dictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> <span class="st">&quot;name&quot;</span><span class="op">,</span> sName <span class="op">},</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> <span class="st">&quot;email&quot;</span><span class="op">,</span> sEmail <span class="op">},</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> <span class="st">&quot;phone&quot;</span><span class="op">,</span> sPhone <span class="op">},</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span> <span class="st">&quot;address&quot;</span><span class="op">,</span> sAddress <span class="op">}</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><span class="dt">var</span> d <span class="op">=</span> <span class="kw">new</span> Dictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">int</span><span class="op">&gt;</span> <span class="op">{</span> <span class="op">{</span> <span class="st">&quot;alpha&quot;</span><span class="op">,</span> <span class="dv">1</span> <span class="op">},</span> <span class="op">{</span> <span class="st">&quot;beta&quot;</span><span class="op">,</span> <span class="dv">2</span> <span class="op">}</span> <span class="op">};</span></span>
+<span id="cb9-2"></span>
+<span id="cb9-3"><span class="dt">var</span> dFields <span class="op">=</span> <span class="kw">new</span> Dictionary<span class="op">&lt;</span><span class="dt">string</span><span class="op">,</span> <span class="dt">string</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb9-4">    <span class="op">{</span> <span class="st">&quot;name&quot;</span><span class="op">,</span> sName <span class="op">},</span></span>
+<span id="cb9-5">    <span class="op">{</span> <span class="st">&quot;email&quot;</span><span class="op">,</span> sEmail <span class="op">},</span></span>
+<span id="cb9-6">    <span class="op">{</span> <span class="st">&quot;phone&quot;</span><span class="op">,</span> sPhone <span class="op">},</span></span>
+<span id="cb9-7">    <span class="op">{</span> <span class="st">&quot;address&quot;</span><span class="op">,</span> sAddress <span class="op">}</span></span>
+<span id="cb9-8"><span class="op">};</span></span></code></pre></div>
 <hr />
 <h2 id="error-handling">14. Error Handling</h2>
 <ul>
@@ -613,15 +614,15 @@ universal abbreviation of the class name <code>Exception</code>).</li>
 <code>throw ex;</code> to preserve the stack trace.</li>
 </ul>
 <div class="sourceCode" id="cb10"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">try</span> <span class="op">{</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">convertOne</span><span class="op">(</span>sFile<span class="op">);</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="kw">catch</span> <span class="op">(</span>FileNotFoundException ex<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    Console<span class="op">.</span><span class="fu">Error</span><span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span><span class="st">&quot;File not found: &quot;</span> <span class="op">+</span> ex<span class="op">.</span><span class="fu">FileName</span><span class="op">);</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="kw">catch</span> <span class="op">(</span>Exception ex<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    logger<span class="op">.</span><span class="fu">error</span><span class="op">(</span><span class="st">&quot;Unexpected: &quot;</span> <span class="op">+</span> ex<span class="op">.</span><span class="fu">Message</span><span class="op">);</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">throw</span><span class="op">;</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><span class="kw">try</span> <span class="op">{</span></span>
+<span id="cb10-2">    <span class="fu">convertOne</span><span class="op">(</span>sFile<span class="op">);</span></span>
+<span id="cb10-3"><span class="op">}</span> <span class="kw">catch</span> <span class="op">(</span>FileNotFoundException ex<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-4">    Console<span class="op">.</span><span class="fu">Error</span><span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span><span class="st">&quot;File not found: &quot;</span> <span class="op">+</span> ex<span class="op">.</span><span class="fu">FileName</span><span class="op">);</span></span>
+<span id="cb10-5">    <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb10-6"><span class="op">}</span> <span class="kw">catch</span> <span class="op">(</span>Exception ex<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-7">    logger<span class="op">.</span><span class="fu">error</span><span class="op">(</span><span class="st">&quot;Unexpected: &quot;</span> <span class="op">+</span> ex<span class="op">.</span><span class="fu">Message</span><span class="op">);</span></span>
+<span id="cb10-8">    <span class="kw">throw</span><span class="op">;</span></span>
+<span id="cb10-9"><span class="op">}</span></span></code></pre></div>
 <hr />
 <h2 id="file-organization">15. File Organization</h2>
 <ul>
@@ -644,13 +645,13 @@ labels. A comment should explain <strong>why</strong> a piece of code
 does what it does, not restate <strong>what</strong> it does — the code
 already says what.</p>
 <div class="sourceCode" id="cb11"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Refuse to overwrite the input file with its own output. This can</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">// happen in plain-text mode when the input is a .txt file: the</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">// output path derived from the basename would collide with the</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">// source. Without this guard, --force would silently destroy the</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">// user&#39;s source file.</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="kw">if</span> <span class="op">(</span>sInPath<span class="op">.</span><span class="fu">Equals</span><span class="op">(</span>sOutPath<span class="op">,</span> StringComparison<span class="op">.</span><span class="fu">OrdinalIgnoreCase</span><span class="op">))</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span></code></pre></div>
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><span class="co">// Refuse to overwrite the input file with its own output. This can</span></span>
+<span id="cb11-2"><span class="co">// happen in plain-text mode when the input is a .txt file: the</span></span>
+<span id="cb11-3"><span class="co">// output path derived from the basename would collide with the</span></span>
+<span id="cb11-4"><span class="co">// source. Without this guard, --force would silently destroy the</span></span>
+<span id="cb11-5"><span class="co">// user&#39;s source file.</span></span>
+<span id="cb11-6"><span class="kw">if</span> <span class="op">(</span>sInPath<span class="op">.</span><span class="fu">Equals</span><span class="op">(</span>sOutPath<span class="op">,</span> StringComparison<span class="op">.</span><span class="fu">OrdinalIgnoreCase</span><span class="op">))</span></span>
+<span id="cb11-7">    <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span></code></pre></div>
 <hr />
 <h2 id="cross-program-naming-conventions">17. Cross-Program Naming
 Conventions</h2>
@@ -817,5 +818,6 @@ the language allows, so that a reader — including a reader using a
 screen reader — can comprehend any section of code from the text alone,
 without hovering, without cross-referencing, and without holding a
 mental map of types declared fifty lines earlier.</p>
+</main>
 </body>
 </html>
