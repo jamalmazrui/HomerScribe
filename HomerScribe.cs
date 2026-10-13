@@ -346,7 +346,7 @@ namespace Homer
             addParam("speech", "", "flag", "yes", "Find where descriptions go by detecting speech with Whisper, rather than by listening for silence");
             addParam("captions", "", "flag", "yes", "Use the film's own English captions as the transcript when it has them, instead of listening to it with Whisper");
             addParam("auto-captions", "", "flag", "no", "Also accept captions a machine made, such as YouTube's automatic ones. They carry no speaker names and none of the sounds that are not speech, so listening to the film usually gives a richer transcript");
-            addParam("whisper-model", "", "string", "small", "Which Whisper model to hear the film with: tiny, base, small, medium or large-v3");
+            addParam("whisper-model", "", "string", "large-v3-turbo-q5_0", "Which Whisper model to hear the film with: large-v3-turbo-q5_0 (best for its size), small, medium, large-v3 and the rest whisper.cpp offers");
             // THREADS. whisper-cli uses four unless told otherwise; a run of 122
             // podcasts on 4 October 2026 spent 13.9 of its 14 hours in Whisper
             // at a quarter of real time on those four. Half the logical
@@ -2325,9 +2325,35 @@ namespace Homer
             return sFound;
         }
 
+        // THE BEST MODEL FOR ITS SIZE (13 October 2026). Whisper large-v3 turbo, quantized to five bits, is 547 MB --
+        // about the size of small, at 466 MB, and nothing like large-v3's 2.9 GB -- and hears nearly as well as
+        // large-v3: names, product terms and accented speech that small misheard ("Ask Sharkey" for Ask Sharky). Its
+        // slim decoder keeps it quick on an ordinary computer. When it is chosen but not yet installed, small is used,
+        // and the log says so, so a transcription never fails for want of the newer model.
         static string whisperModelPath()
         {
-            string sName = "ggml-" + text("whisper-model") + ".bin";
+            string sFound = whisperModelFile(text("whisper-model"));
+            if (sFound == "" && text("whisper-model") != "small")
+            {
+                sFound = whisperModelFile("small");
+                if (sFound != "") logMessage("Whisper " + text("whisper-model") + " is not installed yet, so Whisper small hears this one; "
+                    + "running setup again installs the better model.", "WARN", "");
+            }
+            return sFound;
+        }
+
+        // The friendly name of the model that heard a recording, for a document's head.
+        static string whisperModelLabel()
+        {
+            string sPath = whisperModelPath();
+            string sName = sPath == "" ? text("whisper-model") : Path.GetFileNameWithoutExtension(sPath).Replace("ggml-", "");
+            if (sName.StartsWith("large-v3-turbo")) return "Whisper large-v3 turbo";
+            return "Whisper " + sName;
+        }
+
+        static string whisperModelFile(string sModel)
+        {
+            string sName = "ggml-" + sModel + ".bin";
 
             // BESIDE whisper-cli.exe FIRST. installWhisper.cmd puts the program
             // and its model in the same folder, machine-wide, and that folder
@@ -5123,7 +5149,7 @@ namespace Homer
             // make the reader choose between them.
             writeHead(fDoc, "What is said in " + sSourceName, sSourceName, nDuration,
                       sTranscriptFrom == ""
-                      ? "Heard by Whisper " + text("whisper-model")
+                      ? "Heard by " + whisperModelLabel()
                       : "Taken from " + sTranscriptFrom);
             // A note only where there is something for it to explain. Telling
             // a reader what a speaker's name looks like, in a film where
@@ -5141,22 +5167,47 @@ namespace Homer
                 fDoc.WriteLine("## What is said");
                 fDoc.WriteLine("");
             }
+            // PARAGRAPHS, NOT ONE LINE PER STRETCH (13 October 2026, from the readable-text guidance now in HomerDev).
+            // Whisper and captions both break speech wherever their windows end, and each piece became a paragraph of
+            // its own, so a talk read as a column of half-sentences. Pieces are now joined into paragraphs, and a new
+            // one begins only where the recording gives a reason: a different speaker, a pause of a second and a half
+            // or more, a sound rather than speech, a new section, or about ninety words at the end of a sentence. Every
+            // word is kept, in order; nothing is reworded. A speaker's name is written once, where their paragraph begins.
+            System.Text.StringBuilder sbPara = new System.Text.StringBuilder();
+            string sParaWho = "";
+            int iParaWords = 0;
+            double nPrevEnd = -1.0;
             foreach (Speech oSpeech in lSpeech)
             {
                 if (oSpeech.sText == "") continue;
+                bool bNewSection = false;
                 if (bSections)
                 {
                     double nThis = Math.Floor(oSpeech.nStart / nDefaultChapter) * nDefaultChapter;
                     if (nThis != nChapter)
                     {
+                        if (sbPara.Length > 0) { fDoc.WriteLine(sbPara.ToString()); fDoc.WriteLine(""); sbPara.Length = 0; iParaWords = 0; }
                         nChapter = nThis;
+                        bNewSection = true;
                         fDoc.WriteLine("## " + sectionTitle(nChapter));
                         fDoc.WriteLine("");
                     }
                 }
-                fDoc.WriteLine(saidAs(oSpeech));
-                fDoc.WriteLine("");
+                bool bSound = soundOnly(oSpeech.sText);
+                string sSoFar = sbPara.ToString().TrimEnd();
+                bool bSentenceEnded = sSoFar.Length > 0 && ".?!\"'".IndexOf(sSoFar[sSoFar.Length - 1]) >= 0;
+                bool bBreak = sbPara.Length == 0 || bNewSection || bSound
+                    || (oSpeech.sWho != "" && oSpeech.sWho != sParaWho)
+                    || (nPrevEnd >= 0.0 && oSpeech.nStart - nPrevEnd >= 1.5)
+                    || (iParaWords >= 90 && bSentenceEnded)
+                    || (sSoFar.Length > 0 && soundOnly(sSoFar));
+                if (bBreak && sbPara.Length > 0) { fDoc.WriteLine(sbPara.ToString()); fDoc.WriteLine(""); sbPara.Length = 0; iParaWords = 0; }
+                if (sbPara.Length == 0) { sbPara.Append(saidAs(oSpeech)); if (oSpeech.sWho != "") sParaWho = oSpeech.sWho; }
+                else sbPara.Append(" ").Append(oSpeech.sText.Trim());
+                iParaWords += oSpeech.sText.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
+                nPrevEnd = oSpeech.nEnd > 0.0 ? oSpeech.nEnd : oSpeech.nStart;
             }
+            if (sbPara.Length > 0) { fDoc.WriteLine(sbPara.ToString()); fDoc.WriteLine(""); }
             fDoc.Close();
         }
 
@@ -5194,7 +5245,7 @@ namespace Homer
             bool bSections = wantsSections(nDuration);
             writeHead(fDoc, "A descriptive transcript of " + sSourceName, sSourceName, nDuration,
                       counted(lLines.Count, "entry", "entries")
-                      + (sTranscriptFrom == "" ? ", the words heard by Whisper " + text("whisper-model")
+                      + (sTranscriptFrom == "" ? ", the words heard by " + whisperModelLabel()
                                                : ", the words taken from " + sTranscriptFrom));
             // "Descriptive transcript" is the term of art, and the W3C Web
             // Accessibility Initiative names this document as the one a reader
@@ -12137,7 +12188,11 @@ namespace Homer
             // THIS address a moment ago in fetchFromWeb. Without this, a local
             // file following a downloaded one inherited its title, publisher
             // and description, and said so at the head of its documents.
-            if (sWebAddress != sVideoAddress)
+            // A LOCAL FILE ALWAYS STARTS CLEAN (13 October 2026). The test was only "is this a different address?",
+            // and a local file has none, so in a run of local files the address never changed and nothing was
+            // cleared: once one recording supplied its own title, every later file without one took it. In the run
+            // of 4 October, 86 of 121 podcasts were titled "Accessing the Kindle App for PC with JAWS".
+            if (sWebAddress == "" || sWebAddress != sVideoAddress)
             {
                 sVideoTitle = "";
                 sVideoBy = "";

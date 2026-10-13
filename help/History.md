@@ -2,6 +2,12 @@
 
 
 
+## 13 October 2026 -- the right title, the best model for its size, and paragraphs
+
+- **Each recording keeps its own title.** In a run of local files, a title one file carried was given to every later file without one: on 4 October, 86 of 121 podcasts were headed "Accessing the Kindle App for PC with JAWS". What a source says about itself is now cleared before every local file, as it already was between web addresses.
+- **Whisper large-v3 turbo hears by default.** Quantized to five bits it is 547 MB, about the size of small, and hears nearly as well as large-v3, which is five times larger: fewer misheard names and terms, such as "Ask Sharkey" for Ask Sharky. Setup offers it as Install where only the small model is present, and HomerScribe uses small, saying so in the log, until it is there. small remains a choice for speed.
+- **Transcripts read as paragraphs.** Whisper and captions break speech wherever their windows end, and each piece was its own paragraph, so a talk read as a column of half-sentences. Pieces are now joined, and a paragraph begins only at a new speaker, a pause of a second and a half or more, a sound, a new section, or about ninety words at a sentence's end. Every word is kept, in order. This follows the readable-text guidance now in the Homer Development Kit, which an AI tool can also use to edit a transcript further.
+
 ## 11 October 2026 -- from an audit and a report
 
 - **A tutorial that fails fails the build.** A failed tutorial build was a warning, so 1.0.279 was released with buildTutorials exit code 1 in its own log. The build now stops there, through its own failure path, which also restores the version number.

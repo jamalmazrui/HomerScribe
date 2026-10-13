@@ -453,8 +453,10 @@ begin
   iOllama    := homerAdd('Ollama', 'Ollama.Ollama',
                          'ollama', '{localappdata}\Programs\Ollama\ollama.exe',
                          'describes video and pictures', 'Ollama');
+  // INSTALLED MEANS THE MODEL IS THERE TOO (13 October 2026): Whisper hears best with large-v3 turbo, so a computer
+  // with the program but not that model is offered Install, ticked, and installWhisper fetches the model alone.
   iWhisper   := homerAdd('Whisper', '',
-                         '"{pf}\Whisper\whisper-cli.exe"', '{pf}\Whisper\whisper-cli.exe',
+                         '"{pf}\Whisper\whisper-cli.exe"', '{pf}\Whisper\ggml-large-v3-turbo-q5_0.bin',
                          'transcribes speech', '');
   iTesseract := homerAdd('Tesseract', 'UB-Mannheim.TesseractOCR',
                          'tesseract', '{pf}\Tesseract-OCR\tesseract.exe',

@@ -224,11 +224,20 @@ if errorlevel 1 (
 :push
 >> "%log%" echo PUSH START %date% %time%
 git push >> "%log%" 2>&1
+if not errorlevel 1 goto :pushed
+rem A LARGE PUSH TIMES OUT; IT IS TRIED AGAIN, ONCE, BUILT FOR SIZE (13 October 2026). DbDo's push of 60 files -- the
+rem walks' audio and the 67 MB RadioTrail.db -- ended "RPC failed; HTTP 408 ... the remote end hung up unexpectedly".
+rem The second try sends with a 500 MB buffer, so git does not stream the pack in small pieces, and over HTTP/1.1, the
+rem usual remedy for large pushes to GitHub timing out. Only if that fails too is the push a failure.
+>> "%log%" echo The first push failed; trying again once with http.postBuffer=524288000 and http.version=HTTP/1.1
+echo The push did not go through the first time, so it is being tried again in a way suited to a large upload.
+git -c http.postBuffer=524288000 -c http.version=HTTP/1.1 push >> "%log%" 2>&1
 if errorlevel 1 (
   echo The push failed. The log has why: %log%
   echo PUSH FAILED>> "%log%"
   endlocal & exit /b 1
 )
+:pushed
 rem ORIGIN FOLLOWS A MOVE (1.42.1): when GitHub says the repository moved,
 rem point origin at the new location once, so it stops saying so. Placed
 rem after the push failure check, which must see git push's own errorlevel.

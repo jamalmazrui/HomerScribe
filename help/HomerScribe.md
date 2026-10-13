@@ -541,9 +541,14 @@ fewer than four, which is faster than the four it would pick for itself;
 many threads each file ran on and how long Whisper took to hear and to write
 it, so a slow run can be understood.
 
-`--speech no` turns it off. `--whisper-model` chooses a different size —
-`small` is the default and is the right size for this: the question is only where
-speech is, not what every word was. `--dialogue-window` sets how much preceding
+`--speech no` turns it off. `--whisper-model` chooses a different model. The
+default is `large-v3-turbo-q5_0`, Whisper large-v3 turbo: at 547 MB it is about
+the size of `small` (466 MB) and hears nearly as well as the full large-v3 (2.9 GB),
+so names, product terms and accented speech come out right far more often. It is
+slower than `small`, perhaps half again as long or more on an ordinary computer, so
+for a long batch where only the timing of speech matters, `--whisper-model small` is
+quicker. If the turbo model is not installed yet, HomerScribe uses `small` and the log
+says so; running setup again installs it. `--dialogue-window` sets how much preceding
 dialogue the model sees, or `0` for none.
 
 ### Names Whisper should spell right
