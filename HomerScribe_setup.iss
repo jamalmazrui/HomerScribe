@@ -279,129 +279,129 @@ FileName: "{app}\scripts\installExifTool.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelExifTool}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallExifTool
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isInstallExifTool
 
 FileName: "{app}\scripts\installOllama.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelOllama}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallOllama
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isInstallOllama
 
 FileName: "{app}\scripts\installPandoc.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelPandoc}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallPandoc
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isInstallPandoc
 
 FileName: "{app}\scripts\installTextModel.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelTextModel}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isModelInstallText
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isModelInstallText
 
 FileName: "{app}\scripts\installModels.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelVisionModel}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isModelInstallVision
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isModelInstallVision
 
 FileName: "{app}\scripts\installTesseract.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelTesseract}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallTesseract
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isInstallTesseract
 
 FileName: "{app}\scripts\installWhisper.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelWhisper}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isInstallWhisper
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isInstallWhisper
 
 ; ---- 2. Update ---------------------------------------------------------------
 FileName: "{app}\scripts\installExifTool.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelExifTool}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdateExifTool
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isUpdateExifTool
 
 FileName: "{app}\scripts\installOllama.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelOllama}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdateOllama
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isUpdateOllama
 
 FileName: "{app}\scripts\installPandoc.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelPandoc}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdatePandoc
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isUpdatePandoc
 
 FileName: "{app}\scripts\installTesseract.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelTesseract}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdateTesseract
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isUpdateTesseract
 
 FileName: "{app}\scripts\installWhisper.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelWhisper}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated; Check: isUpdateWhisper
+  Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isUpdateWhisper
 
 ; ---- 3. Reinstall, unticked --------------------------------------------------
 FileName: "{app}\scripts\installExifTool.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelExifTool}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallExifTool
+  Flags: postinstall runascurrentuser waituntilterminated unchecked; Check: homerFinishRuns and isReinstallExifTool
 
 FileName: "{app}\scripts\installOllama.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelOllama}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallOllama
+  Flags: postinstall runascurrentuser waituntilterminated unchecked; Check: homerFinishRuns and isReinstallOllama
 
 FileName: "{app}\scripts\installPandoc.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelPandoc}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallPandoc
+  Flags: postinstall runascurrentuser waituntilterminated unchecked; Check: homerFinishRuns and isReinstallPandoc
 
 FileName: "{app}\scripts\installTextModel.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelTextModel}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isModelReinstallText
+  Flags: postinstall runascurrentuser waituntilterminated unchecked; Check: homerFinishRuns and isModelReinstallText
 
 FileName: "{app}\scripts\installModels.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelVisionModel}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isModelReinstallVision
+  Flags: postinstall runascurrentuser waituntilterminated unchecked; Check: homerFinishRuns and isModelReinstallVision
 
 FileName: "{app}\scripts\installTesseract.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelTesseract}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallTesseract
+  Flags: postinstall runascurrentuser waituntilterminated unchecked; Check: homerFinishRuns and isReinstallTesseract
 
 FileName: "{app}\scripts\installWhisper.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
   Description: "{code:labelWhisper}"; \
-  Flags: postinstall skipifsilent runascurrentuser waituntilterminated unchecked; Check: isReinstallWhisper
+  Flags: postinstall runascurrentuser waituntilterminated unchecked; Check: homerFinishRuns and isReinstallWhisper
 
 ; ---- 4. Launch, ticked -------------------------------------------------------
 FileName: "{cmd}"; \
   Parameters: "/c md ""{localappdata}\{#AppName}\logs"" 2>nul & echo launch > ""{localappdata}\{#AppName}\logs\{#AppName}_launch.flag"""; \
   WorkingDir: "{app}\exec"; \
   Description: "Launch {#AppName} (desktop hotkey {#HotKeyDisplay})"; \
-  Flags: postinstall skipifsilent runhidden runasoriginaluser
+  Flags: postinstall runhidden runasoriginaluser; Check: homerFinishRuns
 
 ; ---- 5. Open the user guide, unticked ----------------------------------------
 FileName: "{app}\help\ReadMe.htm"; \
   Description: "Open the user guide (F1 in {#AppName})"; \
-  Flags: postinstall shellexec nowait skipifsilent skipifdoesntexist runasoriginaluser unchecked
+  Flags: postinstall shellexec nowait skipifdoesntexist runasoriginaluser unchecked; Check: homerFinishRuns
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\context"

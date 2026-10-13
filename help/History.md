@@ -2,6 +2,27 @@
 
 
 
+## 13 October 2026 -- every default with no screens
+
+- **HomerScribe_setup.exe /verysilent /defaults installs with every default and no screens.** HomerScribe's installer did not honour /defaults at all: its finish-page entries were skipped in any silent install. Each of its 21 entries now runs in a silent install given /defaults when its box is ticked by default, as it would from the finish page. /silent /defaults shows a progress window; /defaults alone changes nothing.
+
+## 13 October 2026 -- a partial result says it is partial
+
+From a second ChatGPT audit, of the BT Code run.
+
+- **A transcript Whisper could not finish says so.** When a stuck stretch cannot be heard again, its minutes are recorded: transcribed.md opens "This transcript is partial" with the missing times, the results box adds "PARTIAL: no words for" them, and the transcript is not kept for reuse, so the next run tries again.
+- **What depends on the transcript says when it is incomplete.** The count of descriptions over speech is given only where speech was heard, and unknown elsewhere; the advertisement report says its search was incomplete when words are missing or a model answer could not be read, rather than that nothing was found.
+- **The combined document claims what it holds.** It no longer calls itself everything the film offers or the whole of the film: its words are recognized by a machine, or taken from captions, and may hold mistakes, and its descriptions come from sampled moments.
+- **Descriptions describe the film, not the grid.** The vision model sees four frames tiled together, and kept describing "four screens"; it is told the tiling is only an arrangement. It is also told to say what text on a screen reads rather than conclude from it that something worked, and not to repeat what an earlier description said.
+
+## 13 October 2026 -- from the BT Code run
+
+The 56-minute BT Code talk, the first long run with Whisper large-v3 turbo, came back with 17 minutes of words.
+
+- **A Whisper loop is heard again.** At 17:08 Whisper began writing "h2." and wrote it 1,720 times, to the film's end. The repeats were rightly dropped, and the 39 minutes of speech beneath them went too. Whisper reads each stretch in the light of the text before it, so a loop feeds itself. Any line repeated back to back over more than a minute is now heard again with no earlier text to copy, and what is heard takes the loop's place; the log says when this happens.
+- **Speaker names Whisper made up are taken off.** Whisper cannot tell who is speaking, yet it opened 123 of 127 stretches with "Stephen Blasey:", a misheard name copied forward. When one such label opens at least half the stretches, labels like it come off. Captions, which name speakers truly, are left as they are.
+- **Automatic captions are not fetched only to be set aside.** Whisper is preferred to automatic captions unless --auto-captions yes, yet the automatic track was fetched first, and the fetch was refused with "429 Too Many Requests". It is no longer fetched in that case, and the log says why. When automatic captions are wanted, the original-language track (en-orig) comes before the translated one (en).
+
 ## 13 October 2026 -- from an audit
 
 - **A transcript is reused only for what made it.** The working folder is named for the recording's path, and its transcript was reused whenever it was there, so a replaced recording, the better model or new vocabulary all brought back the old words. Each transcript now records its model and that model's size, the vocabulary, and the recording's size and time, and is made again when any of those changed. Transcripts made before this are made once more, which is what lets Whisper large-v3 turbo reach recordings transcribed with small.

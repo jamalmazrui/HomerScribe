@@ -3011,6 +3011,113 @@ namespace Homer
 
         // Transcribing a long film is minutes of work, so the result is kept and
         // a resumed run never pays for it twice.
+        // WHISPER STUCK IN A LOOP IS HEARD AGAIN (13 October 2026). Hearing the BT Code talk, Whisper large-v3 turbo began at
+        // 17:08 to write "h2." and wrote it 1,720 times, to the end: the repeats were dropped, rightly, and 39 minutes of
+        // speech were lost with them. Whisper reads each stretch in the light of the text before it, so a loop feeds
+        // itself. Any run of one line repeated over more than a minute is now heard again with --max-context 0, which
+        // gives each window no earlier text to copy, and the stretches it hears take that span's place.
+        static List<Speech> recoverLoops(string sWhisper, string sModel, string sWave, string sBase, string sJson, int iThreads, string sPrompt, List<Speech> lSpeech)
+        {
+            List<double[]> lLoops = whisperLoops(sJson);
+            int iRedo = 0;
+            foreach (double[] aSpan in lLoops)
+            {
+                iRedo++;
+                long iFromMs = (long) Math.Floor(aSpan[0] * 1000.0), iLongMs = (long) Math.Ceiling((aSpan[1] - aSpan[0]) * 1000.0) + 1000;
+                logMessage("Whisper repeated one line from " + formatClock(aSpan[0]) + " to " + formatClock(aSpan[1]) + "; hearing that stretch again without earlier text to copy.",
+                           "WARN", "Hearing a stretch again that Whisper got stuck on.");
+                string sRedoBase = sBase + "-again" + iRedo.ToString();
+                int iExit = runStreamed(sWhisper, "-m " + quoted(sModel) + " -t " + iThreads.ToString() + " -f " + quoted(sWave) + " -l auto -mc 0 -ot " + iFromMs.ToString()
+                                        + " -d " + iLongMs.ToString() + " -oj -of " + quoted(sRedoBase) + sPrompt, "Listening again");
+                List<Speech> lAgain = File.Exists(sRedoBase + ".json") ? readTranscript(sRedoBase + ".json") : new List<Speech>();
+                if (iExit != 0 || lAgain.Count == 0)
+                {
+                    logMessage("Hearing it again gave nothing usable (exit code " + iExit.ToString() + "), so that stretch stays without words.", "WARN", "");
+                    lMissingSpeech.Add(new double[] { aSpan[0], aSpan[1] });
+                    continue;
+                }
+                // Times counted from the offset rather than the file's start are moved to where they belong.
+                if (lAgain[0].nStart < aSpan[0] - 1.0)
+                {
+                    foreach (Speech oOne in lAgain) { oOne.nStart += aSpan[0]; oOne.nEnd += aSpan[0]; }
+                    logMessage("Whisper counted those times from where it began, so they were moved to the film's own times.", "INFO", "");
+                }
+                List<Speech> lKept = new List<Speech>();
+                foreach (Speech oOne in lSpeech) if (oOne.nEnd <= aSpan[0] || oOne.nStart >= aSpan[1]) lKept.Add(oOne);
+                foreach (Speech oOne in lAgain) if (oOne.nStart >= aSpan[0] - 1.0 && oOne.nStart < aSpan[1] + 1.0) lKept.Add(oOne);
+                lKept.Sort(delegate(Speech oA, Speech oB) { return oA.nStart.CompareTo(oB.nStart); });
+                logMessage("Heard again: " + lAgain.Count.ToString() + " stretches in place of the loop.", "INFO", "");
+                lSpeech = lKept;
+                // Heard again and stuck again: the second hearing's own loop is the same gap.
+                if (whisperLoops(sRedoBase + ".json").Count > 0)
+                {
+                    logMessage("Whisper got stuck again in that stretch, so part of it is still without words.", "WARN", "");
+                    lMissingSpeech.Add(new double[] { aSpan[0], aSpan[1] });
+                }
+            }
+            return lSpeech;
+        }
+
+        // The spans where Whisper's own output repeats one line, back to back, for more than a minute.
+        static List<double[]> whisperLoops(string sJson)
+        {
+            List<double[]> lLoops = new List<double[]>();
+            try
+            {
+                JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+                oSerializer.MaxJsonLength = int.MaxValue;
+                Dictionary<string, object> dData = oSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(sJson));
+                if (!dData.ContainsKey("transcription")) return lLoops;
+                string sLast = null;
+                double nRunStart = 0.0, nRunEnd = 0.0;
+                int iRun = 0;
+                foreach (object oItem in toList(dData["transcription"]))
+                {
+                    Dictionary<string, object> dItem = toMap(oItem);
+                    if (!dItem.ContainsKey("offsets") || !dItem.ContainsKey("text")) continue;
+                    Dictionary<string, object> dOffsets = toMap(dItem["offsets"]);
+                    double nFrom = Convert.ToDouble(dOffsets["from"]) / 1000.0, nTo = Convert.ToDouble(dOffsets["to"]) / 1000.0;
+                    string sText = Convert.ToString(dItem["text"]).Trim().ToLowerInvariant();
+                    if (sLast != null && sText == sLast) { iRun++; nRunEnd = nTo; continue; }
+                    if (iRun >= 3 && nRunEnd - nRunStart > 60.0) lLoops.Add(new double[] { nRunStart, nRunEnd });
+                    sLast = sText; nRunStart = nFrom; nRunEnd = nTo; iRun = 1;
+                }
+                if (iRun >= 3 && nRunEnd - nRunStart > 60.0) lLoops.Add(new double[] { nRunStart, nRunEnd });
+            }
+            catch (Exception oError) { logMessage("Whisper's output could not be checked for loops: " + oError.Message, "WARN", ""); }
+            return lLoops;
+        }
+
+        // SPEAKER NAMES WHISPER MADE UP (13 October 2026). Whisper cannot tell who is speaking, yet large-v3 turbo began
+        // nearly every line of the BT Code talk "Stephen Blasey:", a name it misheard and then copied forward. When one
+        // "Name Name:" label opens at least half of the stretches, labels like it are taken off every stretch; real
+        // dialogue does not have one person open nearly every line. Captions, which name speakers, never come here.
+        static List<Speech> dropInventedSpeakers(List<Speech> lSpeech)
+        {
+            Regex oLabel = new Regex(@"^([A-Z][\w'.-]+(?: [A-Z][\w'.-]+){0,2}):\s+");
+            Dictionary<string, int> dCount = new Dictionary<string, int>();
+            foreach (Speech oOne in lSpeech)
+            {
+                Match oMatch = oLabel.Match(oOne.sText);
+                if (!oMatch.Success) continue;
+                string sName = oMatch.Groups[1].Value;
+                dCount[sName] = (dCount.ContainsKey(sName) ? dCount[sName] : 0) + 1;
+            }
+            int iTop = 0;
+            string sTop = "";
+            foreach (KeyValuePair<string, int> oPair in dCount) if (oPair.Value > iTop) { iTop = oPair.Value; sTop = oPair.Key; }
+            if (lSpeech.Count < 10 || iTop * 2 < lSpeech.Count) return lSpeech;
+            int iRemoved = 0;
+            foreach (Speech oOne in lSpeech)
+            {
+                string sBare = oLabel.Replace(oOne.sText, "");
+                if (sBare != oOne.sText) { oOne.sText = sBare; iRemoved++; }
+            }
+            logMessage("Took a speaker label off " + iRemoved.ToString() + " stretches: Whisper put \"" + sTop + ":\" before " + iTop.ToString() + " of "
+                       + lSpeech.Count.ToString() + ", which it cannot know.", "INFO", "");
+            return lSpeech;
+        }
+
         // What a transcript was made from, in one line: the model and its size, the vocabulary, and the recording's size
         // and last-written time.
         static string transcriptIdentity(string sInput, string sModel)
@@ -3090,9 +3197,12 @@ namespace Homer
                 return lSpeech;
             }
             lSpeech = readTranscript(sJson);
+            lSpeech = recoverLoops(sWhisper, sModel, sWave, sBase, sJson, iThreads, sPrompt, lSpeech);
+            lSpeech = dropInventedSpeakers(lSpeech);
             // Only a run Whisper finished is a transcript to trust later; an interrupted one can still leave readable
             // JSON, which this run uses but no later run reuses.
-            if (iWhisperExit == 0 && lSpeech.Count > 0) File.WriteAllText(sIdentityFile, sIdentity);
+            if (iWhisperExit == 0 && lSpeech.Count > 0 && lMissingSpeech.Count == 0) File.WriteAllText(sIdentityFile, sIdentity);
+            else if (lMissingSpeech.Count > 0) logMessage("This transcript is partial, so it is not kept for reuse: no words for " + missingSpeechText() + ".", "WARN", "");
             else logMessage("Whisper ended with exit code " + iWhisperExit.ToString() + ", so this transcript is used now but not kept for reuse.", "WARN", "");
             double nSpoken = 0.0;
             foreach (Speech oSpeech in lSpeech) nSpoken = nSpoken + (oSpeech.nEnd - oSpeech.nStart);
@@ -3657,7 +3767,13 @@ namespace Homer
                 oPrompt.Append("\n");
             }
             oPrompt.Append("The picture holds " + integer("frames").ToString() + " frames from one brief moment of the film, in time order, ");
-            oPrompt.Append("tiled left to right then top to bottom. They are one continuous moment, not separate pictures.\n\n");
+            oPrompt.Append("tiled left to right then top to bottom. They are one continuous moment, not separate pictures.\n");
+            // THE GRID IS OURS (13 October 2026, from an audit): descriptions kept saying "four screens", the tiling
+            // HomerScribe made rather than anything in the film. And text on a screen is reported, not concluded from.
+            oPrompt.Append("The tiling is only how the frames were arranged for you. Never describe a grid, panels or several "
+                         + "screens unless one frame by itself shows them. When the screen shows text, say what it reads -- "
+                         + "\"the screen reads Score: 100 percent\" -- and never conclude from it that something worked or is "
+                         + "correct. Do not repeat what an earlier description already said; describe what is new.\n\n");
             if (lNames.Count > 0)
             {
                 // A list of names with nothing to attach them to produces a name
@@ -5179,6 +5295,12 @@ namespace Homer
                       sTranscriptFrom == ""
                       ? "Heard by " + whisperModelLabel()
                       : "Taken from " + sTranscriptFrom);
+            if (lMissingSpeech.Count > 0)
+            {
+                fDoc.WriteLine("**This transcript is partial.** There are no words for " + missingSpeechText()
+                             + ", where Whisper got stuck repeating itself and hearing it again did not help. Speech there was not written down.");
+                fDoc.WriteLine("");
+            }
             // A note only where there is something for it to explain. Telling
             // a reader what a speaker's name looks like, in a film where
             // nobody is named, is a sentence spent on nothing.
@@ -5281,12 +5403,21 @@ namespace Homer
             // Accessibility Initiative names this document as the one a reader
             // who is both Deaf and blind needs. Saying so lets a reader who
             // knows the term recognise what they have.
-            fDoc.WriteLine("Everything the film offers, in the order it happens: what was said, what could be heard, "
-                         + "and what could be seen. This is what is called a descriptive transcript, and it is the whole "
-                         + "of the film for a reader who can neither watch nor listen to it.");
+            // WHAT IT HOLDS, NOT EVERYTHING (13 October 2026, from an audit): it claimed to be "the whole of the film",
+            // which no machine-made document is, least of all a partial one.
+            fDoc.WriteLine("What was said, what could be heard, and what could be seen, in the order it happens. This is what "
+                         + "is called a descriptive transcript, for a reader who can neither watch nor listen. The words were "
+                         + (sTranscriptFrom == "" ? "recognized by a machine" : "taken from " + sTranscriptFrom)
+                         + " and may hold mistakes, and the descriptions come from moments sampled from the picture, so a "
+                         + "viewer would notice things they do not mention.");
+            if (lMissingSpeech.Count > 0)
+            {
+                fDoc.WriteLine("");
+                fDoc.WriteLine("**This is partial.** There are no words for " + missingSpeechText() + ".");
+            }
             fDoc.WriteLine("");
             fDoc.WriteLine("**Paragraphs beginning \"Description\" are not part of the film.** They were written about it "
-                         + "afterwards, by a machine looking at the picture. Everything else is the film's own.");
+                         + "afterwards, by a machine looking at the picture. Everything else is the film's sound, as written down.");
             fDoc.WriteLine("");
             double nChapter = -1.0;
             if (!bSections)
@@ -6557,7 +6688,10 @@ namespace Homer
             string sTrack = trackToFetch(out bByHand);
             if (sTrack == "")
             {
-                logMessage("The page named no English caption track.", "INFO", "");
+                if (lTracksAuto.Count > 0 && lTracksWritten.Count == 0 && !flag("auto-captions"))
+                    logMessage("The page has only automatic English captions, and Whisper hears better, so none is fetched. "
+                               + "--auto-captions yes would use them.", "INFO", "");
+                else logMessage("The page named no English caption track.", "INFO", "");
                 return false;
             }
             logMessage("Fetching one caption track, " + sTrack + ", "
@@ -9205,6 +9339,7 @@ namespace Homer
                 catch (Exception oError)
                 {
                     logMessage("  That answer could not be read as JSON: " + oError.Message, "INFO", "");
+                    iAdAnswersUnread++;
                 }
                 if (lPart.Count < iChunk) break;
             }
@@ -9672,7 +9807,12 @@ namespace Homer
                              + " is where the caution is doing its work, and if the same real advertisement keeps "
                              + "being kept, the number is set too high for this material.");
                 fDoc.WriteLine("");
-                if (lFound.Count == 0) fDoc.WriteLine("Nothing that looked like an advertisement was found.");
+                if (lFound.Count == 0 && (lMissingSpeech.Count > 0 || iAdAnswersUnread > 0))
+                    fDoc.WriteLine("Nothing that looked like an advertisement was found, but the search was incomplete: "
+                        + (lMissingSpeech.Count > 0 ? "there are no words for " + missingSpeechText() + " to search" : "")
+                        + (lMissingSpeech.Count > 0 && iAdAnswersUnread > 0 ? ", and " : "")
+                        + (iAdAnswersUnread > 0 ? counted(iAdAnswersUnread, "answer", "answers") + " from the model could not be read" : "") + ".");
+                else if (lFound.Count == 0) fDoc.WriteLine("Nothing that looked like an advertisement was found.");
                 foreach (AdBreak oOne in lFound)
                 {
                     fDoc.WriteLine("## " + formatClock(oOne.nStart) + " to " + formatClock(oOne.nEnd)
@@ -12152,7 +12292,11 @@ namespace Homer
             foreach (string sKey in dTracks.Keys)
             {
                 if (!englishTag(sKey)) continue;
-                if (string.Compare(sKey, "en", true) == 0) lFound.Add(sKey);
+                // EN-ORIG FIRST (13 October 2026). YouTube's "en" automatic track is made from its original-language one,
+                // and fetching it answered "429 Too Many Requests" for the BT Code talk while en-orig, asked for in
+                // another tool the same day, came down whole. The original comes first, then en, then the rest.
+                if (string.Compare(sKey, "en-orig", true) == 0) lFound.Insert(0, sKey);
+                else if (string.Compare(sKey, "en", true) == 0) lFound.Add(sKey);
                 else lRest.Add(sKey);
             }
             lRest.Sort();
@@ -12165,6 +12309,10 @@ namespace Homer
         static string trackToFetch(out bool bByHand)
         {
             bByHand = lTracksWritten.Count > 0;
+            // NOT FETCHED TO BE THROWN AWAY (13 October 2026). Automatic captions are set aside unless --auto-captions yes,
+            // since Whisper hears better; they were still fetched first, and for the BT Code talk that fetch was refused
+            // with "429 Too Many Requests". Without a track a person wrote, and without --auto-captions, none is fetched.
+            if (!bByHand && !flag("auto-captions")) return "";
             List<string> lUse = bByHand ? lTracksWritten : lTracksAuto;
             if (lUse.Count == 0) return "";
             return lUse[0];
@@ -12210,8 +12358,23 @@ namespace Homer
             return "";
         }
 
+        // WHAT THIS SOURCE'S RESULTS DO NOT COVER (13 October 2026, from an audit). Spans of speech that could not be
+        // heard, and answers about advertisements that could not be read, so every document and the results box can
+        // say a result is partial instead of calling it done.
+        static List<double[]> lMissingSpeech = new List<double[]>();
+        static int iAdAnswersUnread = 0;
+
+        static string missingSpeechText()
+        {
+            List<string> lParts = new List<string>();
+            foreach (double[] aSpan in lMissingSpeech) lParts.Add(formatClock(aSpan[0]) + " to " + formatClock(aSpan[1]));
+            return string.Join(", ", lParts.ToArray());
+        }
+
         static int runOne(string sInput, string sWebAddress)
         {
+            lMissingSpeech = new List<double[]>();
+            iAdAnswersUnread = 0;
             string sFfmpeg = findTool("ffmpeg");
             // What a video says about itself belongs to that video, and a run
             // may cover many. These are cleared unless they were fetched for
@@ -12560,7 +12723,7 @@ namespace Homer
                     logMessage("Transcript written to " + sTranscriptPath,
                                "INFO", "Transcript written: " + counted(lWords.Count, sHow, sHowMany) + ".");
                     if (!bWantDescribe) writeFileLog(sOutputDir);
-                    lResults.Add(Path.GetFileName(sInput) + ": transcript of " + counted(lWords.Count, sHow, sHowMany)
+                    lResults.Add(Path.GetFileName(sInput) + ": transcript of " + counted(lWords.Count, sHow, sHowMany) + (lMissingSpeech.Count > 0 ? ", PARTIAL: no words for " + missingSpeechText() : "")
                                  + Environment.NewLine + "    " + sTranscriptPath);
                     sLastOutputFolder = sOutputDir;
                 }
@@ -13075,7 +13238,8 @@ namespace Homer
                            + iNothing.ToString() + " moments were asked about and produced nothing; "
                            + iTooLong.ToString() + " were dropped because they would not fit their gap and would have covered the dialogue; "
                            + iSkipped.ToString() + " were passed over because the picture had not changed.", "INFO",
-                           "Done: " + lDone.Count.ToString() + " descriptions, " + iOverSpeech.ToString() + " of them over speech.");
+                           "Done: " + lDone.Count.ToString() + " descriptions, " + iOverSpeech.ToString() + " of them over speech"
+                           + (lMissingSpeech.Count > 0 ? ", counted only where speech was heard; for " + missingSpeechText() + " it is unknown." : "."));
                 if (lFilmSpeech.Count == 0) logMessage("  No transcript was available, so none of that used speech detection.", "INFO", "");
             }
             if (iSkipped > 0) logMessage("Left " + iSkipped.ToString() + " moments silent because nothing had changed.", "INFO", "");
