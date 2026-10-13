@@ -1516,6 +1516,13 @@ def main():
     if bReusable and oCache.isCurrent("check pass", sPrint, []):
         sWhen = oCache.d["jobs"]["check pass"].get("when", "?")
         finding("reused", "pass", "%s passed this check at %s with exactly these files (fingerprint %s); not run again. check --fresh runs it in full" % (appName(), sWhen, sPrint[:12]))
+        # WHAT THE REUSED RUN DID NOT CHECK STILL WAS NOT CHECKED (13 October 2026, from an audit). Its skips are restored
+        # with their reasons; a pass recorded before findings were kept says its coverage is unknown.
+        lsKept = oCache.d["jobs"]["check pass"].get("findings")
+        if lsKept is None: finding("original coverage", "skip", "this pass was recorded before findings were kept, so which checks it skipped is not known; check --fresh runs every check")
+        else:
+            for sKeptName, sKeptVerdict, sKeptEvidence in lsKept:
+                if sKeptVerdict == "skip": finding(sKeptName, "skip", sKeptEvidence + " (in the run reused here)")
         sReport = writeReport()
         if not dArguments.quiet:
             sayLine("%s passed this check at %s, and none of its files has changed since; not run again." % (appName(), sWhen))
@@ -1582,7 +1589,7 @@ def main():
             # checks was recorded, but a passing check runs the app's acceptance build, which rewrites the program, the
             # installer and generated pages; so release's check, a minute after push's, found "its inputs changed" and
             # built DbDo a third time. The files as they stand after a pass are the ones that passed.
-            oCache.record("check pass", oCache.fingerprint([sRoot], [sKind, platform.python_version()]), [])
+            oCache.record("check pass", oCache.fingerprint([sRoot], [sKind, platform.python_version()]), [], lsFindings)
     logLine("check end")
     return 1 if iFailed else 0
 

@@ -3011,11 +3011,34 @@ namespace Homer
 
         // Transcribing a long film is minutes of work, so the result is kept and
         // a resumed run never pays for it twice.
+        // What a transcript was made from, in one line: the model and its size, the vocabulary, and the recording's size
+        // and last-written time.
+        static string transcriptIdentity(string sInput, string sModel)
+        {
+            string sModelPart = sModel == "" ? "no model" : Path.GetFileName(sModel) + " " + new FileInfo(sModel).Length.ToString();
+            string sSource = File.Exists(sInput) ? new FileInfo(sInput).Length.ToString() + " bytes, " + File.GetLastWriteTimeUtc(sInput).ToString("yyyy-MM-ddTHH:mm:ssZ") : sInput;
+            return "model " + sModelPart + "; vocabulary " + text("vocabulary").Trim() + "; recording " + sSource;
+        }
+
         static List<Speech> transcribe(string sFfmpeg, string sInput, string sWorkDir, double nDuration)
         {
             List<Speech> lSpeech = new List<Speech>();
             string sJson = Path.Combine(sWorkDir, "transcript.json");
-            if (File.Exists(sJson) && !flag("force"))
+            // A TRANSCRIPT IS REUSED ONLY FOR WHAT MADE IT (13 October 2026, from an audit). The work folder is named for
+            // the recording's path, and transcript.json was reused whenever it was there: a recording replaced at the
+            // same path, a better model or new vocabulary all brought back the old words. Each transcript now carries
+            // what made it -- the model and its size, the vocabulary, the recording's size and time -- and is reused only
+            // when those still hold. One made before this has none, so it is made again once, with the better model.
+            string sIdentityFile = Path.Combine(sWorkDir, "transcript.identity.txt");
+            string sWhisperNow = whisperProgram(), sModelNow = whisperModelPath();
+            string sIdentity = transcriptIdentity(sInput, sModelNow);
+            bool bCanHear = sWhisperNow != "" && sModelNow != "";
+            string sWas = File.Exists(sIdentityFile) ? File.ReadAllText(sIdentityFile).Trim() : "";
+            bool bSame = sWas == sIdentity;
+            if (File.Exists(sJson) && !flag("force") && bCanHear && !bSame)
+                logMessage("The earlier transcript was made " + (sWas == "" ? "before transcripts recorded what made them" : "from \"" + sWas + "\"")
+                           + ", not \"" + sIdentity + "\", so it is made again.", "INFO", "");
+            if (File.Exists(sJson) && !flag("force") && (bSame || !bCanHear))
             {
                 lSpeech = readTranscript(sJson);
                 if (lSpeech.Count > 0)
@@ -3025,8 +3048,8 @@ namespace Homer
                     return lSpeech;
                 }
             }
-            string sWhisper = whisperProgram();
-            string sModel = whisperModelPath();
+            string sWhisper = sWhisperNow;
+            string sModel = sModelNow;
             if (sWhisper == "" || sModel == "")
             {
                 logMessage("Whisper was not found, so speech cannot be detected. Falling back to listening for silence.", "INFO",
@@ -3057,7 +3080,8 @@ namespace Homer
             int iThreads = integer("whisper-threads");
             if (iThreads <= 0) iThreads = Math.Max(4, Environment.ProcessorCount / 2);
             logMessage("Whisper threads: " + iThreads.ToString() + " of " + Environment.ProcessorCount.ToString() + " logical processors", "INFO", "");
-            runStreamed(sWhisper, "-m " + quoted(sModel) + " -t " + iThreads.ToString() + " -f " + quoted(sWave) + " -l auto -oj -of " + quoted(sBase) + sPrompt, "Listening");
+            if (File.Exists(sIdentityFile)) File.Delete(sIdentityFile);
+            int iWhisperExit = runStreamed(sWhisper, "-m " + quoted(sModel) + " -t " + iThreads.ToString() + " -f " + quoted(sWave) + " -l auto -oj -of " + quoted(sBase) + sPrompt, "Listening");
             waitingOn("");
             double nTook = DateTime.Now.Subtract(dtBegan).TotalSeconds;
             if (!File.Exists(sJson))
@@ -3066,6 +3090,10 @@ namespace Homer
                 return lSpeech;
             }
             lSpeech = readTranscript(sJson);
+            // Only a run Whisper finished is a transcript to trust later; an interrupted one can still leave readable
+            // JSON, which this run uses but no later run reuses.
+            if (iWhisperExit == 0 && lSpeech.Count > 0) File.WriteAllText(sIdentityFile, sIdentity);
+            else logMessage("Whisper ended with exit code " + iWhisperExit.ToString() + ", so this transcript is used now but not kept for reuse.", "WARN", "");
             double nSpoken = 0.0;
             foreach (Speech oSpeech in lSpeech) nSpoken = nSpoken + (oSpeech.nEnd - oSpeech.nStart);
             logMessage("Transcribed in " + num(nTook) + " seconds, " + num(nTook / Math.Max(nDuration, 1.0) * 100.0) + " percent of the film's length.", "INFO", "");
@@ -5195,7 +5223,9 @@ namespace Homer
                 }
                 bool bSound = soundOnly(oSpeech.sText);
                 string sSoFar = sbPara.ToString().TrimEnd();
-                bool bSentenceEnded = sSoFar.Length > 0 && ".?!\"'".IndexOf(sSoFar[sSoFar.Length - 1]) >= 0;
+                // A closing quote ends a sentence only after a full stop, question or exclamation mark.
+                bool bSentenceEnded = sSoFar.Length > 0 && (".?!".IndexOf(sSoFar[sSoFar.Length - 1]) >= 0
+                    || (sSoFar.Length > 1 && "\"'".IndexOf(sSoFar[sSoFar.Length - 1]) >= 0 && ".?!".IndexOf(sSoFar[sSoFar.Length - 2]) >= 0));
                 bool bBreak = sbPara.Length == 0 || bNewSection || bSound
                     || (oSpeech.sWho != "" && oSpeech.sWho != sParaWho)
                     || (nPrevEnd >= 0.0 && oSpeech.nStart - nPrevEnd >= 1.5)

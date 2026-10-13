@@ -10,14 +10,14 @@ rem spoken one. On a scored film that leaves it placing most descriptions on a
 rem timer rather than in real pauses. Whisper detects SPEECH, which is the
 rem question that actually matters, and yields a transcript at the same time.
 rem
-rem The small model is installed: about 465 MB, 3.4 percent word error rate, and
-rem quick enough on a processor alone. Larger models exist and are not worth the
-rem download for this purpose.
+rem The large-v3 turbo model, quantized to five bits, is installed by default: 547 MB,
+rem about the size of small, with accuracy close to the full large-v3. A model named
+rem on the command line is installed instead.
 rem
 rem Everything goes into %ProgramFiles%\Whisper, shared by every Homer app, which
 rem write to. Program Files cannot be written to by an ordinary user.
 rem
-rem   installWhisper.cmd            install the small model
+rem   installWhisper.cmd            install the default model, large-v3-turbo-q5_0
 rem   installWhisper.cmd medium     install a different one instead
 
 setlocal enabledelayedexpansion
@@ -88,13 +88,10 @@ rem PowerShell below reads this, so the download lands where this script
 rem decided -- not where it assumed.
 set "HOMER_WHISPER_DIR=%whisperDir%"
 if not exist "%whisperDir%\whisper-cli.exe" goto :fetchAll
-if not exist "%whisperDir%\ggml-%model%.bin" goto :fetchAll
-echo Nothing to do: Whisper is ready.
-echo(
-rem No key press when the installer runs this hidden.
-if not defined noPause pause
-endlocal
-exit /b 0
+rem BOTH THERE IS NOT BOTH SOUND (13 October 2026): an incomplete model or a program that cannot start was "ready" here.
+rem The program is already in place, so its download is skipped, and the model check and the start test still run.
+if exist "%whisperDir%\ggml-%model%.bin" goto :checkModel
+goto :fetchAll
 
 :fetchAll
 
@@ -162,18 +159,29 @@ if errorlevel 1 goto :programFailed
 :haveProgram
 if exist "%whisperDir%\whisper-cli.exe" echo whisper.cpp is in place.
 
+:checkModel
 rem ---- the model ------------------------------------------------------
-if exist "%whisperDir%\ggml-%model%.bin" goto :haveModel
+rem A COMPLETE MODEL, NOT ONE THAT EXISTS (13 October 2026, from an audit). The model was written straight to its final
+rem name, and any file by that name counted as installed, so a download cut short left a broken model that every later
+rem run accepted. It now downloads to a .part file renamed only when whole; a model already there is measured against
+rem the size the server gives and fetched again if short. Offline, a file over 20 MB is accepted, and the log says so.
 echo(
-echo Downloading the %model% model. This is a few hundred megabytes.
+echo Making sure the %model% model is complete, downloading it if it is missing or
+echo incomplete. A download is about 550 megabytes.
 echo(
+call "%~dp0installCommon.cmd" log "model: %model% in %whisperDir%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference='Stop';" ^
   "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;" ^
-  "$dir = $env:HOMER_WHISPER_DIR;" ^
-  "$name = 'ggml-%model%.bin';" ^
+  "$dir = $env:HOMER_WHISPER_DIR; $name = 'ggml-%model%.bin'; $path = Join-Path $dir $name;" ^
   "$url = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/' + $name;" ^
-  "Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir $name) -UseBasicParsing;" >> "%log%" 2>&1
+  "$want = $null; try { $h = Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing; $want = [int64]$h.Headers['Content-Length'] } catch { 'The server size could not be read: ' + $_.Exception.Message };" ^
+  "if (Test-Path $path) { $have = (Get-Item $path).Length;" ^
+  "  if (($want -and $have -eq $want) -or ((-not $want) -and $have -gt 20MB)) { 'Model present, ' + $have + ' bytes' + $(if ($want) { ', matching the server' } else { '; the server size could not be confirmed' }); exit 0 }" ^
+  "  'Model present but ' + $have + ' bytes where ' + $want + ' were expected; downloading it again' };" ^
+  "$part = $path + '.part'; Invoke-WebRequest -Uri $url -OutFile $part -UseBasicParsing; $got = (Get-Item $part).Length;" ^
+  "if ($want -and $got -ne $want) { 'Download incomplete: ' + $got + ' of ' + $want + ' bytes'; Remove-Item $part; exit 3 };" ^
+  "Move-Item -Force $part $path; 'Model downloaded, ' + $got + ' bytes'; exit 0" >> "%log%" 2>&1
 if errorlevel 1 goto :modelFailed
 
 :haveModel
@@ -190,6 +198,12 @@ rem same as checking that the command succeeded, and this script was doing the
 rem second while claiming the first.
 if not exist "%whisperDir%\whisper-cli.exe" goto :notReady
 if not exist "%whisperDir%\ggml-%model%.bin" goto :notReady
+rem THE PROGRAM MUST START, NOT ONLY BE THERE: a missing DLL leaves whisper-cli.exe present and useless.
+"%whisperDir%\whisper-cli.exe" --help >nul 2>&1
+set "iProbe=%ERRORLEVEL%"
+call "%~dp0installCommon.cmd" log "whisper-cli --help exit code %iProbe%"
+if not "%iProbe%"=="0" goto :notReady
+call "%~dp0installCommon.cmd" log "READY: whisper-cli starts and the %model% model is complete"
 echo Whisper is ready. The program uses it to transcribe speech, and to find
 echo where descriptions can be spoken without covering the dialogue.
 echo(
@@ -204,6 +218,7 @@ echo(
 echo Whisper did NOT install correctly.
 if not exist "%whisperDir%\whisper-cli.exe" echo   whisper-cli.exe is missing from %whisperDir%
 if not exist "%whisperDir%\ggml-%model%.bin" echo   the %model% model is missing from %whisperDir%
+if defined iProbe if not "%iProbe%"=="0" echo   whisper-cli.exe is there but does not start; a file it needs may be missing
 echo(
 echo The commands reported success, so this is worth reporting. The log has the
 echo detail: %log%

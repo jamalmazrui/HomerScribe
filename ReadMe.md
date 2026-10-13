@@ -33,8 +33,10 @@ what it shows.
 
 The vision model runs locally through Ollama, the speech recognition through
 Whisper, the voice comes from Windows, and the only other programs involved are
-ffmpeg and, for web addresses, yt-dlp. **Transcribing needs Whisper alone** —
-about half a gigabyte. Describing needs about six and a half, because it needs a
+ffmpeg and, for web addresses, yt-dlp. **Transcribing needs Whisper and ffmpeg**,
+which takes the sound out of a recording for Whisper to hear; Whisper with its
+model is about half a gigabyte. A web video whose captions a person uploaded can
+be transcribed from those captions instead. Describing needs about six and a half, because it needs a
 model that can look at pictures as well as a service to run it in. The installer
 offers each separately, and they are downloaded once.
 
@@ -76,10 +78,10 @@ Transcribing is quicker and needs no such trial:
 
       ollama pull qwen2.5vl:7b
 
-`build.cmd` downloads `ffmpeg.exe`, `ffprobe.exe`, and `yt-dlp.exe`
-when they are not already in the folder, so a fresh clone builds a complete
-installer without anything being fetched by hand. Files already present are left
-alone, so the download happens once.
+ffmpeg, ffprobe and yt-dlp are not part of HomerScribe's own files. The installer
+offers each one, and Whisper, as a shared component in its usual machine-wide
+folder, where every Homer program finds it and an upgrade of HomerScribe cannot
+remove it. Nothing has to be fetched by hand.
 
 The installer then packages them into the program folder, which is the first
 place HomerScribe looks. Installed that way, nothing else has to be set up and

@@ -2,6 +2,13 @@
 
 
 
+## 13 October 2026 -- from an audit
+
+- **A transcript is reused only for what made it.** The working folder is named for the recording's path, and its transcript was reused whenever it was there, so a replaced recording, the better model or new vocabulary all brought back the old words. Each transcript now records its model and that model's size, the vocabulary, and the recording's size and time, and is made again when any of those changed. Transcripts made before this are made once more, which is what lets Whisper large-v3 turbo reach recordings transcribed with small.
+- **Only a finished Whisper run is kept for reuse.** An interrupted run can leave readable output, which is used for that run and not trusted by the next.
+- **A closing quote ends a paragraph's sentence only after a full stop, question or exclamation mark.**
+- **The ReadMe says what the installer does:** ffmpeg, ffprobe, yt-dlp and Whisper are shared components offered by the installer in their machine-wide folders, and transcribing needs ffmpeg as well as Whisper.
+
 ## 13 October 2026 -- the right title, the best model for its size, and paragraphs
 
 - **Each recording keeps its own title.** In a run of local files, a title one file carried was given to every later file without one: on 4 October, 86 of 121 podcasts were headed "Accessing the Kindle App for PC with JAWS". What a source says about itself is now cleared before every local file, as it already was between web addresses.
