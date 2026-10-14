@@ -3049,16 +3049,26 @@ namespace Homer
                 logMessage("Heard again: " + lAgain.Count.ToString() + " stretches in place of the loop.", "INFO", "");
                 lSpeech = lKept;
                 // Heard again and stuck again: the second hearing's own loop is the same gap.
+                // NOT MISSING BUT UNCERTAIN (14 October 2026, from an audit by another AI): the words heard the second time
+                // are kept, so this stretch was not without words, as it used to be reported; they may be a loop, or speech
+                // that really repeats, and the transcript says so.
                 if (whisperLoops(sRedoBase + ".json").Count > 0)
                 {
-                    logMessage("Whisper got stuck again in that stretch, so part of it is still without words.", "WARN", "");
-                    lMissingSpeech.Add(new double[] { aSpan[0], aSpan[1] });
+                    logMessage("Whisper repeated itself again in that stretch; the words it heard are kept, but they may be a loop rather than speech.", "WARN", "");
+                    lUncertainSpeech.Add(new double[] { aSpan[0], aSpan[1] });
                 }
             }
             return lSpeech;
         }
 
-        // The spans where Whisper's own output repeats one line, back to back, for more than a minute.
+        // The spans where Whisper's output repeats itself: one line, or two lines taking turns, back to back for
+        // nLoopSeconds or more. NEAR, ALTERNATING AND SHORTER LOOPS (14 October 2026, from an audit by another AI): only
+        // one line repeated word for word for over a minute was found, so "h2." against "H2", two phrases taking turns,
+        // or a loop of 45 seconds went unheard again. Lines are now compared without case or punctuation, a pair taking
+        // turns counts, and 30 seconds is enough. A loop found is only heard again, and what is heard is kept, so a
+        // genuine repeat costs a second hearing and loses nothing. Tested on eight cases before it was written here.
+        const double nLoopSeconds = 30.0;
+
         static List<double[]> whisperLoops(string sJson)
         {
             List<double[]> lLoops = new List<double[]>();
@@ -3068,24 +3078,49 @@ namespace Homer
                 oSerializer.MaxJsonLength = int.MaxValue;
                 Dictionary<string, object> dData = oSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(sJson));
                 if (!dData.ContainsKey("transcription")) return lLoops;
-                string sLast = null;
-                double nRunStart = 0.0, nRunEnd = 0.0;
-                int iRun = 0;
+                List<double> lFrom = new List<double>(), lTo = new List<double>();
+                List<string> lText = new List<string>();
                 foreach (object oItem in toList(dData["transcription"]))
                 {
                     Dictionary<string, object> dItem = toMap(oItem);
                     if (!dItem.ContainsKey("offsets") || !dItem.ContainsKey("text")) continue;
                     Dictionary<string, object> dOffsets = toMap(dItem["offsets"]);
-                    double nFrom = Convert.ToDouble(dOffsets["from"]) / 1000.0, nTo = Convert.ToDouble(dOffsets["to"]) / 1000.0;
-                    string sText = Convert.ToString(dItem["text"]).Trim().ToLowerInvariant();
-                    if (sLast != null && sText == sLast) { iRun++; nRunEnd = nTo; continue; }
-                    if (iRun >= 3 && nRunEnd - nRunStart > 60.0) lLoops.Add(new double[] { nRunStart, nRunEnd });
-                    sLast = sText; nRunStart = nFrom; nRunEnd = nTo; iRun = 1;
+                    lFrom.Add(Convert.ToDouble(dOffsets["from"]) / 1000.0);
+                    lTo.Add(Convert.ToDouble(dOffsets["to"]) / 1000.0);
+                    lText.Add(loopKey(Convert.ToString(dItem["text"])));
                 }
-                if (iRun >= 3 && nRunEnd - nRunStart > 60.0) lLoops.Add(new double[] { nRunStart, nRunEnd });
+                List<double[]> lSpans = new List<double[]>();
+                // One line repeated three times or more; two lines taking turns, three rounds or more.
+                foreach (int[] aRule in new int[][] { new int[] { 1, 3 }, new int[] { 2, 6 } })
+                {
+                    int iPeriod = aRule[0], iMinCount = aRule[1];
+                    int i = iPeriod;
+                    while (i < lText.Count)
+                    {
+                        if (lText[i] != "" && lText[i] == lText[i - iPeriod])
+                        {
+                            int iStart = i - iPeriod;
+                            while (i < lText.Count && lText[i] != "" && lText[i] == lText[i - iPeriod]) i++;
+                            if (i - iStart >= iMinCount && lTo[i - 1] - lFrom[iStart] >= nLoopSeconds) lSpans.Add(new double[] { lFrom[iStart], lTo[i - 1] });
+                        }
+                        else i++;
+                    }
+                }
+                lSpans.Sort(delegate(double[] aOne, double[] aTwo) { return aOne[0].CompareTo(aTwo[0]); });
+                foreach (double[] aSpan in lSpans)
+                {
+                    if (lLoops.Count > 0 && aSpan[0] <= lLoops[lLoops.Count - 1][1]) lLoops[lLoops.Count - 1][1] = Math.Max(lLoops[lLoops.Count - 1][1], aSpan[1]);
+                    else lLoops.Add(new double[] { aSpan[0], aSpan[1] });
+                }
             }
             catch (Exception oError) { logMessage("Whisper's output could not be checked for loops: " + oError.Message, "WARN", ""); }
             return lLoops;
+        }
+
+        // A line as a loop is judged: lower case, punctuation as spaces, spaces collapsed.
+        static string loopKey(string sText)
+        {
+            return Regex.Replace(Regex.Replace((sText ?? "").ToLowerInvariant(), @"[^\w\s]", " "), @"\s+", " ").Trim();
         }
 
         // SPEAKER NAMES WHISPER MADE UP (13 October 2026). Whisper cannot tell who is speaking, yet large-v3 turbo began
@@ -3107,14 +3142,19 @@ namespace Homer
             string sTop = "";
             foreach (KeyValuePair<string, int> oPair in dCount) if (oPair.Value > iTop) { iTop = oPair.Value; sTop = oPair.Key; }
             if (lSpeech.Count < 10 || iTop * 2 < lSpeech.Count) return lSpeech;
-            int iRemoved = 0;
+            // ONLY THAT NAME (14 October 2026, from an audit by another AI). Every label of the same shape was taken off,
+            // so a real speaker named once or twice, or a spoken "Note:", went with the made-up one. Only the label that
+            // opens half the stretches is taken off; any other is kept, and counted in the log.
+            int iRemoved = 0, iKept = 0;
             foreach (Speech oOne in lSpeech)
             {
-                string sBare = oLabel.Replace(oOne.sText, "");
-                if (sBare != oOne.sText) { oOne.sText = sBare; iRemoved++; }
+                Match oMatch = oLabel.Match(oOne.sText);
+                if (!oMatch.Success) continue;
+                if (oMatch.Groups[1].Value == sTop) { oOne.sText = oOne.sText.Substring(oMatch.Length); iRemoved++; }
+                else iKept++;
             }
             logMessage("Took a speaker label off " + iRemoved.ToString() + " stretches: Whisper put \"" + sTop + ":\" before " + iTop.ToString() + " of "
-                       + lSpeech.Count.ToString() + ", which it cannot know.", "INFO", "");
+                       + lSpeech.Count.ToString() + ", which it cannot know." + (iKept > 0 ? " Kept " + iKept.ToString() + " other labels, which may be real." : ""), "INFO", "");
             return lSpeech;
         }
 
@@ -3133,7 +3173,7 @@ namespace Homer
 
         // What a finished transcript has had done to it. Raise this when the processing changes, so earlier transcripts
         // are finished again rather than reused as they were.
-        const string sTranscriptProcessing = "processing 2026-10-14: loops heard again, invented speaker labels removed";
+        const string sTranscriptProcessing = "processing 2026-10-14b: near, alternating and shorter loops heard again; only the made-up speaker label removed";
 
         // The identity without its model part: the vocabulary, the recording and the processing.
         static string identityAfterModel(string sIdentity)
@@ -5376,6 +5416,12 @@ namespace Homer
             {
                 fDoc.WriteLine("**This transcript is partial.** There are no words for " + missingSpeechText()
                              + ", where Whisper got stuck repeating itself and hearing it again did not help. Speech there was not written down.");
+                fDoc.WriteLine("");
+            }
+            if (lUncertainSpeech.Count > 0)
+            {
+                fDoc.WriteLine("**Some words may repeat in error.** From " + uncertainSpeechText()
+                             + ", Whisper repeated itself even when it heard the recording again. The words there are what it heard: a loop, or speech that really repeats.");
                 fDoc.WriteLine("");
             }
             // A note only where there is something for it to explain. Telling
@@ -12439,6 +12485,15 @@ namespace Homer
         // heard, and answers about advertisements that could not be read, so every document and the results box can
         // say a result is partial instead of calling it done.
         static List<double[]> lMissingSpeech = new List<double[]>();
+        // Where Whisper repeated itself even when heard again: the words are kept, but may be a loop.
+        static List<double[]> lUncertainSpeech = new List<double[]>();
+
+        static string uncertainSpeechText()
+        {
+            List<string> lParts = new List<string>();
+            foreach (double[] aSpan in lUncertainSpeech) lParts.Add(formatClock(aSpan[0]) + " to " + formatClock(aSpan[1]));
+            return string.Join(", ", lParts.ToArray());
+        }
         static int iAdAnswersUnread = 0;
 
         static string missingSpeechText()
@@ -12451,6 +12506,7 @@ namespace Homer
         static int runOne(string sInput, string sWebAddress)
         {
             lMissingSpeech = new List<double[]>();
+            lUncertainSpeech = new List<double[]>();
             iAdAnswersUnread = 0;
             string sFfmpeg = findTool("ffmpeg");
             // What a video says about itself belongs to that video, and a run

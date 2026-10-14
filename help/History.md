@@ -2,6 +2,11 @@
 
 
 
+## 14 October 2026 -- loops heard again more often, and real speakers kept
+
+- **Only the speaker name Whisper made up is taken off.** When one "Name:" label opens half the stretches, Whisper has copied a misheard name forward, and that label is taken off. Every other label of the same shape went with it, so a real speaker named once or twice, or a spoken "Note:", disappeared too. Now only the made-up label goes, and the log counts the others kept. Tested as the audit asked: with a made-up label opening twelve stretches and two real speakers, the old rule took off all three names and the new one only the made-up name (from an audit by another AI).
+- **More of Whisper's loops are heard again.** A loop was found only when one line repeated word for word for over a minute. Lines are now compared without case or punctuation, so "h2." and "H2" are one line; two phrases taking turns count; and 30 seconds is enough. A loop found is only heard again, and what is heard is kept, so a real repetition costs a second hearing and loses nothing; a short repeat, or a chant, is not a loop at all. Tested on eight cases, among them the 30-minute loop of the BT Code talk and a 45-second one (from an audit by another AI).
+- **A stretch that loops again is called uncertain, not empty.** When Whisper repeated itself even on the second hearing, the transcript said no words were written there, though the words it heard were kept. It now says the words there may be a loop, or speech that really repeats. Transcripts finished under the old rules are finished again on their next run.
 ## 14 October 2026 -- a transcript reused only for its own recording, proved by running it
 
 - **A recording is known by what is in it, not its size and time.** A transcript is reused only when the recording and the Whisper model are the same as when it was made. They were compared by size and last-written time, so a different recording of the same length, with its time kept, passed as the same, and the old words were credited to it; a model swapped that way did too. Both are now compared by the fingerprint of their content, through the kit's Homer.Util.fileSha256. A transcript made before this is heard again once.
