@@ -2,6 +2,13 @@
 
 
 
+## 14 October 2026 -- the finished transcript is what is reused
+
+- **Reuse returns the finished transcript.** Loop recovery and the removal of invented speaker labels ran only after a fresh hearing, so a later run reused Whisper's raw words, loops and labels included. The finished transcript is now kept as `transcript.final.json`. An earlier transcript in which Whisper never looped is finished without hearing it again; one with a loop is heard again (from an audit by another AI).
+- **Without Whisper, a transcript is reused only for the same recording.** It was reused whenever Whisper was missing, so a recording replaced at the same path got the old words.
+- **Nothing old can pass for new.** An earlier transcript.json was left in place, so a hearing that failed could be read as a new transcript; every earlier output is cleared first.
+- **Setup starts HomerScribe as you,** not with the installer's administrator rights.
+
 ## 13 October 2026 -- every default with no screens
 
 - **HomerScribe_setup.exe /verysilent /defaults installs with every default and no screens.** HomerScribe's installer did not honour /defaults at all: its finish-page entries were skipped in any silent install. Each of its 21 entries now runs in a silent install given /defaults when its box is ticked by default, as it would from the finish page. /silent /defaults shows a progress window; /defaults alone changes nothing.

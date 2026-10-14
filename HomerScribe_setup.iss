@@ -542,7 +542,7 @@ begin
   (* TWO pairs of quotes, not one. cmd /s strips the outermost pair and runs
      what is left verbatim, so with one pair a path under Program Files arrives
      unquoted and cmd tries to run "C:\Program". *)
-  Exec(ExpandConstant('{cmd}'),
+  ExecAsOriginalUser(ExpandConstant('{cmd}'),
        '/s /c ""' + ExpandConstant('{app}\exec\{#AppExeName}') + '""',
        ExpandConstant('{userdocs}'), SW_SHOW, ewNoWait, iResult);
 end;

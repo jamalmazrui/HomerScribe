@@ -3127,6 +3127,39 @@ namespace Homer
             return "model " + sModelPart + "; vocabulary " + text("vocabulary").Trim() + "; recording " + sSource;
         }
 
+        // What a finished transcript has had done to it. Raise this when the processing changes, so earlier transcripts
+        // are finished again rather than reused as they were.
+        const string sTranscriptProcessing = "processing 2026-10-14: loops heard again, invented speaker labels removed";
+
+        // The identity without its model part: the vocabulary, the recording and the processing.
+        static string identityAfterModel(string sIdentity)
+        {
+            int iAt = sIdentity.IndexOf("; vocabulary ");
+            return iAt < 0 ? sIdentity : sIdentity.Substring(iAt);
+        }
+
+        // The finished transcript, in the shape Whisper writes, so readTranscript reads it unchanged. Written by staging and
+        // swapping, so an interrupted write never leaves half a transcript to be reused.
+        static void writeFinalTranscript(List<Speech> lSpeech, string sPath)
+        {
+            List<object> lItems = new List<object>();
+            foreach (Speech oSpeech in lSpeech)
+            {
+                Dictionary<string, object> dOffsets = new Dictionary<string, object>();
+                dOffsets["from"] = (long) Math.Round(oSpeech.nStart * 1000.0);
+                dOffsets["to"] = (long) Math.Round(oSpeech.nEnd * 1000.0);
+                Dictionary<string, object> dItem = new Dictionary<string, object>();
+                dItem["offsets"] = dOffsets;
+                dItem["text"] = oSpeech.sText;
+                lItems.Add(dItem);
+            }
+            Dictionary<string, object> dData = new Dictionary<string, object>();
+            dData["transcription"] = lItems;
+            JavaScriptSerializer oSerializer = new JavaScriptSerializer();
+            oSerializer.MaxJsonLength = int.MaxValue;
+            Homer.Util.writeTextSafely(sPath, oSerializer.Serialize(dData), new UTF8Encoding(false), "");
+        }
+
         static List<Speech> transcribe(string sFfmpeg, string sInput, string sWorkDir, double nDuration)
         {
             List<Speech> lSpeech = new List<Speech>();
@@ -3137,24 +3170,52 @@ namespace Homer
             // what made it -- the model and its size, the vocabulary, the recording's size and time -- and is reused only
             // when those still hold. One made before this has none, so it is made again once, with the better model.
             string sIdentityFile = Path.Combine(sWorkDir, "transcript.identity.txt");
+            // THE FINISHED TRANSCRIPT IS WHAT IS REUSED (14 October 2026, from an audit by another AI). Loop recovery and
+            // the removal of invented speaker labels ran only after a fresh hearing, and a later run reused Whisper's raw
+            // JSON, loops and labels included. The finished transcript is now kept as transcript.final.json, and the
+            // identity names the processing it had, so a change to that processing makes it again.
+            string sFinal = Path.Combine(sWorkDir, "transcript.final.json");
             string sWhisperNow = whisperProgram(), sModelNow = whisperModelPath();
-            string sIdentity = transcriptIdentity(sInput, sModelNow);
+            string sMadeBy = transcriptIdentity(sInput, sModelNow);
+            string sIdentity = sMadeBy + "; " + sTranscriptProcessing;
             bool bCanHear = sWhisperNow != "" && sModelNow != "";
             string sWas = File.Exists(sIdentityFile) ? File.ReadAllText(sIdentityFile).Trim() : "";
             bool bSame = sWas == sIdentity;
-            if (File.Exists(sJson) && !flag("force") && bCanHear && !bSame)
-                logMessage("The earlier transcript was made " + (sWas == "" ? "before transcripts recorded what made them" : "from \"" + sWas + "\"")
-                           + ", not \"" + sIdentity + "\", so it is made again.", "INFO", "");
-            if (File.Exists(sJson) && !flag("force") && (bSame || !bCanHear))
+            // WITHOUT WHISPER, ONLY FOR THE SAME RECORDING (14 October 2026, from an audit by another AI): a transcript was
+            // reused whenever Whisper was missing, so a recording replaced at the same path got the old words. Without
+            // Whisper the model cannot be compared, so the recording and the vocabulary must match instead.
+            if (!bCanHear && sWas != "" && identityAfterModel(sWas) == identityAfterModel(sIdentity))
             {
-                lSpeech = readTranscript(sJson);
+                logMessage("Whisper is not available now, but the earlier transcript is of this same recording, so it is reused.", "INFO", "");
+                bSame = true;
+            }
+            if (!flag("force") && bSame && File.Exists(sFinal))
+            {
+                lSpeech = readTranscript(sFinal);
                 if (lSpeech.Count > 0)
                 {
-                    logMessage("Reusing the transcript from an earlier run: " + lSpeech.Count.ToString() + " spoken stretches.", "INFO", "");
+                    logMessage("Reusing the finished transcript from an earlier run: " + lSpeech.Count.ToString() + " spoken stretches.", "INFO", "");
                     announce("Resuming", -1.0, 1.0, "The transcript was made in an earlier run, so there is nothing to listen to again.");
                     return lSpeech;
                 }
             }
+            // One made before the finished transcript was kept: if Whisper never looped in it, it needs no hearing, only
+            // the label clean-up, and it is finished now; one with a loop is heard again below.
+            if (!flag("force") && bCanHear && sWas == sMadeBy && File.Exists(sJson) && whisperLoops(sJson).Count == 0)
+            {
+                lSpeech = dropInventedSpeakers(readTranscript(sJson));
+                if (lSpeech.Count > 0)
+                {
+                    writeFinalTranscript(lSpeech, sFinal);
+                    File.WriteAllText(sIdentityFile, sIdentity);
+                    logMessage("The earlier transcript had no loop, so it was finished without hearing it again: " + lSpeech.Count.ToString() + " spoken stretches.", "INFO", "");
+                    announce("Resuming", -1.0, 1.0, "The transcript was made in an earlier run, so there is nothing to listen to again.");
+                    return lSpeech;
+                }
+            }
+            if (File.Exists(sJson) && !flag("force") && bCanHear && !bSame)
+                logMessage("The earlier transcript was made " + (sWas == "" ? "before transcripts recorded what made them" : "from \"" + sWas + "\"")
+                           + ", not \"" + sIdentity + "\", so it is made again.", "INFO", "");
             string sWhisper = sWhisperNow;
             string sModel = sModelNow;
             if (sWhisper == "" || sModel == "")
@@ -3188,6 +3249,14 @@ namespace Homer
             if (iThreads <= 0) iThreads = Math.Max(4, Environment.ProcessorCount / 2);
             logMessage("Whisper threads: " + iThreads.ToString() + " of " + Environment.ProcessorCount.ToString() + " logical processors", "INFO", "");
             if (File.Exists(sIdentityFile)) File.Delete(sIdentityFile);
+            // NOTHING OLD CAN PASS FOR NEW (14 October 2026, from an audit by another AI): an earlier transcript.json was
+            // left in place, so a hearing that failed and wrote nothing could be read as a new transcript of this
+            // recording. Every earlier output is cleared first; only what this hearing writes is read.
+            foreach (string sOld in Directory.GetFiles(sWorkDir, "transcript*.json"))
+            {
+                try { File.Delete(sOld); }
+                catch (Exception oError) { logMessage("Could not clear the earlier " + Path.GetFileName(sOld) + ": " + oError.Message + "; this run stops rather than read it.", "ERROR"); return lSpeech; }
+            }
             int iWhisperExit = runStreamed(sWhisper, "-m " + quoted(sModel) + " -t " + iThreads.ToString() + " -f " + quoted(sWave) + " -l auto -oj -of " + quoted(sBase) + sPrompt, "Listening");
             waitingOn("");
             double nTook = DateTime.Now.Subtract(dtBegan).TotalSeconds;
@@ -3201,7 +3270,11 @@ namespace Homer
             lSpeech = dropInventedSpeakers(lSpeech);
             // Only a run Whisper finished is a transcript to trust later; an interrupted one can still leave readable
             // JSON, which this run uses but no later run reuses.
-            if (iWhisperExit == 0 && lSpeech.Count > 0 && lMissingSpeech.Count == 0) File.WriteAllText(sIdentityFile, sIdentity);
+            if (iWhisperExit == 0 && lSpeech.Count > 0 && lMissingSpeech.Count == 0)
+            {
+                writeFinalTranscript(lSpeech, sFinal);
+                File.WriteAllText(sIdentityFile, sIdentity);
+            }
             else if (lMissingSpeech.Count > 0) logMessage("This transcript is partial, so it is not kept for reuse: no words for " + missingSpeechText() + ".", "WARN", "");
             else logMessage("Whisper ended with exit code " + iWhisperExit.ToString() + ", so this transcript is used now but not kept for reuse.", "WARN", "");
             double nSpoken = 0.0;
@@ -12506,6 +12579,7 @@ namespace Homer
                     Path.Combine(sOutputDir, sDefaultMarkdownName),
                     Path.Combine(sWorkDir, sDefaultJsonName),
                     Path.Combine(sWorkDir, "transcript.json"),
+                    Path.Combine(sWorkDir, "transcript.final.json"),
                     Path.Combine(sWorkDir, sDefaultVttName) };
                 foreach (string sOld in asOurs)
                 {
