@@ -2,6 +2,11 @@
 
 
 
+## 14 October 2026 -- a transcript reused only for its own recording, proved by running it
+
+- **A recording is known by what is in it, not its size and time.** A transcript is reused only when the recording and the Whisper model are the same as when it was made. They were compared by size and last-written time, so a different recording of the same length, with its time kept, passed as the same, and the old words were credited to it; a model swapped that way did too. Both are now compared by the fingerprint of their content, through the kit's Homer.Util.fileSha256. A transcript made before this is heard again once.
+- **HomerScribe has acceptance checks, and the last one runs the program.** accept.inix checks that the program, the installer and the tutorials are built, then runs scripts\acceptReuse.py: the built HomerScribe, with the real Whisper, four times on clips cut from two of its own tutorials. A first run must hear the recording; an unchanged run must reuse the transcript with the same words; a different recording of the same size and time must be heard again; --force must hear it again. The test was itself tested against a stand-in program: it passed one that judges by content, and failed one that judges by size and time at exactly the third step (from an audit by another AI, which found no acceptance file).
+
 ## 14 October 2026 -- the finished transcript is what is reused
 
 - **Reuse returns the finished transcript.** Loop recovery and the removal of invented speaker labels ran only after a fresh hearing, so a later run reused Whisper's raw words, loops and labels included. The finished transcript is now kept as `transcript.final.json`. An earlier transcript in which Whisper never looped is finished without hearing it again; one with a loop is heard again (from an audit by another AI).

@@ -3118,12 +3118,16 @@ namespace Homer
             return lSpeech;
         }
 
-        // What a transcript was made from, in one line: the model and its size, the vocabulary, and the recording's size
-        // and last-written time.
+        // What a transcript was made from, in one line: the model, the vocabulary and the recording, the model and the
+        // recording each by the fingerprint of what is in them. KNOWN BY CONTENT, NOT BY SIZE AND TIME (14 October 2026,
+        // from an audit by another AI): a recording replaced by another of the same length, with its time kept, passed
+        // as the same, and the old words were credited to the new recording; a model swapped the same way did too. The
+        // sizes stay in the line only so the log reads plainly. A transcript made before this has no such line, so it
+        // is heard again once.
         static string transcriptIdentity(string sInput, string sModel)
         {
-            string sModelPart = sModel == "" ? "no model" : Path.GetFileName(sModel) + " " + new FileInfo(sModel).Length.ToString();
-            string sSource = File.Exists(sInput) ? new FileInfo(sInput).Length.ToString() + " bytes, " + File.GetLastWriteTimeUtc(sInput).ToString("yyyy-MM-ddTHH:mm:ssZ") : sInput;
+            string sModelPart = sModel == "" ? "no model" : Path.GetFileName(sModel) + " " + new FileInfo(sModel).Length.ToString() + " bytes, sha256 " + Homer.Util.fileSha256(sModel);
+            string sSource = File.Exists(sInput) ? new FileInfo(sInput).Length.ToString() + " bytes, sha256 " + Homer.Util.fileSha256(sInput) : sInput;
             return "model " + sModelPart + "; vocabulary " + text("vocabulary").Trim() + "; recording " + sSource;
         }
 
