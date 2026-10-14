@@ -1482,3 +1482,4 @@ The guide, HomerScribe dot md, explains every choice the program makes; Hotkeys 
 **Something to try:** Describe five minutes of a film you know well, and read the description beside the film.
 
 <!-- walkthrough ends -->
+
