@@ -43,6 +43,13 @@ Pause=1
 Note=A PDF that already has text is read directly and is much quicker. Only scanned pages go through recognition.
 
 [step]
+
+Say=While it runs, the window's title carries the page count, so Insert plus T checks on it without interrupting.
+Key=Insert+T
+Hear=Page 13 of 40
+Note=Confirm the wording with a live run: buildTutorials -live.
+
+[step]
 Say=Page twelve of forty. Pictures on a page get described as it goes.
 Key=
 Hear=Describing, Page 15, a bar chart of revenue by region, five bars, the tallest labelled North America
@@ -91,13 +98,6 @@ Key=
 
 Say=The Word copy needs Pandoc, which the installer offers; without it, the Markdown document alone is written.
 Key=
-
-[step]
-
-Say=A long report runs for a while; the window's title carries the page count, so Insert plus T checks on it.
-Key=Insert+T
-Hear=Page 12 of 40
-Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
 

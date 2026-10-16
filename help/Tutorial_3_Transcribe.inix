@@ -50,15 +50,15 @@ Say=Now it listens. Every so often it says how far it has got, as a place in the
 Key=
 Hear=Initializing, 30 min, 45%
 Pause=2
-Note=On a processor without a graphics card, transcribing takes about a quarter of the recording's own length. An hour of speech is a quarter of an hour of waiting.
+Note=How long it takes depends on the processor and the model. On the example machine, an hour of speech took nineteen minutes.
 
 [step]
-Say=Thirty minutes into the recording, forty five percent done. If I am doing something else and miss one of these, Insert Up Arrow repeats the last line the reader said. Let me verify where I am with Insert T.
+Say=Thirty minutes into the recording, forty five percent done. If I miss one of these, my reader's replay command brings it back: Insert plus X in some readers, a speech history in others. Let me verify where I am with Insert T.
 Key=Insert+T
 Hear=HomerScribe, working
 
 [step]
-Say=Still working. When it finishes, it names the file, and then a results box tells me what it made.
+Say=Still working. The job goes on for a while, so I will skip ahead to the end. When it finishes, it names the file, and then a results box tells me what it made.
 Key=
 Hear=Done. Introduction to Windows dot m p 3
 Hear=HomerScribe results dialog
@@ -77,9 +77,9 @@ Note=After the results box, focus returns to the dialog with its controls enable
 
 [step]
 
-Say=The transcript's first line says where the words came from: the film's own captions when it has them, or Whisper, listening.
+Say=The transcript's first line says where the words came from. This recording has no captions, so it names Whisper, listening; a film with captions of its own would name those instead.
 Key=
-Hear=Words from the film's captions
+Hear=Words recognized by Whisper
 Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
@@ -98,7 +98,7 @@ Say=A source shorter than a minute is flagged in the results as possibly damaged
 Key=
 
 [step]
-Say=The transcript is a Markdown document. Its first heading names the recording; then comes what was said, in order, with a heading every ten minutes so you can jump by heading. Names that Whisper has never read are spelled as written in the vocabulary setting, so the names of screen readers and programs come out spelled right rather than as they sound.
+Say=The transcript is a Markdown document. Its first heading names the recording; then comes what was said, in order, with a heading every ten minutes so you can jump by heading. Names that Whisper has never read can be listed in the vocabulary setting, which helps the names of screen readers and programs come out spelled right rather than as they sound; it is still worth a read through.
 Key=
 Hear=
 Note=If a recording is full of names it gets wrong, add them to the vocabulary setting in the configuration, separated by commas.

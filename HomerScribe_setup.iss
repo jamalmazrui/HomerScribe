@@ -254,7 +254,10 @@ Source: "templates\*.htm"; DestDir: "{app}\templates"; Flags: ignoreversion recu
 ; WorkingDir is the user's Documents folder, so a run started from a shortcut
 ; writes its results somewhere writable by default.
 Name: "{group}\{#AppName}"; Filename: "{app}\exec\{#AppExeName}"; WorkingDir: "{userdocs}"
-Name: "{group}\{#AppName} documentation"; Filename: "{app}\help\ReadMe.htm"; Flags: createonlyiffileexists
+; ReadMe.htm is installed at the top of {app}, as the Homer layout puts it (15 October 2026): this shortcut and the
+; finish page's documentation box both named {app}\help\ReadMe.htm, a file the installer never wrote, so the box
+; opened nothing and the shortcut, made only when its file exists, was never made. The kit's check now catches it.
+Name: "{group}\{#AppName} documentation"; Filename: "{app}\ReadMe.htm"; Flags: createonlyiffileexists
 Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 ; Created without asking. The hotkey is mentioned on the launch checkbox at the
 ; end, which is where the user is looking when it matters.
@@ -399,7 +402,7 @@ FileName: "{cmd}"; \
   Flags: postinstall runhidden runasoriginaluser; Check: homerFinishRuns
 
 ; ---- 5. Open the user guide, unticked ----------------------------------------
-FileName: "{app}\help\ReadMe.htm"; \
+FileName: "{app}\ReadMe.htm"; \
   Description: "Open the user guide (F1 in {#AppName})"; \
   Flags: postinstall shellexec nowait skipifdoesntexist runasoriginaluser unchecked; Check: homerFinishRuns
 

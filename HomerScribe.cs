@@ -509,8 +509,11 @@ namespace Homer
                 }
                 else
                 {
-                    // A bare word is a source. Several may be given.
-                    string sSoFar = dParams["source-paths"].sValue;
+                    // A bare word is a source. Several may be given. THE FIRST REPLACES THE SAMPLE (14 October 2026, found by
+                    // the acceptance test): the sources began as the built-in sample video, and a source named here was
+                    // added to it, so "HomerScribe film.mp4 --transcribe" first transcribed the sample. The first source
+                    // given now replaces the default; later ones join it.
+                    string sSoFar = dParams["source-paths"].bGiven ? dParams["source-paths"].sValue : "";
                     if (sSoFar != "") sSoFar = sSoFar + " ";
                     dParams["source-paths"].sValue = sSoFar + quotedIfSpaced(sArg);
                     dParams["source-paths"].bGiven = true;
@@ -3292,12 +3295,16 @@ namespace Homer
             int iThreads = integer("whisper-threads");
             if (iThreads <= 0) iThreads = Math.Max(4, Environment.ProcessorCount / 2);
             logMessage("Whisper threads: " + iThreads.ToString() + " of " + Environment.ProcessorCount.ToString() + " logical processors", "INFO", "");
-            if (File.Exists(sIdentityFile)) File.Delete(sIdentityFile);
             // NOTHING OLD CAN PASS FOR NEW (14 October 2026, from an audit by another AI): an earlier transcript.json was
             // left in place, so a hearing that failed and wrote nothing could be read as a new transcript of this
-            // recording. Every earlier output is cleared first; only what this hearing writes is read.
+            // recording. The raw outputs a hearing writes are cleared first; only what this hearing writes is read.
+            // THE LAST GOOD TRANSCRIPT IS KEPT UNTIL A NEW ONE IS DONE (14 October 2026, from a second audit): clearing
+            // every transcript*.json took transcript.final.json and its identity with it, so a hearing that then failed
+            // lost the last finished transcript. Those two are kept; the identity says what made the final, so it is
+            // never reused for a changed recording, and both are replaced only when this hearing succeeds.
             foreach (string sOld in Directory.GetFiles(sWorkDir, "transcript*.json"))
             {
+                if (string.Equals(Path.GetFileName(sOld), Path.GetFileName(sFinal), StringComparison.OrdinalIgnoreCase)) continue;
                 try { File.Delete(sOld); }
                 catch (Exception oError) { logMessage("Could not clear the earlier " + Path.GetFileName(sOld) + ": " + oError.Message + "; this run stops rather than read it.", "ERROR"); return lSpeech; }
             }
@@ -3316,6 +3323,9 @@ namespace Homer
             // JSON, which this run uses but no later run reuses.
             if (iWhisperExit == 0 && lSpeech.Count > 0 && lMissingSpeech.Count == 0)
             {
+                // The old identity goes first, then the new final, then its identity: interrupted anywhere in between,
+                // no identity is left to match, so nothing is reused that should not be.
+                if (File.Exists(sIdentityFile)) File.Delete(sIdentityFile);
                 writeFinalTranscript(lSpeech, sFinal);
                 File.WriteAllText(sIdentityFile, sIdentity);
             }
@@ -11904,20 +11914,26 @@ namespace Homer
             // Every one already done. Not a failure, but not a result either,
             // and a run that ends without a word looks like one that never
             // started.
+            // THE JOB ASKED FOR IS THE JOB NAMED, AND ALL DONE IS A SUCCESS (15 October 2026). A transcription
+            // already made said "That video has already been described", and the command line ended with exit code
+            // 1, as for an error. From the command line, finding everything already done now ends with 0; the dialog
+            // still comes back, as before, so Force overwrite can be ticked.
+            string sDoneWord = flag("describe") && flag("transcribe") ? "described and transcribed"
+                             : flag("transcribe") ? "transcribed" : "described";
             if (iDescribedWhole == 0 && iSkippedWhole > 0)
             {
                 string sSaid = iSkippedWhole == 1
-                    ? "That video has already been described, so there was nothing to do."
-                    : "All " + iSkippedWhole.ToString() + " of those videos have already been described, so there was nothing to do.";
+                    ? "That one has already been " + sDoneWord + ", so there was nothing to do."
+                    : "All " + iSkippedWhole.ToString() + " of those have already been " + sDoneWord + ", so there was nothing to do.";
                 sSaid = sSaid + Environment.NewLine + Environment.NewLine
-                      + (bGuiMode ? "Tick Force overwrite to describe them again." : "Pass --force to describe them again.");
+                      + (bGuiMode ? "Tick Force overwrite to do them again." : "Pass --force to do them again.");
                 logMessage(sSaid.Replace(Environment.NewLine, " "), "INFO", bGuiMode ? "" : sSaid);
                 if (flag("view-output") && sLastSkippedFolder != "") showFolder(sLastSkippedFolder);
                 if (bGuiMode) sayToUser(sSaid, "HomerScribe", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return iNothingToDo;
+                return bGuiMode ? iNothingToDo : 0;
             }
-            if (iSkippedWhole > 0) logMessage(iSkippedWhole.ToString() + " already described and skipped; " + iDescribedWhole.ToString() + " described.",
-                                              "INFO", iSkippedWhole.ToString() + " already described and skipped.");
+            if (iSkippedWhole > 0) logMessage(iSkippedWhole.ToString() + " already " + sDoneWord + " and skipped; " + iDescribedWhole.ToString() + " done now.",
+                                              "INFO", iSkippedWhole.ToString() + " already " + sDoneWord + " and skipped.");
             dialogSays("finished");
             pumpDialog();
             flushAnnouncements();
@@ -12503,6 +12519,34 @@ namespace Homer
             return string.Join(", ", lParts.ToArray());
         }
 
+        // Which recording a results folder was made from: its fingerprint, kept in made-from.txt beside the results.
+        const string sMadeFromName = "made-from.txt";
+
+        static string madeFromFingerprint(string sOutputDir)
+        {
+            try
+            {
+                string sPath = Path.Combine(sOutputDir, sMadeFromName);
+                if (!File.Exists(sPath)) return "";
+                foreach (string sLine in File.ReadAllLines(sPath))
+                    if (sLine.StartsWith("sha256 ")) return sLine.Substring(7).Trim();
+            }
+            catch (Exception oError) { logMessage("Could not read " + sMadeFromName + ": " + oError.Message, "INFO", ""); }
+            return "";
+        }
+
+        static void recordMadeFrom(string sOutputDir, string sInput)
+        {
+            // Only a recording on this computer has a fingerprint to keep; for one fetched from the web, nothing is written.
+            try
+            {
+                if (!File.Exists(sInput) || !Directory.Exists(sOutputDir)) return;
+                File.WriteAllText(Path.Combine(sOutputDir, sMadeFromName),
+                    "sha256 " + Homer.Util.fileSha256(sInput) + "\r\nrecording " + sInput + "\r\n", new UTF8Encoding(true));
+            }
+            catch (Exception oError) { logMessage("Could not write " + sMadeFromName + ": " + oError.Message, "INFO", ""); }
+        }
+
         static int runOne(string sInput, string sWebAddress)
         {
             lMissingSpeech = new List<double[]>();
@@ -12578,6 +12622,30 @@ namespace Homer
             if (File.Exists(Path.Combine(workFolderFor(sInput), sDefaultJsonName))) readCache(Path.Combine(workFolderFor(sInput), sDefaultJsonName));
             bool bDescribeDone = File.Exists(sFilmPath) && bLastCacheFinished;
             bool bTranscribeDone = File.Exists(sTranscriptPath) && bLastTranscriptFinished;
+            // DONE MEANS DONE FROM THIS RECORDING (14 October 2026, found by the acceptance test). Whether a job was done
+            // was judged by its output files and a record kept by the recording's path, so a recording replaced by a
+            // different one -- even of the same size and time -- was skipped as "already done", and its results stayed
+            // those of the old recording. The results folder now keeps the fingerprint of the recording that made them,
+            // in made-from.txt; when it no longer matches, the results are made again, and the log says why. Results from
+            // before this record are trusted as they were.
+            // A CHANGED RECORDING STARTS CLEAN (15 October 2026). It was made again, but the next lines then said "An
+            // unfinished run is here. Carrying on from where it stopped; nothing already described is described again"
+            // -- so descriptions and working files of the old recording could have been carried into the new one. A
+            // changed recording now has what the earlier run left removed, exactly as --force does, and the log says
+            // which of the two is the reason.
+            bool bRecordingChanged = false;
+            if ((bDescribeDone || bTranscribeDone) && !flag("force"))
+            {
+                string sMadeFrom = madeFromFingerprint(sOutputDir);
+                if (sMadeFrom != "" && File.Exists(sInput) && sMadeFrom != Homer.Util.fileSha256(sInput))
+                {
+                    logMessage("The recording has changed since its results in " + sOutputDir + " were made, so they are made again.",
+                               "INFO", "The recording has changed since its results were made, so they are made again.");
+                    bDescribeDone = false;
+                    bTranscribeDone = false;
+                    bRecordingChanged = true;
+                }
+            }
             bool bWantDescribe = flag("describe") && !(bDescribeDone && !flag("force"));
             bool bWantTranscribe = flag("transcribe") && !(bTranscribeDone && !flag("force"));
             if (bWantDescribe && !hasPicture(sFfmpeg, sInput))
@@ -12612,7 +12680,7 @@ namespace Homer
             }
             if (flag("describe") && !bWantDescribe) logMessage("The described film is already here, so only the transcript is made.", "INFO", "Already described; making the transcript only.");
             if (flag("transcribe") && !bWantTranscribe) logMessage("The transcript is already here, so only the description is made.", "INFO", "Already transcribed; describing only.");
-            if (Directory.Exists(sOutputDir) && !flag("force"))
+            if (Directory.Exists(sOutputDir) && !flag("force") && !bRecordingChanged)
             {
                 logMessage("An unfinished run is here. Carrying on from where it stopped; nothing already described is described again.",
                            "INFO", "An unfinished run is here. Carrying on from where it stopped.");
@@ -12630,7 +12698,7 @@ namespace Homer
             // A single named file has no position worth stating.
             // The position and the name were said before the fetch, in run().
             // Saying them again here would repeat them for a local file.
-            if (flag("force"))
+            if (flag("force") || bRecordingChanged)
             {
                 int iCleared = 0;
                 string[] asOurs = new string[] {
@@ -12670,7 +12738,8 @@ namespace Homer
                 dCachedSignature = null;
                 bLastCacheFinished = false;
                 bLastTranscriptFinished = false;
-                if (iCleared > 0) logMessage("Force overwrite: removed " + iCleared.ToString() + " file(s) left by the earlier run, so this one starts clean.",
+                if (iCleared > 0) logMessage((bRecordingChanged ? "The recording changed: removed " : "Force overwrite: removed ") + iCleared.ToString()
+                                             + (iCleared == 1 ? " file" : " files") + " left by the earlier run, so this one starts clean.",
                                              "INFO", "Starting clean: what the earlier run left has been removed.");
                 logMessage("The moments and the transcript held in memory from that record are discarded too.", "INFO", "");
             }
@@ -12866,6 +12935,7 @@ namespace Homer
             {
                 // Transcribing only. None of what follows applies.
                 if (flag("view-output")) sLastOutputFolder = sOutputDir;
+                recordMadeFrom(sOutputDir, sInput);
                 return 0;
             }
             if (!openVoice()) return 1;
@@ -13479,6 +13549,7 @@ namespace Homer
                 return 1;
             }
             writeFileLog(sOutputDir);
+            recordMadeFrom(sOutputDir, sInput);
             lResults.Add(Path.GetFileName(sInput) + ": " + lDone.Count.ToString() + " descriptions, " + spokenLength(nDuration) + sOddity
                          + Environment.NewLine + "    " + Path.Combine(sOutputDir, outputName(sInput)));
             sLastOutputFolder = sOutputDir;

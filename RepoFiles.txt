@@ -12,6 +12,8 @@ PdfRead.cs
 HomerScribe.exe.config
 HomerScribe_setup.iss
 build.cmd
+# What done means, checked by scripts\check (it ran nothing on 13 October: tidy moved it to notes, as it was not listed here)
+accept.inix
 
 # How git keeps the Homer CRLF line endings
 .gitattributes

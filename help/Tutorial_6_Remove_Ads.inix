@@ -6,7 +6,7 @@ Setup=HomerScribe is installed, with Ollama and its reading model. An episode na
 Homework=Run it on an episode with a mid-roll break. Read the summary line at the top of the document it writes: it says how much was cut and from where.
 
 [step]
-Say=A podcast I like carries four minutes of advertisements in every hour. HomerScribe can find them and cut them, and it is careful about it: nothing is cut unless the model is at least ninety five out of a hundred sure.
+Say=A podcast I like carries four minutes of advertisements in every hour. HomerScribe can find them and cut them, and it is careful about it: the model scores each possible break out of a hundred, and nothing scoring under ninety five is cut. The score is a setting for caution, not a promise, so the original is kept beside the result to check against.
 Key=
 Hear=
 
@@ -108,4 +108,4 @@ Key=
 Say=Beside the new file is a document saying what was cut, where each cut was, and what the model heard that made it sure. If it cut something it should not have, that document is how you would know.
 Key=
 Hear=
-Note=If nothing was ninety five percent certain, nothing is cut, and the document says so.
+Note=If no break scored ninety five or more, nothing is cut, and the document says so.

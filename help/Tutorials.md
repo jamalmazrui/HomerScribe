@@ -44,7 +44,7 @@ Everything it makes is a document you can read with any screen reader.
 
 ### Step 2
 
-Two voices take these walks. I am the narrator, the person doing the work. The other voice is the screen reader, and it says only what a screen reader would say. You always know which of us is talking.
+Two voices take these walks. I am the narrator, the person doing the work. The other voice is the screen reader, and it says only what a screen reader would say, though your own reader's words may differ a little. You always know which of us is talking.
 
 The reader's lines are written the way a screen reader speaks at its middle verbosity setting: name, kind of control, state, then the access key.
 
@@ -136,7 +136,7 @@ In a Homer dialog, the Alt key for a control is the underlined letter of its lab
 
 ### Step 15: Insert+UpArrow
 
-One key before anything else. If the reader says something and you miss it, Insert Up Arrow says the current line again. That is the screen reader's own key, not HomerScribe's. Use it freely; nothing in these walks depends on catching a line the first time.
+One key before anything else. If you lose your place, Insert Up Arrow says the line you are on. That is the screen reader's own key, not HomerScribe's. Use it freely; nothing in these walks depends on catching a line the first time.
 
 Screen reader:
 
@@ -162,7 +162,7 @@ Screen reader:
 
 ### Step 18
 
-If you set your screen reader to use Caps Lock in place of Insert, Caps Lock works the same way for all three.
+On a laptop keyboard, Caps Lock usually stands in for Insert, though in some laptop layouts the line command moves to a letter, such as Caps Lock plus L. And if speech goes by before you catch it, your reader can replay it: Insert plus X in some readers, a speech history in others.
 
 ### Step 19
 
@@ -600,11 +600,11 @@ Screen reader:
 
 - Initializing, 30 min, 45%
 
-On a processor without a graphics card, transcribing takes about a quarter of the recording's own length. An hour of speech is a quarter of an hour of waiting.
+How long it takes depends on the processor and the model. On the example machine, an hour of speech took nineteen minutes.
 
 ### Step 9: Insert+T
 
-Thirty minutes into the recording, forty five percent done. If I am doing something else and miss one of these, Insert Up Arrow repeats the last line the reader said. Let me verify where I am with Insert T.
+Thirty minutes into the recording, forty five percent done. If I miss one of these, my reader's replay command brings it back: Insert plus X in some readers, a speech history in others. Let me verify where I am with Insert T.
 
 Screen reader:
 
@@ -612,7 +612,7 @@ Screen reader:
 
 ### Step 10
 
-Still working. When it finishes, it names the file, and then a results box tells me what it made.
+Still working. The job goes on for a while, so I will skip ahead to the end. When it finishes, it names the file, and then a results box tells me what it made.
 
 Screen reader:
 
@@ -636,11 +636,11 @@ OK closes the results box and focus returns to the dialog, controls enabled agai
 
 ### Step 12
 
-The transcript's first line says where the words came from: the film's own captions when it has them, or Whisper, listening.
+The transcript's first line says where the words came from. This recording has no captions, so it names Whisper, listening; a film with captions of its own would name those instead.
 
 Screen reader:
 
-- Words from the film's captions
+- Words recognized by Whisper
 
 Confirm the wording with a live run: buildTutorials -live.
 
@@ -658,7 +658,7 @@ A source shorter than a minute is flagged in the results as possibly damaged, si
 
 ### Step 16
 
-The transcript is a Markdown document. Its first heading names the recording; then comes what was said, in order, with a heading every ten minutes so you can jump by heading. Names that Whisper has never read are spelled as written in the vocabulary setting, so the names of screen readers and programs come out spelled right rather than as they sound.
+The transcript is a Markdown document. Its first heading names the recording; then comes what was said, in order, with a heading every ten minutes so you can jump by heading. Names that Whisper has never read can be listed in the vocabulary setting, which helps the names of screen readers and programs come out spelled right rather than as they sound; it is still worth a read through.
 
 If a recording is full of names it gets wrong, add them to the vocabulary setting in the configuration, separated by commas.
 
@@ -693,7 +693,11 @@ Screen reader:
 
 Alt plus D is shared with Default settings. Windows cycles between the two; if the reader names Default settings, press Alt plus D once more.
 
-### Step 4: Alt+T
+### Step 4
+
+If the reader names Default settings instead, that button shares Alt plus D; press it once more.
+
+### Step 5: Alt+T
 
 Checked. I also want the words that are spoken, woven in with the descriptions, so Alt plus T as well.
 
@@ -701,7 +705,7 @@ Screen reader:
 
 - Transcribe audio check box, checked, Alt plus T
 
-### Step 5: Enter
+### Step 6: Enter
 
 Both boxes are checked. Enter presses OK.
 
@@ -712,7 +716,7 @@ Screen reader:
 
 A web address is downloaded first. HomerScribe fetches yt-dlp and ffmpeg itself when it needs them.
 
-### Step 6
+### Step 7
 
 It is downloading the film, and it named it from the page. Next it listens for where the speech is, then it looks. The announcements change their first word as the job changes.
 
@@ -721,7 +725,7 @@ Screen reader:
 - Initializing, 7 min, 100%
 - Describing, 1 of 42
 
-### Step 7
+### Step 8
 
 Describing one of forty two. Each description is spoken as it is made, so you can follow along or go and do something else. Here is one.
 
@@ -731,7 +735,7 @@ Screen reader:
 
 Every description is also written into the document, so nothing depends on hearing it now.
 
-### Step 8
+### Step 9
 
 When the last description is written, it puts the film back together with the descriptions as a spoken track, and says so.
 
@@ -743,7 +747,7 @@ Screen reader:
 - One source done. Took 9 minutes. Perspectives colon Video Captions: 42 descriptions, 7 minutes. C colon backslash Users backslash Jamal backslash Videos backslash Perspectives Video Captions. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Perspectives Video Captions backslash HomerScribe dot log.
 - OK button
 
-### Step 9: Enter
+### Step 10: Enter
 
 Forty two descriptions for a seven minute film, in nine minutes. Enter presses OK.
 
@@ -754,11 +758,11 @@ Screen reader:
 
 OK closes the results box and focus returns to the dialog, controls enabled again, ready for the next job.
 
-### Step 10
+### Step 11
 
 Each video gets a folder of its own, named after the video, beside it or in the output directory when one is given.
 
-### Step 11
+### Step 12
 
 The described film keeps two audio tracks: the description first, so any player picks it by default, and the original second.
 
@@ -768,23 +772,23 @@ Screen reader:
 
 Confirm the wording with a live run: buildTutorials -live.
 
-### Step 12
+### Step 13
 
 described dot m d is what can be seen, as a document to read at your own pace, by heading.
 
-### Step 13
+### Step 14
 
 described dot v t t is the same text as timed captions, for a player that shows or speaks captions.
 
-### Step 14
+### Step 15
 
 described dot w a v is the description track alone, to play alongside the original in a player such as mpv.
 
-### Step 15
+### Step 16
 
 A run interrupted partway resumes from what it had finished, since described dot j s o n records its progress.
 
-### Step 16
+### Step 17
 
 The folder holds described dot m k v, the film with the description as its first sound track; described dot m d, the descriptions as a document; described dot v t t, the same as timed captions; transcribed dot m d, the words; and scribed dot m d, words and descriptions together in the order they happen. Read scribed dot m d for the whole film in one document.
 
@@ -952,7 +956,7 @@ A podcast episode loses its advertisements and keeps everything else, with the o
 
 ### Step 1
 
-A podcast I like carries four minutes of advertisements in every hour. HomerScribe can find them and cut them, and it is careful about it: nothing is cut unless the model is at least ninety five out of a hundred sure.
+A podcast I like carries four minutes of advertisements in every hour. HomerScribe can find them and cut them, and it is careful about it: the model scores each possible break out of a hundred, and nothing scoring under ninety five is cut. The score is a setting for caution, not a promise, so the original is kept beside the result to check against.
 
 ### Step 2: Alt+Control+H
 
@@ -1067,7 +1071,7 @@ The settings for this are in the guide, under taking the advertisements out, for
 
 Beside the new file is a document saying what was cut, where each cut was, and what the model heard that made it sure. If it cut something it should not have, that document is how you would know.
 
-If nothing was ninety five percent certain, nothing is cut, and the document says so.
+If no break scored ninety five or more, nothing is cut, and the document says so.
 
 **Something to try:** Run it on an episode with a mid-roll break. Read the summary line at the top of the document it writes: it says how much was cut and from where.
 
@@ -1127,7 +1131,17 @@ Screen reader:
 
 A PDF that already has text is read directly and is much quicker. Only scanned pages go through recognition.
 
-### Step 7
+### Step 7: Insert+T
+
+While it runs, the window's title carries the page count, so Insert plus T checks on it without interrupting.
+
+Screen reader:
+
+- Page 13 of 40
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 8
 
 Page twelve of forty. Pictures on a page get described as it goes.
 
@@ -1135,7 +1149,7 @@ Screen reader:
 
 - Describing, Page 15, a bar chart of revenue by region, five bars, the tallest labelled North America
 
-### Step 8
+### Step 9
 
 And the result.
 
@@ -1146,43 +1160,33 @@ Screen reader:
 - One source done. Took 11 minutes. Annual Report dot p d f: 40 pages read, 6 pictures described. C colon backslash Users backslash Jamal backslash Videos backslash Annual Report backslash Annual Report dot m d. Log of this run: C colon backslash Users backslash Jamal backslash Videos backslash Annual Report backslash HomerScribe dot log.
 - OK button
 
-### Step 9
+### Step 10
 
 A PDF whose pages carry text needs no recognition; it is read directly, which is much quicker.
 
-### Step 10
+### Step 11
 
 The check happens page by page, so a PDF that is part typed and part scanned is handled page by page as well.
 
-### Step 11
+### Step 12
 
 Recognition is done by Tesseract, on this computer, so a private document stays private.
 
-### Step 12
+### Step 13
 
 Pictures on a page are described by the same model that describes films, and the descriptions sit in the document where the pictures were.
 
-### Step 13
+### Step 14
 
 The Markdown document reads by heading in any editor or browser, and EdSharp's preview shows it formatted.
 
-### Step 14
+### Step 15
 
 The Word copy keeps the original's page breaks, so a page number someone mentions can still be found.
 
-### Step 15
+### Step 16
 
 The Word copy needs Pandoc, which the installer offers; without it, the Markdown document alone is written.
-
-### Step 16: Insert+T
-
-A long report runs for a while; the window's title carries the page count, so Insert plus T checks on it.
-
-Screen reader:
-
-- Page 12 of 40
-
-Confirm the wording with a live run: buildTutorials -live.
 
 ### Step 17
 
@@ -1217,14 +1221,38 @@ Every Homer dialog answers F1 with the same kind of help: the fields, what each 
 
 ### Step 2: Alt+Control+H
 
-Alt plus Control plus H opens the dialog. Then F1.
+Alt plus Control plus H opens the dialog, with focus in Source paths.
 
 Screen reader:
 
 - HomerScribe dialog
 - Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
 
-### Step 3: F1
+### Step 3
+
+First, two keys that read one field. Then F1, which works the same in every Homer dialog, so learning to read it here teaches every other Homer program.
+
+### Step 4: Shift+F1
+
+Shift plus F1, on any field, reads just that field's tip, without opening Help.
+
+Screen reader:
+
+- Source paths: files, folders, patterns or web addresses
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 5: Alt+Y
+
+Alt plus F8 reads a whole field aloud, and Alt plus Y says how many lines it holds, handy when it is a long list of sources.
+
+Screen reader:
+
+- 1 line
+
+Confirm the wording with a live run: buildTutorials -live.
+
+### Step 6: F1
 
 F1.
 
@@ -1235,7 +1263,7 @@ Screen reader:
 
 The help is a read-only text box, so you can arrow through it line by line, and Control plus F8 copies all of it.
 
-### Step 4: DownArrow
+### Step 7: DownArrow
 
 Focus is in a read-only text box. Down Arrow reads it a line at a time. The first lines are the fields.
 
@@ -1243,7 +1271,7 @@ Screen reader:
 
 - Source paths: edit, One or more files, wildcard patterns, or web addresses to download from, separated by spaces. Put double quotes around any item containing a space.
 
-### Step 5
+### Step 8
 
 Each field, with its tip. Further down, the dialog keys.
 
@@ -1254,7 +1282,7 @@ Screen reader:
 
 F7 is the answer when a dialog has more controls than you want to Tab through: a list, a letter, Enter.
 
-### Step 6: Control+End
+### Step 9: Control+End
 
 And at the end, the version. Control plus End goes to the last line.
 
@@ -1262,7 +1290,7 @@ Screen reader:
 
 - Update to the version on the web now? Yes fetches it and starts its setup program.
 
-### Step 7: UpArrow
+### Step 10: UpArrow
 
 Up Arrow for the line before it.
 
@@ -1270,7 +1298,7 @@ Screen reader:
 
 - This is version 1.0.239. Version 1.0.240 is on the web.
 
-### Step 8: Enter
+### Step 11: Enter
 
 A newer version is out. The box's buttons are Yes and No, and because a newer version exists, Yes is the default: Enter takes it. If this were already the newest, No would be the default, and if the web could not be reached, there would be an OK button and nothing to decide.
 
@@ -1281,33 +1309,9 @@ Screen reader:
 
 Yes fetches HomerScribe_setup.exe from the latest release and starts it. The installer asks for administrator rights, closes HomerScribe when it needs to, and its last page offers the same boxes as a first install.
 
-### Step 9
+### Step 12
 
-Help ends with the version, so Control plus End finds it in one key.
-
-### Step 10
-
-The same F1 works in every Homer dialog, so learning to read it here teaches every other Homer program.
-
-### Step 11: Shift+F1
-
-Shift plus F1, on any field, reads just that field's tip, without opening Help.
-
-Screen reader:
-
-- Source paths: files, folders, patterns or web addresses
-
-Confirm the wording with a live run: buildTutorials -live.
-
-### Step 12: Alt+Y
-
-Alt plus F8 reads a whole field aloud, and Alt plus Y says how many lines it holds, handy for a long list of sources.
-
-Screen reader:
-
-- 3 lines
-
-Confirm the wording with a live run: buildTutorials -live.
+The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already ticked.
 
 ### Step 13
 
@@ -1328,10 +1332,6 @@ The History document, in the help folder of the installation, says what each ver
 ### Step 17
 
 Staying current takes a minute, and brings the improvements made since the last time.
-
-### Step 18
-
-The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already ticked.
 
 **Something to try:** Press F1 when there is no newer version. The box ends with "the newest on the web", and No is the default.
 

@@ -16,11 +16,19 @@ the real program, with the real Whisper, four times on clips cut from two of Hom
 
 The console says one line per step; the log in logs says everything, with every command and its exit code.
 """
-import datetime, glob, os, platform, shutil, subprocess, sys, tempfile, time
+import datetime, glob, hashlib, os, platform, shutil, subprocess, sys, tempfile, time
 
 sHearing = "Listening to the film"
 sMadeAgain = "so it is made again"
+# A changed recording now starts clean before its transcript cache is looked at (15 October 2026), so the cache's
+# "so it is made again" may not be written; the results' own "so they are made again" says the same thing.
+sMadeAgainAll = "so they are made again"
 sReused = "Reusing the finished transcript from an earlier run"
+sAlreadyDone = "already done"
+# THE LOG'S WORDS, NOT THE CONSOLE'S (15 October 2026). "already done" is only in HomerScribe's short console line;
+# the run's log file, which is what this reads, says "Skipping <n>: everything asked for is already in <folder>". So a
+# correct skip was never seen, and step 2 failed on 14 and 15 October. Either wording now counts.
+sAlreadyIn = "everything asked for is already in"
 lsTextKinds = [".md", ".srt", ".txt", ".vtt"]
 
 sRoot = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -86,8 +94,14 @@ def transcribe(sExe, sRecording, sOutput, sLogFile, bForce=False):
 
 def transcriptText(sOutput):
     """Every transcript file HomerScribe wrote, joined, so two runs can be compared."""
-    lsFiles = sorted(s for s in glob.glob(os.path.join(sOutput, "**", "*"), recursive=True)
-                     if os.path.isfile(s) and os.path.splitext(s)[1].lower() in lsTextKinds)
+    lsAll = sorted(s for s in glob.glob(os.path.join(sOutput, "**", "*"), recursive=True)
+                   if os.path.isfile(s) and os.path.splitext(s)[1].lower() in lsTextKinds)
+    # ONLY THE TEST RECORDING'S TRANSCRIPTS (14 October 2026): HomerScribe names its output for its source. On 14 October
+    # it added the source given to its built-in sample video and transcribed the sample, so all four steps measured the
+    # wrong input; that is now fixed in HomerScribe, and any output named for something else is reported, not counted.
+    lsFiles = [s for s in lsAll if "recording" in os.path.relpath(s, sOutput).lower()]
+    lsOther = [os.path.relpath(s, sOutput) for s in lsAll if s not in lsFiles]
+    if lsOther: say("NOTE: HomerScribe also wrote transcripts of something other than the test recording: " + ", ".join(lsOther))
     log("  transcript files: " + (", ".join(os.path.relpath(s, sOutput) for s in lsFiles) or "none"))
     # The heading's "- Made:" line is the day of the run, so two honest runs either side of midnight would differ;
     # it is set aside. Everything else -- the words, their times and what heard them -- must match.
@@ -118,6 +132,8 @@ def main():
             return 1
         iFirst, iSecond = os.path.getsize(sFirst), os.path.getsize(sSecond)
         log("clip sizes " + str(iFirst) + " and " + str(iSecond) + " bytes")
+        for sClip in (sFirst, sSecond):
+            log("clip " + os.path.basename(sClip) + " sha256 " + hashlib.sha256(open(sClip, "rb").read()).hexdigest())
         if iFirst != iSecond:
             say("FAIL: the two clips differ in size, so step 3 would not test what it says")
             return 1
@@ -139,9 +155,15 @@ def main():
 
         iCode, sLog2 = transcribe(sExe, sRecording, sOutput, os.path.join(sWork, "run2.log"))
         sWords2 = transcriptText(sOutput)
-        step("2. an unchanged recording reuses its transcript, with the same words",
-             iCode == 0 and sReused in sLog2 and sHearing not in sLog2 and sWords2 == sWords1,
-             "exit " + str(iCode) + ", reused " + str(sReused in sLog2) + ", same words " + str(sWords2 == sWords1))
+        # UNCHANGED MAY MEAN SKIPPED (14 October 2026): HomerScribe skips a recording whose results are already there
+        # and were made from it, before the transcript cache is reached -- the better outcome, and not a failure. Either
+        # that or reuse passes, provided nothing was heard again and the words are the same.
+        # A skip must end with exit code 0, as reuse must (15 October 2026): HomerScribe now ends a run with everything
+        # already done as a success, and an exit code of 1 there would again be a real fault.
+        bSkipped = sAlreadyDone in sLog2 or sAlreadyIn in sLog2
+        step("2. an unchanged recording reuses its transcript or is skipped as done, with the same words",
+             iCode == 0 and (sReused in sLog2 or bSkipped) and sHearing not in sLog2 and sWords2 == sWords1,
+             "exit " + str(iCode) + ", reused " + str(sReused in sLog2) + ", skipped " + str(bSkipped) + ", same words " + str(sWords2 == sWords1))
 
         nTime = os.path.getmtime(sRecording)
         shutil.copyfile(sSecond, sRecording)
@@ -150,15 +172,28 @@ def main():
         iCode, sLog3 = transcribe(sExe, sRecording, sOutput, os.path.join(sWork, "run3.log"))
         sWords3 = transcriptText(sOutput)
         step("3. a different recording of the same size and time is heard again, with different words",
-             iCode == 0 and sReused not in sLog3 and sMadeAgain in sLog3 and sWords3 != sWords1,
-             "exit " + str(iCode) + ", reused " + str(sReused in sLog3) + ", made again " + str(sMadeAgain in sLog3) + ", words differ " + str(sWords3 != sWords1))
+             iCode == 0 and sReused not in sLog3 and (sMadeAgain in sLog3 or sMadeAgainAll in sLog3) and sWords3 != sWords1,
+             "exit " + str(iCode) + ", reused " + str(sReused in sLog3) + ", made again " + str(sMadeAgain in sLog3 or sMadeAgainAll in sLog3) + ", words differ " + str(sWords3 != sWords1))
 
         iCode, sLog4 = transcribe(sExe, sRecording, sOutput, os.path.join(sWork, "run4.log"), bForce=True)
         step("4. --force hears it again although nothing changed", iCode == 0 and sReused not in sLog4 and sHearing in sLog4,
              "exit " + str(iCode) + ", reused " + str(sReused in sLog4))
     finally:
-        shutil.rmtree(sWork, ignore_errors=True)
-        log("removed " + sWork)
+        # EVIDENCE KEPT WHEN A STEP FAILS (14 October 2026, from an audit by another AI): the working folder was removed
+        # whatever happened, so a failure left only this summary, not the runs' own logs, the outputs or the clips. When a
+        # step fails, the whole folder -- each run's log, every transcript, the two clips -- is kept in logs, named for
+        # this run, and the console says where; when all pass, it is removed.
+        if lsFailed:
+            sEvidence = os.path.join(sRoot, "logs", "HomerScribe-accept-" + sStamp + "-evidence")
+            try:
+                shutil.copytree(sWork, sEvidence)
+                say("The evidence of this run is kept in " + sEvidence)
+            except Exception as oError:
+                log("Could not keep the evidence in " + sEvidence + ": " + str(oError) + "; it is left in " + sWork)
+                sWork = ""
+        if sWork:
+            shutil.rmtree(sWork, ignore_errors=True)
+            log("removed " + sWork)
     if lsFailed:
         say("acceptReuse: " + str(len(lsFailed)) + " of 4 steps failed; the log is " + sLogPath)
         return 1

@@ -2,6 +2,28 @@
 
 
 
+## 15 October 2026 -- the acceptance test sees a correct skip, and a changed recording starts clean
+
+- **A run with everything already done ends as a success.** From the command line, a recording whose results were all there was skipped, rightly, but HomerScribe ended with exit code 1, as for an error. It now ends with 0. The dialog still comes back, so Force overwrite can be ticked.
+- **The message names the job asked for.** A transcription already made said "That video has already been described". It now says "That one has already been transcribed", and likewise for described, or both.
+- **The acceptance test reads the log's words.** Step 2 looked for "already done", which is only in the short line on the console; the run's log says "everything asked for is already in" its folder. So the skip was never seen, and build_release stopped at push on 14 and 15 October. The test now takes either wording, and requires exit code 0 for a skip as for a reuse. Replayed on the 15 October run's own logs, the old test missed the skip and the new one finds it.
+- **A changed recording starts clean.** After "The recording has changed since its results were made, so they are made again", the log went on to say "An unfinished run is here. Carrying on from where it stopped", so work from the old recording could have been carried into the new one. A changed recording now has what the earlier run left removed, as --force does, and the log says why. Step 3 of the test accepts either wording of "made again", since the clean start can remove the cache whose line it looked for.
+
+## 14 October 2026 -- results are made again when the recording changes
+
+- **"Already done" now means done from this recording.** HomerScribe skipped a recording whose results were already in its folder, judged by those files and a record kept by the recording's path, so a recording replaced by a different one, even of the same size and time, kept the old recording's results. Each results folder now holds made-from.txt, the fingerprint of the recording that made it; when it no longer matches, the results are made again, and you hear why. Results from before this record are trusted as they were. The acceptance test found it (from an audit by another AI, HomerScribe-11).
+- **The acceptance test takes a skip as success when nothing changed.** For an unchanged recording, skipping it as done is the better outcome than reusing its transcript; step 2 now passes either way, as long as the words are the same.
+
+## 14 October 2026 -- a source named on the command line replaces the sample
+
+- **"HomerScribe film.mp4 --transcribe" transcribes film.mp4, and only it.** The sources began as the built-in sample video, and a source named on the command line was added to it, so the sample was transcribed first. The acceptance test found it: all four of its steps had transcribed the sample's captions instead of the test recording. The first source given now replaces the sample (from an audit by another AI).
+- **The acceptance test counts only the test recording's transcripts,** says when HomerScribe wrote any other, records both clips' fingerprints, and, when a step fails, keeps the whole run -- each run's log, every transcript and both clips -- in logs\HomerScribe-accept-<time>-evidence, instead of removing it.
+
+## 14 October 2026 -- the last good transcript kept, and the acceptance check restored
+
+- **A new hearing no longer deletes the last finished transcript before it succeeds.** Clearing old outputs took transcript.final.json and its identity with them, so a hearing that then failed lost the last good transcript. Now only the raw outputs a hearing writes are cleared; the finished transcript and its identity are replaced only when the new hearing succeeds, the old identity first, so nothing is ever reused for a recording it was not made from (from a second audit by another AI).
+- **accept.inix is in the repository list.** It was not, so tidy moved it to notes, and the check of 13 October ran no acceptance test, reporting "no accept.inix".
+
 ## 14 October 2026 -- loops heard again more often, and real speakers kept
 
 - **Only the speaker name Whisper made up is taken off.** When one "Name:" label opens half the stretches, Whisper has copied a misheard name forward, and that label is taken off. Every other label of the same shape went with it, so a real speaker named once or twice, or a spoken "Note:", disappeared too. Now only the made-up label goes, and the log counts the others kept. Tested as the audit asked: with a made-up label opening twelve stretches and two real speakers, the old rule took off all three names and the new one only the made-up name (from an audit by another AI).

@@ -37,7 +37,7 @@ Hear=
 Note=Everything it makes is a document you can read with any screen reader.
 
 [step]
-Say=Two voices take these walks. I am the narrator, the person doing the work. The other voice is the screen reader, and it says only what a screen reader would say. You always know which of us is talking.
+Say=Two voices take these walks. I am the narrator, the person doing the work. The other voice is the screen reader, and it says only what a screen reader would say, though your own reader's words may differ a little. You always know which of us is talking.
 Key=
 Hear=
 Note=The reader's lines are written the way a screen reader speaks at its middle verbosity setting: name, kind of control, state, then the access key.
@@ -104,7 +104,7 @@ Hear=
 Note=In a Homer dialog, the Alt key for a control is the underlined letter of its label, and the reader says it after the control's name.
 
 [step]
-Say=One key before anything else. If the reader says something and you miss it, Insert Up Arrow says the current line again. That is the screen reader's own key, not HomerScribe's. Use it freely; nothing in these walks depends on catching a line the first time.
+Say=One key before anything else. If you lose your place, Insert Up Arrow says the line you are on. That is the screen reader's own key, not HomerScribe's. Use it freely; nothing in these walks depends on catching a line the first time.
 Key=Insert+UpArrow
 Hear=Start button
 Note=Insert plus Up Arrow is Say Line in most screen readers; some use their own modifier key in place of Insert.
@@ -123,7 +123,7 @@ Hear=Program Manager
 
 [step]
 
-Say=If you set your screen reader to use Caps Lock in place of Insert, Caps Lock works the same way for all three.
+Say=On a laptop keyboard, Caps Lock usually stands in for Insert, though in some laptop layouts the line command moves to a letter, such as Caps Lock plus L. And if speech goes by before you catch it, your reader can replay it: Insert plus X in some readers, a speech history in others.
 Key=
 Hear=
 

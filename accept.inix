@@ -1,0 +1,33 @@
+﻿; accept.inix -- what "done" means for HomerScribe, checked by scripts\check.
+; Each [check] runs a command in the project folder; Expect is its exit code
+; and Wants, when given, a string its output must contain.
+;
+; THE LAST CHECK RUNS THE PROGRAM (14 October 2026, from an audit by another
+; AI). The others say what the build produced; scripts\acceptReuse.py runs the
+; built HomerScribe four times with the real Whisper, on clips cut from two of
+; its own tutorials, and proves a finished transcript is reused only for the
+; recording that made it. It takes a minute or two, and fails plainly when
+; FFmpeg or Whisper is missing rather than passing without testing.
+
+[check]
+Name   = the program was built into exec
+Run    = cmd /c if exist exec\HomerScribe.exe (exit 0) else (exit 1)
+Expect = 0
+
+[check]
+Name   = the installer was built
+Run    = cmd /c if exist HomerScribe_setup.exe (exit 0) else (exit 1)
+Expect = 0
+
+[check]
+Name   = the tutorials the reuse test is cut from are present
+; Both tests are in their own parentheses: in "if exist A if exist B (...) else (...)" the else belongs to the
+; second if, so a missing first file ran nothing and the check passed on the exit code before it.
+Run    = cmd /c if exist help\tutorials\3_Transcribe.mp3 (if exist help\tutorials\4_Describe.mp3 (exit 0) else (exit 1)) else (exit 1)
+Expect = 0
+
+[check]
+Name   = a transcript is reused only for the recording that made it
+Run    = python scripts\acceptReuse.py
+Expect = 0
+Wants  = all 4 steps passed

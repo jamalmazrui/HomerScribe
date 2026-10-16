@@ -23,6 +23,11 @@ Hear=Describe video check box, checked, Alt plus D
 Note=Alt plus D is shared with Default settings. Windows cycles between the two; if the reader names Default settings, press Alt plus D once more.
 
 [step]
+Say=If the reader names Default settings instead, that button shares Alt plus D; press it once more.
+Key=
+Hear=
+
+[step]
 Say=Checked. I also want the words that are spoken, woven in with the descriptions, so Alt plus T as well.
 Key=Alt+T
 Hear=Transcribe audio check box, checked, Alt plus T

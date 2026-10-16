@@ -36,6 +36,8 @@ WHAT IT CHECKS
   version     version.txt present and agreeing with the installer script
   publish     RepoFiles.txt present and .gitignore generated from it
   logging     the program opens a log at startup
+  mainthread  a WinForms program's Main carries [STAThread], with nothing between
+  shipped     every program the installer runs is one it installs
   naming      no accessible name set to a caption a screen reader already reads
   keys        no Alt+Control binding, no letter claimed twice in one dialog
   build       the build script runs and returns zero            (--build)
@@ -62,6 +64,7 @@ project folder or in its scripts folder; both mean the project.
 
 import argparse
 import datetime
+import fnmatch
 import glob
 import os
 import platform
@@ -818,6 +821,114 @@ def checkFinishPage():
     if lsBad:
         return finding("finish", "fail", "%s on the finish page" % countNoun(len(lsBad), "rule broken", "rules broken"))
     return finding("finish", "pass", "every finish-page box follows the rules")
+
+
+# THE MAIN THREAD OF A WINDOWS PROGRAM IS A SINGLE-THREADED APARTMENT (1.72.55, 15 October 2026). DbDo's Copy Cell
+# said "Clipboard error: Current thread must be set to single thread apartment" because a function added between
+# [STAThread] and Main took the attribute for itself, and Main ran without it. The compiler accepts that; the
+# clipboard and the common file dialogs do not. So a WinForms source fails here when Main lacks the attribute or the
+# attribute sits on anything but Main.
+def checkMainThread():
+    """[STAThread] directly on Main, in every C# source that uses Windows Forms."""
+    lsBad, iMains = [], 0
+    for sPath in sourceFiles():
+        if not sPath.lower().endswith(".cs"): continue
+        sText = readText(sPath)
+        if "System.Windows.Forms" not in sText: continue
+        sShown = os.path.relpath(sPath, sRoot)
+        lsLines = sText.splitlines()
+        for iAt, sLine in enumerate(lsLines):
+            sTrim = sLine.strip()
+            if sTrim.startswith("//"): continue
+            if re.search(r"\bstatic\s+(?:int|void)\s+Main\s*\(", sTrim):
+                iMains += 1
+                iBack, bSta = iAt - 1, False
+                while iBack >= 0:
+                    sBack = lsLines[iBack].strip()
+                    if not sBack or sBack.startswith("//"): iBack -= 1; continue
+                    if sBack.startswith("["):
+                        if re.match(r"\[\s*(?:System\.)?STAThread", sBack): bSta = True
+                        iBack -= 1; continue
+                    break
+                if not bSta: lsBad.append("%s line %d: Main has no [STAThread]" % (sShown, iAt + 1))
+            if re.match(r"\[\s*(?:System\.)?STAThread(?:Attribute)?\s*\]$", sTrim):
+                iNext = iAt + 1
+                while iNext < len(lsLines):
+                    sNext = lsLines[iNext].strip()
+                    if not sNext or sNext.startswith("//") or sNext.startswith("["): iNext += 1; continue
+                    break
+                if iNext >= len(lsLines) or not re.search(r"\bMain\s*\(", lsLines[iNext]):
+                    lsBad.append("%s line %d: [STAThread] is on something other than Main" % (sShown, iAt + 1))
+    for sLine in lsBad: logLine("MAIN THREAD: " + sLine)
+    if lsBad:
+        return finding("mainthread", "fail", "the clipboard and file dialogs need Main to carry [STAThread] directly: " + "; ".join(lsBad[:4]))
+    if not iMains: return finding("mainthread", "skip", "no Windows Forms program with a Main method")
+    return finding("mainthread", "pass", "%s with [STAThread] directly on it" % countNoun(iMains, "Main method"))
+
+
+def issSectionEntries(sText, sSection):
+    """Each entry of one section of an installer script, its continued lines joined."""
+    oStart = re.search(r"(?mi)^\[%s\]\s*$" % re.escape(sSection), sText)
+    if not oStart: return []
+    oEnd = re.search(r"(?m)^\[[A-Za-z]+\]\s*$", sText[oStart.end():])
+    sBody = sText[oStart.end(): oStart.end() + oEnd.start()] if oEnd else sText[oStart.end():]
+    lsEntries, sCurrent = [], ""
+    for sLine in sBody.splitlines():
+        sStrip = sLine.strip()
+        if not sStrip or sStrip.startswith(";") or sStrip.startswith("#"):
+            continue
+        sCurrent += " " + sStrip.rstrip("\\")
+        if not sStrip.endswith("\\"): lsEntries.append(sCurrent.strip()); sCurrent = ""
+    if sCurrent.strip(): lsEntries.append(sCurrent.strip())
+    return lsEntries
+
+
+def issField(sEntry, sName):
+    oMatch = re.search(r"(?i)(?:^|;)\s*" + sName + r':\s*("(?:[^"]|"")*"|[^;]+)', sEntry)
+    return oMatch.group(1).strip().strip('"') if oMatch else ""
+
+
+# WHAT THE INSTALLER RUNS, IT INSTALLS (1.72.55, 15 October 2026). DbDo 1.0.287's finish page never offered the JAWS
+# scripts, on a computer with JAWS running: its installer asked installScreenReaderSupport.cmd for their state, and no
+# Source: line installed that script, so the question had no one to answer it and both screen reader boxes were hidden.
+# Its mpv box ran installMpv.cmd, which the build never copied from the kit. HomerScribe failed the same way on 24
+# September. Every Filename under {app} in [Icons], [Run] and [UninstallRun] must match a Source: line's installed path, and a
+# script it names must be in the project.
+def checkShipped():
+    """Every program the installer runs is one the installer puts there."""
+    lsBad, iRuns = [], 0
+    for sIss in glob.glob(os.path.join(sRoot, "*_setup.iss")):
+        sText = readText(sIss)
+        dDefines = dict(re.findall(r'(?m)^\s*#define\s+(\w+)\s+"([^"]*)"', sText))
+        def resolve(sValue):
+            return re.sub(r"\{#(\w+)\}", lambda oMatch: dDefines.get(oMatch.group(1), oMatch.group(0)), sValue)
+        lsInstalled = []
+        for sEntry in issSectionEntries(sText, "Files"):
+            sSource, sDest = resolve(issField(sEntry, "Source")), resolve(issField(sEntry, "DestDir"))
+            if not sSource or not sDest or "external" in issField(sEntry, "Flags").lower(): continue
+            sSource = sSource.replace("/", "\\")
+            lsInstalled.append((sDest.rstrip("\\") + "\\" + sSource.split("\\")[-1], sSource))
+        # [Icons] too (15 October 2026): HomerScribe's documentation shortcut named {app}\help\ReadMe.htm, which no
+        # Source: line installs, so it was never made.
+        for sSection in ("Icons", "Run", "UninstallRun"):
+            for sEntry in issSectionEntries(sText, sSection):
+                sFile = resolve(issField(sEntry, "Filename")).replace("/", "\\")
+                if not sFile.lower().startswith("{app}\\"): continue
+                iRuns += 1
+                lsMatch = [sSource for sPattern, sSource in lsInstalled if fnmatch.fnmatch(sFile.lower(), sPattern.lower())]
+                if not lsMatch:
+                    lsBad.append("%s runs %s, but no Source: line installs it" % (os.path.basename(sIss), sFile))
+                    continue
+                sRelative = sFile[len("{app}\\"):]
+                # The installer writes backslashes; the path is built with os.sep so the test reads the same anywhere.
+                if sRelative.lower().startswith("scripts\\") and not os.path.isfile(os.path.join(sRoot, *sRelative.split("\\"))):
+                    lsBad.append("%s runs %s, but %s is not in the project (the build copies kit scripts it names)" % (os.path.basename(sIss), sFile, sRelative))
+    lsBad = sorted(set(lsBad), key=str.lower)
+    for sLine in lsBad: logLine("SHIPPED: " + sLine)
+    if lsBad:
+        return finding("shipped", "fail", "%s: %s" % (countNoun(len(lsBad), "program the installer runs is", "programs the installer runs are") + " not installed", "; ".join(lsBad[:4])))
+    if not iRuns: return finding("shipped", "skip", "the installer runs nothing from its own folder")
+    return finding("shipped", "pass", "%s, each installed by a Source: line" % countNoun(iRuns, "program the installer runs", "programs the installer runs"))
 
 
 def checkKeys():
@@ -1588,6 +1699,8 @@ def main():
         checkIssComments()
         checkInstaller()
         checkInstallerNames()
+        checkShipped()
+        checkMainThread()
         checkSkillChecks("app")
         checkBuildName()
         checkKeys()
