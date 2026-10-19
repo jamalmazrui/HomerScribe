@@ -311,7 +311,7 @@ rem installer includes the first from; an older kit has them elsewhere or not at
 rem An older kit compiles the C# and then fails the installer with "Invalid
 rem number of parameters" -- which is what happened when HomerDev.zip was
 rem delivered but not unpacked. Failing here says what is wrong.
-set "kitNeeded=1.43.29"
+set "kitNeeded=1.75.0"
 powershell -NoProfile -Command "if ([version]'!homerVer!' -lt [version]'!kitNeeded!') { exit 1 } else { exit 0 }" >nul 2>&1
 if errorlevel 1 (
   echo ERROR: HomerScribe needs HomerDev !kitNeeded! or later, and the kit is !homerVer!. >> "%log%"
@@ -321,7 +321,7 @@ if errorlevel 1 (
   goto :failed
 )
 
-rem The modules HomerScribe uses. PdfRead needs nothing else; Inix reads and
+rem The modules HomerScribe uses. PdfReader needs PdfPig, referenced below; Inix reads and
 rem writes .xlsx, so the compression assembly is referenced below.
 set "homerSources="
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Elevate.cs""
@@ -330,8 +330,9 @@ set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Lbc.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Log.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Ollama.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Paths.cs""
-rem PdfRead.cs is HomerScribe's own (9 October 2026), compiled from this folder.
-set "homerSources=!homerSources! "PdfRead.cs""
+rem PdfReader.cs is the kit's PDF reader (HomerDev 1.75.0): HomerScribe's own
+rem PdfRead.cs and the PDF half of HomerScribe.cs, moved into the kit whole.
+set "homerSources=!homerSources! "!homerDev!\exec\CSharp\PdfReader.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Say.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Util.cs""
 set "homerSources=!homerSources! "!homerDev!\exec\CSharp\Web.cs""
@@ -396,7 +397,9 @@ rem A check report written beside the tool by an old kit belongs in logs.
 for %%F in (scripts\evidence-*.md) do del /q "%%F" && echo Removed the stray report %%F>> "%log%"
 rem THE KIT'S CLASSES ARE COMPILED FROM C:\HomerDev\exec\CSharp, so a copy at the
 rem top of the project is a stale one, waiting to be read or shipped by mistake.
-for %%F in (Elevate.cs Inix.cs Lbc.cs Log.cs Ollama.cs Paths.cs Say.cs Util.cs Web.cs) do (
+rem PdfRead.cs is retired (HomerDev 1.75.0): the kit's PdfReader.cs replaces it.
+if exist "PdfRead.cs" del /q "PdfRead.cs" && echo Removed the retired PdfRead.cs; the kit's PdfReader.cs is compiled instead>> "%log%"
+for %%F in (Elevate.cs Inix.cs Lbc.cs Log.cs Ollama.cs Paths.cs PdfReader.cs Say.cs Util.cs Web.cs) do (
   if exist "%%F" if exist "!homerDev!\exec\CSharp\%%F" del /q "%%F" && echo Removed the old top-level %%F; the kit's is compiled instead>> "%log%"
 )
 rem The install scripts, getPdfPig and pagebreak.lua live in scripts; copies at

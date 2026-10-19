@@ -2,6 +2,13 @@
 
 
 
+## 19 October 2026 -- PDFs are read by the kit's reader, which is HomerScribe's
+
+- **HomerScribe's PDF reader moved into HomerDev,** as its PdfReader class (kit 1.75.0), so every Homer app can read a PDF the way HomerScribe does. HomerScribe now calls it, with its own settings, Tesseract, picture model and page pictures. PdfRead.cs is retired, and the build removes it. A PDF is read as before: its own tags where they carry it, otherwise its text layer in reading order with headings from type sizes, and scanned pages by Tesseract, then the picture model.
+- **described.md is the finished version.** The file was written before its heading levels were closed, so only the screen reader review read the corrected text. The closed version is now what is written and what the Word version is made from.
+- **A document read from its own tags says so.** It used to say its headings were worked out from the layout even when its tags supplied them, and the log called using the tags the next piece of work.
+- **The build needs HomerDev 1.75.0 or later.**
+
 ## 15 October 2026 -- the acceptance test sees a correct skip, and a changed recording starts clean
 
 - **A run with everything already done ends as a success.** From the command line, a recording whose results were all there was skipped, rightly, but HomerScribe ended with exit code 1, as for an error. It now ends with 0. The dialog still comes back, so Force overwrite can be ticked.
