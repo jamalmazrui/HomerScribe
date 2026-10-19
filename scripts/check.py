@@ -1055,6 +1055,116 @@ def checkKeys():
     return finding("keys", "pass", "0 reserved combinations, 0 access keys claimed twice")
 
 
+def checkConversions():
+    """ONE COPY OF EVERY CONVERSION (1.74.0): an app converts files only through the kit's Conversion.
+
+    Scans the app's own .cs files for private conversion code -- its own Pandoc finder, a 2htm call, an
+    Office COM object, pymupdf4llm -- which the kit's Conversion.cs and exec\\conversions.inix replace.
+    An app the manifest lists in conversionsMoved= (data\\SuiteCommands.inix, [Suite]) fails on any such
+    line; any other app gets a warning that counts them, until its move. 2htm's own COM converters stay,
+    as its last resort, until it too moves.
+    """
+    sApp = os.path.basename(os.path.normpath(sRoot))
+    try:
+        import kind
+        sKit = kind.findKit([sRoot]) or ""
+    except Exception:
+        sKit = ""
+    if not sKit or os.path.normcase(os.path.abspath(sKit)) == os.path.normcase(os.path.abspath(sRoot)):
+        return finding("conversion", "skip", "this is the kit, whose Conversion.cs is the shared copy" if sKit else "the kit was not found")
+    lsMoved = []
+    sManifest = os.path.join(sKit, "data", "SuiteCommands.inix")
+    if os.path.isfile(sManifest):
+        oMatch = re.search(r"(?im)^\s*conversionsMoved\s*=\s*(.*)$", readText(sManifest))
+        if oMatch: lsMoved = [s.strip().lower() for s in oMatch.group(1).split(",") if s.strip()]
+    lsPatterns = [(r"pandoc\.exe", "its own Pandoc finder"), (r"2htm\.exe", "a 2htm call"),
+                  (r"\"(Word|Excel|PowerPoint)\.Application\"", "an Office COM object"), (r"pymupdf4llm", "its own PDF reader")]
+    lsHits = []
+    for sPath in sourceFiles():
+        if not sPath.lower().endswith(".cs"): continue
+        if os.path.dirname(os.path.abspath(sPath)) != os.path.abspath(sRoot): continue
+        for iLine, sLine in enumerate(readText(sPath).splitlines(), 1):
+            if sLine.strip().startswith("//"): continue
+            for sPattern, sWhat in lsPatterns:
+                if re.search(sPattern, sLine, re.I):
+                    lsHits.append("%s line %d: %s" % (os.path.basename(sPath), iLine, sWhat))
+    for sHit in lsHits: logLine("conversion: " + sHit)
+    if not lsHits:
+        return finding("conversion", "pass", "every conversion goes through the kit's Conversion")
+    sCount = countNoun(len(lsHits), "line") + " of private conversion code"
+    if sApp.lower() in lsMoved:
+        return finding("conversion", "fail", sCount + "; the kit's Conversion replaces it, and the log names each one")
+    return finding("conversion", "warn", sCount + ", to move to the kit's Conversion; the log names each one")
+
+
+def checkSuite():
+    """The Homer Suite's command and key contract, for this app (1.73.1).
+
+    Runs the kit's scripts\\checkKeys.py with --app and --gate. An app on the
+    Homer frame (its source calls MdiFrame.runOrExport) is first started with
+    /exportkeys, which writes every command and key it declares and ends
+    before any window appears, so what is checked is what the program really
+    does. A key bound twice with no reviewed exception, a key Windows or a
+    screen reader takes, or a clash the program reported fails the check.
+    An app neither in the suite manifest nor on the frame is skipped.
+    """
+    sApp = os.path.basename(os.path.normpath(sRoot))
+    # THE DEVELOPMENT KIT, FOUND AS TIDY FINDS IT (1.73.7). This took the folder of the kind.py already loaded, which
+    # can be the installed kit's in Program Files, older than the development kit and without checkKeys.py, so every
+    # app's suite check skipped. kind.findKit prefers the development kit beside or above the project.
+    try:
+        import kind
+        sKit = kind.findKit([sRoot]) or ""
+    except Exception:
+        sKit = ""
+    sKitScripts = os.path.join(sKit, "scripts") if sKit else ""
+    sChecker = os.path.join(sKitScripts, "checkKeys.py") if sKitScripts else ""
+    if not sChecker or not os.path.isfile(sChecker):
+        return finding("suite", "skip", "the kit's checkKeys.py was not found")
+    sManifest = os.path.join(os.path.dirname(sKitScripts), "data", "SuiteCommands.inix")
+    bInManifest = os.path.isfile(sManifest) and ("[" + sApp.lower() + " ") in readText(sManifest).lower()
+    bOnFrame = any("MdiFrame.runOrExport" in readText(sPath) for sPath in sourceFiles() if sPath.lower().endswith(".cs"))
+    if not bInManifest and not bOnFrame:
+        return finding("suite", "skip", "%s is not in the suite manifest and not on the Homer frame" % sApp)
+    # The project folder goes along, so checkKeys can confirm that each command
+    # the manifest marks shared= really calls the kit's SuiteCommands (1.74.0).
+    lsArgs = [sys.executable, sChecker, "--gate", "--app", sApp, "--source", sRoot]
+    if bOnFrame:
+        sExe = next((s for s in (os.path.join(sRoot, "exec", sApp + ".exe"), os.path.join(sRoot, sApp + ".exe")) if os.path.isfile(s)), "")
+        if not sExe:
+            return finding("suite", "fail", "%s is on the Homer frame but %s.exe was not found to export its keys; build first" % (sApp, sApp))
+        sExport = os.path.join(sLogDir, "%s-keys-%s.inix" % (sApp, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
+        try:
+            oRun = subprocess.run([sExe, "/exportkeys", sExport], cwd=os.path.dirname(sExe), capture_output=True, text=True, timeout=120)
+            logLine("suite: %s /exportkeys exit %d" % (sExe, oRun.returncode))
+        except Exception as oError:
+            return finding("suite", "fail", "%s could not export its keys: %s" % (sApp, oError))
+        if oRun.returncode != 0 or not os.path.isfile(sExport):
+            return finding("suite", "fail", "%s did not export its keys (exit %d)" % (sApp, oRun.returncode))
+        lsArgs.append(sExport)
+    try:
+        oResult = subprocess.run(lsArgs, cwd=sRoot, capture_output=True, text=True, timeout=300)
+    except Exception as oError:
+        return finding("suite", "fail", "checkKeys could not run: %s" % oError)
+    for sLine in (oResult.stdout + oResult.stderr).splitlines():
+        logLine("suite: " + sLine)
+    sSummary = next((s for s in oResult.stdout.splitlines() if s.startswith("checkKeys")), "checkKeys gave no summary")
+    if oResult.returncode != 0:
+        return finding("suite", "fail", sSummary + " The checkKeys log in the kit's logs folder names each one.")
+    # THE JAWS KEY MAP HANDS ON WHAT THE SUITE ALLOWS (1.73.5). Tidy writes those lines before every push, so a key
+    # still missing here means tidy could not, and the log of that tidy says why.
+    try:
+        if sKitScripts not in sys.path: sys.path.insert(0, sKitScripts)
+        import jawsKeys
+        lsMissing = jawsKeys.missing(sRoot, sApp, os.path.dirname(sKitScripts))
+    except Exception as oError:
+        lsMissing = []
+        logLine("suite: the JAWS key map could not be read: %s" % oError)
+    if lsMissing:
+        return finding("suite", "fail", "%s The JAWS key map does not hand on %s; tidy writes it, so its log says why it could not." % (sSummary, ", ".join(lsMissing)))
+    return finding("suite", "pass", sSummary)
+
+
 def checkSkillChecks(sKind):
     """THE KIT EATS ITS OWN COOKING (1.64.0): the checks the kit's skills carry run on
     every project the kit checks, so a skill's rules are proved on the kit's own work
@@ -1704,6 +1814,8 @@ def main():
         checkSkillChecks("app")
         checkBuildName()
         checkKeys()
+        checkSuite()
+        checkConversions()
         checkBuild(dArguments.build)
         checkSmoke(dArguments.build)
         checkAccept()
