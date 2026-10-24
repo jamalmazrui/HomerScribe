@@ -284,9 +284,16 @@ rem which is the good case and still one file too many.
 rem
 rem Looked for in order: the HomerDev environment variable, C:\HomerDev, then
 rem this folder.
+rem THE NEWEST KIT FOUND IS USED (24 October 2026). The HomerDev variable, C:\HomerDev and the
+rem folders above this one are each considered, and the highest version wins. The variable was
+rem never honoured before 1.89.1, since set "homerDev=" also emptied it (names in cmd ignore
+rem case); once honoured, it named an installed kit in Program Files at 1.77.6, older than
+rem C:\HomerDev, and the build stopped. The log names every kit considered.
+set "sKitFromEnv=%HomerDev%"
 set "homerDev="
-if defined HomerDev if exist "%HomerDev%\exec\CSharp\Lbc.cs" set "homerDev=%HomerDev%"
-if not defined homerDev if exist "C:\HomerDev\exec\CSharp\Lbc.cs" set "homerDev=C:\HomerDev"
+set "sKitVersion="
+call :considerKit "%sKitFromEnv%"
+call :considerKit "C:\HomerDev"
 if not defined homerDev if exist "%CD%\exec\CSharp\Lbc.cs" set "homerDev=%CD%"
 if not defined homerDev (
   echo ERROR: The Homer Development Kit was not found.
@@ -801,4 +808,20 @@ if exist "%~1\exiftool_files" (
 call :exifToolOldEnough "%~1\exiftool.exe"
 if not defined exifVer goto :eof
 set "haveExif=%~1"
+goto :eof
+
+:considerKit
+rem One kit candidate: used when it is a kit (HomerDev.cs at its top, exec\CSharp\Lbc.cs
+rem inside) and newer than the kit chosen so far.
+set "sTry=%~1"
+if not defined sTry goto :eof
+if "!sTry:~-1!"=="\" set "sTry=!sTry:~0,-1!"
+if not exist "!sTry!\HomerDev.cs" goto :eof
+if not exist "!sTry!\exec\CSharp\Lbc.cs" goto :eof
+set "sTryVersion=0.0.0"
+if exist "!sTry!\version.txt" for /f "usebackq delims=" %%v in (`powershell -NoProfile -Command "(Get-Content -Raw -LiteralPath '!sTry!\version.txt').Trim([char]0xFEFF, ' ', [char]13, [char]10)"`) do set "sTryVersion=%%v"
+>> "%log%" echo Kit candidate: !sTry! version !sTryVersion!
+if not defined homerDev (set "homerDev=!sTry!" & set "sKitVersion=!sTryVersion!" & goto :eof)
+powershell -NoProfile -Command "try { if ([version]'!sTryVersion!' -gt [version]'!sKitVersion!') { exit 0 } else { exit 1 } } catch { exit 1 }"
+if not errorlevel 1 (set "homerDev=!sTry!" & set "sKitVersion=!sTryVersion!")
 goto :eof

@@ -1119,6 +1119,11 @@ def checkConversions():
     if lsMissing:
         logLine("conversion: the build compiles Conversion but not " + ", ".join(lsMissing))
         return finding("conversion", "fail", "the build compiles Conversion without the rest of the bundle: " + ", ".join(lsMissing))
+    # QUALITY WITH CONVERSION (1.92.0): Quality.cs holds extCheck's rules, which judge every file Conversion
+    # makes; an app that compiles Conversion without it still converts, with fewer checks, so this warns.
+    bNoQuality = bool(re.search(r"\bConversion(\.cs)?\b", sBuildText)) and not re.search(r"\bQuality(\.cs)?\b", sBuildText)
+    if not lsHits and bNoQuality:
+        return finding("conversion", "warn", "the build compiles Conversion without Quality, so the files it makes are not judged by extCheck's rules; add Quality to homerModules")
     if not lsHits:
         return finding("conversion", "pass", "every conversion goes through the kit's Conversion, with the whole bundle")
     sCount = countNoun(len(lsHits), "line") + " of private conversion code"
