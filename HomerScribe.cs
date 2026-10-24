@@ -1423,20 +1423,11 @@ namespace Homer
 
         // Minutes below the hour, hours and minutes above it, and nothing at
         // all rather than a zero.
+        // The kit's wording (24 October 2026): HomerScribe's own, moved into
+        // LaunchProgress so every launch app says time the same way.
         static string spokenTime(double nAt)
         {
-            if (nAt < 60.0) return "";
-            if (nAt < 3600.0) return ((int)Math.Round(nAt / 60.0)).ToString() + " min";
-            int iHours = (int)(nAt / 3600.0);
-            int iMinutes = (int)Math.Round((nAt - iHours * 3600.0) / 60.0);
-            if (iMinutes >= 60)
-            {
-                iHours = iHours + 1;
-                iMinutes = 0;
-            }
-            string sSaid = iHours.ToString() + (iHours == 1 ? " hour" : " hours");
-            if (iMinutes > 0) sSaid = sSaid + " " + iMinutes.ToString() + " min";
-            return sSaid;
+            return LaunchProgress.spokenTime(nAt);
         }
 
         static string spokenPosition(double nAt, double nTotal)
@@ -5683,7 +5674,7 @@ namespace Homer
                         "Cleared, each folder is created beside its own source instead.",
                         "Choose the directory to write results into.");
 
-                    oLaunch.addOperationBands(bForce, "Do the work again, replacing what an earlier run wrote.",
+                    oLaunch.addOperationBands(bForce, "",
                         bUseConfig, "Load these settings at startup and save them on OK, in " + configPath() + ".",
                         bViewOutput, "Open the output directory when the run finishes.");
 
@@ -10574,7 +10565,7 @@ namespace Homer
                     ? "That one has already been " + sDoneWord + ", so there was nothing to do."
                     : "All " + iSkippedWhole.ToString() + " of those have already been " + sDoneWord + ", so there was nothing to do.";
                 sSaid = sSaid + Environment.NewLine + Environment.NewLine
-                      + (bGuiMode ? "Tick Force replacements to do them again." : "Pass --force-replacements to do them again.");
+                      + (bGuiMode ? "Check Force replacements, or use -f, to do them again." : "Use -f, --force-replacements, to do them again.");
                 logMessage(sSaid.Replace(Environment.NewLine, " "), "INFO", bGuiMode ? "" : sSaid);
                 // THE RESULTS BOX ENDS THE RUN, then the output directory opens if asked
                 // (23 October 2026, the kit's LaunchDialog.finish), and HomerScribe closes.

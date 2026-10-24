@@ -10,7 +10,8 @@
 - **Logging is automatic.** The Log session checkbox and -l are gone; the log is always in %LOCALAPPDATA%\HomerScribe\logs. Default settings has no Alt letter, because Describe video holds D and Source paths holds S.
 - **Every run ends with the Results box,** whose one OK button has the focus, so Enter, Space or Escape closes it; the output directory then opens if View output directory is checked, and HomerScribe closes.
 - **Switches match the dialog:** a long switch is a control's label and a short one its Alt letter, written with /, - or --, in any case. Renamed: --output-directory, --force-replacements, --view-output-directory. New: --default-settings, which has no letter, since d is Describe video. The older names still work.
-- **Speech while working uses the kit's test of whether HomerScribe is in front,** LaunchProgress.isInFront, the one every launch app now shares. HomerScribe's own grouping of descriptions is unchanged.
+- **Speech while working uses the kit's test of whether HomerScribe is in front,** LaunchProgress.isInFront, the one every launch app now shares. HomerScribe's own grouping of descriptions is unchanged. Its words for time, "11 min", are now the kit's, LaunchProgress.spokenTime, so every launch app says time the same way.
+- **Force replacements works as in every launch app:** unchecked, a source whose result is already there is skipped and kept, and the Results box says how many and how to replace them; checked, the work is done again and the old result kept until the new one is complete. Its tip is now the kit's standard one.
 - **The build needs HomerDev 1.89.0 or later.**
 
 ## 19 October 2026 -- PDFs are read by the kit's reader, which is HomerScribe's
