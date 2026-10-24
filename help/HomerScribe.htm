@@ -166,10 +166,6 @@
   </style>
 </head>
 <body>
-<header id="title-block-header">
-<p class="subtitle">The complete guide</p>
-<p class="author">Jamal Mazrui</p>
-</header>
 <main>
 <h1 id="homerscribe">HomerScribe</h1>
 <p>The complete guide to HomerScribe: every setting, every document it
@@ -238,8 +234,8 @@ across every video.</li>
 alone.</strong> Point HomerScribe at a dozen videos, stop it halfway,
 and run it again: the ones that finished are skipped, and one that was
 interrupted <strong>carries on where it stopped</strong> rather than
-starting over. Tick <strong>Force overwrite</strong>, or pass
-<code>--force</code>, to describe everything again from the
+starting over. Tick <strong>Force replacements</strong>, or pass
+<code>--force-replacements</code>, to describe everything again from the
 beginning.</p>
 <p>Resuming costs very little. Every description is written to
 <code>described.json</code> as it is made, so nothing has to be asked of
@@ -356,10 +352,10 @@ sit together. It is not deleted afterwards, because fetching it again to
 redescribe it would be slow for you and discourteous to the server.</p>
 <p>Asking for the title first has a second use: it settles whether the
 video has already been described <strong>before</strong> it is
-downloaded. With Force overwrite off, a video whose results are already
-in place is skipped without fetching it at all, which on an hour-long
-programme saves the download rather than discovering afterwards that it
-was not needed.</p>
+downloaded. With Force replacements off, a video whose results are
+already in place is skipped without fetching it at all, which on an
+hour-long programme saves the download rather than discovering
+afterwards that it was not needed.</p>
 <p>Asking for the title first also means the download announces itself
 by name rather than by address, which matters because downloading a
 large video is otherwise a long silence.</p>
@@ -375,20 +371,20 @@ directory it happened to be started from. Starting in the program’s own
 folder is how a tool ends up dropping results among its own source
 files.</p>
 <ul>
-<li><strong>Browse source</strong> opens in your <strong>Videos</strong>
-folder, unless the Source paths box already holds a path, in which case
-it opens there.</li>
-<li><strong>Choose output</strong> does the same, and the Output
-directory box opens already filled with your Videos folder rather than
-empty.</li>
+<li><strong>Browse local source</strong> opens in your
+<strong>Videos</strong> folder, unless the Source paths box already
+holds a path, in which case it opens there.</li>
+<li><strong>Choose output directory</strong> does the same, and the
+Output directory box opens already filled with your Videos folder rather
+than empty.</li>
 <li>If Videos cannot be found, Documents is used, and only then the
 current directory.</li>
 </ul>
 <p>On the command line the rule is different and deliberate: leaving
-<code>--output-dir</code> unset puts each video’s folder of results
-<strong>beside the video itself</strong>, which is almost always what is
-wanted when a path was typed out in full. Clearing the Output directory
-box in the dialog does the same thing.</p>
+<code>--output-directory</code> unset puts each video’s folder of
+results <strong>beside the video itself</strong>, which is almost always
+what is wanted when a path was typed out in full. Clearing the Output
+directory box in the dialog does the same thing.</p>
 <h2 id="telling-it-about-the-film">Telling it about the film</h2>
 <p>A description is far better when the model knows what it is watching.
 Without context it writes “a man in a boat”; with it, “Odysseus”.</p>
@@ -458,23 +454,35 @@ consistent.</p>
 “Presented by Ali Mazrui” or “Narrated by Carl Sagan” is picked up and
 used the same way.</p>
 <h2 id="the-dialog">The dialog</h2>
-<p><code>--gui</code> opens a dialog built with <code>Lbc.cs</code>, the
-shared layout-by-code module used by DbDo, EdSharp, FileDir and urlFido.
-It carries the standard controls:</p>
+<p><code>--gui</code> opens the dialog every Homer launch app shows,
+built by the kit’s LaunchDialog in rows called bands that read left to
+right. Tab moves through it in this order:</p>
 <ul>
-<li><strong>&amp;Source paths</strong> with <strong>&amp;Browse
-source…</strong></li>
+<li><strong>&amp;Source paths</strong> with <strong>&amp;Browse local
+source</strong>, which opens in your Videos folder unless Source paths
+already points somewhere</li>
+<li><strong>&amp;Transcribe audio</strong>, <strong>&amp;Describe
+video</strong>, <strong>&amp;Audio only</strong>, <strong>&amp;Remove
+ads</strong> and <strong>&amp;Web context</strong></li>
 <li><strong>&amp;Output directory</strong> with <strong>&amp;Choose
-output…</strong></li>
-<li><strong>&amp;Force overwrite</strong>, <strong>&amp;Log
-session</strong>, <strong>&amp;Use configuration</strong></li>
-<li>Help, <strong>Default settings</strong>, OK and Cancel, in that
-order left to right, following Microsoft’s guidance for a secondary
-window and matching 2htm and extCheck. <strong>Enter</strong> is OK,
-<strong>Escape</strong> is Cancel and <strong>F1</strong> is Help, so
-those two buttons carry no access key and Alt+O and Alt+C stay with
-Output directory and Choose output.</li>
+output directory</strong></li>
+<li><strong>&amp;Force replacements</strong>, <strong>&amp;Use
+configuration</strong> and <strong>&amp;View output
+directory</strong></li>
+<li><strong>Default settings</strong> and <strong>&amp;Help</strong>.
+Describe video holds D and Source paths holds S, so by the Homer rule
+that the first control to claim a letter keeps it, Default settings has
+no Alt letter here.</li>
+<li>OK and Cancel, alone at the bottom right. Control+Enter is OK and
+Escape is Cancel, from any control. F1 is Help and F11 checks the web
+for a newer HomerScribe, from any control.</li>
 </ul>
+<p>Logging is automatic: every run writes a log in
+<code>%LOCALAPPDATA%\HomerScribe\logs</code>, named
+<code>HomerScribe-yyyyMMdd-HHmmss.log</code>, and Help says so. Every
+run ends with the HomerScribe Results box. Its only button is OK, so
+Enter, Space or Escape closes it; then the output directory opens if
+View output directory is checked, and HomerScribe closes.</p>
 <p>OK and Cancel carry no mnemonic, as Windows convention requires:
 Escape cancels, Enter accepts, and Control plus Enter accepts from any
 control.</p>
@@ -530,10 +538,10 @@ simply says which one it is.</p>
 <code>described.mp3</code> holding the film’s own audio with the
 descriptions mixed into it, and no video. It is a quarter the size of
 the film, much quicker to make since no video is copied, and enough when
-the picture is of no use to the listener. <strong>View output</strong>
-opens the results when the run finishes. <strong>Force
-overwrite</strong> does the work again, ignoring anything an earlier run
-wrote.</p>
+the picture is of no use to the listener. <strong>View output
+directory</strong> opens the results when the run finishes.
+<strong>Force replacements</strong> does the work again, ignoring
+anything an earlier run wrote.</p>
 <p>Only one access key is shared: Alt+D belongs to both <strong>Describe
 video</strong> and <strong>Default settings</strong>. Windows cycles
 between them; press it twice to reach the second.</p>
@@ -585,8 +593,8 @@ beginning, so a run never passes over something in silence:</p>
 <li><strong>Resuming</strong> — some of this film was described in an
 earlier run, so those descriptions are read back and only the rest are
 asked for</li>
-<li><strong>Skipped</strong> — already described, and Force overwrite is
-off</li>
+<li><strong>Skipped</strong> — already described, and Force replacements
+is off</li>
 <li><strong>Error</strong> — could not be fetched or could not be
 finished, with the reason</li>
 <li><strong>Rejected</strong> — not a video, a recording, or a list; or
@@ -688,10 +696,17 @@ number if you want another. The log records how many threads each file
 ran on and how long Whisper took to hear and to write it, so a slow run
 can be understood.</p>
 <p><code>--speech no</code> turns it off. <code>--whisper-model</code>
-chooses a different size — <code>small</code> is the default and is the
-right size for this: the question is only where speech is, not what
-every word was. <code>--dialogue-window</code> sets how much preceding
-dialogue the model sees, or <code>0</code> for none.</p>
+chooses a different model. The default is
+<code>large-v3-turbo-q5_0</code>, Whisper large-v3 turbo: at 547 MB it
+is about the size of <code>small</code> (466 MB) and hears nearly as
+well as the full large-v3 (2.9 GB), so names, product terms and accented
+speech come out right far more often. It is slower than
+<code>small</code>, perhaps half again as long or more on an ordinary
+computer, so for a long batch where only the timing of speech matters,
+<code>--whisper-model small</code> is quicker. If the turbo model is not
+installed yet, HomerScribe uses <code>small</code> and the log says so;
+running setup again installs it. <code>--dialogue-window</code> sets how
+much preceding dialogue the model sees, or <code>0</code> for none.</p>
 <h3 id="names-whisper-should-spell-right">Names Whisper should spell
 right</h3>
 <p>Whisper spells a name it has never read the way it sounds. A

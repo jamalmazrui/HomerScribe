@@ -2,6 +2,17 @@
 
 
 
+## 23 October 2026 -- the Homer launch dialog
+
+- **The dialog is the one every Homer launch app shows,** built by the Homer kit's LaunchDialog (kit 1.89.0). It is in rows called bands, read left to right: Source paths and Browse local source; Transcribe audio, Describe video, Audio only, Remove ads and Web context; Output directory and Choose output directory; Force replacements, Use configuration and View output directory; Default settings and Help; then OK and Cancel alone at the bottom right, as Microsoft's dialog guidance places them.
+- **Insert+Tab names the Source paths box again, and the Output directory box is found again.** The kit put a band's label after the band, so the box had no name and Browse seemed to come first.
+- **Control+Enter is OK and Escape is Cancel from any control, and F11 checks for a newer version from anywhere.** Help says so, and says where the logs are kept.
+- **Logging is automatic.** The Log session checkbox and -l are gone; the log is always in %LOCALAPPDATA%\HomerScribe\logs. Default settings has no Alt letter, because Describe video holds D and Source paths holds S.
+- **Every run ends with the Results box,** whose one OK button has the focus, so Enter, Space or Escape closes it; the output directory then opens if View output directory is checked, and HomerScribe closes.
+- **Switches match the dialog:** a long switch is a control's label and a short one its Alt letter, written with /, - or --, in any case. Renamed: --output-directory, --force-replacements, --view-output-directory. New: --default-settings, which has no letter, since d is Describe video. The older names still work.
+- **Speech while working uses the kit's test of whether HomerScribe is in front,** LaunchProgress.isInFront, the one every launch app now shares. HomerScribe's own grouping of descriptions is unchanged.
+- **The build needs HomerDev 1.89.0 or later.**
+
 ## 19 October 2026 -- PDFs are read by the kit's reader, which is HomerScribe's
 
 - **HomerScribe's PDF reader moved into HomerDev,** as its PdfReader class (kit 1.75.0), so every Homer app can read a PDF the way HomerScribe does. HomerScribe now calls it, with its own settings, Tesseract, picture model and page pictures. PdfRead.cs is retired, and the build removes it. A PDF is read as before: its own tags where they carry it, otherwise its text layer in reading order with headings from type sizes, and scanned pages by Tesseract, then the picture model.

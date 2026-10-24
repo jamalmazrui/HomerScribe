@@ -236,11 +236,11 @@ Confirm the wording with a live run: buildTutorials -live.
 
 ### Step 5: Tab
 
-Tab moves in the order the controls were added: Browse source, then the output folder, then the boxes that say what to do.
+Tab moves in the order the controls were added, row by row, each row read left to right: Browse local source beside Source paths, then the boxes that say what to do, then the output folder.
 
 Screen reader:
 
-- Browse source... button, Alt plus B
+- Browse local source button, Alt plus B
 
 Confirm the wording with a live run: buildTutorials -live.
 
@@ -264,7 +264,7 @@ Confirm the wording with a live run: buildTutorials -live.
 
 ### Step 8: Alt+O
 
-D for Describe, A for Audio only, W for Web context, R for Remove ads, F for Force overwrite, L for Log session. Alt plus O goes to the Output directory box, O for Output.
+D for Describe, A for Audio only, W for Web context, R for Remove ads, F for Force replacements, U for Use configuration, V for View output directory. Alt plus O goes to the Output directory box, O for Output.
 
 Screen reader:
 
@@ -284,7 +284,7 @@ Confirm the wording with a live run: buildTutorials -live.
 
 ### Step 10: Escape
 
-Escape closes the list and returns where I was. In the dialog itself, Enter presses OK from anywhere, Control plus Enter from inside a box of many lines, and Escape cancels.
+Escape closes the list and returns where I was. In the dialog itself, Control plus Enter presses OK from anywhere, and Escape presses Cancel from anywhere. OK and Cancel sit alone at the bottom right, below Default settings and Help.
 
 Screen reader:
 
@@ -344,7 +344,7 @@ Confirm the wording with a live run: buildTutorials -live.
 
 ### Step 17
 
-The answer is Enter, which presses OK from anywhere. What this walk taught. I name the part; the reader gives the key.
+The answer is Control plus Enter, which presses OK from anywhere. What this walk taught. I name the part; the reader gives the key.
 
 ### Step 18
 
@@ -376,7 +376,7 @@ Accept from anywhere.
 
 Screen reader:
 
-- Enter
+- Control plus Enter
 
 **Something to try:** Open HomerScribe, Tab through every control once, and press Shift plus F1 on each to hear its tip.
 
@@ -565,7 +565,7 @@ Screen reader:
 
 Now the path. I type it, and the reader echoes as I go, so I will say it plainly instead: C colon, backslash Users, backslash Jamal, backslash Videos, backslash Introduction underscore to underscore Windows dot m p 3.
 
-Type the full path, or press Alt plus B, B for Browse source, and pick the file from a standard Open dialog instead.
+Type the full path, or press Alt plus B, B for Browse local source, and pick the file from a standard Open dialog instead.
 
 ### Step 5: Alt+T
 
@@ -969,7 +969,7 @@ Screen reader:
 
 ### Step 3: Alt+B
 
-Alt plus B, B for Browse source, opens a standard Open dialog, which is easier than typing a path.
+Alt plus B, B for Browse local source, opens a standard Open dialog, which is easier than typing a path.
 
 Screen reader:
 

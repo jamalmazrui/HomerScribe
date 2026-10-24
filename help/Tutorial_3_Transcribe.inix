@@ -25,7 +25,7 @@ Hear=selected https colon slash slash www dot youtube dot com slash watch questi
 Say=Now the path. I type it, and the reader echoes as I go, so I will say it plainly instead: C colon, backslash Users, backslash Jamal, backslash Videos, backslash Introduction underscore to underscore Windows dot m p 3.
 Key=
 Hear=
-Note=Type the full path, or press Alt plus B, B for Browse source, and pick the file from a standard Open dialog instead.
+Note=Type the full path, or press Alt plus B, B for Browse local source, and pick the file from a standard Open dialog instead.
 
 [step]
 Say=Next, say what to do with it. Alt plus T is Transcribe audio, T for Transcribe.

@@ -30,7 +30,7 @@ guide and **[ReadMe.md](../ReadMe.md)** to get started.
 - **Enter** — press the default button, from anywhere except a multi-line box.
 - **Control+Enter** — press the default button from *inside* a multi-line box,
   where plain Enter would start a new line instead.
-- **Escape** — cancel and close.
+- **Escape** — cancel and close, from any control.
 
 ### Choosing what HomerScribe does
 
@@ -38,13 +38,12 @@ guide and **[ReadMe.md](../ReadMe.md)** to get started.
 - **Alt+D** — tick or clear **Describe video**.
 - **Alt+A** — tick or clear **Audio only**.
 - **Alt+W** — tick or clear **Web context**.
-- **Alt+F** — tick or clear **Force overwrite**.
-- **Alt+L** — tick or clear **Log session**.
+- **Alt+F** — tick or clear **Force replacements**.
 - **Alt+U** — tick or clear **Use configuration**.
 - **Alt+R** — tick or clear **Remove ads**.
-- **Alt+V** — tick or clear **View output**.
-- **Alt+B** — **Browse source**, to pick a file rather than type a path.
-- **Alt+C** — **Choose output**, to pick the folder rather than type it.
+- **Alt+V** — tick or clear **View output directory**.
+- **Alt+B** — **Browse local source**, to pick a file rather than type a path.
+- **Alt+C** — **Choose output directory**, to pick the folder rather than type it.
 
 ### Hearing what is in a field
 
@@ -129,13 +128,13 @@ Shift+F6, Control+Page Down, Control+Page Up.
 
 - **Alt+'** — read the clipboard aloud.
 - **Alt+A** — Audio only.
-- **Alt+B** — Browse source.
-- **Alt+C** — Choose output; in a text box or list, add to the clipboard.
+- **Alt+B** — Browse local source.
+- **Alt+C** — Choose output directory; in a text box or list, add to the clipboard.
 - **Alt+D** — Describe video.
 - **Alt+Down** — open the list of choices.
-- **Alt+F** — Force overwrite.
+- **Alt+F** — Force replacements.
 - **Alt+F8** — read the whole field aloud.
-- **Alt+L** — Log session.
+- **Alt+H** — Help, as F1 does.
 - **Alt+O** — go to the output directory box.
 - **Alt+R** — Remove ads.
 - **Alt+S** — go to the source paths box.
@@ -145,7 +144,7 @@ Shift+F6, Control+Page Down, Control+Page Up.
 - **Alt+Shift+Z** — wrapped lines.
 - **Alt+T** — Transcribe audio.
 - **Alt+U** — Use configuration.
-- **Alt+V** — View output.
+- **Alt+V** — View output directory.
 - **Alt+W** — Web context.
 - **Alt+X** — cut and add to the clipboard.
 - **Alt+Y** — say how many lines.
@@ -161,7 +160,7 @@ Shift+F6, Control+Page Down, Control+Page Up.
 - **Control+Page Up** — the previous stage.
 - **Control+Shift+Enter** — undo the reshaping.
 - **Control+X** — cut.
-- **Escape** — cancel and close.
+- **Escape** — cancel and close, from any control.
 - **Enter** — press the default button.
 - **F3** — find the next match.
 - **F4** — open the list of choices.

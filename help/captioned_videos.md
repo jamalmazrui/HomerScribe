@@ -9,7 +9,7 @@
 # Suggested run, transcribe only, which is the quickest way to see whether the
 # captions came through:
 #
-#   HomerScribe --transcribe --output-dir C:\CaptionTest captioned_videos.md
+#   HomerScribe --transcribe --output-directory C:\CaptionTest captioned_videos.md
 #
 # And then the same films again with --captions no, into a different output
 # folder, to compare what Whisper heard against what the captions said.

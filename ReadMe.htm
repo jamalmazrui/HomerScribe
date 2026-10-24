@@ -200,10 +200,13 @@ from or to Wikipedia, to learn what it shows.</p>
 <p>The vision model runs locally through Ollama, the speech recognition
 through Whisper, the voice comes from Windows, and the only other
 programs involved are ffmpeg and, for web addresses, yt-dlp.
-<strong>Transcribing needs Whisper alone</strong> — about half a
-gigabyte. Describing needs about six and a half, because it needs a
-model that can look at pictures as well as a service to run it in. The
-installer offers each separately, and they are downloaded once.</p>
+<strong>Transcribing needs Whisper and ffmpeg</strong>, which takes the
+sound out of a recording for Whisper to hear; Whisper with its model is
+about half a gigabyte. A web video whose captions a person uploaded can
+be transcribed from those captions instead. Describing needs about six
+and a half, because it needs a model that can look at pictures as well
+as a service to run it in. The installer offers each separately, and
+they are downloaded once.</p>
 <p>HomerScribe is one of the Homer Tools, alongside 2htm, extCheck,
 urlCheck, urlFido, bookFido, HomerView, EdSharp, FileDir and DbDo.</p>
 <p><code>Developer.md</code> describes what the program is built from,
@@ -215,7 +218,7 @@ whatever matches what you want to do: Ollama and the vision model for
 describing, Whisper for transcribing.</li>
 <li>Run HomerScribe with nothing on the command line. The dialog
 opens.</li>
-<li>Choose a file with <strong>Browse source</strong>.</li>
+<li>Choose a file with <strong>Browse local source</strong>.</li>
 <li>Tick <strong>Describe video</strong>, <strong>Transcribe
 audio</strong>, or both.</li>
 <li>Press OK.</li>
@@ -239,11 +242,11 @@ changed PATH is picked up.</p></li>
 <li><p>Ollama, running, with a vision model installed:</p>
 <pre><code>ollama pull qwen2.5vl:7b</code></pre></li>
 </ul>
-<p><code>build.cmd</code> downloads <code>ffmpeg.exe</code>,
-<code>ffprobe.exe</code>, and <code>yt-dlp.exe</code> when they are not
-already in the folder, so a fresh clone builds a complete installer
-without anything being fetched by hand. Files already present are left
-alone, so the download happens once.</p>
+<p>ffmpeg, ffprobe and yt-dlp are not part of HomerScribe’s own files.
+The installer offers each one, and Whisper, as a shared component in its
+usual machine-wide folder, where every Homer program finds it and an
+upgrade of HomerScribe cannot remove it. Nothing has to be fetched by
+hand.</p>
 <p>The installer then packages them into the program folder, which is
 the first place HomerScribe looks. Installed that way, nothing else has
 to be set up and nothing has to be on the PATH. If a download fails, the

@@ -333,15 +333,15 @@ namespace Homer
             // Settings with no dialog control of their own take no short form,
             // which keeps the natural letters free for the ones that do.
             addParam("source-paths", "s", "string", sDefaultSource, "Video files or YouTube page addresses, separated by spaces; quote any containing a space. The dialog starts browsing in your Videos folder");
-            addParam("output-dir", "o", "string", "", "Folder to create each video's results folder in. Empty on the command line means beside the video; the dialog offers your Videos folder");
+            addParam("output-directory", "o", "string", "", "Directory to create each video's results folder in. Empty on the command line means beside the video; the dialog offers your Videos folder");
             addParam("describe", "d", "flag", "no", "Describe what happens on screen and write a described copy of the film");
             addParam("transcribe", "t", "flag", "no", "Write down what is said, from the film's own sound");
             addParam("web-context", "w", "flag", "no", "Learn what the video is by asking the page it came from, or Wikipedia about its title, and use that as context");
-            addParam("force", "f", "flag", "no", "Describe everything again, ignoring an earlier run");
+            addParam("force-replacements", "f", "flag", "no", "Do the work again, replacing what an earlier run wrote");
             addParam("audio-only", "a", "flag", "no", "Produce sound only: one mp3 of the film's audio with the descriptions mixed in, and no video");
-            addParam("view-output", "v", "flag", "no", "Open the results folder when the run finishes");
+            addParam("view-output-directory", "v", "flag", "no", "Open the output directory when the run finishes");
             addParam("rebuild", "", "flag", "no", "Build the film from descriptions already made, asking the model nothing");
-            addParam("log-file", "", "string", "", "Path of the run log; by default it goes with the results");
+            addParam("log-file", "", "string", "", "Path of the run log; by default it is in %LOCALAPPDATA%\\HomerScribe\\logs");
             addParam("speech", "", "flag", "yes", "Find where descriptions go by detecting speech with Whisper, rather than by listening for silence");
             addParam("captions", "", "flag", "yes", "Use the film's own English captions as the transcript when it has them, instead of listening to it with Whisper");
             addParam("auto-captions", "", "flag", "no", "Also accept captions a machine made, such as YouTube's automatic ones. They carry no speaker names and none of the sounds that are not speech, so listening to the film usually gives a richer transcript");
@@ -359,7 +359,9 @@ namespace Homer
             addParam("speaker-window", "", "number", "120.0", "Seconds either side of a moment in which a caption speaker counts as being in the same scene. Scene-sized on purpose, which is much wider than the dialogue window");
             addParam("dialogue-window", "", "number", "25.0", "Seconds of dialogue before a moment shown to the model, so a description does not restate what was just said");
             addParam("summarise", "", "flag", "yes", "Look thoroughly with the vision model, then have the same model compress what it saw into one spoken description");
-            addParam("log-session", "l", "flag", "no", "Keep a copy of the log in each video's own folder");
+            // LOGGING IS AUTOMATIC (23 October 2026): there is no log-session switch or
+            // Log session checkbox; every run's log is in %LOCALAPPDATA%\HomerScribe\logs.
+            addParam("default-settings", "", "flag", "no", "Forget the saved settings and stop. Its letter, d, belongs to describe");
             addParam("use-configuration", "u", "flag", "no", "Load settings at startup and save them on OK");
             addParam("begin", "b", "string", "0", "Where to start, in seconds or hh:mm:ss");
             addParam("minutes", "e", "number", "0", "How many minutes to describe; 0 means the whole film");
@@ -476,9 +478,23 @@ namespace Homer
         {
             int iAt = 0;
             bool bTookInput = false;
+            // THE LAUNCH SWITCHES (23 October 2026, help\LaunchDialog.md in the kit): written
+            // /switch, -switch or --switch, in any case. A long switch is the dialog's label and
+            // a short one its Alt letter; the older names still work through dAliases.
+            Dictionary<string, string> dAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
+                { "defaults", "default-settings" }, { "force", "force-replacements" }, { "output", "output-directory" },
+                { "output-dir", "output-directory" }, { "view", "view-output-directory" }, { "view-output", "view-output-directory" } };
             while (iAt < asArgs.Length)
             {
                 string sArg = asArgs[iAt];
+                if (sArg == "/?") sArg = "-?";
+                else if (sArg.Length > 1 && sArg[0] == '/' && char.IsLetter(sArg[1]) && !File.Exists(sArg) && !Directory.Exists(sArg))
+                    sArg = (sArg.Length == 2 ? "-" : "--") + sArg.Substring(1);
+                if (sArg.StartsWith("-"))
+                {
+                    int iEqualsAt = sArg.IndexOf('=');
+                    sArg = iEqualsAt > 0 ? sArg.Substring(0, iEqualsAt).ToLowerInvariant() + sArg.Substring(iEqualsAt) : sArg.ToLowerInvariant();
+                }
                 string sName = "";
                 string sValue = "";
                 bool bHasValue = false;
@@ -492,6 +508,7 @@ namespace Homer
                         sName = sName.Substring(0, iEquals);
                         bHasValue = true;
                     }
+                    if (dAliases.ContainsKey(sName)) sName = dAliases[sName];
                 }
                 else if (sArg.StartsWith("-") && sArg.Length > 1)
                 {
@@ -558,13 +575,13 @@ namespace Homer
         static readonly string[,] asHelpGroups = new string[,] {
             { "What to do, and to what", "describe transcribe source-paths begin minutes" },
             { "Knowing what it is watching", "context-file web-context" },
-            { "Where things go", "output-dir audio-only view-output force rebuild" },
+            { "Where things go", "output-directory audio-only view-output-directory force-replacements rebuild" },
             { "What the description says", "detail words-per-second max-words summarise objective" },
             { "The voice", "voice rate ad-volume announce" },
             { "Hearing the film, and where descriptions go", "speech whisper-model dialogue-window every spacing min-gap forced-length noise-floor silence-length dialogue-channel max-silence" },
             { "Not saying the same thing twice", "similarity same-shot" },
             { "The model and the picture", "model url frames width crop-bottom" },
-            { "Settings, logs and diagnostics", "use-configuration log-session log-file checkpoint mux-minutes ffmpeg-dir browser-cookies announce-progress boxes gui check list-voices verbose help" },
+            { "Settings, logs and diagnostics", "use-configuration default-settings log-file checkpoint mux-minutes ffmpeg-dir browser-cookies announce-progress boxes gui check list-voices verbose help" },
         };
 
         static void writeWrapped(string sIndent, string sText, int iWidth)
@@ -804,22 +821,9 @@ namespace Homer
                 {
                 }
             }
-            // Unticked, the log is still written -- a run that goes wrong must
-            // leave a record -- but out of the way rather than among the results.
-            if (!flag("log-session")) return appDataFolder();
-            if (text("output-dir") != "") return text("output-dir");
-            foreach (string sSource in splitPaths(text("source-paths")))
-            {
-                if (sSource.StartsWith("http")) continue;
-                try
-                {
-                    string sFolder = Path.GetDirectoryName(Path.GetFullPath(sSource));
-                    if (sFolder != "" && Directory.Exists(sFolder)) return sFolder;
-                }
-                catch (Exception)
-                {
-                }
-            }
+            // LOGGING IS AUTOMATIC (23 October 2026): the log is always written,
+            // always in the same place, out of the way of the results, and the Help
+            // box says where. The Log session checkbox that moved it is gone.
             return appDataFolder();
         }
 
@@ -1626,25 +1630,11 @@ namespace Homer
         // Is HomerScribe the window the person is working in? A live region
         // speaks whatever the focus is, which is helpful when you are watching
         // the program and an intrusion when you are not.
+        // The kit's test (23 October 2026), the same one every launch app's
+        // progress window uses: any window of this process counts.
         static bool weAreInFront()
         {
-            try
-            {
-                IntPtr hFront = GetForegroundWindow();
-                if (hFront == IntPtr.Zero) return false;
-                // Any window of ours counts, not only the dialog, and this holds
-                // even when the dialog's handle cannot be reached.
-                uint iOwner = 0;
-                GetWindowThreadProcessId(hFront, out iOwner);
-                if (iOwner != 0) return iOwner == (uint)Process.GetCurrentProcess().Id;
-                Form oForm = ownerForm();
-                if (oForm == null) return false;
-                return hFront == oForm.Handle;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return LaunchProgress.isInFront();
         }
 
         static void sayLive(string sTitle, string sBody)
@@ -3235,7 +3225,7 @@ namespace Homer
                 logMessage("Whisper is not available now, but the earlier transcript is of this same recording, so it is reused.", "INFO", "");
                 bSame = true;
             }
-            if (!flag("force") && bSame && File.Exists(sFinal))
+            if (!flag("force-replacements") && bSame && File.Exists(sFinal))
             {
                 lSpeech = readTranscript(sFinal);
                 if (lSpeech.Count > 0)
@@ -3247,7 +3237,7 @@ namespace Homer
             }
             // One made before the finished transcript was kept: if Whisper never looped in it, it needs no hearing, only
             // the label clean-up, and it is finished now; one with a loop is heard again below.
-            if (!flag("force") && bCanHear && sWas == sMadeBy && File.Exists(sJson) && whisperLoops(sJson).Count == 0)
+            if (!flag("force-replacements") && bCanHear && sWas == sMadeBy && File.Exists(sJson) && whisperLoops(sJson).Count == 0)
             {
                 lSpeech = dropInventedSpeakers(readTranscript(sJson));
                 if (lSpeech.Count > 0)
@@ -3259,7 +3249,7 @@ namespace Homer
                     return lSpeech;
                 }
             }
-            if (File.Exists(sJson) && !flag("force") && bCanHear && !bSame)
+            if (File.Exists(sJson) && !flag("force-replacements") && bCanHear && !bSame)
                 logMessage("The earlier transcript was made " + (sWas == "" ? "before transcripts recorded what made them" : "from \"" + sWas + "\"")
                            + ", not \"" + sIdentity + "\", so it is made again.", "INFO", "");
             string sWhisper = sWhisperNow;
@@ -5623,58 +5613,47 @@ namespace Homer
             return Directory.GetCurrentDirectory();
         }
 
-        // A browse dialog should open where the person already is. Whatever the
-        // field holds wins; the known folder is only the fallback.
-        static string initialBrowseFolder(string sFieldText)
-        {
-            try
-            {
-                string sText = (sFieldText == null ? "" : sFieldText).Trim();
-                List<string> lItems = splitPaths(sText);
-                if (lItems.Count > 0)
-                {
-                    string sOne = lItems[0].Trim('"');
-                    string sFolder = Directory.Exists(sOne) ? sOne : Path.GetDirectoryName(sOne);
-                    if (sFolder != null && sFolder != "" && Directory.Exists(sFolder)) return sFolder;
-                }
-            }
-            catch (Exception)
-            {
-            }
-            return defaultVideoFolder();
-        }
-
         static bool showDialog()
         {
             while (true)
             {
                 string sButton = "";
                 string sSources = text("source-paths");
-                string sOutput = text("output-dir");
+                string sOutput = text("output-directory");
                 if (sOutput == "") sOutput = defaultVideoFolder();
-                bool bForce = flag("force");
-                bool bLogSession = flag("log-session");
+                bool bForce = flag("force-replacements");
                 bool bUseConfig = flag("use-configuration");
                 bool bAudioOnly = flag("audio-only");
                 bool bDescribe = flag("describe");
                 bool bRemoveAds = flag("remove-ads");
                 bool bTranscribe = flag("transcribe");
-                bool bViewOutput = flag("view-output");
+                bool bViewOutput = flag("view-output-directory");
                 bool bWebContext = flag("web-context");
                 closeDialog();
-                oLiveDialog = new LbcDialog("HomerScribe", null);
+                // THE DIALOG IS THE KIT'S LAUNCH DIALOG (23 October 2026, help\LaunchDialog.md
+                // in HomerDev), the one every Homer launch app shows: Source paths and Browse
+                // local source; HomerScribe's own Transcribe audio, Describe video, Audio only,
+                // Remove ads and Web context; Output directory and Choose output directory;
+                // Force replacements, Use configuration and View output directory; Default
+                // settings and Help; then OK and Cancel alone. Control+Enter is OK and Escape
+                // is Cancel from any control, F1 is Help and F11 checks the web for a newer
+                // HomerScribe. Describe video claims D first, so Default settings, whose other
+                // word's letter belongs to Source paths, has no Alt letter here, by the Homer
+                // rule that the first control to claim a letter keeps it. The pickers start in
+                // Videos, the known folder for what HomerScribe works on.
+                LaunchDialog oLaunch = new LaunchDialog("HomerScribe");
+                oLiveDialog = oLaunch.dialog;
                 {
                     LbcDialog oDialog = oLiveDialog;
-                    // Band one: what to work on.
-                    oDialog.addBand();
-                    TextBox oSourceBox = oDialog.addInputBox("&Source paths:", sSources,
+                    oLaunch.knownFolder = Environment.SpecialFolder.MyVideos;
+                    oLaunch.sourcePick = "files";
+                    oLaunch.sourceFilter = "Video and audio|*.mkv;*.mp4;*.avi;*.mov;*.webm;*.mpg;*.mpeg;*.m4v;*.wmv;*.mp3;*.wav;*.m4a;*.flac;*.ogg|All files|*.*";
+                    TextBox oSourceBox = oLaunch.addSourceBand(sSources,
                         "One or more files, wildcard patterns, or web addresses to download from, separated by spaces. " +
-                        "Put double quotes around any item containing a space.");
-                    Button oBrowseButton = oDialog.addButton("&Browse source...",
-                        "Choose a file to work on.");
-                    oDialog.endBand();
+                        "Put double quotes around any item containing a space.",
+                        "Choose one or more files to work on. It opens where Source paths points, else in Videos.");
 
-                    // Band two: what to do with it.
+                    // What to do with the sources.
                     oDialog.addBand();
                     CheckBox oTranscribeBox = oDialog.addCheckBox("&Transcribe audio", bTranscribe,
                         "Write down what is said, as transcribed.md. With Describe video also ticked, scribed.md is written too: " +
@@ -5699,83 +5678,28 @@ namespace Homer
                         "For a file, if it carries a title, Wikipedia is asked about that title and the answer is used only if it clearly matches.");
                     oDialog.endBand();
 
-                    // Band three: where the results go.
-                    oDialog.addBand();
-                    TextBox oOutputBox = oDialog.addInputBox("&Output directory:", sOutput,
+                    TextBox oOutputBox = oLaunch.addOutputBand(sOutput,
                         "Where each source's folder of results is created. Starts at your Videos folder. " +
-                        "Cleared, each folder is created beside its own source instead.");
-                    Button oChooseButton = oDialog.addButton("&Choose output...",
+                        "Cleared, each folder is created beside its own source instead.",
                         "Choose the directory to write results into.");
-                    oDialog.endBand();
 
-                    oBrowseButton.Click += delegate(object oSender, EventArgs oEvent)
-                    {
-                        OpenFileDialog oPicker = new OpenFileDialog();
-                        oPicker.Title = "Choose a file to work on";
-                        try
-                        {
-                            oPicker.InitialDirectory = initialBrowseFolder(oSourceBox.Text);
-                        }
-                        catch (Exception)
-                        {
-                        }
-                        oPicker.Filter = "Video and audio|*.mkv;*.mp4;*.avi;*.mov;*.webm;*.mpg;*.mpeg;*.m4v;*.wmv;*.mp3;*.wav;*.m4a;*.flac;*.ogg|All files|*.*";
-                        oPicker.Multiselect = true;
-                        if (oPicker.ShowDialog(oDialog.form) == DialogResult.OK)
-                        {
-                            string sPicked = "";
-                            foreach (string sOne in oPicker.FileNames)
-                            {
-                                if (sPicked != "") sPicked = sPicked + " ";
-                                sPicked = sPicked + quotedIfSpaced(sOne);
-                            }
-                            oSourceBox.Text = sPicked;
-                        }
-                    };
+                    oLaunch.addOperationBands(bForce, "Do the work again, replacing what an earlier run wrote.",
+                        bUseConfig, "Load these settings at startup and save them on OK, in " + configPath() + ".",
+                        bViewOutput, "Open the output directory when the run finishes.");
 
-                    oChooseButton.Click += delegate(object oSender, EventArgs oEvent)
-                    {
-                        FolderBrowserDialog oFolder = new FolderBrowserDialog();
-                        oFolder.Description = "Choose the directory to write results into";
-                        try
-                        {
-                            oFolder.SelectedPath = initialBrowseFolder(oOutputBox.Text);
-                        }
-                        catch (Exception)
-                        {
-                        }
-                        if (oFolder.ShowDialog(oDialog.form) == DialogResult.OK) oOutputBox.Text = oFolder.SelectedPath;
-                    };
-
-                    // Band four: the standard controls of a Homer Tools dialog.
-                    oDialog.addSeparator();
-                    CheckBox oForceBox = oDialog.addCheckBox("&Force overwrite", bForce,
-                        "Do the work again, ignoring anything an earlier run had already written.");
-                    CheckBox oLogBox = oDialog.addCheckBox("&Log session", bLogSession,
-                        "Keep the run log with the results rather than out of the way under your application data.");
-                    CheckBox oConfigBox = oDialog.addCheckBox("&Use configuration", bUseConfig,
-                        "Load these settings at startup and save them on OK, in " + configPath() + ".");
-                    CheckBox oViewBox = oDialog.addCheckBox("&View output", bViewOutput,
-                        "Open the folder holding the results when the run finishes.");
-
-                    // OK FIRST. Lbc makes the first label the dialog's default
-                    // button, so with "Help" listed first, Enter in the source
-                    // paths field opened Help instead of running. Lbc adds Help
-                    // itself, rightmost, when the second argument is true.
-                    logMessage("Dialog buttons: OK, Default settings, Cancel, Help", "INFO", "");
-                    sButton = oDialog.runWithButtons(new string[] { "OK", "Default settings", "Cancel" }, true);
-                    logMessage("Dialog answered with: " + (sButton == null ? "(nothing)" : sButton), "INFO", "");
+                    logMessage("Dialog: the kit's launch dialog, OK and Cancel at the foot", "INFO", "");
+                    sButton = oLaunch.run();
+                    logMessage("Dialog answered with: " + sButton, "INFO", "");
 
                     sSources = (oSourceBox.Text == null ? "" : oSourceBox.Text).Trim();
                     sOutput = (oOutputBox.Text == null ? "" : oOutputBox.Text).Trim();
-                    bForce = oForceBox.Checked;
-                    bLogSession = oLogBox.Checked;
-                    bUseConfig = oConfigBox.Checked;
+                    bForce = oLaunch.forceBox.Checked;
+                    bUseConfig = oLaunch.useConfigBox.Checked;
                     bAudioOnly = oAudioBox.Checked;
                     bDescribe = oDescribeBox.Checked;
                     bRemoveAds = oAdsBox.Checked;
                     bTranscribe = oTranscribeBox.Checked;
-                    bViewOutput = oViewBox.Checked;
+                    bViewOutput = oLaunch.viewOutputBox.Checked;
                     bWebContext = oWebBox.Checked;
                 }
 
@@ -5792,7 +5716,7 @@ namespace Homer
                 if (string.Compare(sButton, "Default settings", true) == 0)
                 {
                     dParams["source-paths"].sValue = sDefaultSource;
-                    dParams["output-dir"].sValue = "";
+                    dParams["output-directory"].sValue = "";
                     foreach (string sName in asRemembered)
                     {
                         if (dParams[sName].sKind == "flag") dParams[sName].sValue = "no";
@@ -5804,9 +5728,8 @@ namespace Homer
                 }
 
                 dParams["source-paths"].sValue = sSources;
-                dParams["output-dir"].sValue = sOutput;
-                dParams["force"].sValue = bForce ? "yes" : "no";
-                dParams["log-session"].sValue = bLogSession ? "yes" : "no";
+                dParams["output-directory"].sValue = sOutput;
+                dParams["force-replacements"].sValue = bForce ? "yes" : "no";
                 dParams["use-configuration"].sValue = bUseConfig ? "yes" : "no";
                 dParams["audio-only"].sValue = bAudioOnly ? "yes" : "no";
                 dParams["describe"].sValue = bDescribe ? "yes" : "no";
@@ -5816,7 +5739,7 @@ namespace Homer
                 // reached a local variable and stopped there.
                 dParams["remove-ads"].sValue = bRemoveAds ? "yes" : "no";
                 dParams["transcribe"].sValue = bTranscribe ? "yes" : "no";
-                dParams["view-output"].sValue = bViewOutput ? "yes" : "no";
+                dParams["view-output-directory"].sValue = bViewOutput ? "yes" : "no";
                 dParams["web-context"].sValue = bWebContext ? "yes" : "no";
 
                 if (sSources == "")
@@ -5906,7 +5829,7 @@ namespace Homer
         // build goes on handing back its idea of a setting long after the
         // default has changed, with nothing on screen to say so.
         static readonly string[] asRemembered = new string[] {
-            "source-paths", "output-dir", "describe", "transcribe", "force", "log-session", "use-configuration", "view-output", "audio-only", "web-context", "remove-ads"
+            "source-paths", "output-directory", "describe", "transcribe", "force-replacements", "use-configuration", "view-output-directory", "audio-only", "web-context", "remove-ads"
         };
 
         static bool isRemembered(string sName)
@@ -6554,7 +6477,7 @@ namespace Homer
                 Directory.CreateDirectory(sFolder);
                 sPathFile = Path.Combine(sFolder, "downloaded.txt");
             }
-            if (sStem != "" && !flag("force"))
+            if (sStem != "" && !flag("force-replacements"))
             {
                 string sWouldBe = Path.Combine(sFolder, sDefaultDescribedStem + ".mkv");
                 string sWouldBeMp3 = Path.Combine(sFolder, sDefaultDescribedStem + ".mp3");
@@ -9850,13 +9773,13 @@ namespace Homer
             // film makes a folder named after the film, an archive after the
             // archive, a document after the document.
             bool bFromPdf = looksLikePdf(sZipPath);
-            string sBase = text("output-dir");
+            string sBase = text("output-directory");
             if (sBase == "") sBase = Path.GetDirectoryName(Path.GetFullPath(sZipPath));
             string sOutputDir = Path.Combine(sBase, sRoot);
             string sWorkDir = Path.Combine(workFolderFor(sZipPath), "pictures");
             if (oFileLog == null) oFileLog = new StringBuilder();
             string sPagePath = Path.Combine(sOutputDir, sDefaultPicturesName);
-            if (File.Exists(sPagePath) && !flag("force"))
+            if (File.Exists(sPagePath) && !flag("force-replacements"))
             {
                 logMessage("Skipping " + sRoot + ": " + sDefaultPicturesName + " is already in " + sOutputDir + ".",
                            "INFO", "Skipping " + sRoot + ", already done.");
@@ -10530,7 +10453,7 @@ namespace Homer
                     // The root the results go under. fetchFromWeb makes the
                     // per-video folder inside it once it knows the title, so the
                     // video and its results share one place.
-                    string sFolder = text("output-dir");
+                    string sFolder = text("output-directory");
                     if (sFolder == "") sFolder = Path.Combine(appDataFolder(), "downloads");
                     sPath = fetchFromWeb(sSource, sFolder, findTool("ffmpeg"));
                     if (sPath == sAlreadyDone)
@@ -10651,10 +10574,13 @@ namespace Homer
                     ? "That one has already been " + sDoneWord + ", so there was nothing to do."
                     : "All " + iSkippedWhole.ToString() + " of those have already been " + sDoneWord + ", so there was nothing to do.";
                 sSaid = sSaid + Environment.NewLine + Environment.NewLine
-                      + (bGuiMode ? "Tick Force overwrite to do them again." : "Pass --force to do them again.");
+                      + (bGuiMode ? "Tick Force replacements to do them again." : "Pass --force-replacements to do them again.");
                 logMessage(sSaid.Replace(Environment.NewLine, " "), "INFO", bGuiMode ? "" : sSaid);
-                if (flag("view-output") && sLastSkippedFolder != "") showFolder(sLastSkippedFolder);
-                if (bGuiMode) sayToUser(sSaid, "HomerScribe", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // THE RESULTS BOX ENDS THE RUN, then the output directory opens if asked
+                // (23 October 2026, the kit's LaunchDialog.finish), and HomerScribe closes.
+                if (bGuiMode) LaunchDialog.finish("HomerScribe", sSaid, false,
+                    flag("view-output-directory") ? sLastSkippedFolder : "");
+                else if (flag("view-output-directory") && sLastSkippedFolder != "") showFolder(sLastSkippedFolder);
                 return bGuiMode ? iNothingToDo : 0;
             }
             if (iSkippedWhole > 0) logMessage(iSkippedWhole.ToString() + " already " + sDoneWord + " and skipped; " + iDescribedWhole.ToString() + " done now.",
@@ -10860,11 +10786,17 @@ namespace Homer
             }
             string sSaid = oSaid.ToString();
             logMessage("RESULTS: " + sSaid.Replace(Environment.NewLine, " | "), "INFO", sSaid);
-            if (!bGuiMode) return;
-            // View output already says whether the folder should be opened, so
-            // it is opened before this is shown rather than asked about after.
-            if (flag("view-output") && sLastOutputFolder != "") showFolder(sLastOutputFolder);
-            sayToUser(sSaid, "HomerScribe results", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (!bGuiMode)
+            {
+                if (flag("view-output-directory") && sLastOutputFolder != "") showFolder(sLastOutputFolder);
+                return;
+            }
+            // THE RESULTS BOX ENDS THE RUN (23 October 2026, the kit's LaunchDialog.finish):
+            // one focused OK button, then the output directory when View output directory
+            // is checked -- after the box, so File Explorer does not take the focus from it.
+            logMessage("Showing: " + sSaid.Replace(Environment.NewLine, " | "), "INFO", "");
+            LaunchDialog.finish("HomerScribe", sSaid, lFailures.Count > 0,
+                flag("view-output-directory") ? sLastOutputFolder : "");
         }
 
         // ---------- context from the web ----------
@@ -11319,7 +11251,7 @@ namespace Homer
                            + "that name rather than \"" + sRoot + "\".", "INFO", "");
                 sRoot = sCalledInList;
             }
-            string sBase = text("output-dir");
+            string sBase = text("output-directory");
             if (sBase == "") sBase = Path.GetDirectoryName(sInput);
             string sOutputDir = Path.Combine(sBase, sRoot);
             // A downloaded video is already sitting in a folder named after
@@ -11359,7 +11291,7 @@ namespace Homer
             // changed recording now has what the earlier run left removed, exactly as --force does, and the log says
             // which of the two is the reason.
             bool bRecordingChanged = false;
-            if ((bDescribeDone || bTranscribeDone) && !flag("force"))
+            if ((bDescribeDone || bTranscribeDone) && !flag("force-replacements"))
             {
                 string sMadeFrom = madeFromFingerprint(sOutputDir);
                 if (sMadeFrom != "" && File.Exists(sInput) && sMadeFrom != Homer.Util.fileSha256(sInput))
@@ -11371,8 +11303,8 @@ namespace Homer
                     bRecordingChanged = true;
                 }
             }
-            bool bWantDescribe = flag("describe") && !(bDescribeDone && !flag("force"));
-            bool bWantTranscribe = flag("transcribe") && !(bTranscribeDone && !flag("force"));
+            bool bWantDescribe = flag("describe") && !(bDescribeDone && !flag("force-replacements"));
+            bool bWantTranscribe = flag("transcribe") && !(bTranscribeDone && !flag("force-replacements"));
             if (bWantDescribe && !hasPicture(sFfmpeg, sInput))
             {
                 string sNoPicture = Path.GetFileName(sInput) + " has no picture in it, so there is nothing to describe.";
@@ -11405,7 +11337,7 @@ namespace Homer
             }
             if (flag("describe") && !bWantDescribe) logMessage("The described film is already here, so only the transcript is made.", "INFO", "Already described; making the transcript only.");
             if (flag("transcribe") && !bWantTranscribe) logMessage("The transcript is already here, so only the description is made.", "INFO", "Already transcribed; describing only.");
-            if (Directory.Exists(sOutputDir) && !flag("force") && !bRecordingChanged)
+            if (Directory.Exists(sOutputDir) && !flag("force-replacements") && !bRecordingChanged)
             {
                 logMessage("An unfinished run is here. Carrying on from where it stopped; nothing already described is described again.",
                            "INFO", "An unfinished run is here. Carrying on from where it stopped.");
@@ -11423,7 +11355,7 @@ namespace Homer
             // A single named file has no position worth stating.
             // The position and the name were said before the fetch, in run().
             // Saying them again here would repeat them for a local file.
-            if (flag("force") || bRecordingChanged)
+            if (flag("force-replacements") || bRecordingChanged)
             {
                 int iCleared = 0;
                 string[] asOurs = new string[] {
@@ -11659,7 +11591,7 @@ namespace Homer
             if (!bWantDescribe)
             {
                 // Transcribing only. None of what follows applies.
-                if (flag("view-output")) sLastOutputFolder = sOutputDir;
+                if (flag("view-output-directory")) sLastOutputFolder = sOutputDir;
                 recordMadeFrom(sOutputDir, sInput);
                 return 0;
             }
@@ -11667,7 +11599,7 @@ namespace Homer
 
             Dictionary<string, string> dCache = new Dictionary<string, string>();
             string sJsonPath = Path.Combine(sWorkDir, sDefaultJsonName);
-            if (!flag("force")) dCache = readCache(sJsonPath);
+            if (!flag("force-replacements")) dCache = readCache(sJsonPath);
             if (dCache.Count > 0)
             {
                 logMessage("Picking up where the last run stopped: " + dCache.Count.ToString() + " descriptions already written",
@@ -12323,6 +12255,12 @@ namespace Homer
             if (flag("help"))
             {
                 showHelp();
+                return 0;
+            }
+            if (flag("default-settings"))
+            {
+                forgetConfig();
+                Console.WriteLine("Default settings restored.");
                 return 0;
             }
             logEnvironment();

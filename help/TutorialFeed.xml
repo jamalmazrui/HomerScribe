@@ -5,7 +5,7 @@
     <link>Tutorials.htm</link>
     <description>Short simulated walks through HomerScribe. Each one is a real job done from start to finish, about three minutes, with something to try at the end.</description>
     <language>en-us</language>
-    <lastBuildDate>Thu, 22 Oct 2026 21:08:04 +0000</lastBuildDate>
+    <lastBuildDate>Sat, 24 Oct 2026 08:32:33 +0000</lastBuildDate>
     <itunes:author>Jamal Mazrui</itunes:author>
     <itunes:explicit>false</itunes:explicit>
     <itunes:category text="Technology"/>
@@ -24,8 +24,8 @@
       <description>HomerScribe is installed. Full transcript: Tutorials.htm#0a-1-user-interface</description>
       <link>Tutorials.htm#0a-1-user-interface</link>
       <guid isPermaLink="false">homer-tutorial_1_user_interface</guid>
-      <enclosure url="tutorials/1_User_Interface.mp3" length="1493344" type="audio/mpeg"/>
-      <itunes:duration>00:03:34</itunes:duration>
+      <enclosure url="tutorials/1_User_Interface.mp3" length="1592501" type="audio/mpeg"/>
+      <itunes:duration>00:03:45</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>
@@ -42,8 +42,8 @@
       <description>A recording named Introduction_to_Windows.mp3 is in the Videos folder. HomerScribe is installed. Full transcript: Tutorials.htm#0c-3-transcribe-a-recording</description>
       <link>Tutorials.htm#0c-3-transcribe-a-recording</link>
       <guid isPermaLink="false">homer-tutorial_3_transcribe</guid>
-      <enclosure url="tutorials/3_Transcribe.mp3" length="1636821" type="audio/mpeg"/>
-      <itunes:duration>00:03:44</itunes:duration>
+      <enclosure url="tutorials/3_Transcribe.mp3" length="1643014" type="audio/mpeg"/>
+      <itunes:duration>00:03:45</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>
@@ -69,8 +69,8 @@
       <description>HomerScribe is installed, with Ollama and its reading model. An episode named Episode_212.mp3 is in the Videos folder. Full transcript: Tutorials.htm#0f-6-remove-the-advertisements</description>
       <link>Tutorials.htm#0f-6-remove-the-advertisements</link>
       <guid isPermaLink="false">homer-tutorial_6_remove_ads</guid>
-      <enclosure url="tutorials/6_Remove_Ads.mp3" length="1429567" type="audio/mpeg"/>
-      <itunes:duration>00:03:19</itunes:duration>
+      <enclosure url="tutorials/6_Remove_Ads.mp3" length="1434941" type="audio/mpeg"/>
+      <itunes:duration>00:03:20</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>

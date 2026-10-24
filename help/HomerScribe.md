@@ -71,7 +71,7 @@ In that folder:
 **A video whose described film already exists is left alone.** Point
 HomerScribe at a dozen videos, stop it halfway, and run it again: the ones that
 finished are skipped, and one that was interrupted **carries on where it
-stopped** rather than starting over. Tick **Force overwrite**, or pass `--force`,
+stopped** rather than starting over. Tick **Force replacements**, or pass `--force-replacements`,
 to describe everything again from the beginning.
 
 Resuming costs very little. Every description is written to `described.json` as
@@ -192,7 +192,7 @@ fetching it again to redescribe it would be slow for you and discourteous to the
 server.
 
 Asking for the title first has a second use: it settles whether the video has
-already been described **before** it is downloaded. With Force overwrite off, a
+already been described **before** it is downloaded. With Force replacements off, a
 video whose results are already in place is skipped without fetching it at all,
 which on an hour-long programme saves the download rather than discovering
 afterwards that it was not needed.
@@ -212,14 +212,14 @@ HomerScribe uses the folders Windows nominates rather than whatever directory
 it happened to be started from. Starting in the program's own folder is how a
 tool ends up dropping results among its own source files.
 
-- **Browse source** opens in your **Videos** folder, unless the Source paths box
+- **Browse local source** opens in your **Videos** folder, unless the Source paths box
   already holds a path, in which case it opens there.
-- **Choose output** does the same, and the Output directory box opens already
+- **Choose output directory** does the same, and the Output directory box opens already
   filled with your Videos folder rather than empty.
 - If Videos cannot be found, Documents is used, and only then the current
   directory.
 
-On the command line the rule is different and deliberate: leaving `--output-dir`
+On the command line the rule is different and deliberate: leaving `--output-directory`
 unset puts each video's folder of results **beside the video itself**, which is
 almost always what is wanted when a path was typed out in full. Clearing the
 Output directory box in the dialog does the same thing.
@@ -304,17 +304,28 @@ Ali Mazrui" or "Narrated by Carl Sagan" is picked up and used the same way.
 
 ## The dialog
 
-`--gui` opens a dialog built with `Lbc.cs`, the shared layout-by-code module used
-by DbDo, EdSharp, FileDir and urlFido. It carries the standard controls:
+`--gui` opens the dialog every Homer launch app shows, built by the kit's
+LaunchDialog in rows called bands that read left to right. Tab moves through it
+in this order:
 
-- **&Source paths** with **&Browse source...**
-- **&Output directory** with **&Choose output...**
-- **&Force overwrite**, **&Log session**, **&Use configuration**
-- Help, **Default settings**, OK and Cancel, in that order left to right,
-  following Microsoft's guidance for a secondary window and matching 2htm and
-  extCheck. **Enter** is OK, **Escape** is Cancel and **F1** is Help, so those
-  two buttons carry no access key and Alt+O and Alt+C stay with Output directory
-  and Choose output.
+- **&Source paths** with **&Browse local source**, which opens in your Videos
+  folder unless Source paths already points somewhere
+- **&Transcribe audio**, **&Describe video**, **&Audio only**, **&Remove ads**
+  and **&Web context**
+- **&Output directory** with **&Choose output directory**
+- **&Force replacements**, **&Use configuration** and **&View output directory**
+- **Default settings** and **&Help**. Describe video holds D and Source paths
+  holds S, so by the Homer rule that the first control to claim a letter keeps
+  it, Default settings has no Alt letter here.
+- OK and Cancel, alone at the bottom right. Control+Enter is OK and Escape is
+  Cancel, from any control. F1 is Help and F11 checks the web for a newer
+  HomerScribe, from any control.
+
+Logging is automatic: every run writes a log in
+`%LOCALAPPDATA%\HomerScribe\logs`, named `HomerScribe-yyyyMMdd-HHmmss.log`, and
+Help says so. Every run ends with the HomerScribe Results box. Its only button
+is OK, so Enter, Space or Escape closes it; then the output directory opens if
+View output directory is checked, and HomerScribe closes.
 
 OK and Cancel carry no mnemonic, as Windows convention requires: Escape cancels,
 Enter accepts, and Control plus Enter accepts from any control.
@@ -379,8 +390,8 @@ which one it is.
 **Audio only** produces sound alone: a single `described.mp3` holding the film's
 own audio with the descriptions mixed into it, and no video. It is a quarter the
 size of the film, much quicker to make since no video is copied, and enough when
-the picture is of no use to the listener. **View output** opens the results when
-the run finishes. **Force overwrite** does the work again, ignoring anything an
+the picture is of no use to the listener. **View output directory** opens the results when
+the run finishes. **Force replacements** does the work again, ignoring anything an
 earlier run wrote.
 
 Only one access key is shared: Alt+D belongs to both **Describe video** and
@@ -439,7 +450,7 @@ passes over something in silence:
 
 - **Resuming** — some of this film was described in an earlier run, so those
   descriptions are read back and only the rest are asked for
-- **Skipped** — already described, and Force overwrite is off
+- **Skipped** — already described, and Force replacements is off
 - **Error** — could not be fetched or could not be finished, with the reason
 - **Rejected** — not a video, a recording, or a list; or not found
 

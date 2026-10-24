@@ -35,9 +35,9 @@ Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
 
-Say=Tab moves in the order the controls were added: Browse source, then the output folder, then the boxes that say what to do.
+Say=Tab moves in the order the controls were added, row by row, each row read left to right: Browse local source beside Source paths, then the boxes that say what to do, then the output folder.
 Key=Tab
-Hear=Browse source... button, Alt plus B
+Hear=Browse local source button, Alt plus B
 Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
@@ -55,7 +55,7 @@ Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
 
-Say=D for Describe, A for Audio only, W for Web context, R for Remove ads, F for Force overwrite, L for Log session. Alt plus O goes to the Output directory box, O for Output.
+Say=D for Describe, A for Audio only, W for Web context, R for Remove ads, F for Force replacements, U for Use configuration, V for View output directory. Alt plus O goes to the Output directory box, O for Output.
 Key=Alt+O
 Hear=Output directory: edit
 Note=Confirm the wording with a live run: buildTutorials -live.
@@ -69,7 +69,7 @@ Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
 
-Say=Escape closes the list and returns where I was. In the dialog itself, Enter presses OK from anywhere, Control plus Enter from inside a box of many lines, and Escape cancels.
+Say=Escape closes the list and returns where I was. In the dialog itself, Control plus Enter presses OK from anywhere, and Escape presses Cancel from anywhere. OK and Cancel sit alone at the bottom right, below Default settings and Help.
 Key=Escape
 Hear=Output directory: edit
 Note=Confirm the wording with a live run: buildTutorials -live.
@@ -113,7 +113,7 @@ Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
 
-Say=The answer is Enter, which presses OK from anywhere. What this walk taught. I name the part; the reader gives the key.
+Say=The answer is Control plus Enter, which presses OK from anywhere. What this walk taught. I name the part; the reader gives the key.
 Key=
 Hear=
 
@@ -139,4 +139,4 @@ Hear=Alt plus F8
 
 Say=Accept from anywhere.
 Key=
-Hear=Enter
+Hear=Control plus Enter

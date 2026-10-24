@@ -229,54 +229,6 @@
   </style>
 </head>
 <body>
-<nav id="TOC" role="doc-toc" aria-label="Contents">
-<ul>
-<li><a href="#camel-type-c-coding-guidelines"
-id="toc-camel-type-c-coding-guidelines">Camel Type: C# Coding
-Guidelines</a>
-<ul>
-<li><a href="#why-camel-type" id="toc-why-camel-type">1. Why Camel
-Type</a></li>
-<li><a href="#variable-and-argument-naming"
-id="toc-variable-and-argument-naming">2. Variable and Argument
-Naming</a></li>
-<li><a href="#constant-naming" id="toc-constant-naming">3. Constant
-Naming</a></li>
-<li><a href="#capitalization" id="toc-capitalization">4.
-Capitalization</a></li>
-<li><a href="#variable-and-constant-declarations"
-id="toc-variable-and-constant-declarations">5. Variable and Constant
-Declarations</a></li>
-<li><a href="#var-versus-explicit-types"
-id="toc-var-versus-explicit-types">6. <code>var</code> versus Explicit
-Types</a></li>
-<li><a href="#methods" id="toc-methods">7. Methods</a></li>
-<li><a href="#loops" id="toc-loops">8. Loops</a></li>
-<li><a href="#using-declarations" id="toc-using-declarations">9. Using
-Declarations</a></li>
-<li><a href="#imports-using-directives"
-id="toc-imports-using-directives">10. Imports (<code>using</code>
-Directives)</a></li>
-<li><a href="#string-delimiters" id="toc-string-delimiters">11. String
-Delimiters</a></li>
-<li><a href="#magic-numbers-and-strings"
-id="toc-magic-numbers-and-strings">12. Magic Numbers and
-Strings</a></li>
-<li><a href="#object-and-collection-initializers"
-id="toc-object-and-collection-initializers">13. Object and Collection
-Initializers</a></li>
-<li><a href="#error-handling" id="toc-error-handling">14. Error
-Handling</a></li>
-<li><a href="#file-organization" id="toc-file-organization">15. File
-Organization</a></li>
-<li><a href="#comments" id="toc-comments">16. Comments</a></li>
-<li><a href="#cross-program-naming-conventions"
-id="toc-cross-program-naming-conventions">17. Cross-Program Naming
-Conventions</a></li>
-<li><a href="#summary" id="toc-summary">18. Summary</a></li>
-</ul></li>
-</ul>
-</nav>
 <main>
 <h1 id="camel-type-c-coding-guidelines">Camel Type: C# Coding
 Guidelines</h1>
@@ -648,7 +600,7 @@ already says what.</p>
 class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><span class="co">// Refuse to overwrite the input file with its own output. This can</span></span>
 <span id="cb11-2"><span class="co">// happen in plain-text mode when the input is a .txt file: the</span></span>
 <span id="cb11-3"><span class="co">// output path derived from the basename would collide with the</span></span>
-<span id="cb11-4"><span class="co">// source. Without this guard, --force would silently destroy the</span></span>
+<span id="cb11-4"><span class="co">// source. Without this guard, --force-replacements would silently destroy the</span></span>
 <span id="cb11-5"><span class="co">// user&#39;s source file.</span></span>
 <span id="cb11-6"><span class="kw">if</span> <span class="op">(</span>sInPath<span class="op">.</span><span class="fu">Equals</span><span class="op">(</span>sOutPath<span class="op">,</span> StringComparison<span class="op">.</span><span class="fu">OrdinalIgnoreCase</span><span class="op">))</span></span>
 <span id="cb11-7">    <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span></code></pre></div>

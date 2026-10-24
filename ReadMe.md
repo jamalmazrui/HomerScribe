@@ -52,7 +52,7 @@ and how to rebuild it.
    matches what you want to do: Ollama and the vision model for describing,
    Whisper for transcribing.
 2. Run HomerScribe with nothing on the command line. The dialog opens.
-3. Choose a file with **Browse source**.
+3. Choose a file with **Browse local source**.
 4. Tick **Describe video**, **Transcribe audio**, or both.
 5. Press OK.
 

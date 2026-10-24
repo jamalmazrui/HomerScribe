@@ -1250,7 +1250,16 @@ def checkSkillChecks(sKind):
         elif iCode != 0: lsFailed.append("checkDb fails " + os.path.relpath(sDb, sRoot) + ("" if re.search(r"\b[1-9]\d* failures?\b", sOut) else " (exit code %d, no summary: a crash)" % iCode))
     if os.path.isdir(os.path.join(sRoot, "logs")) and glob.glob(os.path.join(sRoot, "logs", "*.log")):
         runSkill("homer-build-release", "summarizeLogs.py", [os.path.join(sRoot, "logs"), "--skip=" + os.path.basename(sLogPath)])
-    sRan = "checkDocs" + (", checkDb on %d database%s" % (len(lsDatabases), "" if len(lsDatabases) == 1 else "s") if lsDatabases else "") + ", summarizeLogs"
+    # THE LAUNCH DIALOG (23 October 2026). checkLaunch (homer-launch-dialog) fails a launch app -- 2htm, BatCon,
+    # extCheck, HomerScribe, urlCheck, urlFido and any new one -- that does not build its dialog with the kit's
+    # LaunchDialog, does not end with the Results box, or keeps a retired control; it exits 0 for any other app.
+    # Retired names left in the documents are warnings in the log, not a failure.
+    if sKind == "app":
+        iCode, sOut = runSkill("homer-launch-dialog", "checkLaunch.py", [sRoot, "--app", appName()])
+        if iCode is None: lsFailed.append("checkLaunch could not run")
+        elif iCode != 0:
+            lsFailed.append("checkLaunch fails the launch dialog: " + "; ".join(s[5:] for s in sOut.splitlines() if s.startswith("FAIL "))[:600])
+    sRan = "checkDocs" + (", checkDb on %d database%s" % (len(lsDatabases), "" if len(lsDatabases) == 1 else "s") if lsDatabases else "") + ", checkLaunch, summarizeLogs"
     if lsFailed:
         return finding("skills", "fail", "; ".join(lsFailed) + "; the log has each finding")
     return finding("skills", "pass", "ran " + sRan + ((" -- " + "; ".join(lsNotes) + "; the log names each") if lsNotes else ""))

@@ -52,7 +52,7 @@ were not random: they fell into five kinds, and each kind recurred.
 The worst of them, by cost. The rule that refuses a moment with no room to
 describe it was written, and then five separate runs were analysed before it had
 ever executed once — variously because the moments were cached from an earlier
-run, because Force overwrite cleared the record from disk but not from memory,
+run, because Force replacements cleared the record from disk but not from memory,
 or because the build simply predated it.
 
 Each time, the log looked wrong, and each time I reasoned about the algorithm

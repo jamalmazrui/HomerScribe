@@ -17,7 +17,7 @@ Hear=HomerScribe dialog
 Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash watch question mark v equals 3 f 31 o u f q F S M
 
 [step]
-Say=Alt plus B, B for Browse source, opens a standard Open dialog, which is easier than typing a path.
+Say=Alt plus B, B for Browse local source, opens a standard Open dialog, which is easier than typing a path.
 Key=Alt+B
 Hear=Choose a file to work on dialog
 Hear=File name: edit

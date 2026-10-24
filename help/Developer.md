@@ -361,8 +361,8 @@ Two traps in it, both hit on the first real run:
   caption file, the description track, the montages. The tag is a hash of the
   full input path, so two videos of the same name do not collide. On a finished
   run everything but the record is deleted.
-- The run log goes with the results, or under application data when Log session
-  is unticked. A provisional log opens under application data at startup and is
+- The run log is always under application data, in `logs` (23 October 2026:
+  the checkbox that once moved it beside the results is gone). A provisional log opens under application data at startup and is
   moved, with everything already written, once the destination is known. The
   file is flushed to disk once a second so its size grows visibly: flushing only
   the writer leaves the directory entry showing zero, which makes a live run look

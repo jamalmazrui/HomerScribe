@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>HomerScribe History</title>
+  <title>History</title>
   <style>
     html {
       color: #1a1a1a;
@@ -167,6 +167,343 @@
 <body>
 <main>
 <h1 id="homerscribe-history">HomerScribe History</h1>
+<h2 id="october-2026-the-homer-launch-dialog">23 October 2026 – the
+Homer launch dialog</h2>
+<ul>
+<li><strong>The dialog is the one every Homer launch app shows,</strong>
+built by the Homer kit’s LaunchDialog (kit 1.89.0). It is in rows called
+bands, read left to right: Source paths and Browse local source;
+Transcribe audio, Describe video, Audio only, Remove ads and Web
+context; Output directory and Choose output directory; Force
+replacements, Use configuration and View output directory; Default
+settings and Help; then OK and Cancel alone at the bottom right, as
+Microsoft’s dialog guidance places them.</li>
+<li><strong>Insert+Tab names the Source paths box again, and the Output
+directory box is found again.</strong> The kit put a band’s label after
+the band, so the box had no name and Browse seemed to come first.</li>
+<li><strong>Control+Enter is OK and Escape is Cancel from any control,
+and F11 checks for a newer version from anywhere.</strong> Help says so,
+and says where the logs are kept.</li>
+<li><strong>Logging is automatic.</strong> The Log session checkbox and
+-l are gone; the log is always in %LOCALAPPDATA%. Default settings has
+no Alt letter, because Describe video holds D and Source paths holds
+S.</li>
+<li><strong>Every run ends with the Results box,</strong> whose one OK
+button has the focus, so Enter, Space or Escape closes it; the output
+directory then opens if View output directory is checked, and
+HomerScribe closes.</li>
+<li><strong>Switches match the dialog:</strong> a long switch is a
+control’s label and a short one its Alt letter, written with /, - or –,
+in any case. Renamed: –output-directory, –force-replacements,
+–view-output-directory. New: –default-settings, which has no letter,
+since d is Describe video. The older names still work.</li>
+<li><strong>Speech while working uses the kit’s test of whether
+HomerScribe is in front,</strong> LaunchProgress.isInFront, the one
+every launch app now shares. HomerScribe’s own grouping of descriptions
+is unchanged.</li>
+<li><strong>The build needs HomerDev 1.89.0 or later.</strong></li>
+</ul>
+<h2
+id="october-2026-pdfs-are-read-by-the-kits-reader-which-is-homerscribes">19
+October 2026 – PDFs are read by the kit’s reader, which is
+HomerScribe’s</h2>
+<ul>
+<li><strong>HomerScribe’s PDF reader moved into HomerDev,</strong> as
+its PdfReader class (kit 1.75.0), so every Homer app can read a PDF the
+way HomerScribe does. HomerScribe now calls it, with its own settings,
+Tesseract, picture model and page pictures. PdfRead.cs is retired, and
+the build removes it. A PDF is read as before: its own tags where they
+carry it, otherwise its text layer in reading order with headings from
+type sizes, and scanned pages by Tesseract, then the picture model.</li>
+<li><strong>described.md is the finished version.</strong> The file was
+written before its heading levels were closed, so only the screen reader
+review read the corrected text. The closed version is now what is
+written and what the Word version is made from.</li>
+<li><strong>A document read from its own tags says so.</strong> It used
+to say its headings were worked out from the layout even when its tags
+supplied them, and the log called using the tags the next piece of
+work.</li>
+<li><strong>The build needs HomerDev 1.75.0 or later.</strong></li>
+</ul>
+<h2
+id="october-2026-the-acceptance-test-sees-a-correct-skip-and-a-changed-recording-starts-clean">15
+October 2026 – the acceptance test sees a correct skip, and a changed
+recording starts clean</h2>
+<ul>
+<li><strong>A run with everything already done ends as a
+success.</strong> From the command line, a recording whose results were
+all there was skipped, rightly, but HomerScribe ended with exit code 1,
+as for an error. It now ends with 0. The dialog still comes back, so
+Force overwrite can be ticked.</li>
+<li><strong>The message names the job asked for.</strong> A
+transcription already made said “That video has already been described”.
+It now says “That one has already been transcribed”, and likewise for
+described, or both.</li>
+<li><strong>The acceptance test reads the log’s words.</strong> Step 2
+looked for “already done”, which is only in the short line on the
+console; the run’s log says “everything asked for is already in” its
+folder. So the skip was never seen, and build_release stopped at push on
+14 and 15 October. The test now takes either wording, and requires exit
+code 0 for a skip as for a reuse. Replayed on the 15 October run’s own
+logs, the old test missed the skip and the new one finds it.</li>
+<li><strong>A changed recording starts clean.</strong> After “The
+recording has changed since its results were made, so they are made
+again”, the log went on to say “An unfinished run is here. Carrying on
+from where it stopped”, so work from the old recording could have been
+carried into the new one. A changed recording now has what the earlier
+run left removed, as –force does, and the log says why. Step 3 of the
+test accepts either wording of “made again”, since the clean start can
+remove the cache whose line it looked for.</li>
+</ul>
+<h2
+id="october-2026-results-are-made-again-when-the-recording-changes">14
+October 2026 – results are made again when the recording changes</h2>
+<ul>
+<li><strong>“Already done” now means done from this recording.</strong>
+HomerScribe skipped a recording whose results were already in its
+folder, judged by those files and a record kept by the recording’s path,
+so a recording replaced by a different one, even of the same size and
+time, kept the old recording’s results. Each results folder now holds
+made-from.txt, the fingerprint of the recording that made it; when it no
+longer matches, the results are made again, and you hear why. Results
+from before this record are trusted as they were. The acceptance test
+found it (from an audit by another AI, HomerScribe-11).</li>
+<li><strong>The acceptance test takes a skip as success when nothing
+changed.</strong> For an unchanged recording, skipping it as done is the
+better outcome than reusing its transcript; step 2 now passes either
+way, as long as the words are the same.</li>
+</ul>
+<h2
+id="october-2026-a-source-named-on-the-command-line-replaces-the-sample">14
+October 2026 – a source named on the command line replaces the
+sample</h2>
+<ul>
+<li><strong>“HomerScribe film.mp4 –transcribe” transcribes film.mp4, and
+only it.</strong> The sources began as the built-in sample video, and a
+source named on the command line was added to it, so the sample was
+transcribed first. The acceptance test found it: all four of its steps
+had transcribed the sample’s captions instead of the test recording. The
+first source given now replaces the sample (from an audit by another
+AI).</li>
+<li><strong>The acceptance test counts only the test recording’s
+transcripts,</strong> says when HomerScribe wrote any other, records
+both clips’ fingerprints, and, when a step fails, keeps the whole run –
+each run’s log, every transcript and both clips – in
+logs-accept-<time>-evidence, instead of removing it.</li>
+</ul>
+<h2
+id="october-2026-the-last-good-transcript-kept-and-the-acceptance-check-restored">14
+October 2026 – the last good transcript kept, and the acceptance check
+restored</h2>
+<ul>
+<li><strong>A new hearing no longer deletes the last finished transcript
+before it succeeds.</strong> Clearing old outputs took
+transcript.final.json and its identity with them, so a hearing that then
+failed lost the last good transcript. Now only the raw outputs a hearing
+writes are cleared; the finished transcript and its identity are
+replaced only when the new hearing succeeds, the old identity first, so
+nothing is ever reused for a recording it was not made from (from a
+second audit by another AI).</li>
+<li><strong>accept.inix is in the repository list.</strong> It was not,
+so tidy moved it to notes, and the check of 13 October ran no acceptance
+test, reporting “no accept.inix”.</li>
+</ul>
+<h2
+id="october-2026-loops-heard-again-more-often-and-real-speakers-kept">14
+October 2026 – loops heard again more often, and real speakers kept</h2>
+<ul>
+<li><p><strong>Only the speaker name Whisper made up is taken
+off.</strong> When one “Name:” label opens half the stretches, Whisper
+has copied a misheard name forward, and that label is taken off. Every
+other label of the same shape went with it, so a real speaker named once
+or twice, or a spoken “Note:”, disappeared too. Now only the made-up
+label goes, and the log counts the others kept. Tested as the audit
+asked: with a made-up label opening twelve stretches and two real
+speakers, the old rule took off all three names and the new one only the
+made-up name (from an audit by another AI).</p></li>
+<li><p><strong>More of Whisper’s loops are heard again.</strong> A loop
+was found only when one line repeated word for word for over a minute.
+Lines are now compared without case or punctuation, so “h2.” and “H2”
+are one line; two phrases taking turns count; and 30 seconds is enough.
+A loop found is only heard again, and what is heard is kept, so a real
+repetition costs a second hearing and loses nothing; a short repeat, or
+a chant, is not a loop at all. Tested on eight cases, among them the
+30-minute loop of the BT Code talk and a 45-second one (from an audit by
+another AI).</p></li>
+<li><p><strong>A stretch that loops again is called uncertain, not
+empty.</strong> When Whisper repeated itself even on the second hearing,
+the transcript said no words were written there, though the words it
+heard were kept. It now says the words there may be a loop, or speech
+that really repeats. Transcripts finished under the old rules are
+finished again on their next run. ## 14 October 2026 – a transcript
+reused only for its own recording, proved by running it</p></li>
+<li><p><strong>A recording is known by what is in it, not its size and
+time.</strong> A transcript is reused only when the recording and the
+Whisper model are the same as when it was made. They were compared by
+size and last-written time, so a different recording of the same length,
+with its time kept, passed as the same, and the old words were credited
+to it; a model swapped that way did too. Both are now compared by the
+fingerprint of their content, through the kit’s Homer.Util.fileSha256. A
+transcript made before this is heard again once.</p></li>
+<li><p><strong>HomerScribe has acceptance checks, and the last one runs
+the program.</strong> accept.inix checks that the program, the installer
+and the tutorials are built, then runs scripts.py: the built
+HomerScribe, with the real Whisper, four times on clips cut from two of
+its own tutorials. A first run must hear the recording; an unchanged run
+must reuse the transcript with the same words; a different recording of
+the same size and time must be heard again; –force must hear it again.
+The test was itself tested against a stand-in program: it passed one
+that judges by content, and failed one that judges by size and time at
+exactly the third step (from an audit by another AI, which found no
+acceptance file).</p></li>
+</ul>
+<h2 id="october-2026-the-finished-transcript-is-what-is-reused">14
+October 2026 – the finished transcript is what is reused</h2>
+<ul>
+<li><strong>Reuse returns the finished transcript.</strong> Loop
+recovery and the removal of invented speaker labels ran only after a
+fresh hearing, so a later run reused Whisper’s raw words, loops and
+labels included. The finished transcript is now kept as
+<code>transcript.final.json</code>. An earlier transcript in which
+Whisper never looped is finished without hearing it again; one with a
+loop is heard again (from an audit by another AI).</li>
+<li><strong>Without Whisper, a transcript is reused only for the same
+recording.</strong> It was reused whenever Whisper was missing, so a
+recording replaced at the same path got the old words.</li>
+<li><strong>Nothing old can pass for new.</strong> An earlier
+transcript.json was left in place, so a hearing that failed could be
+read as a new transcript; every earlier output is cleared first.</li>
+<li><strong>Setup starts HomerScribe as you,</strong> not with the
+installer’s administrator rights.</li>
+</ul>
+<h2 id="october-2026-every-default-with-no-screens">13 October 2026 –
+every default with no screens</h2>
+<ul>
+<li><strong>HomerScribe_setup.exe /verysilent /defaults installs with
+every default and no screens.</strong> HomerScribe’s installer did not
+honour /defaults at all: its finish-page entries were skipped in any
+silent install. Each of its 21 entries now runs in a silent install
+given /defaults when its box is ticked by default, as it would from the
+finish page. /silent /defaults shows a progress window; /defaults alone
+changes nothing.</li>
+</ul>
+<h2 id="october-2026-a-partial-result-says-it-is-partial">13 October
+2026 – a partial result says it is partial</h2>
+<p>From a second ChatGPT audit, of the BT Code run.</p>
+<ul>
+<li><strong>A transcript Whisper could not finish says so.</strong> When
+a stuck stretch cannot be heard again, its minutes are recorded:
+transcribed.md opens “This transcript is partial” with the missing
+times, the results box adds “PARTIAL: no words for” them, and the
+transcript is not kept for reuse, so the next run tries again.</li>
+<li><strong>What depends on the transcript says when it is
+incomplete.</strong> The count of descriptions over speech is given only
+where speech was heard, and unknown elsewhere; the advertisement report
+says its search was incomplete when words are missing or a model answer
+could not be read, rather than that nothing was found.</li>
+<li><strong>The combined document claims what it holds.</strong> It no
+longer calls itself everything the film offers or the whole of the film:
+its words are recognized by a machine, or taken from captions, and may
+hold mistakes, and its descriptions come from sampled moments.</li>
+<li><strong>Descriptions describe the film, not the grid.</strong> The
+vision model sees four frames tiled together, and kept describing “four
+screens”; it is told the tiling is only an arrangement. It is also told
+to say what text on a screen reads rather than conclude from it that
+something worked, and not to repeat what an earlier description
+said.</li>
+</ul>
+<h2 id="october-2026-from-the-bt-code-run">13 October 2026 – from the BT
+Code run</h2>
+<p>The 56-minute BT Code talk, the first long run with Whisper large-v3
+turbo, came back with 17 minutes of words.</p>
+<ul>
+<li><strong>A Whisper loop is heard again.</strong> At 17:08 Whisper
+began writing “h2.” and wrote it 1,720 times, to the film’s end. The
+repeats were rightly dropped, and the 39 minutes of speech beneath them
+went too. Whisper reads each stretch in the light of the text before it,
+so a loop feeds itself. Any line repeated back to back over more than a
+minute is now heard again with no earlier text to copy, and what is
+heard takes the loop’s place; the log says when this happens.</li>
+<li><strong>Speaker names Whisper made up are taken off.</strong>
+Whisper cannot tell who is speaking, yet it opened 123 of 127 stretches
+with “Stephen Blasey:”, a misheard name copied forward. When one such
+label opens at least half the stretches, labels like it come off.
+Captions, which name speakers truly, are left as they are.</li>
+<li><strong>Automatic captions are not fetched only to be set
+aside.</strong> Whisper is preferred to automatic captions unless
+–auto-captions yes, yet the automatic track was fetched first, and the
+fetch was refused with “429 Too Many Requests”. It is no longer fetched
+in that case, and the log says why. When automatic captions are wanted,
+the original-language track (en-orig) comes before the translated one
+(en).</li>
+</ul>
+<h2 id="october-2026-from-an-audit">13 October 2026 – from an audit</h2>
+<ul>
+<li><strong>A transcript is reused only for what made it.</strong> The
+working folder is named for the recording’s path, and its transcript was
+reused whenever it was there, so a replaced recording, the better model
+or new vocabulary all brought back the old words. Each transcript now
+records its model and that model’s size, the vocabulary, and the
+recording’s size and time, and is made again when any of those changed.
+Transcripts made before this are made once more, which is what lets
+Whisper large-v3 turbo reach recordings transcribed with small.</li>
+<li><strong>Only a finished Whisper run is kept for reuse.</strong> An
+interrupted run can leave readable output, which is used for that run
+and not trusted by the next.</li>
+<li><strong>A closing quote ends a paragraph’s sentence only after a
+full stop, question or exclamation mark.</strong></li>
+<li><strong>The ReadMe says what the installer does:</strong> ffmpeg,
+ffprobe, yt-dlp and Whisper are shared components offered by the
+installer in their machine-wide folders, and transcribing needs ffmpeg
+as well as Whisper.</li>
+</ul>
+<h2
+id="october-2026-the-right-title-the-best-model-for-its-size-and-paragraphs">13
+October 2026 – the right title, the best model for its size, and
+paragraphs</h2>
+<ul>
+<li><strong>Each recording keeps its own title.</strong> In a run of
+local files, a title one file carried was given to every later file
+without one: on 4 October, 86 of 121 podcasts were headed “Accessing the
+Kindle App for PC with JAWS”. What a source says about itself is now
+cleared before every local file, as it already was between web
+addresses.</li>
+<li><strong>Whisper large-v3 turbo hears by default.</strong> Quantized
+to five bits it is 547 MB, about the size of small, and hears nearly as
+well as large-v3, which is five times larger: fewer misheard names and
+terms, such as “Ask Sharkey” for Ask Sharky. Setup offers it as Install
+where only the small model is present, and HomerScribe uses small,
+saying so in the log, until it is there. small remains a choice for
+speed.</li>
+<li><strong>Transcripts read as paragraphs.</strong> Whisper and
+captions break speech wherever their windows end, and each piece was its
+own paragraph, so a talk read as a column of half-sentences. Pieces are
+now joined, and a paragraph begins only at a new speaker, a pause of a
+second and a half or more, a sound, a new section, or about ninety words
+at a sentence’s end. Every word is kept, in order. This follows the
+readable-text guidance now in the Homer Development Kit, which an AI
+tool can also use to edit a transcript further.</li>
+</ul>
+<h2 id="october-2026-from-an-audit-and-a-report">11 October 2026 – from
+an audit and a report</h2>
+<ul>
+<li><strong>A tutorial that fails fails the build.</strong> A failed
+tutorial build was a warning, so 1.0.279 was released with
+buildTutorials exit code 1 in its own log. The build now stops there,
+through its own failure path, which also restores the version
+number.</li>
+<li><strong>The Overview reminds of Insert plus Up Arrow as the check
+asks.</strong> Its step said the key but had no Key line or reader line,
+so the check failed it every build. The step now names Insert+UpArrow,
+and the reader says what is under focus, Start button.</li>
+<li><strong>Launch after setup works on a first install.</strong> The
+installer’s Launch box writes a marker file into
+%LOCALAPPDATA%\<App>\logs, but on a first install that folder did not
+exist yet – it was made later, when setup kept its log – so the marker
+could not be written, and the program did not start after setup. The
+marker line now makes the folder first. Found by an audit of bookFido by
+another AI, and fixed in every Homer installer.</li>
+</ul>
 <h2 id="october-2026-from-the-build-and-release-logs">9 October 2026 –
 from the build and release logs</h2>
 <ul>

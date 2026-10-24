@@ -294,7 +294,7 @@ Write comments as complete sentences in prose, not as telegraphic labels. A comm
 // Refuse to overwrite the input file with its own output. This can
 // happen in plain-text mode when the input is a .txt file: the
 // output path derived from the basename would collide with the
-// source. Without this guard, --force would silently destroy the
+// source. Without this guard, --force-replacements would silently destroy the
 // user's source file.
 if (sInPath.Equals(sOutPath, StringComparison.OrdinalIgnoreCase))
     return false;

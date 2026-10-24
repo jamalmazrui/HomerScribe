@@ -165,50 +165,6 @@
   </style>
 </head>
 <body>
-<nav id="TOC" role="doc-toc" aria-label="Contents">
-<ul>
-<li><a href="#what-went-wrong-and-what-stops-it-happening-again"
-id="toc-what-went-wrong-and-what-stops-it-happening-again">What went
-wrong, and what stops it happening again</a>
-<ul>
-<li><a href="#what-the-runs-show-as-of-22-august-2026"
-id="toc-what-the-runs-show-as-of-22-august-2026">What the runs show, as
-of 22 August 2026</a>
-<ul>
-<li><a href="#a-logging-failure-worth-remembering"
-id="toc-a-logging-failure-worth-remembering">A logging failure worth
-remembering</a></li>
-</ul></li>
-<li><a href="#the-shape-of-the-problem"
-id="toc-the-shape-of-the-problem">The shape of the problem</a></li>
-<li><a
-href="#analysing-logs-from-builds-that-did-not-contain-the-change"
-id="toc-analysing-logs-from-builds-that-did-not-contain-the-change">1.
-Analysing logs from builds that did not contain the change</a></li>
-<li><a href="#edits-that-silently-did-nothing"
-id="toc-edits-that-silently-did-nothing">2. Edits that silently did
-nothing</a></li>
-<li><a href="#testing-against-my-own-belief"
-id="toc-testing-against-my-own-belief">3. Testing against my own
-belief</a></li>
-<li><a href="#optimising-a-proxy-instead-of-the-outcome"
-id="toc-optimising-a-proxy-instead-of-the-outcome">4. Optimising a proxy
-instead of the outcome</a></li>
-<li><a
-href="#confusing-what-the-program-knows-with-what-the-person-was-told"
-id="toc-confusing-what-the-program-knows-with-what-the-person-was-told">5.
-Confusing what the program knows with what the person was told</a></li>
-<li><a href="#the-test-that-was-actually-run-for-once"
-id="toc-the-test-that-was-actually-run-for-once">6. The test that was
-actually run, for once</a></li>
-<li><a href="#what-the-field-does-and-where-this-differed"
-id="toc-what-the-field-does-and-where-this-differed">What the field
-does, and where this differed</a></li>
-<li><a href="#the-habits-that-follow"
-id="toc-the-habits-that-follow">The habits that follow</a></li>
-</ul></li>
-</ul>
-</nav>
 <main>
 <h1 id="what-went-wrong-and-what-stops-it-happening-again">What went
 wrong, and what stops it happening again</h1>
@@ -263,9 +219,9 @@ Analysing logs from builds that did not contain the change</h2>
 <p>The worst of them, by cost. The rule that refuses a moment with no
 room to describe it was written, and then five separate runs were
 analysed before it had ever executed once — variously because the
-moments were cached from an earlier run, because Force overwrite cleared
-the record from disk but not from memory, or because the build simply
-predated it.</p>
+moments were cached from an earlier run, because Force replacements
+cleared the record from disk but not from memory, or because the build
+simply predated it.</p>
 <p>Each time, the log looked wrong, and each time I reasoned about the
 algorithm when the algorithm had not run.</p>
 <p><strong>Why it kept happening.</strong> Nothing in a log said what
