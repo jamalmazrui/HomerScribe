@@ -1991,7 +1991,9 @@ namespace Homer
                         double nShare = nAt / Math.Max(nDuration, 1.0);
                         double nLeft = 0.0;
                         if (nShare > 0.01) nLeft = DateTime.Now.Subtract(dtBegan).TotalSeconds * (1.0 - nShare) / nShare / 60.0;
-                        string sLeft = "about " + ((int)Math.Round(nLeft)).ToString() + " minutes left";
+                        // No "about" before a time (25 October 2026, the author's ruling): every estimate is
+                        // understood to be rounded, and the word cost two syllables in every announcement.
+                        string sLeft = ((int)Math.Round(nLeft)).ToString() + " min left";
                         // The same shape as a description line: the position in
                         // the film, and one word for what is happening.
                         dialogSays(announceKindFor(sLabel).ToLower() + ", " + spokenPosition(nAt, nDuration));
@@ -12014,8 +12016,9 @@ namespace Homer
                 {
                     double nEach = DateTime.Now.Subtract(dtBegan).TotalSeconds / (double)iIndex;
                     double nLeftMinutes = nEach * (lGaps.Count - iIndex) / 60.0;
-                    string sLeft = "about " + ((int)Math.Round(nLeftMinutes)).ToString() + " minutes left";
-                    if (nLeftMinutes >= 90.0) sLeft = "about " + num(Math.Round(nLeftMinutes / 60.0, 1)) + " hours left";
+                    // No "about" (25 October 2026): estimates are understood to be rounded.
+                    string sLeft = ((int)Math.Round(nLeftMinutes)).ToString() + " min left";
+                    if (nLeftMinutes >= 90.0) sLeft = num(Math.Round(nLeftMinutes / 60.0, 1)) + " hours left";
                     logMessage("Progress: " + iIndex.ToString() + " of " + lGaps.Count.ToString() + ", " + num(nEach) + " seconds each",
                                "INFO", "-- " + iIndex.ToString() + " of " + lGaps.Count.ToString() + " done, " + num(nEach) + " seconds each, " + sLeft + " --");
                     if (!bWarnedSlow && iIndex >= 2 && nEach >= nDefaultSlowSeconds)

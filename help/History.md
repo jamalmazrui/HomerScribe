@@ -2,6 +2,10 @@
 
 
 
+## 25 October 2026, evening
+
+- **Time left without "about":** "12 min left", not "about 12 minutes left", since every estimate is understood to be rounded; two syllables fewer in every announcement.
+
 ## 24 October 2026
 
 - **The build uses the newest Homer kit it finds,** logging each one: your HomerDev variable, C:\HomerDev and the folders above. The variable named an older installed kit, which stopped BatCon's build.
