@@ -11171,6 +11171,8 @@ namespace Homer
 
         // Which recording a results folder was made from: its fingerprint, kept in made-from.txt beside the results.
         const string sMadeFromName = "made-from.txt";
+        // sWorkFromName: in the working folder, the fingerprint of the recording its unfinished work is for.
+        const string sWorkFromName = "work-from.txt";
 
         static string madeFromFingerprint(string sOutputDir)
         {
@@ -11197,7 +11199,57 @@ namespace Homer
             catch (Exception oError) { logMessage("Could not write " + sMadeFromName + ": " + oError.Message, "INFO", ""); }
         }
 
+        // THE LAST GOOD RESULTS STAY UNTIL NEW ONES ARE MADE (30 October 2026, from an audit by another AI).
+        // A forced run, or one for a changed recording, deleted the transcript and described film first,
+        // so when the new attempt failed -- a model missing, a disk full -- nothing was left. They are now set
+        // aside under a recovery name instead, and settled when the run ends: a new result made deletes the
+        // one set aside; with no new one, the earlier is put back, and the log says it is the earlier one.
+        static List<string[]> lPrevious = new List<string[]>();
+
+        // Set aside in the working folder, so a kept copy is never mistaken for a result in the output folder.
+        static void setAsidePrevious(string sPath, string sWorkDir)
+        {
+            string sAside = Homer.Util.recoveryPath(Path.Combine(sWorkDir, "previous " + Path.GetFileName(sPath)));
+            File.Move(sPath, sAside);
+            lPrevious.Add(new string[] { sAside, sPath });
+        }
+
+        static void settlePrevious(bool bSucceeded)
+        {
+            foreach (string[] aPair in lPrevious)
+            {
+                string sAside = aPair[0], sPath = aPair[1];
+                try
+                {
+                    if (!File.Exists(sAside)) continue;
+                    if (File.Exists(sPath))
+                    {
+                        if (bSucceeded) File.Delete(sAside);
+                        else logMessage("This run did not finish; the earlier " + Path.GetFileName(sPath) + " is kept at " + sAside, "INFO", "");
+                    }
+                    else
+                    {
+                        File.Move(sAside, sPath);
+                        logMessage("No new " + Path.GetFileName(sPath) + " was made, so the earlier one, made before the recording or settings changed, is back in place.",
+                                   "INFO", "The earlier " + Path.GetFileName(sPath) + " is kept.");
+                    }
+                }
+                catch (Exception oError) { logMessage("The earlier " + Path.GetFileName(sPath) + " is kept at " + sAside + ": " + oError.Message, "INFO", ""); }
+            }
+            lPrevious = new List<string[]>();
+        }
+
         static int runOne(string sInput, string sWebAddress)
+        {
+            lPrevious = new List<string[]>();
+            int iResult;
+            try { iResult = runOneWork(sInput, sWebAddress); }
+            catch (Exception) { settlePrevious(false); throw; }
+            settlePrevious(iResult == 0 && iStageFailures == 0);
+            return iResult;
+        }
+
+        static int runOneWork(string sInput, string sWebAddress)
         {
             lMissingSpeech = new List<double[]>();
             lUncertainSpeech = new List<double[]>();
@@ -11296,6 +11348,25 @@ namespace Homer
                     bRecordingChanged = true;
                 }
             }
+            // UNFINISHED WORK IS CHECKED TOO (30 October 2026, from an audit by another AI). Only finished results
+            // were compared with the recording; an unfinished run's working folder, named for the recording's path,
+            // was resumed even when another recording had replaced it there, so its moments and descriptions could
+            // be carried into the new one. The working folder now records which recording it holds, and a different
+            // one starts clean. A folder from before this record is trusted, as it was.
+            string sWorkFromPath = Path.Combine(workFolderFor(sInput), sWorkFromName);
+            if (!bRecordingChanged && !flag("force-replacements") && File.Exists(sInput) && File.Exists(sWorkFromPath))
+            {
+                string sWorkFrom = "";
+                try { sWorkFrom = File.ReadAllText(sWorkFromPath).Trim(); } catch (Exception) { }
+                if (sWorkFrom != "" && sWorkFrom != Homer.Util.fileSha256(sInput))
+                {
+                    logMessage("The recording has changed since the unfinished work in " + workFolderFor(sInput) + " began, so that work starts again.",
+                               "INFO", "The recording has changed since its unfinished work began, so it starts again.");
+                    bDescribeDone = false;
+                    bTranscribeDone = false;
+                    bRecordingChanged = true;
+                }
+            }
             bool bWantDescribe = flag("describe") && !(bDescribeDone && !flag("force-replacements"));
             bool bWantTranscribe = flag("transcribe") && !(bTranscribeDone && !flag("force-replacements"));
             if (bWantDescribe && !hasPicture(sFfmpeg, sInput))
@@ -11340,6 +11411,13 @@ namespace Homer
             // described film and the script to read. The working files go under
             // the user's application data, out of the way but findable.
             string sWorkDir = workFolderFor(sInput);
+            try
+            {
+                Directory.CreateDirectory(sWorkDir);
+                if (File.Exists(sInput) && (bRecordingChanged || !File.Exists(Path.Combine(sWorkDir, sWorkFromName))))
+                    File.WriteAllText(Path.Combine(sWorkDir, sWorkFromName), Homer.Util.fileSha256(sInput), new UTF8Encoding(false));
+            }
+            catch (Exception oError) { logMessage("Could not write " + sWorkFromName + ": " + oError.Message, "INFO", ""); }
             Directory.CreateDirectory(sOutputDir);
             Directory.CreateDirectory(sWorkDir);
             // Where a list was given -- a playlist, a pattern, or a file naming
@@ -11351,10 +11429,25 @@ namespace Homer
             if (flag("force-replacements") || bRecordingChanged)
             {
                 int iCleared = 0;
-                string[] asOurs = new string[] {
+                // The results a person reads are set aside, not deleted; working files are deleted.
+                List<string> lsResults = new List<string> {
                     Path.Combine(sOutputDir, sDefaultTranscriptName),
                     Path.Combine(sOutputDir, sDefaultBothName),
-                    Path.Combine(sOutputDir, sDefaultMarkdownName),
+                    Path.Combine(sOutputDir, sDefaultMarkdownName) };
+                lsResults.AddRange(Directory.GetFiles(sOutputDir, sDefaultDescribedStem + ".*"));
+                foreach (string sOld in lsResults)
+                {
+                    try
+                    {
+                        if (!File.Exists(sOld)) continue;
+                        setAsidePrevious(sOld, sWorkDir);
+                        iCleared = iCleared + 1;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+                string[] asOurs = new string[] {
                     Path.Combine(sWorkDir, sDefaultJsonName),
                     Path.Combine(sWorkDir, "transcript.json"),
                     Path.Combine(sWorkDir, "transcript.final.json"),
@@ -11371,25 +11464,14 @@ namespace Homer
                     {
                     }
                 }
-                foreach (string sOld in Directory.GetFiles(sOutputDir, sDefaultDescribedStem + ".*"))
-                {
-                    try
-                    {
-                        File.Delete(sOld);
-                        iCleared = iCleared + 1;
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
                 // And what was already read out of them, or the moments live on
                 // in memory after their record has gone.
                 lCachedGaps = null;
                 dCachedSignature = null;
                 bLastCacheFinished = false;
                 bLastTranscriptFinished = false;
-                if (iCleared > 0) logMessage((bRecordingChanged ? "The recording changed: removed " : "Force overwrite: removed ") + iCleared.ToString()
-                                             + (iCleared == 1 ? " file" : " files") + " left by the earlier run, so this one starts clean.",
+                if (iCleared > 0) logMessage((bRecordingChanged ? "The recording changed: set aside or removed " : "Force overwrite: set aside or removed ") + iCleared.ToString()
+                                             + (iCleared == 1 ? " file" : " files") + " left by the earlier run, so this one starts clean; the results are put back if no new ones are made.",
                                              "INFO", "Starting clean: what the earlier run left has been removed.");
                 logMessage("The moments and the transcript held in memory from that record are discarded too.", "INFO", "");
             }

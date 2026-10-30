@@ -2,6 +2,11 @@
 
 
 
+## 30 October 2026 -- fixes from an audit by another AI
+
+- **Your last good transcript and described film are kept until new ones are made.** A forced run, or one for a changed recording, deleted them first, so a run that then failed left nothing. They are now set aside in the working folder; a new result replaces them, and with none, the earlier ones are put back, and the log says so.
+- **Unfinished work belongs to its recording.** Only finished results were checked against the recording; a run that stopped part way was resumed even when another recording had replaced the first at the same path. The working folder now records which recording it holds, and a different one starts again.
+
 ## 25 October 2026, evening
 
 - **Time left without "about":** "12 min left", not "about 12 minutes left", since every estimate is understood to be rounded; two syllables fewer in every announcement.
