@@ -986,7 +986,15 @@ def checkKeys():
         else:
             lsCombos = re.findall(r"\b(?:Alt\+Control|Control\+Alt)(?:\+Shift)?\+\w+", sText)
         for sKey in lsCombos:
-            if sKey.rsplit("+", 1)[1].lower() in lsNavigation: continue
+            # A MODIFIER NAMED IN PROSE IS NOT A KEY (1 November 2026): "Alt+Control+Shift
+            # with an arrow" names a set of modifiers, and the pattern took Shift for the
+            # key. Number Pad 5 (NumPad5, Clear) is a navigation key with the arrows: the
+            # screen readers' table keys use it to read the cell.
+            sLast = sKey.rsplit("+", 1)[1].lower()
+            if sLast in ("shift", "alt", "control", "ctrl"): continue
+            # Number-pad 1 to 9, as NVDA names them, are Home, the arrows and the page keys with NumLock off
+            # (2 November 2026): DbDo's NVDA add-on binds Alt+Control with them for the same table keys.
+            if sLast in lsNavigation or sLast in ("numpad5", "clear", "number", "numpad") or re.match(r"^numpad[1-9]$", sLast): continue
             # The app's own desktop shortcut, as its installer declares it,
             # is the sanctioned use: FileDir's Hotkeys.inix lists Alt+Control+F
             # because that is how FileDir is opened, and HomerView's NVDA

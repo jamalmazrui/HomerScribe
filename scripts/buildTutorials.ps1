@@ -727,7 +727,11 @@ $dReaderPitchKeyboard = 0
 # slower"; 0.56 was brisk even for a practised listener. 0.64 keeps the reader
 # faster than the narrator, which is what tells them apart, and can be set per
 # series with ReaderScale in [global].
-$dReaderScale = 0.64
+# A LITTLE SLOWER AGAIN (1 November 2026, at Jamal's request, "to make it more
+# understandable"): 0.70. Still faster than the narrator's 0.80, so the two stay
+# apart by pace as well as by voice. The Windows-voice and eSpeak fallbacks step
+# back with it, from rate 6 to 5 and from 260 to 240 words a minute.
+$dReaderScale = 0.70
 $dReaderNoise = 0.333
 # KOKORO SPEAKERS, by index in the English v0.19 voice pack: 0 af, 1 af_bella,
 # 2 af_nicole, 3 af_sarah, 4 af_sky, 5 am_adam, 6 am_michael, 7 bf_emma,
@@ -748,9 +752,9 @@ if ($null -eq $sKokoroModel) { $sKokoroModel = "" }
 # opened when the audio starts.
 $dLeadIn = 2.0
 $dGap = 0.3
-$iEspeakRate = 260
+$iEspeakRate = 240
 $iSapiNarratorRate = 4
-$iSapiReaderRate = 6
+$iSapiReaderRate = 5
 
 # ---- reading a SPEAK script ----
 
@@ -883,14 +887,68 @@ function audioName([string] $sScript) {
 # fingerprint, from before this rule, is trusted once and its fingerprint
 # recorded: no date test can settle it, since an unzipped walk can look newer
 # than audio spoken from the very same text.
+# THE VOICES ARE PART OF THE FINGERPRINT (1 November 2026). Only the walk's text
+# was, so slowing the reader changed no fingerprint and no tutorial already spoken
+# was spoken again at the new pace. The voice settings now join the walk's own
+# hash, so a change of voice, pace or pitch respeaks every walk once, and an
+# unchanged walk with unchanged voices is still left alone.
+function voiceSettings() {
+  $oInv = [System.Globalization.CultureInfo]::InvariantCulture
+  return [string]::Format($oInv, "reader={0};narrator={1};narratorPitch={2};message={3};menu={4};keyboard={5};sapiReader={6};sapiNarrator={7};espeak={8}",
+    $dReaderScale, $dNarratorScale, $dNarratorPitch, $dReaderPitchMessage, $dReaderPitchMenu, $dReaderPitchKeyboard, $iSapiReaderRate, $iSapiNarratorRate, $iEspeakRate)
+}
+
 function walkFingerprint([string] $sScript) {
-  try { return (Get-FileHash -LiteralPath $sScript -Algorithm SHA256).Hash.ToLower() } catch { return "" }
+  try {
+    $sWalk = (Get-FileHash -LiteralPath $sScript -Algorithm SHA256).Hash.ToLower()
+    $oSha = [System.Security.Cryptography.SHA256]::Create()
+    $aBytes = $oSha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($sWalk + "|" + (voiceSettings)))
+    return ([System.BitConverter]::ToString($aBytes) -replace "-", "").ToLower()
+  } catch { return "" }
+}
+
+# A CACHE OF SPOKEN WALKS (2 November 2026). An unzipped project can carry recordings older than its walks -- every
+# DbDo.zip of 2 November did -- and each unzip then cost about three hours of speech on Jamal's laptop, Kokoro running
+# at a third of real time. Every walk spoken is now also kept under %LOCALAPPDATA%\HomerDev\tutorialCache, named by
+# its fingerprint, which already covers the walk's text and the voices. A walk whose recording is missing or stale is
+# first looked for there, and copied back in seconds when the same text was spoken before. Recordings not used for
+# 90 days are removed.
+$sCacheDir = Join-Path $env:LOCALAPPDATA "HomerDev\tutorialCache"
+$iCacheDays = 90
+
+function cacheSpoken([string] $sScript, [string] $sOut) {
+  try {
+    $sPrint = walkFingerprint $sScript
+    if ($sPrint -eq "" -or -not (Test-Path -LiteralPath $sOut)) { return }
+    if (-not (Test-Path -LiteralPath $sCacheDir)) { New-Item -ItemType Directory -Path $sCacheDir -Force | Out-Null }
+    Copy-Item -LiteralPath $sOut -Destination (Join-Path $sCacheDir ($sPrint + ".mp3")) -Force
+    $dtOld = (Get-Date).AddDays(-$iCacheDays)
+    Get-ChildItem -LiteralPath $sCacheDir -Filter "*.mp3" -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -lt $dtOld } | Remove-Item -Force -ErrorAction SilentlyContinue
+  } catch { note ("  could not keep " + [System.IO.Path]::GetFileName($sOut) + " in the tutorial cache: " + $_) }
+}
+
+function restoreFromCache([string] $sScript, [string] $sOut) {
+  try {
+    $sPrint = walkFingerprint $sScript
+    if ($sPrint -eq "") { return $false }
+    $sCached = Join-Path $sCacheDir ($sPrint + ".mp3")
+    if (-not (Test-Path -LiteralPath $sCached)) { return $false }
+    Copy-Item -LiteralPath $sCached -Destination $sOut -Force
+    (Get-Item -LiteralPath $sCached).LastWriteTime = Get-Date
+    note ("  " + [System.IO.Path]::GetFileName($sOut) + ": the same walk was spoken before, with the same voices; restored from the tutorial cache " + $sCached)
+    markSpoken $sScript $sOut
+    return $true
+  } catch {
+    note ("  the tutorial cache could not restore " + [System.IO.Path]::GetFileName($sOut) + ": " + $_)
+    return $false
+  }
 }
 
 function markSpoken([string] $sScript, [string] $sOut) {
   # The fingerprint, then "quotes safe": spoken since straight quotes stopped breaking Kokoro (kit 1.63.1).
   $sMark = [System.IO.Path]::ChangeExtension($sOut, ".sha256")
   try { [System.IO.File]::WriteAllText($sMark, (walkFingerprint $sScript) + "`r`nquotes safe`r`n") } catch { note ("  could not write " + $sMark + ": " + $_) }
+  cacheSpoken $sScript $sOut
 }
 
 function hasStraightQuote([string] $sScript) {
@@ -899,7 +957,7 @@ function hasStraightQuote([string] $sScript) {
 }
 
 function spokenCurrent([string] $sScript, [string] $sOut) {
-  if (-not (Test-Path -LiteralPath $sOut)) { return $false }
+  if (-not (Test-Path -LiteralPath $sOut)) { return (restoreFromCache $sScript $sOut) }
   $sMark = [System.IO.Path]::ChangeExtension($sOut, ".sha256")
   $sNow = walkFingerprint $sScript
   if (Test-Path -LiteralPath $sMark) {
@@ -914,7 +972,7 @@ function spokenCurrent([string] $sScript, [string] $sOut) {
     }
     if ($sWas -ne "" -and $sWas -eq $sNow) { note ("  " + [System.IO.Path]::GetFileName($sOut) + ": the walk is unchanged since it was spoken (same fingerprint)"); return $true }
     note ("  " + [System.IO.Path]::GetFileName($sOut) + ": the walk has changed since it was spoken (fingerprint " + $sWas.Substring(0, [Math]::Min(12, $sWas.Length)) + " now " + $sNow.Substring(0, [Math]::Min(12, $sNow.Length)) + ")")
-    return $false
+    return (restoreFromCache $sScript $sOut)
   }
   # Audio from before fingerprints is trusted once and its fingerprint recorded: dates cannot settle it, since an
   # unzipped walk can look newer than audio spoken from that same text. Delete an mp3 to have its walk spoken again.
@@ -1413,12 +1471,25 @@ if ($iToSpeak -gt 0) { try {
       Start-Sleep -Seconds 60
     }
     $iWaited = $iWaited + 1
+    # STOP WAITING WHEN NOTHING IS LEFT TO SPEAK (2 November 2026, kit 1.103.0). DbDo's 11:41 cycle waited more than three
+    # hours, first behind DbDo's own 10:34 cycle speaking the same walks into the same folder, then behind EdSharp, though
+    # by 12:57 every walk it needed was spoken and current. Every five minutes the walks are tested again -- the test also
+    # restores a walk from the tutorial cache -- and with nothing left to speak, the build leaves the line.
+    if ($iWaited % 5 -eq 0) {
+      $iStill = @($lsScripts | Where-Object { $bLive -or $sOnly -ne "" -or -not (spokenCurrent $_ (Join-Path $sAudioDir (audioName $_))) }).Count
+      if ($iStill -eq 0) {
+        say ("While this build waited, every walk became spoken and current, by another build or from the tutorial cache, so it stops waiting after " + $iWaited + " minutes and speaks nothing.")
+        try { $oMutex.Dispose() } catch { }
+        $oMutex = $null
+        break
+      }
+    }
     $sNow = speakingNow
     if ($iWaited -eq 1) { say ("Another Homer build is speaking its tutorials" + $(if ($sNow) { ": " + $sNow } else { "" }) + (aheadWords $iAhead) + ". Waiting, so neither crawls; builds speak in the order they arrived.") }
     else { say ("  still waiting, " + $iWaited + " minutes" + $(if ($sNow) { "; " + $sNow } else { "" }) + (aheadWords $iAhead)) }
   }
   if ($sTicket) { try { Remove-Item -LiteralPath $sTicket -Force } catch { } }
-  if ($iWaited -gt 0) { say ("Its turn has come after " + $iWaited + $(if ($iWaited -eq 1) { " minute" } else { " minutes" }) + "; speaking now.") }
+  if ($iWaited -gt 0 -and $oMutex -ne $null) { say ("Its turn has come after " + $iWaited + $(if ($iWaited -eq 1) { " minute" } else { " minutes" }) + "; speaking now.") }
 } catch { note ("tutorial mutex not available: " + $_); $oMutex = $null; if ($sTicket) { try { Remove-Item -LiteralPath $sTicket -Force } catch { } } } } else { note "every walk is already spoken and current, so no wait for the voices" }
 retireOldAudio
 $iWalk = 0
