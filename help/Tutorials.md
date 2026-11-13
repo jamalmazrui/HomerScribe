@@ -58,7 +58,7 @@ One, User Interface.
 
 Screen reader:
 
-- The dialog and its parts, the Alt letters that tick each box, the keys that read a field, and where help lives.
+- The dialog and its parts, the Alt letters that mark each box, the keys that read a field, and where help lives.
 
 ### Step 5
 
@@ -348,7 +348,7 @@ The answer is Control plus Enter, which presses OK from anywhere. What this walk
 
 ### Step 18
 
-Tick Transcribe audio.
+Mark Transcribe audio.
 
 Screen reader:
 
@@ -421,7 +421,7 @@ Confirm the wording with a live run: buildTutorials -live.
 
 ### Step 5: Tab
 
-The last page is the one that matters. It offers each tool HomerScribe uses, as a box saying what it does and its size, already ticked when it is missing.
+The last page is the one that matters. It offers each tool HomerScribe uses, as a box saying what it does and its size, already marked when it is missing.
 
 Screen reader:
 
@@ -480,7 +480,7 @@ Screen reader:
 
 ### Step 11
 
-Installed and open, with the sample film ready. If a tool was left out, run the setup again and tick its box; a tool already present costs nothing. What this walk taught. I name the step; the reader gives the answer.
+Installed and open, with the sample film ready. If a tool was left out, run the setup again and mark its box; a tool already present costs nothing. What this walk taught. I name the step; the reader gives the answer.
 
 ### Step 12
 
@@ -500,7 +500,7 @@ Screen reader:
 
 ### Step 14: Tab
 
-The installer's last page reads the machine for you: each tool's box begins with Install, Update or Reinstall, so its state is known before anything is ticked.
+The installer's last page reads the machine for you: each tool's box begins with Install, Update or Reinstall, so its state is known before anything is marked.
 
 Screen reader:
 
@@ -1114,7 +1114,7 @@ Screen reader:
 
 ### Step 5: Enter
 
-A PDF needs no box ticked: HomerScribe knows what to do with one. Enter.
+A PDF needs no box marked: HomerScribe knows what to do with one. Enter.
 
 Screen reader:
 
@@ -1311,7 +1311,7 @@ Yes fetches HomerScribe_setup.exe from the latest release and starts it. The ins
 
 ### Step 12
 
-The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already ticked.
+The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already marked.
 
 ### Step 13
 
@@ -1347,7 +1347,7 @@ To finish: what to carry away, the words HomerScribe uses, and where to get help
 
 ### Step 2
 
-One dialog does every job, and one box says which: tick what you want, and Enter. The window stays while it works, and its title says how far it is.
+One dialog does every job, and one box says which: mark what you want, and Enter. The window stays while it works, and its title says how far it is.
 
 Screen reader:
 

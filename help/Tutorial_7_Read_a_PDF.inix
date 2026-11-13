@@ -29,7 +29,7 @@ Hear=HomerScribe dialog
 Hear=Source paths: edit, C colon backslash Users backslash Jamal backslash Videos backslash Annual Report dot p d f
 
 [step]
-Say=A PDF needs no box ticked: HomerScribe knows what to do with one. Enter.
+Say=A PDF needs no box marked: HomerScribe knows what to do with one. Enter.
 Key=Enter
 Hear=HomerScribe, working
 Hear=Preparing, Opening Annual Report dot p d f

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>ReadMe</title>
+  <title>HomerScribe</title>
   <style>
     html {
       color: #1a1a1a;
@@ -165,6 +165,27 @@
   </style>
 </head>
 <body>
+<nav id="TOC" role="doc-toc" aria-label="Contents">
+<ul>
+<li><a href="#homerscribe" id="toc-homerscribe">HomerScribe</a>
+<ul>
+<li><a href="#quick-start" id="toc-quick-start">Quick start</a></li>
+<li><a href="#what-you-need" id="toc-what-you-need">What you
+need</a></li>
+<li><a href="#turning-a-pdf-into-a-word-document"
+id="toc-turning-a-pdf-into-a-word-document">Turning a PDF into a Word
+document</a></li>
+<li><a href="#reading-a-scanned-document"
+id="toc-reading-a-scanned-document">Reading a scanned document</a></li>
+<li><a href="#taking-the-advertisements-out"
+id="toc-taking-the-advertisements-out">Taking the advertisements
+out</a></li>
+<li><a href="#the-rest-of-the-documentation"
+id="toc-the-rest-of-the-documentation">The rest of the
+documentation</a></li>
+</ul></li>
+</ul>
+</nav>
 <main>
 <h1 id="homerscribe">HomerScribe</h1>
 <p>Describes video and transcribes speech, on your own machine.</p>
@@ -213,13 +234,13 @@ urlCheck, urlFido, bookFido, HomerView, EdSharp, FileDir and DbDo.</p>
 how the parts interact, and how to rebuild it.</p>
 <h2 id="quick-start">Quick start</h2>
 <ol type="1">
-<li>Install HomerScribe. On the last page of the installer, leave ticked
+<li>Install HomerScribe. On the last page of the installer, leave marked
 whatever matches what you want to do: Ollama and the vision model for
 describing, Whisper for transcribing.</li>
 <li>Run HomerScribe with nothing on the command line. The dialog
 opens.</li>
 <li>Choose a file with <strong>Browse local source</strong>.</li>
-<li>Tick <strong>Describe video</strong>, <strong>Transcribe
+<li>Mark <strong>Describe video</strong>, <strong>Transcribe
 audio</strong>, or both.</li>
 <li>Press OK.</li>
 </ol>
@@ -267,12 +288,12 @@ developed fork, releasing most weeks. HomerScribe looks only for yt-dlp.
 <p>The installer offers to do both of those on its final page, checked
 by default, because without them there is nothing to write the
 descriptions. Each script notices in a second when its work is already
-done and says so, so ticking them on a machine that is already set up
+done and says so, so marking them on a machine that is already set up
 costs nothing. <code>installOllama.cmd</code> and
 <code>installModels.cmd</code> stay in the program folder, so either can
 be run again later.</p>
 <p>The first box installs Ollama and then goes straight on to the model,
-so one tick does the whole job. The second installs the model alone, for
+so one mark does the whole job. The second installs the model alone, for
 a machine that already has Ollama.</p>
 <p>Both scripts find Ollama by looking where it is installed rather than
 by asking the PATH, because a console opened before Ollama was installed
@@ -372,7 +393,7 @@ fetched for you, and both offered by the installer. Without them you
 still get the Markdown.</p>
 <h2 id="reading-a-scanned-document">Reading a scanned document</h2>
 <p>HomerScribe reads printed pages as well as describing pictures, and
-it is the same tick box. Give it a zip of page images and it works out,
+it is the same checkbox. Give it a zip of page images and it works out,
 for each one, whether it is looking at a photograph or at a page of
 print. A photograph gets described. A page gets read, and set out as
 Markdown with its headings and tables intact.</p>
@@ -392,7 +413,7 @@ HomerScribe is for.</p>
 <p>So: turn the PDF into images, name them <code>page001</code>,
 <code>page002</code> and so on so they sort in order, put them in a
 <code>.zip</code> named after the document, and give HomerScribe that
-path with <strong>Describe video</strong> ticked. You get</p>
+path with <strong>Describe video</strong> marked. You get</p>
 <pre><code>&lt;output directory&gt;\journal\described.md</code></pre>
 <p>the document put back together in order, with every picture on the
 pages described in place.</p>
@@ -404,11 +425,11 @@ out a PDF’s existing text layer: plenty of tools already do that, and it
 would cost the single-file build for something already solved.</p>
 <h2 id="taking-the-advertisements-out">Taking the advertisements
 out</h2>
-<p>Tick <strong>Remove ads</strong> (Alt+R) and HomerScribe writes a
+<p>Mark <strong>Remove ads</strong> (Alt+R) and HomerScribe writes a
 second copy of the file with the sponsor breaks cut out, next to the
 original, which is never touched.</p>
 <p>It works by reading, not listening. The file is transcribed — whether
-or not you ticked Transcribe audio, since this needs the words and their
+or not you marked Transcribe audio, since this needs the words and their
 times — and the transcript is searched for advertisements. Anything
 found is checked against the wording sponsors use, against what this
 show’s advertisements have said in earlier episodes, and against whether
@@ -434,7 +455,7 @@ what the first one taught it.</p>
 <h3 id="it-needs-the-reading-model">It needs the reading model</h3>
 <p>This is the one part of HomerScribe that wants a model of its own:
 <code>qwen2.5:7b</code>, fetched by
-<strong>installTextModel.cmd</strong> or ticked on the last page of the
+<strong>installTextModel.cmd</strong> or marked on the last page of the
 installer. Without it the picture model does the reading, and it is much
 worse at it — on one episode that was one advertisement found instead of
 five.</p>

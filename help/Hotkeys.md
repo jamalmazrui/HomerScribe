@@ -34,14 +34,14 @@ guide and **[ReadMe.md](../ReadMe.md)** to get started.
 
 ### Choosing what HomerScribe does
 
-- **Alt+T** — tick or clear **Transcribe audio**.
-- **Alt+D** — tick or clear **Describe video**.
-- **Alt+A** — tick or clear **Audio only**.
-- **Alt+W** — tick or clear **Web context**.
-- **Alt+F** — tick or clear **Force replacements**.
-- **Alt+U** — tick or clear **Use configuration**.
-- **Alt+R** — tick or clear **Remove ads**.
-- **Alt+V** — tick or clear **View output directory**.
+- **Alt+T** — mark or unmark **Transcribe audio**.
+- **Alt+D** — mark or unmark **Describe video**.
+- **Alt+A** — mark or unmark **Audio only**.
+- **Alt+W** — mark or unmark **Web context**.
+- **Alt+F** — mark or unmark **Force replacements**.
+- **Alt+U** — mark or unmark **Use configuration**.
+- **Alt+R** — mark or unmark **Remove ads**.
+- **Alt+V** — mark or unmark **View output directory**.
 - **Alt+B** — **Browse local source**, to pick a file rather than type a path.
 - **Alt+C** — **Choose output directory**, to pick the folder rather than type it.
 
@@ -50,7 +50,8 @@ guide and **[ReadMe.md](../ReadMe.md)** to get started.
 - **Alt+F8** — read the whole field aloud, or say "Blank" if there is nothing
   in it.
 - **Alt+Y** — say how many lines the field holds.
-- **Shift+F1** — read the tip for this field, or say there is none.
+- **Shift+F1** — read the tip for this field, or say there is none; twice, show it in a window.
+- **Control+Slash** — say where you are: what the dialog is for, then the job as it stands; twice, show it in a window.
 - **Alt+'** (Alt and the apostrophe key) — read what is on the clipboard.
 
 ### Copying and cutting
@@ -159,6 +160,7 @@ Shift+F6, Control+Page Down, Control+Page Up.
 - **Control+Page Down** — the next stage.
 - **Control+Page Up** — the previous stage.
 - **Control+Shift+Enter** — undo the reshaping.
+- **Control+Slash** — say where you are; twice, show it in a window.
 - **Control+X** — cut.
 - **Escape** — cancel and close, from any control.
 - **Enter** — press the default button.

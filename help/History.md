@@ -2,6 +2,18 @@
 
 
 
+## 12 November 2026 -- The same words as every launch app
+
+- **Browse local source, Choose output directory, Use configuration and View output directory** now say the same sentence as in every Homer launch app, from the kit; the kit's check keeps it so.
+- **The switches -f, -u, -v, -d and -h** are described in the same words as every launch app's.
+- **-h shows the switches,** as in every launch app; -? and /? still do.
+
+## 12 November 2026 -- Marked, and the help keys
+
+- **A checkbox is marked, not ticked,** in every message, tip, document and tutorial, as in every Homer app.
+- **Messages name Force replacements,** the checkbox's name in the dialog; three still said "Force overwrite", a name the dialog no longer has.
+- **Control+Slash says the job as it stands:** what the dialog is for, how many sources, what is marked, the output directory and Force replacements; Shift+F1 says what a control does. Both come from the kit, and the guide and Hotkeys now describe them.
+
 ## 30 October 2026 -- fixes from an audit by another AI
 
 - **Your last good transcript and described film are kept until new ones are made.** A forced run, or one for a changed recording, deleted them first, so a run that then failed left nothing. They are now set aside in the working folder; a new result replaces them, and with none, the earlier ones are put back, and the log says so.

@@ -43,7 +43,7 @@ uploaded before this conversation ran out**, so none of it is started.
 
 ### 1. Captions in preference to automatic transcription
 
-When **Transcribe audio** is ticked and the film carries embedded captions, use
+When **Transcribe audio** is marked and the film carries embedded captions, use
 those instead of Whisper. They are written by a person, so they are more
 accurate than any model; they name who is speaking; and they mark what can be
 heard but not spoken — a door slamming, music starting — which no transcript of

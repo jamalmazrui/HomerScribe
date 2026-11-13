@@ -73,7 +73,7 @@ Hear=Welcome to the HomerScribe Setup Wizard
 Note=Yes fetches HomerScribe_setup.exe from the latest release and starts it. The installer asks for administrator rights, closes HomerScribe when it needs to, and its last page offers the same boxes as a first install.
 
 [step]
-Say=The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already ticked.
+Say=The setup program is running. From here it is the ordinary installer: Enter for Next, and on the last page the boxes for anything that needs installing or updating are already marked.
 Key=
 Hear=
 

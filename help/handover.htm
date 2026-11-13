@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>handover</title>
+  <title>HomerScribe — handover</title>
   <style>
     html {
       color: #1a1a1a;
@@ -171,16 +171,8 @@
 id="toc-homerscribe-handover">HomerScribe — handover</a>
 <ul>
 <li><a href="#who-and-how" id="toc-who-and-how">Who and how</a></li>
-<li><a href="#the-work-to-do" id="toc-the-work-to-do">THE WORK TO DO</a>
-<ul>
-<li><a href="#captions-in-preference-to-automatic-transcription"
-id="toc-captions-in-preference-to-automatic-transcription">1. Captions
-in preference to automatic transcription</a></li>
-<li><a href="#one-file-not-two" id="toc-one-file-not-two">2. One file,
-not two</a></li>
-<li><a href="#the-videos-own-metadata"
-id="toc-the-videos-own-metadata">3. The video’s own metadata</a></li>
-</ul></li>
+<li><a href="#the-work-to-do" id="toc-the-work-to-do">THE WORK TO
+DO</a></li>
 <li><a href="#what-homerscribe-is" id="toc-what-homerscribe-is">What
 HomerScribe is</a></li>
 <li><a href="#the-state-of-the-algorithm"
@@ -250,7 +242,7 @@ was never uploaded before this conversation ran out</strong>, so none of
 it is started.</p>
 <h3 id="captions-in-preference-to-automatic-transcription">1. Captions
 in preference to automatic transcription</h3>
-<p>When <strong>Transcribe audio</strong> is ticked and the film carries
+<p>When <strong>Transcribe audio</strong> is marked and the film carries
 embedded captions, use those instead of Whisper. They are written by a
 person, so they are more accurate than any model; they name who is
 speaking; and they mark what can be heard but not spoken — a door
@@ -313,8 +305,8 @@ redirects the capitalised form).</li>
 <strong>Ollama</strong> (qwen2.5vl:7b over HTTP on localhost),
 <strong>yt-dlp</strong>. Windows speech voices speak; UI Automation
 carries the progress messages.</li>
-<li><code>build.cmd</code> bumps <code>version.txt</code>,
-compiles, and runs ISCC. <strong>The build increments version.txt BEFORE
+<li><code>build.cmd</code> bumps <code>version.txt</code>, compiles, and
+runs ISCC. <strong>The build increments version.txt BEFORE
 compiling</strong>, so a History entry must be numbered
 <code>version.txt</code> plus one, or a version in a log cannot be
 looked up.</li>

@@ -119,7 +119,7 @@ Hear=
 
 [step]
 
-Say=Tick Transcribe audio.
+Say=Mark Transcribe audio.
 Key=
 Hear=Alt plus T
 

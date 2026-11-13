@@ -35,7 +35,7 @@ Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
 
-Say=The last page is the one that matters. It offers each tool HomerScribe uses, as a box saying what it does and its size, already ticked when it is missing.
+Say=The last page is the one that matters. It offers each tool HomerScribe uses, as a box saying what it does and its size, already marked when it is missing.
 Key=Tab
 Hear=Install Whisper check box, checked
 Note=Confirm the wording with a live run: buildTutorials -live.
@@ -77,7 +77,7 @@ Hear=Source paths: edit, https colon slash slash www dot youtube dot com slash w
 
 [step]
 
-Say=Installed and open, with the sample film ready. If a tool was left out, run the setup again and tick its box; a tool already present costs nothing. What this walk taught. I name the step; the reader gives the answer.
+Say=Installed and open, with the sample film ready. If a tool was left out, run the setup again and mark its box; a tool already present costs nothing. What this walk taught. I name the step; the reader gives the answer.
 Key=
 Hear=
 
@@ -95,7 +95,7 @@ Hear=Whisper
 
 [step]
 
-Say=The installer's last page reads the machine for you: each tool's box begins with Install, Update or Reinstall, so its state is known before anything is ticked.
+Say=The installer's last page reads the machine for you: each tool's box begins with Install, Update or Reinstall, so its state is known before anything is marked.
 Key=Tab
 Hear=Install Whisper check box, checked
 Note=Confirm the wording with a live run: buildTutorials -live.

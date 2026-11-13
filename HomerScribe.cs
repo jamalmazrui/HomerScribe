@@ -337,9 +337,9 @@ namespace Homer
             addParam("describe", "d", "flag", "no", "Describe what happens on screen and write a described copy of the film");
             addParam("transcribe", "t", "flag", "no", "Write down what is said, from the film's own sound");
             addParam("web-context", "w", "flag", "no", "Learn what the video is by asking the page it came from, or Wikipedia about its title, and use that as context");
-            addParam("force-replacements", "f", "flag", "no", "Do the work again, replacing what an earlier run wrote");
+            addParam("force-replacements", "f", "flag", "no", "Do the work again for a source whose result is already there, replacing the old result; without it, that source is skipped and its result kept");
             addParam("audio-only", "a", "flag", "no", "Produce sound only: one mp3 of the film's audio with the descriptions mixed in, and no video");
-            addParam("view-output-directory", "v", "flag", "no", "Open the output directory when the run finishes");
+            addParam("view-output-directory", "v", "flag", "no", "Open the output directory in File Explorer when the run is done");
             addParam("rebuild", "", "flag", "no", "Build the film from descriptions already made, asking the model nothing");
             addParam("log-file", "", "string", "", "Path of the run log; by default it is in %LOCALAPPDATA%\\HomerScribe\\logs");
             addParam("speech", "", "flag", "yes", "Find where descriptions go by detecting speech with Whisper, rather than by listening for silence");
@@ -361,8 +361,8 @@ namespace Homer
             addParam("summarise", "", "flag", "yes", "Look thoroughly with the vision model, then have the same model compress what it saw into one spoken description");
             // LOGGING IS AUTOMATIC (23 October 2026): there is no log-session switch or
             // Log session checkbox; every run's log is in %LOCALAPPDATA%\HomerScribe\logs.
-            addParam("default-settings", "", "flag", "no", "Forget the saved settings and stop. Its letter, d, belongs to describe");
-            addParam("use-configuration", "u", "flag", "no", "Load settings at startup and save them on OK");
+            addParam("default-settings", "", "flag", "no", "Forget the saved settings and stop");
+            addParam("use-configuration", "u", "flag", "no", "Load the saved settings at startup, and in the dialog save them when you press OK");
             addParam("begin", "b", "string", "0", "Where to start, in seconds or hh:mm:ss");
             addParam("minutes", "e", "number", "0", "How many minutes to describe; 0 means the whole film");
             addParam("model", "m", "string", "qwen2.5vl:7b", "Name of the Ollama vision model");
@@ -395,7 +395,7 @@ namespace Homer
             addParam("picture-width", "", "integer", "1024", "Longest side, in pixels, a picture is reduced to before the model is shown it");
             addParam("document-model", "", "string", "", "A different model for a picture that is mostly print — a scanned page, a sign, a screenshot. EMPTY BY DEFAULT, which uses the ordinary picture model, because that model is already one of the best in the world at reading documents. Set this only if you have something better, or something smaller for a machine short of memory");
             addParam("text-model", "", "string", "", "A model for questions with no picture in them — finding advertisements in a transcript, and summarising. Empty uses the ordinary vision model, which can do it. qwen2.5:7b is the same family without the vision half and is a better fit if you have it");
-            addParam("remove-ads", "r", "flag", "no", "Write a copy of the file with the advertisements taken out. Needs the words, so the film is transcribed whether or not Transcribe audio is ticked");
+            addParam("remove-ads", "r", "flag", "no", "Write a copy of the file with the advertisements taken out. Needs the words, so the film is transcribed whether or not Transcribe audio is marked");
             addParam("ad-confidence", "", "integer", "95", "How sure the model must be, out of a hundred, before an advertisement is cut. Below this it is left in and the reason is recorded. Lower this and you will lose parts of programmes");
             addParam("ad-pad", "", "number", "0.35", "Seconds of quiet left either side of a cut, so a join does not clip a breath");
             addParam("ad-reencode", "", "flag", "no", "Re-encode when cutting video, which makes the cuts exact. Without it a video cut lands on the nearest keyframe, which is quicker and lossless but can be a second or two out. Sound is always exact");
@@ -417,7 +417,7 @@ namespace Homer
             addParam("list-voices", "L", "flag", "no", "List the installed speech voices and stop");
             addParam("verbose", "V", "flag", "no", "Echo every command to the console as well as the log");
             addParam("gui", "G", "flag", "no", "Show the settings dialog instead of running at once");
-            addParam("help", "?", "flag", "no", "Show this help and stop");
+            addParam("help", "h", "flag", "no", "Show these switches and stop");
         }
 
         static void addParam(string sLong, string sShort, string sKind, string sValue, string sHelp)
@@ -487,7 +487,9 @@ namespace Homer
             while (iAt < asArgs.Length)
             {
                 string sArg = asArgs[iAt];
-                if (sArg == "/?") sArg = "-?";
+                // -h IS HELP, AS IN EVERY LAUNCH APP (kit 1.221.0, 12 November 2026): its letter is the Help button's; /? and -?
+                // are kept as other ways to ask.
+                if (sArg == "/?" || sArg == "-?") sArg = "-h";
                 else if (sArg.Length > 1 && sArg[0] == '/' && char.IsLetter(sArg[1]) && !File.Exists(sArg) && !Directory.Exists(sArg))
                     sArg = (sArg.Length == 2 ? "-" : "--") + sArg.Substring(1);
                 if (sArg.StartsWith("-"))
@@ -5644,12 +5646,12 @@ namespace Homer
                     TextBox oSourceBox = oLaunch.addSourceBand(sSources,
                         "One or more files, wildcard patterns, or web addresses to download from, separated by spaces. " +
                         "Put double quotes around any item containing a space.",
-                        "Choose one or more files to work on. It opens where Source paths points, else in Videos.");
+                        "");
 
                     // What to do with the sources.
                     oDialog.addBand();
                     CheckBox oTranscribeBox = oDialog.addCheckBox("&Transcribe audio", bTranscribe,
-                        "Write down what is said, as transcribed.md. With Describe video also ticked, scribed.md is written too: " +
+                        "Write down what is said, as transcribed.md. With Describe video also marked, scribed.md is written too: " +
                         "the words and the descriptions interleaved in the order they happen.");
                     CheckBox oDescribeBox = oDialog.addCheckBox("&Describe video", bDescribe,
                         "Describe what happens on screen and write a described copy of the film, plus described.md, the script to read.");
@@ -5662,7 +5664,7 @@ namespace Homer
                     CheckBox oAdsBox = oDialog.addCheckBox("&Remove ads", bRemoveAds,
                         "Write a copy of the file with the advertisements taken out, as stripped.mp3 or "
                       + "stripped.mp4, alongside stripped.md saying what was removed and how sure it was. "
-                      + "The file has to be transcribed for this, whether or not Transcribe audio is ticked. "
+                      + "The file has to be transcribed for this, whether or not Transcribe audio is marked. "
                       + "Nothing is cut unless the model is at least 95 out of 100 sure it is an "
                       + "advertisement: missing one costs you half a minute, and cutting the programme by "
                       + "mistake cannot be undone.");
@@ -5674,11 +5676,11 @@ namespace Homer
                     TextBox oOutputBox = oLaunch.addOutputBand(sOutput,
                         "Where each source's folder of results is created. Starts at your Videos folder. " +
                         "Cleared, each folder is created beside its own source instead.",
-                        "Choose the directory to write results into.");
+                        "");
 
                     oLaunch.addOperationBands(bForce, "",
-                        bUseConfig, "Load these settings at startup and save them on OK, in " + configPath() + ".",
-                        bViewOutput, "Open the output directory when the run finishes.");
+                        bUseConfig, "",
+                        bViewOutput, "");
 
                     logMessage("Dialog: the kit's launch dialog, OK and Cancel at the foot", "INFO", "");
                     sButton = oLaunch.run();
@@ -5728,7 +5730,7 @@ namespace Homer
                 dParams["describe"].sValue = bDescribe ? "yes" : "no";
                 // Read from the box on line 5150 and then thrown away, which is
                 // why his 9 and 10 September runs both logged
-                // "Setting remove-ads = no" after he had ticked it. The tick
+                // "Setting remove-ads = no" after he had marked it. The mark
                 // reached a local variable and stopped there.
                 dParams["remove-ads"].sValue = bRemoveAds ? "yes" : "no";
                 dParams["transcribe"].sValue = bTranscribe ? "yes" : "no";
@@ -5743,7 +5745,7 @@ namespace Homer
                 }
                 if (!bDescribe && !bTranscribe)
                 {
-                    MessageBox.Show("Tick Describe video, or Transcribe audio, or both."
+                    MessageBox.Show("Mark Describe video, or Transcribe audio, or both."
                         + Environment.NewLine + Environment.NewLine
                         + "Describe video watches the picture and says what happens." + Environment.NewLine
                         + "Transcribe audio writes down what is said." + Environment.NewLine
@@ -6482,7 +6484,7 @@ namespace Homer
                 if ((!bWantedFilm || bFilmThere) && (!bWantedText || bTextThere))
                 {
                     logMessage("Not downloading " + sAddress + ": what was asked for is already in " + sFolder + ". "
-                               + "Tick Force overwrite to do it again.", "INFO",
+                               + "Mark Force replacements to do it again.", "INFO",
                                "Already done, so it is not downloaded again: " + (sTitle == "" ? sAddress : sTitle));
                     sLastSkippedFolder = sFolder;
                     return sAlreadyDone;
@@ -9953,7 +9955,7 @@ namespace Homer
                 // decided this belongs inside describing rather than beside it,
                 // and he is right: a page of a journal IS a picture, and the
                 // program is the thing that can look at it. So there is no
-                // extra box to tick -- HomerScribe asks the model which it has
+                // extra box to mark -- HomerScribe asks the model which it has
                 // and follows the answer.
                 waitingOn("looking at " + sBare);
                 bool bPage = mostlyPrint(sShow);
@@ -10558,7 +10560,7 @@ namespace Homer
             // THE JOB ASKED FOR IS THE JOB NAMED, AND ALL DONE IS A SUCCESS (15 October 2026). A transcription
             // already made said "That video has already been described", and the command line ended with exit code
             // 1, as for an error. From the command line, finding everything already done now ends with 0; the dialog
-            // still comes back, as before, so Force overwrite can be ticked.
+            // still comes back, as before, so Force replacements can be marked.
             string sDoneWord = flag("describe") && flag("transcribe") ? "described and transcribed"
                              : flag("transcribe") ? "transcribed" : "described";
             if (iDescribedWhole == 0 && iSkippedWhole > 0)
@@ -10587,7 +10589,7 @@ namespace Homer
 
         // Confirm the programs and the model are in place. Done once, whatever
         // the number of sources.
-        // Only what the ticked jobs need. Transcribing wants ffmpeg and Whisper;
+        // Only what the marked jobs need. Transcribing wants ffmpeg and Whisper;
         // describing wants ffmpeg, a voice and the vision model. Making a
         // transcribe-only user install five and a half gigabytes of vision model
         // would be worse than a separate program, which is the whole argument
@@ -11376,7 +11378,7 @@ namespace Homer
                 if (bWantTranscribe)
                 {
                     // NOT "instead". Transcribing and describing are not
-                    // alternatives -- both boxes can be ticked and both do
+                    // alternatives -- both boxes can be marked and both do
                     // substantial work. Describing is simply not possible
                     // here, and transcribing was asked for and goes ahead.
                     logMessage(sNoPicture + " Transcribing goes ahead as asked.", "INFO", "");
@@ -11384,8 +11386,8 @@ namespace Homer
                 }
                 else
                 {
-                    logMessage(sNoPicture + " Tick Transcribe audio for a recording.", "ERROR");
-                    announce("Rejected", -1.0, 1.0, sNoPicture + " Tick Transcribe audio for a recording.");
+                    logMessage(sNoPicture + " Mark Transcribe audio for a recording.", "ERROR");
+                    announce("Rejected", -1.0, 1.0, sNoPicture + " Mark Transcribe audio for a recording.");
                     lFailures.Add(sInput + Environment.NewLine
                                   + "    A recording with no picture. Describing needs a picture; transcribing does not.");
                     return 1;
@@ -11395,7 +11397,7 @@ namespace Homer
             {
                 sLastSkippedFolder = sOutputDir;
                 logMessage("Skipping " + sRoot + ": everything asked for is already in " + sOutputDir + ". "
-                           + (bGuiMode ? "Tick Force overwrite to do it again." : "Pass --force to do it again."),
+                           + (bGuiMode ? "Mark Force replacements to do it again." : "Pass --force to do it again."),
                            "INFO", "Skipping " + sRoot + ", already done.");
                 return iAlreadyDone;
             }
@@ -11470,7 +11472,7 @@ namespace Homer
                 dCachedSignature = null;
                 bLastCacheFinished = false;
                 bLastTranscriptFinished = false;
-                if (iCleared > 0) logMessage((bRecordingChanged ? "The recording changed: set aside or removed " : "Force overwrite: set aside or removed ") + iCleared.ToString()
+                if (iCleared > 0) logMessage((bRecordingChanged ? "The recording changed: set aside or removed " : "Force replacements: set aside or removed ") + iCleared.ToString()
                                              + (iCleared == 1 ? " file" : " files") + " left by the earlier run, so this one starts clean; the results are put back if no new ones are made.",
                                              "INFO", "Starting clean: what the earlier run left has been removed.");
                 logMessage("The moments and the transcript held in memory from that record are discarded too.", "INFO", "");
@@ -12375,8 +12377,8 @@ namespace Homer
 
             // In dialog mode an existing configuration is loaded whether or not
             // it was asked for, so the dialog opens showing last time's answers.
-            // Checkboxes start unticked. A settings file is read only when it
-            // records that Use configuration was ticked last time, since ticking
+            // Checkboxes start unmarked. A settings file is read only when it
+            // records that Use configuration was marked last time, since marking
             // it is what writes the file.
             // A provisional log, opened before anything can go wrong. It is under
             // application data, which is always writable, and holds whatever

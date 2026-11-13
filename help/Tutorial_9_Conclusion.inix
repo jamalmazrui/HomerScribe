@@ -14,7 +14,7 @@ Hear=
 
 [step]
 
-Say=One dialog does every job, and one box says which: tick what you want, and Enter. The window stays while it works, and its title says how far it is.
+Say=One dialog does every job, and one box says which: mark what you want, and Enter. The window stays while it works, and its title says how far it is.
 Key=
 Hear=Alt plus T, Transcribe audio
 Hear=Alt plus D, Describe video

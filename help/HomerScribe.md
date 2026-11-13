@@ -60,18 +60,18 @@ In that folder:
 - `described.wav` — the description track on its own, to play alongside the
   original in a player such as mpv.
 - `described.json` — the machine-readable record used to resume a run.
-- `transcribed.md` — what is said, when **Transcribe audio** is ticked. A line at
+- `transcribed.md` — what is said, when **Transcribe audio** is marked. A line at
   the top says where the words came from: the film's own captions, or Whisper
   listening to it.
 - `scribed.md` — both of the above woven together in time order, when both boxes
-  are ticked.
+  are marked.
 - `HomerScribe.log` — everything said while describing this video. The running
   log beside the program still holds the whole session, across every video.
 
 **A video whose described film already exists is left alone.** Point
 HomerScribe at a dozen videos, stop it halfway, and run it again: the ones that
 finished are skipped, and one that was interrupted **carries on where it
-stopped** rather than starting over. Tick **Force replacements**, or pass `--force-replacements`,
+stopped** rather than starting over. Mark **Force replacements**, or pass `--force-replacements`,
 to describe everything again from the beginning.
 
 Resuming costs very little. Every description is written to `described.json` as
@@ -91,7 +91,7 @@ cut out. The original is never touched.
 
 ### How it decides
 
-The file is transcribed first — whether or not Transcribe audio is ticked,
+The file is transcribed first — whether or not Transcribe audio is marked,
 because this needs the words and the time each was said. The transcript is then
 read in overlapping chunks, overlapping so that a break falling across a
 boundary is not seen as two halves.
@@ -150,13 +150,13 @@ advertisements is reading and reasoning about words, with no picture in it
 anywhere, and the picture model is poor at it: on one episode it found one
 advertisement where a text model found five.
 
-`installTextModel.cmd` fetches `qwen2.5:7b`, or tick it on the last page of the
+`installTextModel.cmd` fetches `qwen2.5:7b`, or mark it on the last page of the
 installer. If a text model is installed, HomerScribe uses it for this and
 nothing else; describing and transcribing are unaffected either way.
 
 ### Settings
 
-- `--remove-ads` — off unless ticked.
+- `--remove-ads` — off unless marked.
 - `--ad-confidence` — 95 by default. Lower it and you will lose parts of
   programmes.
 - `--ad-pad` — seconds of quiet left either side of a cut. 0.35 by default.
@@ -321,11 +321,20 @@ in this order:
   Cancel, from any control. F1 is Help and F11 checks the web for a newer
   HomerScribe, from any control.
 
+Two keys answer questions from any control, as in every Homer app:
+
+- **Shift+F1** says what the control with focus does, in one sentence. Pressed
+  twice, it shows the answer in a window you can read and copy.
+- **Control+Slash** says where you are: what the dialog is for, then the job as
+  it stands -- how many sources, which choices are marked, the output directory,
+  and whether Force replacements is marked. Pressed twice, it shows the answer in
+  a window.
+
 Logging is automatic: every run writes a log in
 `%LOCALAPPDATA%\HomerScribe\logs`, named `HomerScribe-yyyyMMdd-HHmmss.log`, and
 Help says so. Every run ends with the HomerScribe Results box. Its only button
 is OK, so Enter, Space or Escape closes it; then the output directory opens if
-View output directory is checked, and HomerScribe closes.
+View output directory is marked, and HomerScribe closes.
 
 OK and Cancel carry no mnemonic, as Windows convention requires: Escape cancels,
 Enter accepts, and Control plus Enter accepts from any control.
@@ -399,7 +408,7 @@ Only one access key is shared: Alt+D belongs to both **Describe video** and
 second.
 
 **Default settings** puts everything back as it arrives — the source returns to
-the sample video, the output directory is cleared, every checkbox is unticked,
+the sample video, the output directory is cleared, every checkbox is unmarked,
 and any remembered settings are forgotten — then shows the dialog again so the
 result can be seen before anything runs.
 
@@ -685,7 +694,7 @@ see the difference on your own material.
 
 Many films already carry the words. A subtitle track inside the file, or a
 caption file sitting beside it, holds what is said and when. When **Transcribe
-audio** is ticked, HomerScribe uses those in preference to listening to the film.
+audio** is marked, HomerScribe uses those in preference to listening to the film.
 
 Three reasons, and each of them is something a machine cannot do:
 
@@ -713,9 +722,9 @@ with them, and never has speech gathered into it.
   has and fetches one of them. Asking for more is how a video service decides
   you are asking too often.
 
-If you tick only **Transcribe audio** and the video has its own captions, **the
+If you mark only **Transcribe audio** and the video has its own captions, **the
 film is not downloaded at all.** Nothing in a transcript needs it, and skipping
-it turns a hundred-megabyte download into about thirty kilobytes. Tick
+it turns a hundred-megabyte download into about thirty kilobytes. Mark
 **Describe video** as well and the film is fetched, because then there is
 something to look at. A video with no English captions is fetched and listened
 to, as before.
@@ -751,7 +760,7 @@ nowhere in any count — only in a listener losing dialogue.
 
 So a run that describes still listens to the film with Whisper, and uses what it
 hears for placement alone. The words you read still come from the captions. Both
-boxes ticked means both things happen, and the film takes no longer to describe
+boxes marked means both things happen, and the film takes no longer to describe
 than before.
 
 ### Turning it off

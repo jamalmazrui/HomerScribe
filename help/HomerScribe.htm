@@ -166,6 +166,89 @@
   </style>
 </head>
 <body>
+<header id="title-block-header">
+<p class="subtitle">The complete guide</p>
+<p class="author">Jamal Mazrui</p>
+</header>
+<nav id="TOC" role="doc-toc" aria-label="Contents">
+<ul>
+<li><a href="#homerscribe" id="toc-homerscribe">HomerScribe</a>
+<ul>
+<li><a href="#naming-what-to-work-on"
+id="toc-naming-what-to-work-on">Naming what to work on</a></li>
+<li><a href="#what-it-writes" id="toc-what-it-writes">What it
+writes</a></li>
+<li><a href="#taking-the-advertisements-out"
+id="toc-taking-the-advertisements-out">Taking the advertisements
+out</a></li>
+<li><a href="#where-it-looks-and-where-it-writes"
+id="toc-where-it-looks-and-where-it-writes">Where it looks and where it
+writes</a></li>
+<li><a href="#telling-it-about-the-film"
+id="toc-telling-it-about-the-film">Telling it about the film</a></li>
+<li><a href="#what-the-model-remembers"
+id="toc-what-the-model-remembers">What the model remembers</a></li>
+<li><a href="#telling-it-about-the-film-automatically"
+id="toc-telling-it-about-the-film-automatically">Telling it about the
+film automatically</a></li>
+<li><a href="#the-dialog" id="toc-the-dialog">The dialog</a></li>
+<li><a href="#the-console-window" id="toc-the-console-window">The
+console window</a></li>
+<li><a href="#the-window-stays" id="toc-the-window-stays">The window
+stays</a></li>
+<li><a href="#what-you-hear-while-it-runs"
+id="toc-what-you-hear-while-it-runs">What you hear while it
+runs</a></li>
+<li><a href="#configuration"
+id="toc-configuration">Configuration</a></li>
+<li><a href="#settings-1" id="toc-settings-1">Settings</a></li>
+<li><a href="#hearing-the-film" id="toc-hearing-the-film">Hearing the
+film</a></li>
+<li><a href="#the-films-own-captions"
+id="toc-the-films-own-captions">The film’s own captions</a></li>
+<li><a href="#the-documents-and-how-they-are-meant-to-be-read"
+id="toc-the-documents-and-how-they-are-meant-to-be-read">The documents,
+and how they are meant to be read</a></li>
+<li><a href="#describing-the-pictures-in-a-zip"
+id="toc-describing-the-pictures-in-a-zip">Describing the pictures in a
+zip</a></li>
+<li><a href="#when-a-video-will-not-download"
+id="toc-when-a-video-will-not-download">When a video will not
+download</a></li>
+<li><a href="#naming-people-in-a-film-from-its-captions"
+id="toc-naming-people-in-a-film-from-its-captions">Naming people in a
+film from its captions</a></li>
+<li><a href="#on-subtitles" id="toc-on-subtitles">On subtitles</a></li>
+<li><a href="#how-the-model-is-asked"
+id="toc-how-the-model-is-asked">How the model is asked</a></li>
+<li><a href="#where-the-rules-come-from"
+id="toc-where-the-rules-come-from">Where the rules come from</a></li>
+<li><a href="#if-it-seems-to-have-stopped"
+id="toc-if-it-seems-to-have-stopped">If it seems to have
+stopped</a></li>
+<li><a href="#license" id="toc-license">License</a></li>
+<li><a href="#what-it-is-and-what-it-is-not"
+id="toc-what-it-is-and-what-it-is-not">What it is, and what it is
+not</a></li>
+<li><a href="#honest-limits" id="toc-honest-limits">Honest
+limits</a></li>
+<li><a href="#tutorials-you-can-listen-to"
+id="toc-tutorials-you-can-listen-to">Tutorials you can listen
+to</a></li>
+<li><a href="#documentation-in-two-forms"
+id="toc-documentation-in-two-forms">Documentation in two forms</a></li>
+<li><a href="#time-spent-on-one-film"
+id="toc-time-spent-on-one-film">Time spent on one film</a></li>
+<li><a href="#running-two-at-once" id="toc-running-two-at-once">Running
+two at once</a></li>
+<li><a href="#building" id="toc-building">Building</a></li>
+<li><a href="#versions-and-releases"
+id="toc-versions-and-releases">Versions and releases</a></li>
+<li><a href="#the-prototype" id="toc-the-prototype">The
+prototype</a></li>
+</ul></li>
+</ul>
+</nav>
 <main>
 <h1 id="homerscribe">HomerScribe</h1>
 <p>The complete guide to HomerScribe: every setting, every document it
@@ -222,10 +305,10 @@ play alongside the original in a player such as mpv.</li>
 <li><code>described.json</code> — the machine-readable record used to
 resume a run.</li>
 <li><code>transcribed.md</code> — what is said, when <strong>Transcribe
-audio</strong> is ticked. A line at the top says where the words came
+audio</strong> is marked. A line at the top says where the words came
 from: the film’s own captions, or Whisper listening to it.</li>
 <li><code>scribed.md</code> — both of the above woven together in time
-order, when both boxes are ticked.</li>
+order, when both boxes are marked.</li>
 <li><code>HomerScribe.log</code> — everything said while describing this
 video. The running log beside the program still holds the whole session,
 across every video.</li>
@@ -234,7 +317,7 @@ across every video.</li>
 alone.</strong> Point HomerScribe at a dozen videos, stop it halfway,
 and run it again: the ones that finished are skipped, and one that was
 interrupted <strong>carries on where it stopped</strong> rather than
-starting over. Tick <strong>Force replacements</strong>, or pass
+starting over. Mark <strong>Force replacements</strong>, or pass
 <code>--force-replacements</code>, to describe everything again from the
 beginning.</p>
 <p>Resuming costs very little. Every description is written to
@@ -254,7 +337,7 @@ out</h2>
 with the sponsor breaks cut out. The original is never touched.</p>
 <h3 id="how-it-decides">How it decides</h3>
 <p>The file is transcribed first — whether or not Transcribe audio is
-ticked, because this needs the words and the time each was said. The
+marked, because this needs the words and the time each was said. The
 transcript is then read in overlapping chunks, overlapping so that a
 break falling across a boundary is not seen as two halves.</p>
 <p>Each advertisement the model finds comes back with a confidence out
@@ -312,12 +395,12 @@ Finding advertisements is reading and reasoning about words, with no
 picture in it anywhere, and the picture model is poor at it: on one
 episode it found one advertisement where a text model found five.</p>
 <p><code>installTextModel.cmd</code> fetches <code>qwen2.5:7b</code>, or
-tick it on the last page of the installer. If a text model is installed,
+mark it on the last page of the installer. If a text model is installed,
 HomerScribe uses it for this and nothing else; describing and
 transcribing are unaffected either way.</p>
 <h3 id="settings">Settings</h3>
 <ul>
-<li><code>--remove-ads</code> — off unless ticked.</li>
+<li><code>--remove-ads</code> — off unless marked.</li>
 <li><code>--ad-confidence</code> — 95 by default. Lower it and you will
 lose parts of programmes.</li>
 <li><code>--ad-pad</code> — seconds of quiet left either side of a cut.
@@ -477,12 +560,23 @@ no Alt letter here.</li>
 Escape is Cancel, from any control. F1 is Help and F11 checks the web
 for a newer HomerScribe, from any control.</li>
 </ul>
+<p>Two keys answer questions from any control, as in every Homer
+app:</p>
+<ul>
+<li><strong>Shift+F1</strong> says what the control with focus does, in
+one sentence. Pressed twice, it shows the answer in a window you can
+read and copy.</li>
+<li><strong>Control+Slash</strong> says where you are: what the dialog
+is for, then the job as it stands – how many sources, which choices are
+marked, the output directory, and whether Force replacements is marked.
+Pressed twice, it shows the answer in a window.</li>
+</ul>
 <p>Logging is automatic: every run writes a log in
 <code>%LOCALAPPDATA%\HomerScribe\logs</code>, named
 <code>HomerScribe-yyyyMMdd-HHmmss.log</code>, and Help says so. Every
 run ends with the HomerScribe Results box. Its only button is OK, so
 Enter, Space or Escape closes it; then the output directory opens if
-View output directory is checked, and HomerScribe closes.</p>
+View output directory is marked, and HomerScribe closes.</p>
 <p>OK and Cancel carry no mnemonic, as Windows convention requires:
 Escape cancels, Enter accepts, and Control plus Enter accepts from any
 control.</p>
@@ -547,7 +641,7 @@ video</strong> and <strong>Default settings</strong>. Windows cycles
 between them; press it twice to reach the second.</p>
 <p><strong>Default settings</strong> puts everything back as it arrives
 — the source returns to the sample video, the output directory is
-cleared, every checkbox is unticked, and any remembered settings are
+cleared, every checkbox is unmarked, and any remembered settings are
 forgotten — then shows the dialog again so the result can be seen before
 anything runs.</p>
 <p>The <strong>Source paths</strong> box starts with a video already in
@@ -840,7 +934,7 @@ the difference on your own material.</p>
 <h2 id="the-films-own-captions">The film’s own captions</h2>
 <p>Many films already carry the words. A subtitle track inside the file,
 or a caption file sitting beside it, holds what is said and when. When
-<strong>Transcribe audio</strong> is ticked, HomerScribe uses those in
+<strong>Transcribe audio</strong> is marked, HomerScribe uses those in
 preference to listening to the film.</p>
 <p>Three reasons, and each of them is something a machine cannot do:</p>
 <ul>
@@ -871,10 +965,10 @@ leaves them.</li>
 English tracks it has and fetches one of them. Asking for more is how a
 video service decides you are asking too often.</li>
 </ul>
-<p>If you tick only <strong>Transcribe audio</strong> and the video has
+<p>If you mark only <strong>Transcribe audio</strong> and the video has
 its own captions, <strong>the film is not downloaded at all.</strong>
 Nothing in a transcript needs it, and skipping it turns a
-hundred-megabyte download into about thirty kilobytes. Tick
+hundred-megabyte download into about thirty kilobytes. Mark
 <strong>Describe video</strong> as well and the film is fetched, because
 then there is something to look at. A video with no English captions is
 fetched and listened to, as before.</p>
@@ -905,7 +999,7 @@ HomerScribe measures, and the cost would show up nowhere in any count —
 only in a listener losing dialogue.</p>
 <p>So a run that describes still listens to the film with Whisper, and
 uses what it hears for placement alone. The words you read still come
-from the captions. Both boxes ticked means both things happen, and the
+from the captions. Both boxes marked means both things happen, and the
 film takes no longer to describe than before.</p>
 <h3 id="turning-it-off">Turning it off</h3>
 <p><code>--captions no</code>, or clear the box, and Whisper does the

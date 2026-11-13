@@ -48,12 +48,12 @@ and how to rebuild it.
 
 ## Quick start
 
-1. Install HomerScribe. On the last page of the installer, leave ticked whatever
+1. Install HomerScribe. On the last page of the installer, leave marked whatever
    matches what you want to do: Ollama and the vision model for describing,
    Whisper for transcribing.
 2. Run HomerScribe with nothing on the command line. The dialog opens.
 3. Choose a file with **Browse local source**.
-4. Tick **Describe video**, **Transcribe audio**, or both.
+4. Mark **Describe video**, **Transcribe audio**, or both.
 5. Press OK.
 
 Before committing to a feature film, describe five minutes of it:
@@ -104,12 +104,12 @@ yt-dlp.
 
 The installer offers to do both of those on its final page, checked by default,
 because without them there is nothing to write the descriptions. Each script
-notices in a second when its work is already done and says so, so ticking them on
+notices in a second when its work is already done and says so, so marking them on
 a machine that is already set up costs nothing. `installOllama.cmd` and
 `installModels.cmd` stay in the program folder, so either can be run again later.
 
 The first box installs Ollama and then goes straight on to the model, so one
-tick does the whole job. The second installs the model alone, for a machine that
+mark does the whole job. The second installs the model alone, for a machine that
 already has Ollama.
 
 Both scripts find Ollama by looking where it is installed rather than by asking
@@ -226,7 +226,7 @@ Without them you still get the Markdown.
 ## Reading a scanned document
 
 HomerScribe reads printed pages as well as describing pictures, and it is the
-same tick box. Give it a zip of page images and it works out, for each one,
+same checkbox. Give it a zip of page images and it works out, for each one,
 whether it is looking at a photograph or at a page of print. A photograph gets
 described. A page gets read, and set out as Markdown with its headings and
 tables intact.
@@ -248,7 +248,7 @@ and that is the part HomerScribe is for.
 
 So: turn the PDF into images, name them `page001`, `page002` and so on so they
 sort in order, put them in a `.zip` named after the document, and give
-HomerScribe that path with **Describe video** ticked. You get
+HomerScribe that path with **Describe video** marked. You get
 
     <output directory>\journal\described.md
 
@@ -264,11 +264,11 @@ something already solved.
 
 ## Taking the advertisements out
 
-Tick **Remove ads** (Alt+R) and HomerScribe writes a second copy of the file
+Mark **Remove ads** (Alt+R) and HomerScribe writes a second copy of the file
 with the sponsor breaks cut out, next to the original, which is never touched.
 
 It works by reading, not listening. The file is transcribed — whether or not
-you ticked Transcribe audio, since this needs the words and their times — and
+you marked Transcribe audio, since this needs the words and their times — and
 the transcript is searched for advertisements. Anything found is checked
 against the wording sponsors use, against what this show's advertisements have
 said in earlier episodes, and against whether it reads as the host personally
@@ -295,7 +295,7 @@ taught it.
 ### It needs the reading model
 
 This is the one part of HomerScribe that wants a model of its own:
-`qwen2.5:7b`, fetched by **installTextModel.cmd** or ticked on the last page of
+`qwen2.5:7b`, fetched by **installTextModel.cmd** or marked on the last page of
 the installer. Without it the picture model does the reading, and it is much
 worse at it — on one episode that was one advertisement found instead of five.
 

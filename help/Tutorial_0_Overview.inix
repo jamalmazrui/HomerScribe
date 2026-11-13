@@ -51,7 +51,7 @@ Hear=
 
 Say=One, User Interface.
 Key=
-Hear=The dialog and its parts, the Alt letters that tick each box, the keys that read a field, and where help lives.
+Hear=The dialog and its parts, the Alt letters that mark each box, the keys that read a field, and where help lives.
 [step]
 
 Say=Two, Install and Launch.
