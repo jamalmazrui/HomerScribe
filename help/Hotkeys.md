@@ -1,182 +1,103 @@
 ﻿---
-title: HomerScribe Hotkeys
-subtitle: Every key you can press, listed three ways
-author: Jamal Mazrui
+title: "HomerScribe Hotkeys"
+author: "Jamal Mazrui"
 ---
 
 # HomerScribe Hotkeys
 
-Every key HomerScribe responds to, listed three ways so you can find one
-however you are thinking about it:
+The keys of the HomerScribe dialog, which transcribes and describes video and audio. The keys are given three ways: by command name, by key, and in the order Tab reaches the controls. Each Alt key is the letter underlined in its control's label, so a screen reader says it with the control. OK and Cancel have no letter: Control+Enter is OK and Escape is Cancel, from any control. Shift+F1, Control+Slash, F7 and F11 work in every Homer dialog, the messages HomerScribe shows included.
 
-- **By what you want to do**, if you know the job but not the key.
-- **By where you are**, if you want to know what this field will do.
-- **By the key itself**, if you half remember pressing something.
+## By Command Name
 
-Most of these come from the accessible dialog HomerScribe is built on, so they
-work the same way in every text box and list it shows you.
+Commands in alphabetical order.
 
-For everything else, see **[HomerScribe.md](HomerScribe.md)** for the full
-guide and **[ReadMe.md](../ReadMe.md)** to get started.
+- **Audio only**, Alt+A -- Make one mp3 of the film's own sound with the descriptions mixed in, and no video.
+- **Browse local source**, Alt+B -- Pick one or more source files in a standard dialog; it opens where Source paths points, else in your Videos folder.
+- **Cancel**, Escape -- Close the dialog without starting, from any control.
+- **Choose output directory**, Alt+C -- Pick the output directory in a standard folder dialog.
+- **Default settings** -- Put every field back as it was out of the box, and forget any saved configuration. It has no letter of its own; Tab reaches it.
+- **Describe video**, Alt+D -- Describe what happens on screen, and write a described copy of the film.
+- **Elevate Version**, F11 -- Download and install the latest HomerScribe.
+- **Force replacements**, Alt+F -- Do the work again for a source whose result is already there, replacing the old result once the new one is complete.
+- **Help**, Alt+H or F1 -- List each field with its tip, the dialog keys, where the logs are kept, and the version check.
+- **List Controls**, F7 -- List the dialog's controls, and move to the one chosen.
+- **OK**, Control+Enter or Enter -- Start the run: Control+Enter from any control, Enter from any but a button.
+- **Open HomerScribe**, Alt+Control+H -- Open the HomerScribe dialog from anywhere in Windows, with its desktop shortcut.
+- **Output directory**, Alt+O -- Type where each source's folder of results is made; blank means beside its own source.
+- **Remove ads**, Alt+R -- Write a copy of the file with the advertisements taken out.
+- **Source paths**, Alt+S -- Type the files, wildcard patterns or web addresses to work on, separated by spaces, each in quotes if it has a space.
+- **Transcribe audio**, Alt+T -- Write down what is said, as transcribed.md.
+- **Use configuration**, Alt+U -- Load the saved settings at startup, and save them when you press OK.
+- **View output directory**, Alt+V -- Open the output directory in File Explorer when the run is done.
+- **Web context**, Alt+W -- Learn what the video is, from its web page or Wikipedia, before describing it.
+- **What This Does**, Shift+F1 -- Say what the control with focus does.
+- **Where Am I**, Control+Slash -- Say where you are, what has focus and its keys.
 
-## By what you want to do
+## By Key
 
-### Moving around the dialog
+Keys in order of how many are pressed together, then alphabetically.
 
-- **Tab** — the next field.
-- **Shift+Tab** — the previous field.
-- **Alt+S** — the source paths box.
-- **Alt+O** — the output directory box.
-- **Enter** — press the default button, from anywhere except a multi-line box.
-- **Control+Enter** — press the default button from *inside* a multi-line box,
-  where plain Enter would start a new line instead.
-- **Escape** — cancel and close, from any control.
+- **Enter** -- OK: Start the run: Control+Enter from any control, Enter from any but a button.
+- **Escape** -- Cancel: Close the dialog without starting, from any control.
+- **F1** -- Help: List each field with its tip, the dialog keys, where the logs are kept, and the version check.
+- **F7** -- List Controls: List the dialog's controls, and move to the one chosen.
+- **F11** -- Elevate Version: Download and install the latest HomerScribe.
+- **Alt+A** -- Audio only: Make one mp3 of the film's own sound with the descriptions mixed in, and no video.
+- **Alt+B** -- Browse local source: Pick one or more source files in a standard dialog; it opens where Source paths points, else in your Videos folder.
+- **Alt+C** -- Choose output directory: Pick the output directory in a standard folder dialog.
+- **Alt+D** -- Describe video: Describe what happens on screen, and write a described copy of the film.
+- **Alt+F** -- Force replacements: Do the work again for a source whose result is already there, replacing the old result once the new one is complete.
+- **Alt+H** -- Help: List each field with its tip, the dialog keys, where the logs are kept, and the version check.
+- **Alt+O** -- Output directory: Type where each source's folder of results is made; blank means beside its own source.
+- **Alt+R** -- Remove ads: Write a copy of the file with the advertisements taken out.
+- **Alt+S** -- Source paths: Type the files, wildcard patterns or web addresses to work on, separated by spaces, each in quotes if it has a space.
+- **Alt+T** -- Transcribe audio: Write down what is said, as transcribed.md.
+- **Alt+U** -- Use configuration: Load the saved settings at startup, and save them when you press OK.
+- **Alt+V** -- View output directory: Open the output directory in File Explorer when the run is done.
+- **Alt+W** -- Web context: Learn what the video is, from its web page or Wikipedia, before describing it.
+- **Control+Enter** -- OK: Start the run: Control+Enter from any control, Enter from any but a button.
+- **Control+Slash** -- Where Am I: Say where you are, what has focus and its keys.
+- **Shift+F1** -- What This Does: Say what the control with focus does.
+- **Alt+Control+H** -- Open HomerScribe: Open the HomerScribe dialog from anywhere in Windows, with its desktop shortcut.
 
-### Choosing what HomerScribe does
+## In Tab Order
 
-- **Alt+T** — mark or unmark **Transcribe audio**.
-- **Alt+D** — mark or unmark **Describe video**.
-- **Alt+A** — mark or unmark **Audio only**.
-- **Alt+W** — mark or unmark **Web context**.
-- **Alt+F** — mark or unmark **Force replacements**.
-- **Alt+U** — mark or unmark **Use configuration**.
-- **Alt+R** — mark or unmark **Remove ads**.
-- **Alt+V** — mark or unmark **View output directory**.
-- **Alt+B** — **Browse local source**, to pick a file rather than type a path.
-- **Alt+C** — **Choose output directory**, to pick the folder rather than type it.
+The dialog is in bands, rows read left to right, in this order:
 
-### Hearing what is in a field
+1. Source paths -- Alt+S
+2. Browse local source -- Alt+B
+3. Transcribe audio -- Alt+T
+4. Describe video -- Alt+D
+5. Audio only -- Alt+A
+6. Remove ads -- Alt+R
+7. Web context -- Alt+W
+8. Output directory -- Alt+O
+9. Choose output directory -- Alt+C
+10. Force replacements -- Alt+F
+11. Use configuration -- Alt+U
+12. View output directory -- Alt+V
+13. Default settings -- no letter
+14. Help -- Alt+H or F1
+15. OK and Cancel, alone at the bottom right: Control+Enter is OK and Escape is Cancel, from any control
 
-- **Alt+F8** — read the whole field aloud, or say "Blank" if there is nothing
-  in it.
-- **Alt+Y** — say how many lines the field holds.
-- **Shift+F1** — read the tip for this field, or say there is none; twice, show it in a window.
-- **Control+Slash** — say where you are: what the dialog is for, then the job as it stands; twice, show it in a window.
-- **Alt+'** (Alt and the apostrophe key) — read what is on the clipboard.
+## Text Box Keys
 
-### Copying and cutting
+Every text box in the dialog is a Homer text box, with these keys too. A dialog's own letter comes first: where a control's underlined letter is the same as one of these, as Alt+C is Choose output directory, Alt and that letter goes to the control.
 
-- **Control+C** — copy the selection, as everywhere else.
-- **Alt+C** — copy the current line, or the selection if there is one, and
-  **add** it to what is already on the clipboard rather than replacing it.
-- **Control+X** — cut the selection.
-- **Alt+X** — cut and **add** to the clipboard, the same way.
-- **Control+F8** — copy the whole field to the clipboard in one press.
-- **Control+A** — select all.
+- **Control+A** -- Select All: Select all the text in the box.
+- **Control+Shift+A** -- Unselect All: Clear the selection, keeping the cursor where it is.
+- **Control+C** -- Copy: Copy the selection, or the current line when nothing is selected.
+- **Control+X** -- Cut: Cut the selection, or the current line when nothing is selected.
+- **Alt+X** -- Cut Append: Cut the selection or line and add it to what the clipboard holds, unless a control in the dialog has X as its letter.
+- **Alt+C** -- Copy Append: Copy the selection or line and add it to what the clipboard holds, unless a control in the dialog has C as its letter.
+- **Control+D** -- Delete Line: Delete the current line, without the clipboard.
+- **F8** -- Start Selection: Mark where a selection starts.
+- **Shift+F8** -- Complete Selection: Select from the start mark to the cursor.
+- **Control+F8** -- Copy All: Copy all the text in the box.
+- **Alt+F8** -- Read All: Read all the text in the box aloud.
+- **Alt+Y** -- Say Yield: Say how many lines and characters the box holds, unless a control in the dialog has Y as its letter.
+- **Alt+Apostrophe** -- Say Clipboard: Say what the clipboard holds.
 
-### Editing text
+## Why These Keys
 
-- **Control+D** — delete the current line.
-- **F8** — set the start of a selection here.
-- **Shift+F8** — extend the selection from that start to where you are now.
-- **Control+Home** — the beginning of the field.
-- **Control+End** — the end of the field.
-
-### Shaping a multi-line box
-
-These work only in a box that holds more than one line.
-
-- **Alt+Shift+O** — one long line, joining the text up.
-- **Alt+Shift+Z** — wrapped lines.
-- **Alt+Shift+K** — one sentence to a line.
-- **Alt+Shift+N** — numbered lines.
-- **Control+Shift+Enter** — put the reshaped text back as it was.
-
-### Finding
-
-- **Control+J** — jump to a line by number.
-- **F3** — find the next match.
-- **Shift+F3** — find the previous match.
-
-### In a list
-
-- **Control+C** — copy the item you are on.
-- **Alt+C** — add that item to what is already on the clipboard.
-- **F4** or **Alt+Down** — open the list of choices for this field.
-
-### Reading progress while it runs
-
-- **Shift+F6** — say how far through the current file it is.
-- **Control+Page Down** — the next stage of the work.
-- **Control+Page Up** — the previous stage.
-
-## By where you are
-
-### Anywhere in the dialog
-
-Tab, Shift+Tab, Enter, Escape, and every **Alt** shortcut in the list above.
-
-### In a text box
-
-Alt+F8, Alt+Y, Shift+F1, Alt+', Control+C, Alt+C, Control+X, Alt+X,
-Control+F8, Control+A, Control+D, F8, Shift+F8, Control+Home, Control+End,
-Control+J, F3, Shift+F3.
-
-### In a multi-line text box only
-
-Control+Enter, Alt+Shift+O, Alt+Shift+Z, Alt+Shift+K, Alt+Shift+N,
-Control+Shift+Enter.
-
-### In a list or a combo box
-
-Control+C, Alt+C, F4, Alt+Down.
-
-### While the work is running
-
-Shift+F6, Control+Page Down, Control+Page Up.
-
-## By the key itself
-
-- **Alt+'** — read the clipboard aloud.
-- **Alt+A** — Audio only.
-- **Alt+B** — Browse local source.
-- **Alt+C** — Choose output directory; in a text box or list, add to the clipboard.
-- **Alt+D** — Describe video.
-- **Alt+Down** — open the list of choices.
-- **Alt+F** — Force replacements.
-- **Alt+F8** — read the whole field aloud.
-- **Alt+H** — Help, as F1 does.
-- **Alt+O** — go to the output directory box.
-- **Alt+R** — Remove ads.
-- **Alt+S** — go to the source paths box.
-- **Alt+Shift+K** — one sentence to a line.
-- **Alt+Shift+N** — numbered lines.
-- **Alt+Shift+O** — one long line.
-- **Alt+Shift+Z** — wrapped lines.
-- **Alt+T** — Transcribe audio.
-- **Alt+U** — Use configuration.
-- **Alt+V** — View output directory.
-- **Alt+W** — Web context.
-- **Alt+X** — cut and add to the clipboard.
-- **Alt+Y** — say how many lines.
-- **Control+A** — select all.
-- **Control+C** — copy.
-- **Control+D** — delete the line.
-- **Control+End** — end of the field.
-- **Control+Enter** — press the default button from a multi-line box.
-- **Control+F8** — copy the whole field.
-- **Control+Home** — beginning of the field.
-- **Control+J** — go to a line number.
-- **Control+Page Down** — the next stage.
-- **Control+Page Up** — the previous stage.
-- **Control+Shift+Enter** — undo the reshaping.
-- **Control+Slash** — say where you are; twice, show it in a window.
-- **Control+X** — cut.
-- **Escape** — cancel and close, from any control.
-- **Enter** — press the default button.
-- **F3** — find the next match.
-- **F4** — open the list of choices.
-- **F8** — mark the start of a selection.
-- **Shift+F1** — read the tip for this field.
-- **Shift+F3** — find the previous match.
-- **Shift+F6** — say how far through it is.
-- **Shift+F8** — extend the selection to here.
-- **Shift+Tab** — the previous field.
-- **Tab** — the next field.
-
-## A note on the Alt shortcuts
-
-The letters underlined in the dialog — S for source, T for transcribe, and the
-rest — are Windows access keys. They only work while the dialog has the focus,
-and a screen reader will announce them as it reads each field, so you do not
-have to memorise this list to find them.
+F1 is help in every Windows program. F11 is the Homer key for updating a program to its newest release, because "elevate" sounds like "eleven". Alt+Control+H belongs to the desktop shortcut; Alt+Control keys are for desktop shortcuts, and H is the first letter of HomerScribe. Describe video claims D first, so Default settings, later in the dialog, has no letter: the first control to claim a letter keeps it.

@@ -226,7 +226,7 @@ Without them you still get the Markdown.
 ## Reading a scanned document
 
 HomerScribe reads printed pages as well as describing pictures, and it is the
-same checkbox. Give it a zip of page images and it works out, for each one,
+same mark box. Give it a zip of page images and it works out, for each one,
 whether it is looking at a photograph or at a page of print. A photograph gets
 described. A page gets read, and set out as Markdown with its headings and
 tables intact.

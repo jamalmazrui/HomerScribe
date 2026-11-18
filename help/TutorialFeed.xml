@@ -5,7 +5,7 @@
     <link>Tutorials.htm</link>
     <description>Short simulated walks through HomerScribe. Each one is a real job done from start to finish, about three minutes, with something to try at the end.</description>
     <language>en-us</language>
-    <lastBuildDate>Fri, 13 Nov 2026 01:42:34 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 18 Nov 2026 17:49:48 +0000</lastBuildDate>
     <itunes:author>Jamal Mazrui</itunes:author>
     <itunes:explicit>false</itunes:explicit>
     <itunes:category text="Technology"/>
@@ -15,7 +15,7 @@
       <description>Nothing yet. This one is two minutes of what to expect. Full transcript: Tutorials.htm#0-0-overview</description>
       <link>Tutorials.htm#0-0-overview</link>
       <guid isPermaLink="false">homer-tutorial_0_overview</guid>
-      <enclosure url="tutorials/0_Overview.mp3" length="1425605" type="audio/mpeg"/>
+      <enclosure url="tutorials/0_Overview.mp3" length="1417084" type="audio/mpeg"/>
       <itunes:duration>00:03:20</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
@@ -24,7 +24,7 @@
       <description>HomerScribe is installed. Full transcript: Tutorials.htm#0a-1-user-interface</description>
       <link>Tutorials.htm#0a-1-user-interface</link>
       <guid isPermaLink="false">homer-tutorial_1_user_interface</guid>
-      <enclosure url="tutorials/1_User_Interface.mp3" length="1581139" type="audio/mpeg"/>
+      <enclosure url="tutorials/1_User_Interface.mp3" length="1581962" type="audio/mpeg"/>
       <itunes:duration>00:03:45</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>

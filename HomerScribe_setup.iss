@@ -265,12 +265,12 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\exec\{#AppExeName}"; WorkingD
 
 [Run]
 ; FINISH-PAGE ORDER, a HomerDev rule (25 September 2026):
-;   1. Install entries, ticked -- screen reader scripts first, then components
+;   1. Install entries, marked -- screen reader scripts first, then components
 ;      in alphabetical order (HomerScribe has no screen reader scripts).
-;   2. Update entries, ticked, alphabetical.
-;   3. Reinstall entries, UNTICKED, alphabetical.
-;   4. Launch, ticked.
-;   5. Open the user guide, unticked.
+;   2. Update entries, marked, alphabetical.
+;   3. Reinstall entries, UNMARKED, alphabetical.
+;   4. Launch, marked.
+;   5. Open the user guide, unmarked.
 ; Inno shows [Run] entries in script order and Check: hides the ones that do not
 ; apply, so three entries per component -- one per verb, each with its own
 ; Check: -- group the page by themselves. The label function words each one.
@@ -351,7 +351,7 @@ FileName: "{app}\scripts\installWhisper.cmd"; \
   Description: "{code:labelWhisper}"; \
   Flags: postinstall runascurrentuser waituntilterminated; Check: homerFinishRuns and isUpdateWhisper
 
-; ---- 3. Reinstall, unticked --------------------------------------------------
+; ---- 3. Reinstall, unmarked --------------------------------------------------
 FileName: "{app}\scripts\installExifTool.cmd"; \
   Parameters: "noPause"; \
   WorkingDir: "{app}\scripts"; \
@@ -394,14 +394,14 @@ FileName: "{app}\scripts\installWhisper.cmd"; \
   Description: "{code:labelWhisper}"; \
   Flags: postinstall runascurrentuser waituntilterminated unchecked; Check: homerFinishRuns and isReinstallWhisper
 
-; ---- 4. Launch, ticked -------------------------------------------------------
+; ---- 4. Launch, marked -------------------------------------------------------
 FileName: "{cmd}"; \
   Parameters: "/c md ""{localappdata}\{#AppName}\logs"" 2>nul & echo launch > ""{localappdata}\{#AppName}\logs\{#AppName}_launch.flag"""; \
   WorkingDir: "{app}\exec"; \
   Description: "Launch {#AppName} (desktop hotkey {#HotKeyDisplay})"; \
   Flags: postinstall runhidden runasoriginaluser; Check: homerFinishRuns
 
-; ---- 5. Open the user guide, unticked ----------------------------------------
+; ---- 5. Open the user guide, unmarked ----------------------------------------
 FileName: "{app}\ReadMe.htm"; \
   Description: "Open the user guide (F1 in {#AppName})"; \
   Flags: postinstall shellexec nowait skipifdoesntexist runasoriginaluser unchecked; Check: homerFinishRuns
@@ -457,7 +457,7 @@ begin
                          'ollama', '{localappdata}\Programs\Ollama\ollama.exe',
                          'describes video and pictures', 'Ollama');
   // INSTALLED MEANS THE MODEL IS THERE TOO (13 October 2026): Whisper hears best with large-v3 turbo, so a computer
-  // with the program but not that model is offered Install, ticked, and installWhisper fetches the model alone.
+  // with the program but not that model is offered Install, marked, and installWhisper fetches the model alone.
   iWhisper   := homerAdd('Whisper', '',
                          '"{pf}\Whisper\whisper-cli.exe"', '{pf}\Whisper\ggml-large-v3-turbo-q5_0.bin',
                          'transcribes speech', '');
@@ -551,12 +551,12 @@ begin
 end;
 
 procedure reportWhatHappened();
-(* ONE LINE PER BOX THAT WAS TICKED, AND NOTHING ELSE. On 25 September 2026
+(* ONE LINE PER BOX THAT WAS MARKED, AND NOTHING ELSE. On 25 September 2026
    this box listed every component from the probe made when the wizard opened:
    it said Whisper was not installed and Ollama was out of date, a minute after
    both scripts had succeeded, and it recited three components nobody had
    asked about. A result box reports the actions taken this session, from a
-   probe made after they ran. The kit records the ticked boxes when Finish is
+   probe made after they ran. The kit records the marked boxes when Finish is
    pressed (homerNoteTicked, called from NextButtonClick) and probes again
    only those. *)
 var

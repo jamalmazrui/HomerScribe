@@ -42,7 +42,7 @@ Note=Confirm the wording with a live run: buildTutorials -live.
 
 [step]
 
-Say=Now the rule behind every key here: the word gives the letter. Alt plus a letter goes straight to its control, and for a check box it ticks or clears it. Alt plus T, T for Transcribe.
+Say=Now the rule behind every key here: the word gives the letter. Alt plus a letter goes straight to its control, and for a check box it marks or clears it. Alt plus T, T for Transcribe.
 Key=Alt+T
 Hear=Transcribe audio check box, checked, Alt plus T
 

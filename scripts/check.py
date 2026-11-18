@@ -485,7 +485,7 @@ def checkEncoding():
             if not binData: continue
             iChecked += 1
             bBom = binData.startswith(b"\xef\xbb\xbf")
-            bWantBom = not sName.lower().endswith((".cmd", ".bat", "version.txt"))
+            bWantBom = not sName.lower().endswith((".cmd", ".bat", "version.txt")) and sName.lower() not in (".gitattributes", ".gitignore")
             if bBom != bWantBom:
                 lsWrong.append("%s: %s a byte order mark" %
                                (sShown, "should not have" if bBom else "needs"))
@@ -1113,11 +1113,134 @@ def checkLaunchWords():
                 for iArg, sLabel in lsWhich:
                     if iArg < len(lsArgs) and lsArgs[iArg] not in ('""', "''", "null", "None"):
                         lsHits.append("%s: %s has its own tip, %s; pass \"\" for the kit's sentence" % (os.path.basename(sPath), sLabel, lsArgs[iArg][:60]))
+    # THE STANDARD SWITCHES IN THE KIT'S WORDS (1.258.0, 18 November 2026). The 12 November alignment of -f, -u, -v, -d
+    # and -h never reached four apps' repositories, and nothing failed: their help still said "exit" in one, "Overwrite
+    # an existing csv" in another. A launch app's own code must now name each switch's sentence -- LaunchDialog's
+    # constant, or its words -- read from the kit's Lbc.cs.
+    lsLaunchCode = [p for p in sourceFiles() if p.lower().endswith((".cs", ".py")) and os.path.dirname(os.path.abspath(p)) == os.path.abspath(sRoot)]
+    if any(re.search(r"\baddOperationBands\s*\(", readText(p)) for p in lsLaunchCode):
+        try:
+            import kind
+            sKitLbc = os.path.join(kind.findKit([sRoot]) or "", "exec", "CSharp", "Lbc.cs")
+        except Exception:
+            sKitLbc = ""
+        if sKitLbc and os.path.isfile(sKitLbc):
+            sLbc = readText(sKitLbc)
+            sCode = "\n".join(readText(p) for p in lsLaunchCode)
+            for sConst, sSwitch in (("forceSwitch", "-f"), ("useConfigSwitch", "-u"), ("viewOutputSwitch", "-v"), ("defaultSettingsSwitch", "-d"), ("helpSwitch", "-h")):
+                oConst = re.search(r"public const string " + sConst + r'\s*=\s*"((?:[^"\\]|\\.)*)"', sLbc)
+                if not oConst: continue
+                if ("LaunchDialog." + sConst) not in sCode and oConst.group(1) not in sCode:
+                    lsHits.append("%s is not in the kit's words, \"%s\"; use LaunchDialog.%s" % (sSwitch, oConst.group(1)[:50], sConst))
+        else:
+            logLine("launch words: the kit's Lbc.cs was not found, so the switches were not compared")
     if not lsHits:
         return finding("launch words", "pass" if any(re.search(r"\baddOperationBands\s*\(", readText(p)) for p in sourceFiles() if p.lower().endswith((".cs", ".py"))) else "skip",
                        "the standard launch controls use the kit's sentences" )
     for sHit in lsHits: logLine("launch words: " + sHit)
     return finding("launch words", "fail", "; ".join(lsHits))
+
+
+def checkReaderKeys():
+    """THE READER'S OWN KEYS STAY THE READER'S (1.259.0, 18 November 2026). Homer never breaks a screen reader's key
+    (the author's rule of 2 November 2026), and data\\KeyOwnership.inix marks JAWS's voice-rate keys, its mouse keys
+    and the like "never bind". The suite's key gate reads only SuiteCommands.inix, so DbDo's grid keys, handled outside
+    the router, went unread: Column Top and Column Bottom took Alt+Control+PageUp and PageDown, JAWS's temporary voice
+    rate, and DbDo's JAWS key map handed them on, though Control+Home and Control+End did the same thing. This reads
+    the app's own key file -- configs\\Hotkeys.inix, or the [Hotkeys] section of configs\\<App>.inix -- and fails a
+    key that KeyOwnership.inix gives to Windows or a reader everywhere and does not approve. HomerView, which runs in
+    the reader's own browser and adds keys only where its reader has none, is left to the suite gate."""
+    if appName().lower() == "homerview": return finding("reader keys", "skip", "HomerView's keys are checked by the suite gate")
+    lsFiles = [os.path.join(sRoot, "configs", "Hotkeys.inix"), os.path.join(sRoot, "configs", appName() + ".inix")]
+    dKeys = {}
+    for sPath in lsFiles:
+        if not os.path.isfile(sPath): continue
+        sSection = ""
+        for sLine in readText(sPath).splitlines():
+            sTrim = sLine.strip()
+            if not sTrim or sTrim.startswith(";"): continue
+            if sTrim.startswith("[") and sTrim.endswith("]"): sSection = sTrim[1:-1].strip().lower(); continue
+            if os.path.basename(sPath).lower() != "hotkeys.inix" and sSection != "hotkeys": continue
+            if "=" not in sTrim: continue
+            sName, sValue = sTrim.split("=", 1)
+            for sKey in re.split(r"\s+or\s+", sValue.split(",")[0].strip()):
+                if sKey.strip(): dKeys.setdefault(sKey.strip().lower(), []).append(sName.strip())
+    if not dKeys: return finding("reader keys", "skip", "no key file in configs")
+    try:
+        import kind
+        sOwnership = os.path.join(kind.findKit([sRoot]) or "", "data", "KeyOwnership.inix")
+    except Exception:
+        sOwnership = ""
+    if not os.path.isfile(sOwnership): return finding("reader keys", "skip", "the kit's KeyOwnership.inix was not found")
+    lsBad = []
+    sKey, dNow = "", {}
+    lsEntries = []
+    for sLine in readText(sOwnership).splitlines() + ["[end]"]:
+        sTrim = sLine.strip()
+        if sTrim.startswith("[") and sTrim.endswith("]"):
+            if sKey: lsEntries.append((sKey, dNow))
+            sKey, dNow = (sTrim[5:-1].strip() if sTrim.lower().startswith("[key ") else ""), {}
+        elif "=" in sTrim and not sTrim.startswith(";"):
+            sName, sValue = sTrim.split("=", 1); dNow[sName.strip().lower()] = sValue.strip()
+    for sOwned, dOwner in lsEntries:
+        if dOwner.get("kind", "") not in ("system", "reader global") or dOwner.get("disposition", "").startswith("approved"): continue
+        lsNames = dKeys.get(sOwned.lower())
+        if lsNames: lsBad.append("%s binds %s, %s's %s (%s)" % (", ".join(lsNames), sOwned, dOwner.get("owner", ""), dOwner.get("what", ""), dOwner.get("disposition", "")))
+    # A KEY JAWS OWNS EVERYWHERE IS NEVER HANDED ON BY HAND. DbDo's key map passed Alt+Control+PageUp and PageDown to
+    # DbDo with lines of its own, so JAWS lost its voice rate there; only the kit's pass-through block, written by tidy
+    # from passThrough=yes, may hand such a key on.
+    sJkm = os.path.join(sRoot, "scripts", "jaws", appName() + ".jkm")
+    if os.path.isfile(sJkm):
+        dGlobal = dict((s.lower(), d) for s, d in lsEntries if d.get("kind", "") == "reader global" and "jaws" in d.get("owner", "").lower() and d.get("passthrough", "").lower() != "yes")
+        for sLine in readText(sJkm).splitlines():
+            sTrim = sLine.strip()
+            if not sTrim or sTrim.startswith((";", "[")) or "=" not in sTrim: continue
+            sJkmKey = sTrim.split("=", 1)[0].strip()
+            if sJkmKey.lower() in dGlobal:
+                lsBad.append("%s.jkm hands %s to the app, taking JAWS's %s" % (appName(), sJkmKey, dGlobal[sJkmKey.lower()].get("what", "")))
+    if not lsBad: return finding("reader keys", "pass", "no key of Windows's or a reader's own is bound")
+    for sBad in lsBad: logLine("reader keys: " + sBad)
+    return finding("reader keys", "fail", "; ".join(lsBad))
+
+
+def checkLbcMessages():
+    """EVERY DIALOG ANSWERS SHIFT+F1 AND CONTROL+SLASH (1.258.0, 18 November 2026, the author's ruling: "Shift+F1 and
+    Control+Slash should work in every dialog"). A Windows message box answers neither, and six launch apps showed
+    forty-four of them -- sign-in pauses, "Create it?", errors. An app's own code asks through LbcMessage.show (C#) or
+    lbcnet.message (Python), which take MessageBox.Show's own arguments, or through LaunchDialog.confirmOutput and
+    LbcMessage.showOnTop; the kit's LbcMessage.native is the one sanctioned Windows box, for FileDir's Yes and No."""
+    lsHits = []
+    for sPath in sourceFiles():
+        if not sPath.lower().endswith((".cs", ".py")) or os.path.basename(sPath).lower() == "lbc.cs": continue
+        if os.path.dirname(os.path.abspath(sPath)) != os.path.abspath(sRoot): continue
+        for iLine, sLine in enumerate(readText(sPath).splitlines(), 1):
+            sCode = sLine.strip()
+            if sCode.startswith(("//", "#", "*")): continue
+            if re.search(r"(?<![\w.])MessageBox\.Show\s*\(", sCode): lsHits.append("%s line %d" % (os.path.basename(sPath), iLine))
+    if not lsHits:
+        return finding("Lbc messages", "pass", "every message is an Lbc dialog, so Shift+F1 and Control+Slash work in it")
+    for sHit in lsHits: logLine("Lbc messages: a Windows message box at " + sHit)
+    return finding("Lbc messages", "fail", "%d Windows message box%s, which answer neither Shift+F1 nor Control+Slash; use LbcMessage.show: %s"
+                   % (len(lsHits), "" if len(lsHits) == 1 else "es", "; ".join(lsHits[:8])))
+
+
+def checkHelpKeysDocumented():
+    """THE DIALOG HELP KEYS, IN THE SUITE'S WORDS, IN EVERY HOTKEYS PAGE (1.258.0, 18 November 2026). FileDir, DbDo and
+    EdSharp list What This Does (Shift+F1), Where Am I (Control+Slash) and Elevate Version (F11); the six launch apps
+    called the first "Say the focus tip", "the tip for the field with the focus" or "read the tip for this field", called
+    F11 "Check for a newer version", and did not list Control+Slash at all. An app whose help\\Hotkeys.md exists names
+    each command with its key, within a few lines of each other, as the suite's pages do."""
+    sPage = os.path.join(sRoot, "help", "Hotkeys.md")
+    if not os.path.isfile(sPage): return finding("help keys", "skip", "no help\\Hotkeys.md")
+    lsLines = readText(sPage).splitlines()
+    lsMissing = []
+    for sName, sKey in (("Elevate Version", "F11"), ("What This Does", "Shift+F1"), ("Where Am I", "Control+Slash")):
+        bFound = False
+        for iAt, sLine in enumerate(lsLines):
+            if sName in sLine and any(re.search(r"(?<![\w+])" + re.escape(sKey) + r"(?![\w+])", s) for s in lsLines[max(0, iAt - 2):iAt + 3]): bFound = True; break
+        if not bFound: lsMissing.append("%s (%s)" % (sName, sKey))
+    if not lsMissing: return finding("help keys", "pass", "Hotkeys.md names Elevate Version, What This Does and Where Am I with their keys")
+    return finding("help keys", "fail", "help\\Hotkeys.md does not name " + ", ".join(lsMissing) + " in the suite's words")
 
 
 def checkConversions():
@@ -1876,6 +1999,84 @@ def checkMenuLetters():
     return finding("menu letters", "pass", "%d menu items: no letter shared in a menu, each letter starts a word and matches its key, none on a function or symbol key" % len(lItems))
 
 
+def checkDescriptions():
+    """ONE VOICE IN EVERY DESCRIPTION (17 November 2026). The Key Describer, the Alternate Menu and Hotkeys.md read
+    each command's description aloud, so the suite words them alike: an instruction that begins with its verb ("Say
+    the current item's name"), with "the" before "current", no slash for "or", no exclamation mark, and short enough to
+    hear in one breath. Jamal heard "Say date and time of current item" beside "Say the current item's size", and
+    HomerView's "Says ..." beside every other app's "Say ...". This reads the app's key file and warns, never fails:
+    a description is a judgment, and the log names each line to look at."""
+    sApp = os.path.basename(os.path.normpath(sRoot))
+    sKeyFile = os.path.join(sRoot, "configs", sApp + ".inix")
+    if not (os.path.isfile(sKeyFile) and re.search(r"(?mi)^\[hotkeys\]", readText(sKeyFile))):
+        sKeyFile = os.path.join(sRoot, "configs", "Hotkeys.inix")
+    if not os.path.isfile(sKeyFile):
+        return finding("command descriptions", "skip", "no key file in configs")
+    # Verbs that end in s and are still instructions.
+    setPlainS = set(["access", "address", "bypass", "cross", "dismiss", "focus", "pass", "press", "process", "toggle"])
+    lsNotes, sSection, bFence = [], "", False
+    for sLine in readText(sKeyFile).splitlines():
+        sTrim = sLine.strip()
+        if bFence:
+            if sTrim == "`": bFence = False
+            continue
+        if not sTrim or sTrim.startswith(";"): continue
+        if sTrim.startswith("["): sSection = sTrim.lower(); continue
+        if sSection != "[hotkeys]" or "=" not in sTrim: continue
+        if sTrim.endswith("=`"): bFence = True; continue
+        sName, sRest = [x.strip() for x in sTrim.split("=", 1)]
+        oMatch = re.match(r"^((?:[^,]|,(?=\s*or\s))*)(?:,\s*(.*))?$", sRest)
+        sText = (oMatch.group(2) or "").strip() if oMatch else ""
+        if not sText: continue
+        sFirst = sText.split(" ")[0].strip(",.")
+        lsWhy = []
+        if sFirst[:1].islower() and not sFirst.lower().startswith("through"): lsWhy.append("begins in lower case")
+        if sFirst.endswith("s") and sFirst.lower() not in setPlainS and len(sFirst) > 3: lsWhy.append("begins %s, not the verb as an instruction" % sFirst)
+        if re.search(r"\b(of|to|in|on|from) current\b", sText): lsWhy.append("says \"current\" without \"the\"")
+        if re.search(r"\w/\w", sText) and "://" not in sText: lsWhy.append("uses a slash for \"or\"")
+        if "!" in sText: lsWhy.append("has an exclamation mark")
+        if len(sText) > 160: lsWhy.append("is %d characters, long to hear" % len(sText))
+        if lsWhy: lsNotes.append("%s: %s -- %s" % (sName, sText[:90], "; ".join(lsWhy)))
+    for sNote in lsNotes: logLine("DESCRIPTION: " + sNote)
+    if lsNotes:
+        return finding("command descriptions", "warn", "%d description%s not worded as the suite words them; each is in the log" % (len(lsNotes), "" if len(lsNotes) == 1 else "s"))
+    return finding("command descriptions", "pass", "every description begins with its verb, as the suite's do")
+
+
+def checkMarkedWord():
+    """MARKED, NOT TICKED (11 November 2026, and again 17 November 2026). Homer says a checkbox is "marked", as records
+    and files are marked, never "ticked"; the rule was set on 11 November and some two hundred "tick" words were still
+    in installers, guides, tutorials and messages six days later. This reads the project's installer, ReadMe, help
+    pages (History, a record of what was, aside), configs and scripts, and fails on any "tick", "ticked" or "untick"
+    as a word; a timer's Tick event and DateTime's Ticks are code, not words, and are not counted."""
+    # ONLY WHAT THE PROJECT PUBLISHES (17 November 2026, evening). The first version read every file in the folder and
+    # stopped DbDo's, EdSharp's and FileDir's pushes over files git does not hold: DbDo's own notes in help\self.md, and
+    # stray older copies of summarizeSetup.ps1 and Developer.md at the top of EdSharp and FileDir, which tidy files away.
+    # Words a person reads in the program, its installer or its pages are in git; so the check reads what git tracks,
+    # and the folder only when there is no repository.
+    oWord = re.compile(r"(?<![\w.$])(un)?tick(s|ed|ing)?(?!\w)", re.I)
+    lsFound, lsPaths = [], []
+    try:
+        oGit = subprocess.run(["git", "-C", sRoot, "ls-files"], capture_output=True, text=True, timeout=60)
+        if oGit.returncode == 0: lsPaths = [os.path.join(sRoot, s) for s in oGit.stdout.splitlines() if s.strip()]
+    except Exception as oError:
+        logLine("marked, not ticked: git ls-files did not run (%s); reading the folder" % oError)
+    if not lsPaths:
+        for sDir, lsDirs, lsFiles in os.walk(sRoot):
+            lsDirs[:] = [s for s in lsDirs if s.lower() not in ("logs", ".git", "exec", "results", "work", "notes", "__pycache__", "bin", "obj")]
+            lsPaths += [os.path.join(sDir, s) for s in lsFiles]
+    for sPath in lsPaths:
+        sFile = os.path.basename(sPath)
+        if sFile.lower() in ("history.md", "tutorialfeed.xml") or not sFile.lower().endswith((".iss", ".md", ".inix", ".cmd", ".ps1")): continue
+        if not os.path.isfile(sPath): continue
+        for iLine, sLine in enumerate(readText(sPath).splitlines(), 1):
+            if oWord.search(sLine): lsFound.append("%s:%d: %s" % (os.path.relpath(sPath, sRoot), iLine, sLine.strip()[:100]))
+    for sNote in lsFound: logLine("TICK: " + sNote)
+    if lsFound:
+        return finding("marked, not ticked", "fail", "%d line%s say tick where Homer says mark; each is in the log" % (len(lsFound), "" if len(lsFound) == 1 else "s"))
+    return finding("marked, not ticked", "pass", "checkboxes are marked, never ticked, in the installer and the guides")
+
+
 def checkSuiteCommands():
     """THE HOMER SUITE SPEAKS WITH ONE VOICE (10 November 2026). A command DbDo, EdSharp and FileDir share has one name,
     one suite key and one sentence, word for word but for the app's own words, as HomerDev\\data\\SuiteCatalog.inix
@@ -1899,55 +2100,72 @@ def checkSuiteCommands():
         sKeyFile = os.path.join(sRoot, "configs", "Hotkeys.inix")
     if not os.path.isfile(sKeyFile):
         return finding("suite commands", "skip", "no key file in configs")
-    # [keys <App>] in the catalog names a key an app keeps instead of the suite's, for a reason the catalog gives --
-    # HomerView's Elevate Version is Control+F11, since F11 is Microsoft Edge's full screen (10 November 2026).
-    dCommands, dWords, dKeyExceptions, sSection = {}, {}, {}, ""
-    for sLine in readText(sCatalog).splitlines():
-        sTrim = sLine.strip()
-        if not sTrim or sTrim.startswith(";"): continue
-        if sTrim.startswith("["): sSection = sTrim[1:-1]; continue
-        if "=" not in sTrim: continue
-        sKey, sValue = sTrim.split("=", 1)
-        if sSection.startswith("command "): dCommands.setdefault(sSection[8:], {})[sKey.strip()] = sValue.strip()
-        elif sSection.startswith("words "): dWords.setdefault(sSection[6:], {})[sKey.strip()] = sValue.strip()
-        elif sSection.startswith("keys "): dKeyExceptions.setdefault(sSection[5:], {})[sKey.strip()] = sValue.strip()
-    def normKey(sKey):
-        dRep = {"Ctrl": "Control", "Apostrophe": "'", "OemQuotes": "'", "Semicolon": ";", "Semi-colon": ";", "Backslash": "\\",
-                "Slash": "/", "Grave": "`", "Equals": "=", "Return": "Enter", "Comma": ",", "Period": ".", "SemiColon": ";"}
-        lParts = [dRep.get(s, s) for s in sKey.strip().split("+") if s]
-        lMods = [s for s in ("Control", "Alt", "Shift") if s in lParts]
-        lRest = [re.sub(r"^D(\d)$", r"\1", s) for s in lParts if s not in ("Control", "Alt", "Shift")]
-        return "+".join(lMods + lRest)
-    def render(sName):
-        sText = dCommands[sName].get("description", "")
-        dAll = dict(dWords.get(sApp, {})); dAll["app"] = sApp; dAll.update(dWords.get(sName + "|" + sApp, {}))
-        for sKey, sValue in dAll.items(): sText = sText.replace("{" + sKey + "}", sValue)
-        return sText
-    lBreaks, iShared = [], 0
-    for sLine in readText(sKeyFile).splitlines():
-        if "=" not in sLine or sLine.lstrip().startswith((";", "[")): continue
-        sName, sRest = sLine.split("=", 1)
-        sCanon = sName.strip().replace(sApp, "{app}")
-        if sCanon not in dCommands: continue
-        iShared += 1
-        lParts = sRest.split(",")
-        iAt = 1
-        while iAt < len(lParts) and re.match(r"^\s*(or|through)\b", lParts[iAt]): iAt += 1
-        lKeys = [normKey(s) for sPart in lParts[:iAt] for s in re.split(r"\s+or\s+|^\s*or\s+|^\s*through\s+", sPart.strip()) if s.strip() and s.strip().lower() != "none"]
-        sDescription = ",".join(lParts[iAt:]).strip()
-        sSuiteKey = normKey(dCommands[sCanon].get("key", "").replace("{app}", sApp))
-        sOwnKey = normKey(dKeyExceptions.get(sApp, {}).get(sCanon, ""))
-        if sOwnKey: sSuiteKey = sOwnKey
-        if sSuiteKey and sSuiteKey not in lKeys:
-            lBreaks.append("%s: the suite's key is %s, but %s binds %s" % (sName.strip(), sSuiteKey, sApp, " or ".join(lKeys) or "none"))
-        sWanted = render(sCanon)
-        if sDescription.rstrip(".") != sWanted.rstrip("."):   # a closing period is a matter of each app's style
-            lBreaks.append("%s: says \"%s\", where the suite says \"%s\"" % (sName.strip(), sDescription, sWanted))
+    # THE COMPARISON LIVES IN THE KIT (1.235.0): scripts\\suiteCatalog.py, which the kit's build proves with
+    # testSuiteGate. Besides each shared command's key and sentence, it now fails a command the catalog gives this app
+    # (apps=) that the key file leaves out, and a key file naming no shared command, which used to pass as "0 shared
+    # commands" (the keyboard audit of 15 November, A2). [keys <App>] in the catalog still names a key an app keeps.
+    sKitScripts = os.path.join(sKit, "scripts")
+    if sKitScripts not in sys.path: sys.path.insert(0, sKitScripts)
+    try:
+        import suiteCatalog
+    except Exception as exceptionError:
+        return finding("suite commands", "fail", "the kit's scripts\\suiteCatalog.py could not be loaded: %s" % exceptionError)
+    lBreaks, iShared = suiteCatalog.suiteBreaks(readText(sCatalog), readText(sKeyFile), sApp)
     for sBreak in lBreaks: logLine("SUITE: " + sBreak)
     if lBreaks:
         iDiffer = len(set(s.split(":", 1)[0] for s in lBreaks))   # commands, not breaks: one can differ in key and words
-        return finding("suite commands", "fail", "%d of %d shared commands differ from the suite's catalog; each is in the log" % (iDiffer, iShared))
+        return finding("suite commands", "fail", "%d shared command%s differ from the suite's catalog or are missing; each is in the log" % (iDiffer, "" if iDiffer == 1 else "s"))
     return finding("suite commands", "pass", "%d shared commands, each with the suite's key and sentence" % iShared)
+
+
+def checkExportedKeys():
+    """WHAT THE PROGRAM BINDS, AGAINST WHAT IT SHOWS (1.238.0, 15 November 2026, the keyboard audit's Phase 1 and A2).
+    DbDo, EdSharp and FileDir now answer "/exportkeys <file>" by writing every command and key they declare, through the
+    kit's KeyMap.exportAndExit, before any window shows or a running copy is asked. This runs the built program that
+    way and compares the file with its key file -- configs\\<App>.inix's [Hotkeys], else configs\\Hotkeys.inix -- by
+    command name: a key shown but not bound is a false alias, and a key bound but not shown is hidden.
+    A FAILURE SINCE 1.240.0. The first comparisons (15 November 2026) were read and settled: spellings brought to one,
+    commands handled outside the router named in the catalog's [handled <App>] sections, and the real findings fixed --
+    after which DbDo, EdSharp and FileDir each showed no difference. A difference now stops a push, as A2 asks. A
+    program that cannot export at all still warns, since a check that cannot run should not stop a release."""
+    sApp = os.path.basename(os.path.normpath(sRoot))
+    if not any("KeyMap.exportAndExit" in readText(sPath) for sPath in sourceFiles() if sPath.lower().endswith(".cs")):
+        return finding("exported keys", "skip", "%s does not answer /exportkeys" % sApp)
+    sExe = next((s for s in (os.path.join(sRoot, "exec", sApp + ".exe"), os.path.join(sRoot, sApp + ".exe")) if os.path.isfile(s)), "")
+    if not sExe:
+        return finding("exported keys", "warn", "%s.exe was not found to export its keys; build first" % sApp)
+    sKeyFile = os.path.join(sRoot, "configs", sApp + ".inix")
+    if not (os.path.isfile(sKeyFile) and re.search(r"(?mi)^\[hotkeys\]", readText(sKeyFile))):
+        sKeyFile = os.path.join(sRoot, "configs", "Hotkeys.inix")
+    if not os.path.isfile(sKeyFile):
+        return finding("exported keys", "skip", "no key file in configs")
+    sExport = os.path.join(sLogDir, "%s-keys-%s.inix" % (sApp, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
+    try:
+        oRun = subprocess.run([sExe, "/exportkeys", sExport], cwd=os.path.dirname(sExe), capture_output=True, text=True, timeout=90)
+        logLine("exported keys: %s /exportkeys %s, exit %d" % (sExe, sExport, oRun.returncode))
+    except Exception as exceptionError:
+        return finding("exported keys", "warn", "%s could not export its keys: %s" % (sApp, exceptionError))
+    if oRun.returncode != 0 or not os.path.isfile(sExport):
+        return finding("exported keys", "warn", "%s did not export its keys (exit %d); its own session log says why" % (sApp, oRun.returncode))
+    try:
+        import kind
+        sKit = kind.findKit([sRoot]) or ""
+        sKitScripts = os.path.join(sKit, "scripts")
+        if sKitScripts not in sys.path: sys.path.insert(0, sKitScripts)
+        import suiteCatalog
+    except Exception as exceptionError:
+        return finding("exported keys", "warn", "the kit's scripts\\suiteCatalog.py could not be loaded: %s" % exceptionError)
+    # HANDLED ELSEWHERE (1.239.0): the catalog's [handled <App>] names commands an app runs outside the kit's router --
+    # by the item under the cursor, in a text box's own keys, or in a JAWS script -- which no export can contain.
+    sCatalog = os.path.join(sKit, "data", "SuiteCatalog.inix")
+    dHandled = suiteCatalog.readHandled(readText(sCatalog), sApp) if os.path.isfile(sCatalog) else {}
+    logLine("exported keys: %d commands handled outside the router, by the catalog" % len(dHandled))
+    lBreaks, iCompared = suiteCatalog.exportBreaks(readText(sExport), readText(sKeyFile), sApp, dHandled)
+    for sBreak in lBreaks: logLine("EXPORTED KEYS: " + sBreak)
+    if lBreaks:
+        return finding("exported keys", "fail", "%d difference%s between the keys %s binds and the keys it shows, in %d commands compared; each is in the log"
+                       % (len(lBreaks), "" if len(lBreaks) == 1 else "s", sApp, iCompared))
+    return finding("exported keys", "pass", "%d commands: every key shown is bound, and every key bound is shown" % iCompared)
 
 
 def checkKitClasses():
@@ -2259,13 +2477,19 @@ def main():
         checkSuite()
         checkConversions()
         checkLaunchWords()
+        checkLbcMessages()
+        checkReaderKeys()
+        checkHelpKeysDocumented()
         checkBuild(dArguments.build)
         checkSmoke(dArguments.build)
         checkAccessibility(not dArguments.noscan)
         checkWalk()
         checkKitClasses()
         checkMenuLetters()
+        checkDescriptions()
+        checkMarkedWord()
         checkSuiteCommands()
+        checkExportedKeys()
         checkAccept()
 
     sReport = writeReport()

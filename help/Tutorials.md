@@ -246,7 +246,7 @@ Confirm the wording with a live run: buildTutorials -live.
 
 ### Step 6: Alt+T
 
-Now the rule behind every key here: the word gives the letter. Alt plus a letter goes straight to its control, and for a check box it ticks or clears it. Alt plus T, T for Transcribe.
+Now the rule behind every key here: the word gives the letter. Alt plus a letter goes straight to its control, and for a check box it marks or clears it. Alt plus T, T for Transcribe.
 
 Screen reader:
 

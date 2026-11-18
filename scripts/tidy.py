@@ -263,7 +263,7 @@ def logWindows():
 
 
 def sayLine(sText=""):
-    print(sText)
+    print(sText, flush=True)
     logLine("CONSOLE: " + sText)
     return True
 
@@ -543,9 +543,26 @@ def surveyFolder(lsNamed):
             if os.path.isfile(sFull) and os.path.getsize(sFull) == 0:
                 lsEmpty.append(os.path.relpath(sFull, sRoot))
 
+    # A FOLDER NAMED WHOLE IS NOT WALKED (17 November 2026). AppHelpGuides' build_release seemed to hang in tidy:
+    # the survey read and hashed every file in data\harvests -- every page of more than three hundred harvests -- to
+    # look for strays and duplicates, with nothing on the console for many minutes. A folder that RepoFiles.txt,
+    # LocalFiles.txt or the installer names whole ("data/harvests/") belongs, all of it, so nothing in it can be a
+    # stray, and copies inside a harvest are the harvest's business. Such folders are passed over, and the console
+    # says how far the survey has got every ten seconds.
+    setWhole = set(s.replace("\\", "/").strip("/").lower() for s in lsNamed
+                   if s.replace("\\", "/").endswith("/") and "*" not in s and s.strip("/"))
+    iFiles, nLastSaid = 0, time.time()
     for sDirPath, lsDirs, lsFiles in os.walk(sRoot):
-        lsDirs[:] = [s for s in lsDirs if s.lower() not in lsSkipFolders]
+        sHere = os.path.relpath(sDirPath, sRoot).replace("\\", "/").lower()
+        sHere = "" if sHere == "." else sHere + "/"
+        lsWhole = [s for s in lsDirs if (sHere + s.lower()) in setWhole]
+        for s in lsWhole: logLine("Folder survey: %s%s is named whole, so it is not walked" % (sHere, s))
+        lsDirs[:] = [s for s in lsDirs if s.lower() not in lsSkipFolders and s not in lsWhole]
         for sName in sorted(lsFiles):
+            iFiles += 1
+            if time.time() - nLastSaid >= 10:
+                sayLine("  surveying the folder: %s so far, now in %s" % (countNoun(iFiles, "file"), sHere or "the top"))
+                nLastSaid = time.time()
             sFull = os.path.join(sDirPath, sName)
             sRelative = os.path.relpath(sFull, sRoot)
             if os.path.getsize(sFull) == 0:
@@ -1316,6 +1333,35 @@ def keepJawsKeys():
     lsDone = jawsKeys.ensure(sRoot, appName(), sKit)
     for sDone in lsDone: logLine("JAWS KEY MAP: %s" % sDone)
     if lsDone: sayLine("The JAWS key map %s." % "; ".join(lsDone))
+    # THE KEY MAP AUDITED (17 November 2026): every line's script defined and spelled alike, and no key the app binds
+    # left to a JAWS table or mouse script. Reported, never fatal: the fix is a line in the key map.
+    try:
+        lsProblems = jawsKeys.audit(sRoot, appName())
+    except Exception as oError:
+        lsProblems = []
+        logLine("JAWS KEY MAP AUDIT: skipped, %s" % oError)
+    for sProblem in lsProblems: logLine("JAWS KEY MAP AUDIT: %s" % sProblem)
+    if lsProblems: sayLine("The JAWS key map audit found %s; the log names each." % countNoun(len(lsProblems), "problem"))
+    return lsDone
+
+
+def playLiveTests():
+    """THE APP HEARD LIVE (17 November 2026). An app's scripts\\tests holds a few macro scripts -- the important tests,
+    not every possible one -- that the kit's runMacro plays in the build just made, listening to the screen reader and
+    reading what Windows shows, so a change that breaks what a person hears is found by the cycle, not by Jamal. Each is
+    played only when its fingerprint changed since its last pass, only when the app is closed (nothing open is
+    touched), and only with a screen reader running; HomerLive=0 leaves them all out. A failure is reported, and never
+    fails tidy. The work is the kit's runMacro.liveTests, found through kind.findKit, as keepJawsKeys finds jawsKeys."""
+    if not os.path.isdir(os.path.join(sRoot, "scripts", "tests")): return []
+    import kind
+    sKit = kind.findKit([sRoot])
+    if not sKit: return []
+    sKitScripts = os.path.join(sKit, "scripts")
+    if not os.path.isfile(os.path.join(sKitScripts, "runMacro.py")): return []
+    if sKitScripts not in sys.path: sys.path.insert(0, sKitScripts)
+    import runMacro
+    lsDone = runMacro.liveTests(sRoot, logLine, sayLine)
+    for sDone in lsDone: logLine("LIVE TEST: %s" % sDone)
     return lsDone
 
 
@@ -1659,6 +1705,9 @@ def main():
                 sayLine("  %s untracked; push commits that after the check." % countNoun(len(lsTrackedStrays), "file"))
             sayLine()
 
+    if sKind == "app" and not dArguments.repo_only:
+        try: playLiveTests()
+        except Exception as oError: logLine("live tests: skipped, " + str(oError))
     sayLine("%s made. Anything moved is in notes, which git never takes; the log names each move." %
             countNoun(iChanges, "change"))
     logLine("tidy end")

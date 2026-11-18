@@ -337,9 +337,9 @@ namespace Homer
             addParam("describe", "d", "flag", "no", "Describe what happens on screen and write a described copy of the film");
             addParam("transcribe", "t", "flag", "no", "Write down what is said, from the film's own sound");
             addParam("web-context", "w", "flag", "no", "Learn what the video is by asking the page it came from, or Wikipedia about its title, and use that as context");
-            addParam("force-replacements", "f", "flag", "no", "Do the work again for a source whose result is already there, replacing the old result; without it, that source is skipped and its result kept");
+            addParam("force-replacements", "f", "flag", "no", LaunchDialog.forceSwitch);
             addParam("audio-only", "a", "flag", "no", "Produce sound only: one mp3 of the film's audio with the descriptions mixed in, and no video");
-            addParam("view-output-directory", "v", "flag", "no", "Open the output directory in File Explorer when the run is done");
+            addParam("view-output-directory", "v", "flag", "no", LaunchDialog.viewOutputSwitch);
             addParam("rebuild", "", "flag", "no", "Build the film from descriptions already made, asking the model nothing");
             addParam("log-file", "", "string", "", "Path of the run log; by default it is in %LOCALAPPDATA%\\HomerScribe\\logs");
             addParam("speech", "", "flag", "yes", "Find where descriptions go by detecting speech with Whisper, rather than by listening for silence");
@@ -361,8 +361,8 @@ namespace Homer
             addParam("summarise", "", "flag", "yes", "Look thoroughly with the vision model, then have the same model compress what it saw into one spoken description");
             // LOGGING IS AUTOMATIC (23 October 2026): there is no log-session switch or
             // Log session checkbox; every run's log is in %LOCALAPPDATA%\HomerScribe\logs.
-            addParam("default-settings", "", "flag", "no", "Forget the saved settings and stop");
-            addParam("use-configuration", "u", "flag", "no", "Load the saved settings at startup, and in the dialog save them when you press OK");
+            addParam("default-settings", "", "flag", "no", LaunchDialog.defaultSettingsSwitch + " Its letter, d, belongs to describe.");
+            addParam("use-configuration", "u", "flag", "no", LaunchDialog.useConfigSwitch);
             addParam("begin", "b", "string", "0", "Where to start, in seconds or hh:mm:ss");
             addParam("minutes", "e", "number", "0", "How many minutes to describe; 0 means the whole film");
             addParam("model", "m", "string", "qwen2.5vl:7b", "Name of the Ollama vision model");
@@ -417,7 +417,8 @@ namespace Homer
             addParam("list-voices", "L", "flag", "no", "List the installed speech voices and stop");
             addParam("verbose", "V", "flag", "no", "Echo every command to the console as well as the log");
             addParam("gui", "G", "flag", "no", "Show the settings dialog instead of running at once");
-            addParam("help", "h", "flag", "no", "Show these switches and stop");
+            // -h IS HELP, AS IN EVERY LAUNCH APP (18 November 2026); -? and /? still work.
+            addParam("help", "h", "flag", "no", LaunchDialog.helpSwitch);
         }
 
         static void addParam(string sLong, string sShort, string sKind, string sValue, string sHelp)
@@ -487,8 +488,6 @@ namespace Homer
             while (iAt < asArgs.Length)
             {
                 string sArg = asArgs[iAt];
-                // -h IS HELP, AS IN EVERY LAUNCH APP (kit 1.221.0, 12 November 2026): its letter is the Help button's; /? and -?
-                // are kept as other ways to ask.
                 if (sArg == "/?" || sArg == "-?") sArg = "-h";
                 else if (sArg.Length > 1 && sArg[0] == '/' && char.IsLetter(sArg[1]) && !File.Exists(sArg) && !Directory.Exists(sArg))
                     sArg = (sArg.Length == 2 ? "-" : "--") + sArg.Substring(1);
@@ -5678,6 +5677,8 @@ namespace Homer
                         "Cleared, each folder is created beside its own source instead.",
                         "");
 
+                    // THE KIT'S SENTENCES (18 November 2026): Browse local source, Choose output directory, Use configuration and View output
+                    // directory say the same in every launch app, so each takes the kit's tip, passed as "".
                     oLaunch.addOperationBands(bForce, "",
                         bUseConfig, "",
                         bViewOutput, "");
@@ -5739,13 +5740,13 @@ namespace Homer
 
                 if (sSources == "")
                 {
-                    MessageBox.Show("Give at least one file or web address.", "HomerScribe",
+                    LbcMessage.show("Give at least one file or web address.", "HomerScribe",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     continue;
                 }
                 if (!bDescribe && !bTranscribe)
                 {
-                    MessageBox.Show("Mark Describe video, or Transcribe audio, or both."
+                    LbcMessage.show("Mark Describe video, or Transcribe audio, or both."
                         + Environment.NewLine + Environment.NewLine
                         + "Describe video watches the picture and says what happens." + Environment.NewLine
                         + "Transcribe audio writes down what is said." + Environment.NewLine
@@ -5891,7 +5892,7 @@ namespace Homer
             catch (Exception oError)
             {
                 logMessage("The settings could not be saved to " + sPath + ": " + oError.Message, "ERROR");
-                if (bGuiMode) MessageBox.Show("The settings could not be saved:" + Environment.NewLine + Environment.NewLine
+                if (bGuiMode) LbcMessage.show("The settings could not be saved:" + Environment.NewLine + Environment.NewLine
                     + sPath + Environment.NewLine + Environment.NewLine + oError.Message,
                     "HomerScribe", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
@@ -6398,7 +6399,7 @@ namespace Homer
             {
                 logMessage("yt-dlp was not found, so " + sAddress + " cannot be downloaded.", "ERROR");
                 logMessage("Install it with:  winget install yt-dlp.yt-dlp", "HINT");
-                if (bGuiMode) MessageBox.Show("yt-dlp is needed to download from a web address, and was not found.\r\n\r\n" +
+                if (bGuiMode) LbcMessage.show("yt-dlp is needed to download from a web address, and was not found.\r\n\r\n" +
                     "Install it with:  winget install yt-dlp.yt-dlp", "HomerScribe", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return "";
             }
@@ -10560,7 +10561,7 @@ namespace Homer
             // THE JOB ASKED FOR IS THE JOB NAMED, AND ALL DONE IS A SUCCESS (15 October 2026). A transcription
             // already made said "That video has already been described", and the command line ended with exit code
             // 1, as for an error. From the command line, finding everything already done now ends with 0; the dialog
-            // still comes back, as before, so Force replacements can be marked.
+            // still comes back, as before, so Force overwrite can be marked.
             string sDoneWord = flag("describe") && flag("transcribe") ? "described and transcribed"
                              : flag("transcribe") ? "transcribed" : "described";
             if (iDescribedWhole == 0 && iSkippedWhole > 0)
@@ -10569,7 +10570,7 @@ namespace Homer
                     ? "That one has already been " + sDoneWord + ", so there was nothing to do."
                     : "All " + iSkippedWhole.ToString() + " of those have already been " + sDoneWord + ", so there was nothing to do.";
                 sSaid = sSaid + Environment.NewLine + Environment.NewLine
-                      + (bGuiMode ? "Check Force replacements, or use -f, to do them again." : "Use -f, --force-replacements, to do them again.");
+                      + (bGuiMode ? "Mark Force replacements, or use -f, to do them again." : "Use -f, --force-replacements, to do them again.");
                 logMessage(sSaid.Replace(Environment.NewLine, " "), "INFO", bGuiMode ? "" : sSaid);
                 // THE RESULTS BOX ENDS THE RUN, then the output directory opens if asked
                 // (23 October 2026, the kit's LaunchDialog.finish), and HomerScribe closes.
@@ -10707,13 +10708,13 @@ namespace Homer
                 Form oOwner = ownerForm();
                 if (oOwner != null)
                 {
-                    DialogResult oOwned = MessageBox.Show(oOwner, sText, sCaption, oButtons, oIcon);
+                    DialogResult oOwned = LbcMessage.show(oOwner, sText, sCaption, oButtons, oIcon);
                     logMessage("The message was acknowledged.", "INFO", "");
                     return oOwned;
                 }
                 // No dialog, so this is a command line run and the console is
                 // visible; an ordinary box is enough.
-                DialogResult oAnswer = MessageBox.Show(sText, sCaption, oButtons, oIcon);
+                DialogResult oAnswer = LbcMessage.show(sText, sCaption, oButtons, oIcon);
                 logMessage("The message was acknowledged.", "INFO", "");
                 return oAnswer;
             }
@@ -11472,7 +11473,7 @@ namespace Homer
                 dCachedSignature = null;
                 bLastCacheFinished = false;
                 bLastTranscriptFinished = false;
-                if (iCleared > 0) logMessage((bRecordingChanged ? "The recording changed: set aside or removed " : "Force replacements: set aside or removed ") + iCleared.ToString()
+                if (iCleared > 0) logMessage((bRecordingChanged ? "The recording changed: set aside or removed " : "Force overwrite: set aside or removed ") + iCleared.ToString()
                                              + (iCleared == 1 ? " file" : " files") + " left by the earlier run, so this one starts clean; the results are put back if no new ones are made.",
                                              "INFO", "Starting clean: what the earlier run left has been removed.");
                 logMessage("The moments and the transcript held in memory from that record are discarded too.", "INFO", "");

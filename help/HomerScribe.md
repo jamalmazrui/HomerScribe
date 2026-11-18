@@ -319,16 +319,7 @@ in this order:
   it, Default settings has no Alt letter here.
 - OK and Cancel, alone at the bottom right. Control+Enter is OK and Escape is
   Cancel, from any control. F1 is Help and F11 checks the web for a newer
-  HomerScribe, from any control.
-
-Two keys answer questions from any control, as in every Homer app:
-
-- **Shift+F1** says what the control with focus does, in one sentence. Pressed
-  twice, it shows the answer in a window you can read and copy.
-- **Control+Slash** says where you are: what the dialog is for, then the job as
-  it stands -- how many sources, which choices are marked, the output directory,
-  and whether Force replacements is marked. Pressed twice, it shows the answer in
-  a window.
+  HomerScribe, from any control. **Shift+F1**, What This Does, says what the control with focus does, and **Control+Slash**, Where Am I, says where you are, what has focus and its keys; both work in every dialog and message, and pressed twice, each shows what it said in a window.
 
 Logging is automatic: every run writes a log in
 `%LOCALAPPDATA%\HomerScribe\logs`, named `HomerScribe-yyyyMMdd-HHmmss.log`, and
@@ -496,8 +487,8 @@ the log.
 
 ## Configuration
 
-`--use-configuration` loads settings from `HomerScribe.ini` beside the program
-at startup, and saves them when the dialog is accepted. In dialog mode the file
+`--use-configuration`: Load the saved settings at startup, and in the dialog save them when you press OK.
+The settings are in `%LOCALAPPDATA%\HomerScribe\HomerScribe.inix`. In dialog mode the file
 is loaded automatically when it exists, so the dialog opens showing last time's
 answers. Anything given on the
 command line wins over the file. The file is written by `Inix.cs`, the shared
@@ -529,10 +520,10 @@ The ones that matter most:
   transcript when it has them, instead of listening to it. Turn it off to make
   Whisper do the work every time.
 
-Four short forms are exceptions to the rule that the letter is the first
-character of a word, because the natural letters were already taken:
-`--every` is `-y`, `--forced-length` is `-z`, `--dialogue-channel` is `-D`, and
-`--same-shot` is `-h`.
+One short form is an exception to the rule that the letter is the first
+character of a word, because the natural letter was already taken: `--every`
+is `-y`. `--forced-length`, `--dialogue-channel` and `--same-shot` have no short
+form, and `-h` is `--help`, as in every Homer launch app.
 
 ## Hearing the film
 
