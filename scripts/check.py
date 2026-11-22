@@ -109,6 +109,23 @@ lsTextExtensions = (".cs", ".py", ".ps1", ".md", ".htm", ".inix", ".txt", ".iss"
 sScriptDir = os.path.dirname(os.path.abspath(__file__))
 
 
+
+def gitCarriedFiles(sProject):
+    """The files git tracks or would add in a project, as whole paths, from git ls-files; [] when there is no repository
+    or git cannot be run, and the caller then reads the whole tree."""
+    if not os.path.isdir(os.path.join(sProject, ".git")): return []
+    try:
+        oRun = subprocess.run(["git", "-C", sProject, "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                              capture_output=True, timeout=300)
+    except Exception as oError:
+        logLine("git ls-files could not run: %s" % oError)
+        return []
+    logLine("git ls-files: exit %d, %d bytes" % (oRun.returncode, len(oRun.stdout)))
+    if oRun.returncode != 0: return []
+    lsFiles = sorted({s for s in oRun.stdout.decode("utf-8", "replace").split("\0") if s})
+    return [os.path.join(sProject, s.replace("/", os.sep)) for s in lsFiles]
+
+
 def projectRoot(sStart):
     """The project is the current folder, or its parent when the current
     folder is the project's scripts or exec folder. One rule for every tool;
@@ -1192,10 +1209,24 @@ def checkReaderKeys():
     sJkm = os.path.join(sRoot, "scripts", "jaws", appName() + ".jkm")
     if os.path.isfile(sJkm):
         dGlobal = dict((s.lower(), d) for s, d in lsEntries if d.get("kind", "") == "reader global" and "jaws" in d.get("owner", "").lower() and d.get("passthrough", "").lower() != "yes")
+        # A SCRIPT THAT FALLS BACK TO JAWS'S OWN IS NOT A TAKING (22 November 2026). EdSharp's latex-access scripts sit
+        # on Alt+Control+PageUp and PageDown: in a math matrix they read the row or column, and everywhere else they
+        # perform JAWS's own voice-rate script, so JAWS's key still does what JAWS says. A line naming a script of the
+        # app's own whose body ends in PerformScript is logged as kept; TypeCurrentScriptKey and SilentKey, which hand
+        # the key on, still fail.
+        dWraps = {}
+        sJawsDir = os.path.dirname(sJkm)
+        for sJss in os.listdir(sJawsDir):
+            if not sJss.lower().endswith(".jss"): continue
+            for oMatch in re.finditer(r"(?ims)^\s*Script\s+(\w+)\s*\((.*?)^\s*EndScript", readText(os.path.join(sJawsDir, sJss))):
+                if re.search(r"(?i)\bPerformScript\b", oMatch.group(2)) and not re.search(r"(?i)\bTypeCurrentScriptKey\b|\bTypeKey\b", oMatch.group(2)): dWraps[oMatch.group(1).lower()] = True
         for sLine in readText(sJkm).splitlines():
             sTrim = sLine.strip()
             if not sTrim or sTrim.startswith((";", "[")) or "=" not in sTrim: continue
-            sJkmKey = sTrim.split("=", 1)[0].strip()
+            sJkmKey, sScript = [s.strip() for s in sTrim.split("=", 1)]
+            if sJkmKey.lower() in dGlobal and sScript.lower() in dWraps:
+                logLine("reader keys: kept %s=%s, which falls back to JAWS's own %s" % (sJkmKey, sScript, dGlobal[sJkmKey.lower()].get("what", "")))
+                continue
             if sJkmKey.lower() in dGlobal:
                 lsBad.append("%s.jkm hands %s to the app, taking JAWS's %s" % (appName(), sJkmKey, dGlobal[sJkmKey.lower()].get("what", "")))
     if not lsBad: return finding("reader keys", "pass", "no key of Windows's or a reader's own is bound")
@@ -1664,7 +1695,58 @@ def installerFindings(sText):
         mRunAll = re.search(r"(?ms)^\[Run\]\s*\n(.*?)(?=^\[[A-Za-z]+\]\s*$)", s)
         if not mRunAll or sScript not in mRunAll.group(1): lBad.append("never runs %s, the script whose state decides its screen reader boxes" % sScript)
         if re.search(r"(?i)\b(jaws)\b", s) and not re.search(r"(?i)Check:\s*(?:homerFinishRuns\s+and\s+)?isInstallJaws", s): lBad.append("offers no Install box for the JAWS scripts")
+    # EVERY VERB BEFORE THE CHECKBOXES (22 November 2026, a long-standing rule Jamal restated): what is installed is asked
+    # in CurStepChanged(ssPostInstall), through the kit's homerProbeAll, so the finish page appears with each Install,
+    # Update or Reinstall already known and nothing is checked after it.
+    if re.search(r'(?mi)^\s*#include\b.*HomerComponents\.iss', s) and not re.search(r"(?i)\bhomerProbeAll\s*\(", s):
+        lBad.append("never calls homerProbeAll in CurStepChanged(ssPostInstall), so its components are first asked while the finish page is being drawn")
+    # CHECKED IN ALPHABETICAL ORDER (22 November 2026, Jamal's ruling): the kit's homerProbeAll sorts what it asks; an
+    # installer that speaks its own "Checking ..." lines must say them in lowercase alphabetical order too, a leading
+    # "the" set aside, so how far the names have got through the alphabet says how far the checking has got.
+    lsSaid = [m.group(1) for m in re.finditer(r"homerSay\('Checking ([^']+)'", s)]
+    lsKeys = [re.sub(r"^the\s+", "", x.lower()) for x in lsSaid if not x.lower().startswith("which ")]
+    if lsKeys != sorted(lsKeys):
+        lBad.append("says its own Checking lines out of alphabetical order: " + ", ".join(lsKeys))
+    # FINISH-PAGE BOXES IN ALPHABETICAL ORDER TOO (22 November 2026). The order rule was in every installer's comments,
+    # but nothing checked it: FileDir listed Whisper between ffmpeg and ImageMagick, so its boxes and its installs after
+    # Finish said Whisper before PDF tools, and DbDo listed the NVDA add-on before mpv. Within each group of [Run]
+    # entries (Install, Update, Reinstall), the boxes named by {code:labelX} or {code:descX} must be in lowercase
+    # alphabetical order; an AI model, whose name varies, is left out.
+    # PDF TOOLS ARE A PYTHON PACKAGE (22 November 2026): FileDir still registered them under winget's Python 3.13, as
+    # HomerDev did before 3 November, so its box offered an Update that installPdfTools could never make.
+    if re.search(r"homerAdd\(\s*'PDF tools'\s*,\s*'(?!pip:)", s):
+        lBad.append("registers PDF tools under a winget id instead of pip:pymupdf4llm, so its box compares Python's versions")
+    mRunBoxes = re.search(r"(?ms)^\[Run\]\s*\n(.*?)(?=^\[[A-Za-z]+\]\s*$)", s)
+    if mRunBoxes:
+        lsGroups = [[]]
+        for sRunLine in mRunBoxes.group(1).splitlines():
+            if re.match(r"\s*;\s*-{3,}", sRunLine): lsGroups.append([]); continue
+            mLabel = re.search(r"\{code:(?:label|desc)(\w+)\}", sRunLine)
+            if mLabel and "model" not in mLabel.group(1).lower(): lsGroups[-1].append(mLabel.group(1).lower())
+        for lsGroup in lsGroups:
+            if lsGroup != sorted(lsGroup):
+                lBad.append("lists its finish-page boxes out of alphabetical order: " + ", ".join(lsGroup))
+                break
     return lBad
+
+def checkVersionInTitle():
+    """NO VERSION IN A WINDOW'S TITLE (22 November 2026, a Homer guideline at Jamal's request). A screen reader says
+    the title every time the window or dialog gains the focus, and a version number there is noise to the person
+    using the program. The version belongs in the documents, the help screen (F1, About) and Elevate Version (F11).
+    This fails a C# line that puts a version into a form's Text or an Lbc dialog's title."""
+    oTitle = re.compile(r"(?:\bnew\s+LbcDialog\s*\(|\b(?:this|form|frame|dlg\.form)\.Text\s*=|^\s*Text\s*=)[^;\n]*\b(?:BuildVersion\.Version|sVersion|ProductVersion|Application\.ProductVersion|sAppVersion)\b", re.M)
+    lsBad = []
+    for sPath in sourceFiles():
+        if not sPath.lower().endswith(".cs"): continue
+        sText = readText(sPath)
+        for oMatch in oTitle.finditer(sText):
+            lsBad.append("%s line %d" % (os.path.relpath(sPath, sRoot), sText.count("\n", 0, oMatch.start()) + 1))
+    for s in lsBad: logLine("VERSION IN TITLE: " + s)
+    if lsBad:
+        return finding("version in title", "fail", "%d window or dialog title%s name the version, which the reader repeats as noise; put it in the help and About instead: %s"
+                       % (len(lsBad), "" if len(lsBad) == 1 else "s", ", ".join(lsBad[:6])))
+    return finding("version in title", "pass", "no window or dialog title names the version")
+
 
 def checkInstaller():
     """The Homer installer pattern: the kit's HomerComponents.iss, its screen reader functions and script, and a
@@ -2413,7 +2495,14 @@ def main():
             # --FRESH MEANS EVERY FILE IS READ (14 October 2026, from an audit by another AI): a fresh check also verifies
             # the fingerprint, so a file changed without changing its size or time is not trusted by them.
             oCache = fingerprint.Cache(sRoot, logLine, True if dArguments.fresh else None)
-            sPrint = oCache.fingerprint([sRoot], [sKind, platform.python_version()])
+            # ONLY WHAT GIT WOULD CARRY IS FINGERPRINTED (1.265.1, 20 November 2026). Every file in the project was read,
+            # and with HomerVerify=1 read in full: AppHelpGuides holds gigabytes of harvested pages in data\harvests and
+            # results, none of them pushed, and push's check sat 25 minutes on them, saying nothing, until it was stopped.
+            # The pass now covers the files git tracks or would add, from git's own list; with no repository or no git,
+            # the whole tree as before. The count is logged and said, so a long read is never silent.
+            lsCheckInputs = gitCarriedFiles(sRoot) or [sRoot]
+            logLine("fingerprint inputs: %s" % ("%d files git carries" % len(lsCheckInputs) if lsCheckInputs != [sRoot] else "the whole project, as git gave no list"))
+            sPrint = oCache.fingerprint(lsCheckInputs, [sKind, platform.python_version()])
     except Exception as oError:
         logLine("fingerprint unavailable, so every check runs: %s" % oError)
         oCache = None
@@ -2468,6 +2557,7 @@ def main():
         checkSharedCode()
         checkIssComments()
         checkInstaller()
+        checkVersionInTitle()
         checkInstallerNames()
         checkShipped()
         checkMainThread()
@@ -2515,7 +2605,7 @@ def main():
             # checks was recorded, but a passing check runs the app's acceptance build, which rewrites the program, the
             # installer and generated pages; so release's check, a minute after push's, found "its inputs changed" and
             # built DbDo a third time. The files as they stand after a pass are the ones that passed.
-            oCache.record("check pass", oCache.fingerprint([sRoot], [sKind, platform.python_version()]), [], lsFindings)
+            oCache.record("check pass", oCache.fingerprint(gitCarriedFiles(sRoot) or [sRoot], [sKind, platform.python_version()]), [], lsFindings)
     logLine("check end")
     return 1 if iFailed else 0
 

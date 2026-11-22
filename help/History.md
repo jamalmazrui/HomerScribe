@@ -2,6 +2,11 @@
 
 
 
+## 22 November 2026 -- Every box decided before the last page
+
+- **The installer checks what is installed before its last page,** in alphabetical order, while the progress bar still shows, so each box already says Install, Update or Reinstall when the page appears.
+- **This needs HomerDev 1.273.0.**
+
 ## 18 November 2026 -- One set of dialog keys, names and words across Homer
 
 - **Shift+F1 and Control+Slash work in every message, as in every Homer dialog.** HomerScribe's messages were Windows message boxes, which answer neither: the missing-source and nothing-marked notices, the settings and yt-dlp warnings, and the report at the end. Each is now an Lbc dialog, through the kit's LbcMessage, so What This Does and Where Am I work there too, Yes is Alt+Y and No is Alt+N, and Control+Enter and Escape answer as everywhere.
